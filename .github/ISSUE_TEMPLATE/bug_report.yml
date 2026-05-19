@@ -1,0 +1,93 @@
+name: Bug Report
+description: Report a reproducible defect in the frontend application.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide a reliable set of steps.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Describe the incorrect behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: Describe the correct behavior.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - auth
+        - dashboard
+        - routes
+        - layouts
+        - ui-components
+        - pages
+        - hooks
+        - services
+        - state-management
+        - config
+        - build-tooling
+        - documentation
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, device, Node.js version, and any relevant `.env` settings such as `VITE_API_URL`.
+      placeholder: |
+        Browser: Chrome 136
+        OS: Windows 11
+        Device: Desktop
+        Node.js: 22.x
+        VITE_API_URL: http://localhost:8080/api/v1
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or console output
+      description: Add screenshots, recordings, or relevant browser console / network errors.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I can still reproduce this issue on the latest branch state.
+          required: true
