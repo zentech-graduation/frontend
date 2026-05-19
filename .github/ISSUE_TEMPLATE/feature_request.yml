@@ -1,0 +1,64 @@
+name: Feature Request
+description: Propose a frontend feature, UX improvement, or developer-experience enhancement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user or developer problem needs to be solved?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the desired behavior, flow, or API.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and impact
+      description: Which screens, components, routes, or workflows would this change affect?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - auth
+        - dashboard
+        - routes
+        - layouts
+        - ui-components
+        - pages
+        - hooks
+        - services
+        - state-management
+        - config
+        - build-tooling
+        - documentation
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: List any other approaches you considered.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
