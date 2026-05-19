@@ -1,0 +1,5 @@
+# GitHub CODEOWNERS
+#
+# The last matching rule wins. Add narrower rules below if ownership splits later.
+
+* @Khoi1115 @TranThanhPhuc-Dev @NguyenMinh1301
