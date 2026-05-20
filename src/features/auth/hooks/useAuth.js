@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import authService from '../services/authService';
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
@@ -16,14 +16,17 @@ export const authKeys = {
  * @returns {import('@tanstack/react-query').UseMutationResult}
  */
 export function useLogin() {
-  const login = useAuthStore((state) => state.login);
+  const setAuth = useAuthStore((state) => state.setAuth);
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (credentials) => authService.login(credentials),
     onSuccess: (data) => {
-      // Persist token + user in Zustand (+ localStorage via persist middleware)
-      login({ user: data.user, token: data.token });
+      setAuth({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        user: data.user,
+      });
       // Pre-populate the "me" cache so the first render doesn't refetch
       queryClient.setQueryData(authKeys.me(), data.user);
     },
@@ -38,11 +41,12 @@ export function useLogin() {
  * @returns {import('@tanstack/react-query').UseMutationResult}
  */
 export function useLogout() {
+  const refreshToken = useAuthStore((state) => state.refreshToken);
   const logout = useAuthStore((state) => state.logout);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => authService.logout(),
+    mutationFn: () => authService.logout(refreshToken),
     onSettled: () => {
       logout();
       queryClient.clear();
@@ -58,7 +62,7 @@ export function useLogout() {
  * @returns {import('@tanstack/react-query').UseQueryResult}
  */
 export function useCurrentUser() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthenticated = Boolean(useAuthStore((state) => state.accessToken));
 
   return useQuery({
     queryKey: authKeys.me(),

@@ -2,7 +2,9 @@
 
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'MyApp';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const ENV_API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
+
+export const API_URL = import.meta.env.DEV ? '/api/v1' : ENV_API_URL || 'http://localhost:8080/api/v1';
 
 /** Route paths — single source of truth for navigation */
 export const ROUTES = {

@@ -1,4 +1,4 @@
-import axiosInstance from '@/services/axiosInstance';
+import { authApi } from '@/api/authApi';
 
 /**
  * Auth service — all API calls related to authentication.
@@ -9,8 +9,7 @@ const authService = {
    * @returns {Promise<{ user: object, token: string }>}
    */
   login: async (credentials) => {
-    const { data } = await axiosInstance.post('/auth/login', credentials);
-    return data;
+    return authApi.login(credentials);
   },
 
   /**
@@ -18,23 +17,21 @@ const authService = {
    * @returns {Promise<{ user: object, token: string }>}
    */
   register: async (payload) => {
-    const { data } = await axiosInstance.post('/auth/register', payload);
-    return data;
+    return authApi.register(payload);
   },
 
   /**
    * @returns {Promise<void>}
    */
-  logout: async () => {
-    await axiosInstance.post('/auth/logout');
+  logout: async (refreshToken) => {
+    await authApi.logout(refreshToken);
   },
 
   /**
    * @returns {Promise<object>}
    */
   getMe: async () => {
-    const { data } = await axiosInstance.get('/auth/me');
-    return data;
+    return authApi.getCurrentUser();
   },
 };
 
