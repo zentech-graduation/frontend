@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:8080';
 
   return {
+    cacheDir: path.resolve(__dirname, '.vite-cache'),
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

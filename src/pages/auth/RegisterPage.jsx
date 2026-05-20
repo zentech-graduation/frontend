@@ -113,12 +113,11 @@ export default function RegisterPage() {
   return (
     <AuthPageLayout>
       <AuthShell
-        eyebrow="Create account"
         title="create your account."
-        subtitle="Join the quieter social network built for the people you actually know."
+        subtitle="a small social network for the people you actually know."
         footer={
           <p>
-            Already have one? <Link to="/login">Sign in</Link>
+            already have one? <Link to="/login">sign in</Link>
           </p>
         }
       >
@@ -126,7 +125,7 @@ export default function RegisterPage() {
           <GoogleButton
             onClick={handleGoogleLogin}
             disabled={isSubmitting}
-            label="Login with Google"
+            label="continue with Google"
           />
           <AuthDivider />
 
@@ -186,7 +185,7 @@ export default function RegisterPage() {
           ) : null}
 
           <AuthButton type="submit" loading={isSubmitting}>
-            Create account
+            create account
           </AuthButton>
         </form>
       </AuthShell>
