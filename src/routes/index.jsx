@@ -11,6 +11,7 @@ import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
+import HomePage from '@/pages/HomePage';
 
 function RootLayout() {
   return (
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
+      {
+        path: '/',
+        element: <HomePage />,
+      },
       {
         element: <GuestRoute />,
         children: [
@@ -58,7 +63,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           {
-            path: '/',
+            path: '/dashboard',
             element: <DashboardPage />,
           },
         ],
