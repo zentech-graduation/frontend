@@ -1,20 +1,11 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
-function NotFoundPage() {
-  const navigate = useNavigate();
-
+export default function NotFoundPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-center">
-      <h1 className="text-8xl font-bold text-muted-foreground">404</h1>
-      <p className="text-xl text-muted-foreground">Page not found</p>
-      <button
-        onClick={() => navigate(-1)}
-        className="mt-4 rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-      >
-        Go Back
-      </button>
-    </div>
+    <main className="not-found-page">
+      <p>404</p>
+      <h1>That page does not exist.</h1>
+      <Link to="/login">Back to authentication</Link>
+    </main>
   );
 }
-
-export default NotFoundPage;

@@ -1,19 +1,18 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 
 import PageLoader from '@/components/common/PageLoader';
 import { useAuthStore } from '@/store/useAuthStore';
 
-export default function ProtectedRoute() {
-  const location = useLocation();
+export default function GuestRoute() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isBootstrapping = useAuthStore((state) => state.isBootstrapping);
 
   if (isBootstrapping) {
-    return <PageLoader label="Checking your session..." />;
+    return <PageLoader label="Preparing authentication..." />;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;
