@@ -56,7 +56,7 @@ export default function OAuthCallbackPage() {
           });
 
           window.history.replaceState({}, document.title, window.location.pathname);
-          navigate('/', { replace: true });
+          navigate('/dashboard', { replace: true });
           return;
         }
 
@@ -86,7 +86,7 @@ export default function OAuthCallbackPage() {
           user: profile,
         });
 
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       } catch (oauthError) {
         logout();
         setErrorMessage(authApi.normalizeMessage(oauthError, 'Unable to complete Google sign in.'));
