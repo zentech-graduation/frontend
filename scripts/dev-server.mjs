@@ -104,9 +104,11 @@ function ensureStablePort(port) {
 
 function resetDevArtifacts() {
   const viteCacheDir = path.join(projectRoot, 'node_modules', '.vite');
+  const viteTempDir = path.join(projectRoot, '.vite-cache');
   const distDir = path.join(projectRoot, 'dist');
 
   rmSync(viteCacheDir, { recursive: true, force: true });
+  rmSync(viteTempDir, { recursive: true, force: true });
   rmSync(distDir, { recursive: true, force: true });
 }
 
@@ -119,7 +121,7 @@ ensureStablePort(DEV_PORT);
 
 const vite = spawn(
   'cmd.exe',
-  ['/c', 'npx', 'vite', '--port', String(DEV_PORT), '--strictPort'],
+  ['/c', 'npx', 'vite', '--port', String(DEV_PORT), '--strictPort', '--configLoader', 'native'],
   {
     stdio: 'inherit',
     shell: false,

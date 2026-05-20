@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -36,6 +36,8 @@ export default function LoginPage() {
   const passwordField = usePasswordToggle();
   const [serverError, setServerError] = useState('');
   const successMessage = getSuccessMessage(location.state);
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const isReauthRequest = searchParams.get('reauth') === '1';
 
   const {
     register,
@@ -53,6 +55,24 @@ export default function LoginPage() {
 
   const canVerify = serverError.toLowerCase().includes('inactive') && emailValue?.trim();
 
+  useEffect(() => {
+    if (!isReauthRequest) {
+      return;
+    }
+
+    const clearExistingSession = async () => {
+      try {
+        await authApi.logout();
+      } catch {
+        // If the session is already gone server-side, we still want a clean local sign-in flow.
+      } finally {
+        logout();
+      }
+    };
+
+    clearExistingSession();
+  }, [isReauthRequest, logout]);
+
   const onSubmit = async (values) => {
     setServerError('');
 
@@ -68,7 +88,7 @@ export default function LoginPage() {
 
       setAuth({ accessToken, refreshToken, user });
 
-      const nextPath = location.state?.from?.pathname || '/';
+      const nextPath = location.state?.from?.pathname || '/dashboard';
       navigate(nextPath, { replace: true });
     } catch (error) {
       logout();
@@ -89,12 +109,11 @@ export default function LoginPage() {
   return (
     <AuthPageLayout>
       <AuthShell
-        eyebrow="Sign in"
         title="welcome back."
-        subtitle="Step into Luvax with your email and password."
+        subtitle=""
         footer={
           <p>
-            New here? <Link to="/register">Create an account</Link>
+            new here? <Link to="/register">create an account</Link>
           </p>
         }
       >
@@ -102,7 +121,7 @@ export default function LoginPage() {
           <GoogleButton
             onClick={handleGoogleLogin}
             disabled={isSubmitting}
-            label="Login with Google"
+            label="continue with Google"
           />
           <AuthDivider />
 
@@ -128,7 +147,7 @@ export default function LoginPage() {
           />
 
           <div className="auth-form__meta auth-form__meta--end">
-            <Link to="/forgot-password">Forgot password?</Link>
+            <Link to="/forgot-password">forgot password?</Link>
           </div>
 
           {successMessage ? <AuthAlert tone="success">{successMessage}</AuthAlert> : null}
@@ -144,7 +163,7 @@ export default function LoginPage() {
           ) : null}
 
           <AuthButton type="submit" loading={isSubmitting}>
-            Sign in
+            sign in
           </AuthButton>
         </form>
       </AuthShell>
