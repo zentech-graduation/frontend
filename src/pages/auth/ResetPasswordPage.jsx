@@ -94,14 +94,7 @@ export default function ResetPasswordPage() {
         }
       >
         <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-          <AuthInput
-            label="Reset code or token"
-            type="text"
-            placeholder="Paste the code from your email"
-            autoComplete="one-time-code"
-            error={errors.token?.message}
-            {...register('token')}
-          />
+          <input type="hidden" {...register('token')} />
 
           <div className="auth-form__stack">
             <AuthInput
