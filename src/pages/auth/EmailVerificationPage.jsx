@@ -23,19 +23,31 @@ export default function EmailVerificationPage() {
       return;
     }
 
+    const controller = new AbortController();
+
     const verifyFromUrl = async () => {
+      // Scrub the token from the URL before any async work so it does not
+      // persist in browser history if the call is slow or the user navigates back.
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + (email ? `?email=${encodeURIComponent(email)}` : '')
+      );
+
       try {
-        await authApi.verifyEmail({
-          token: tokenFromUrl,
-        });
+        await authApi.verifyEmail({ token: tokenFromUrl });
+
+        // Guard: do not navigate if the component unmounted while the request
+        // was in-flight (e.g. user clicked away before the server responded).
+        if (controller.signal.aborted) return;
 
         navigate('/login', {
           replace: true,
-          state: {
-            verificationSuccess: true,
-          },
+          state: { verificationSuccess: true },
         });
       } catch (error) {
+        if (controller.signal.aborted) return;
+
         setTokenError(
           authApi.normalizeMessage(error, 'The verification link is invalid or has expired.')
         );
@@ -43,7 +55,11 @@ export default function EmailVerificationPage() {
     };
 
     verifyFromUrl();
-  }, [navigate, tokenFromUrl]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [navigate, tokenFromUrl, email]);
 
   const handleResend = async () => {
     if (!canResend || !email) {

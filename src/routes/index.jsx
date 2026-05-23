@@ -4,9 +4,10 @@ import AuthSessionBootstrap from '@/components/common/AuthSessionBootstrap';
 import GuestRoute from '@/components/common/GuestRoute';
 import NotFoundPage from '@/components/common/NotFoundPage';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
+import RouterErrorPage from '@/components/common/RouterErrorPage';
 import EmailVerificationPage from '@/pages/auth/EmailVerificationPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
-import LoginPage from '@/pages/auth/LoginPage';
+import LoginPage from '@/features/auth/components/LoginPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
@@ -25,6 +26,7 @@ function RootLayout() {
 const router = createBrowserRouter([
   {
     element: <RootLayout />,
+    errorElement: <RouterErrorPage />,
     children: [
       {
         path: '/',
