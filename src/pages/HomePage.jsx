@@ -13,17 +13,25 @@ export default function HomePage() {
       return;
     }
 
+    const controller = new AbortController();
+
     const clearSession = async () => {
       try {
         await authApi.logout();
       } catch {
         // If the backend session is already gone, we still clear local auth state.
       } finally {
-        logout();
+        if (!controller.signal.aborted) {
+          logout();
+        }
       }
     };
 
     clearSession();
+
+    return () => {
+      controller.abort();
+    };
   }, [isAuthenticated, logout]);
 
   return (
