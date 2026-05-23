@@ -1,0 +1,2931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luvax — Social network</title>
+<style>
+/**
+ * Luvax Design System — CSS Token Library (v2)
+ *
+ * Light + dark theme via CSS custom properties.
+ * Light is default; dark mode activates with `html[data-theme="dark"]`.
+ *
+ * NOTE — Font files not present on disk. The brand fonts (Syne, DM Sans, DM Mono,
+ * Instrument Serif, Inter) were ANNOUNCED as uploaded but the .ttf bytes never landed.
+ * Falling back to Google Fonts CDN. Once font files are in `fonts/`, swap @font-face
+ * declarations to `local: url('../fonts/...')` paths.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
+
+
+/* ─── LIGHT THEME (default) ──────────────────────────────────────── */
+
+:root {
+  /* Surface */
+  --lx-base:            #F9F7F4;
+  --lx-surface:         #F0EDE8;
+  --lx-surface-raised:  #E8E3DC;
+  --lx-surface-sunken:  #EAE6E0;
+
+  /* Ink */
+  --lx-ink:             #1A1816;
+  --lx-ink-2:           #574F47;
+  --lx-ink-3:           #9B9088;
+  --lx-ink-inverse:     #F9F7F4;
+
+  /* Borders */
+  --lx-border:          #DDD7CF;
+  --lx-border-strong:   #C4BCB2;
+  --lx-border-subtle:   #ECEAE5;
+
+  /* Accent — overwritten via tweaks */
+  --lx-accent:          #C8A97E;
+  --lx-accent-dark:     #A8885A;
+  --lx-accent-dim:      #F2EAD9;
+  --lx-accent-text:     #7A5C34;
+
+  /* Semantic */
+  --lx-error:           #C47168;
+  --lx-error-dim:       #F5E8E7;
+  --lx-error-text:      #A55B52;
+  --lx-success:         #7A9E7A;
+  --lx-success-dim:     #EAF0EA;
+  --lx-success-text:    #5E8260;
+  --lx-warning:         #C4A85A;
+  --lx-warning-dim:     #F5EED8;
+  --lx-warning-text:    #A88A3A;
+
+  /* Glass / scrim */
+  --lx-glass-bg:        rgba(249, 247, 244, 0.88);
+  --lx-glass-border:    rgba(255, 255, 255, 0.4);
+  --lx-glass-blur:      10px;
+  --lx-scrim:           rgba(26, 24, 22, 0.45);
+
+  /* Type families — overwritten via tweaks */
+  --font-display:       'Syne', sans-serif;
+  --font-body:          'DM Sans', sans-serif;
+  --font-mono:          'DM Mono', monospace;
+
+  /* Shadows */
+  --shadow-sm:          0 1px 3px rgba(26,24,22,0.07);
+  --shadow-md:          0 2px 8px rgba(26,24,22,0.09);
+  --shadow-lg:          0 4px 12px rgba(26,24,22,0.12);
+
+  /* Spacing */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-16: 64px;
+
+  /* Radius */
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px; --radius-pill: 999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+}
+
+
+/* ─── DARK THEME ─────────────────────────────────────────────────── */
+
+html[data-theme="dark"] {
+  --lx-base:            #1A1816;
+  --lx-surface:         #25211D;
+  --lx-surface-raised:  #2F2A25;
+  --lx-surface-sunken:  #1F1C19;
+
+  --lx-ink:             #F0EDE8;
+  --lx-ink-2:           #B5ACA3;
+  --lx-ink-3:           #7A7268;
+  --lx-ink-inverse:     #1A1816;
+
+  --lx-border:          #3A342E;
+  --lx-border-strong:   #4A433B;
+  --lx-border-subtle:   #2E2925;
+
+  /* Accent stays warm — but dim is reduced opacity */
+  --lx-accent-dim:      rgba(200, 169, 126, 0.18);
+  --lx-accent-text:     #D8BC92;
+
+  --lx-error-dim:       rgba(196, 113, 104, 0.18);
+  --lx-error-text:      #D89189;
+  --lx-success-dim:     rgba(122, 158, 122, 0.18);
+  --lx-success-text:    #9DBE9D;
+  --lx-warning-dim:     rgba(196, 168, 90, 0.18);
+  --lx-warning-text:    #DBC57E;
+
+  --lx-glass-bg:        rgba(26, 24, 22, 0.85);
+  --lx-glass-border:    rgba(255, 255, 255, 0.08);
+  --lx-scrim:           rgba(0, 0, 0, 0.65);
+}
+
+
+/* ─── BASE ──────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--lx-base);
+  color: var(--lx-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+
+/* ─── TYPOGRAPHY UTILITY CLASSES ─────────────────────────────────── */
+
+.t-display-xl { font: 800 64px/1.1 var(--font-display); letter-spacing: -0.03em; color: var(--lx-ink); }
+.t-display-lg { font: 700 48px/1.1 var(--font-display); letter-spacing: -0.03em; color: var(--lx-ink); }
+.t-display-md { font: 600 38px/1.2 var(--font-display); letter-spacing: -0.02em; color: var(--lx-ink); }
+.t-h1 { font: 600 30px/1.25 var(--font-display); letter-spacing: -0.02em; color: var(--lx-ink); }
+.t-h2 { font: 600 24px/1.3 var(--font-display); letter-spacing: -0.02em; color: var(--lx-ink); }
+.t-h3 { font: 500 20px/1.3 var(--font-display); letter-spacing: -0.01em; color: var(--lx-ink); }
+.t-h4 { font: 600 15px/1.4 var(--font-body); color: var(--lx-ink); }
+
+.t-body-lg { font: 400 17px/1.5 var(--font-body); letter-spacing: -0.01em; color: var(--lx-ink); }
+.t-body    { font: 400 15px/1.5 var(--font-body); letter-spacing: -0.01em; color: var(--lx-ink); }
+.t-body-sm { font: 400 13px/1.5 var(--font-body); color: var(--lx-ink-2); }
+
+.t-label   { font: 500 13px/1.3 var(--font-body); letter-spacing: 0.04em; color: var(--lx-ink); }
+.t-label-sm{ font: 500 11px/1.3 var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--lx-ink-3); }
+.t-caption { font: 400 11px/1.5 var(--font-body); color: var(--lx-ink-3); }
+
+.t-mono    { font: 400 13px/1.5 var(--font-mono); color: var(--lx-ink-2); }
+.t-mono-sm { font: 400 11px/1.5 var(--font-mono); color: var(--lx-ink-3); }
+
+
+/* ─── GLASS UTILITY ─────────────────────────────────────────────── */
+
+.lx-glass {
+  background: var(--lx-glass-bg);
+  backdrop-filter: blur(var(--lx-glass-blur));
+  -webkit-backdrop-filter: blur(var(--lx-glass-blur));
+  border: 1px solid var(--lx-glass-border);
+}
+
+
+/* ─── DENSITY DATA-ATTR (applied to .lx-app root) ───────────────── */
+
+[data-density="cozy"]  { --lx-row-pad: 14px; --lx-card-pad: 16px; --lx-feed-gap: 12px; }
+[data-density="dense"] { --lx-row-pad: 10px; --lx-card-pad: 12px; --lx-feed-gap: 8px; }
+
+
+/* ─── SCROLLBAR (subtle) ────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--lx-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--lx-border-strong); }
+
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  html { scrollbar-gutter: stable; overflow-y: scroll; }
+  #root { min-height: 100vh; }
+  button:focus:not(:focus-visible) { outline: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// ── tweaks-panel.jsx ──────────────────────────────────────────────────────
+
+// tweaks-panel.jsx
+// Reusable Tweaks shell + form-control helpers.
+//
+// Owns the host protocol (listens for __activate_edit_mode / __deactivate_edit_mode,
+// posts __edit_mode_available / __edit_mode_set_keys / __edit_mode_dismissed) so
+// individual prototypes don't re-roll it. Ships a consistent set of controls so you
+// don't hand-draw <input type="range">, segmented radios, steppers, etc.
+//
+// Usage (in an HTML file that loads React + Babel):
+//
+//   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+//     "primaryColor": "#D97757",
+//     "palette": ["#D97757", "#29261b", "#f6f4ef"],
+//     "fontSize": 16,
+//     "density": "regular",
+//     "dark": false
+//   }/*EDITMODE-END*/;
+//
+//   function App() {
+//     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+//     return (
+//       <div style={{ fontSize: t.fontSize, color: t.primaryColor }}>
+//         Hello
+//         <TweaksPanel>
+//           <TweakSection label="Typography" />
+//           <TweakSlider label="Font size" value={t.fontSize} min={10} max={32} unit="px"
+//                        onChange={(v) => setTweak('fontSize', v)} />
+//           <TweakRadio  label="Density" value={t.density}
+//                        options={['compact', 'regular', 'comfy']}
+//                        onChange={(v) => setTweak('density', v)} />
+//           <TweakSection label="Theme" />
+//           <TweakColor  label="Primary" value={t.primaryColor}
+//                        options={['#D97757', '#2A6FDB', '#1F8A5B', '#7A5AE0']}
+//                        onChange={(v) => setTweak('primaryColor', v)} />
+//           <TweakColor  label="Palette" value={t.palette}
+//                        options={[['#D97757', '#29261b', '#f6f4ef'],
+//                                  ['#475569', '#0f172a', '#f1f5f9']]}
+//                        onChange={(v) => setTweak('palette', v)} />
+//           <TweakToggle label="Dark mode" value={t.dark}
+//                        onChange={(v) => setTweak('dark', v)} />
+//         </TweaksPanel>
+//       </div>
+//     );
+//   }
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    transform:scale(var(--dc-inv-zoom,1));transform-origin:bottom right;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-body::-webkit-scrollbar{width:8px}
+  .twk-body::-webkit-scrollbar-track{background:transparent;margin:2px}
+  .twk-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px;
+    border:2px solid transparent;background-clip:content-box}
+  .twk-body::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.25);
+    border:2px solid transparent;background-clip:content-box}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;
+    color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+
+  .twk-field{appearance:none;box-sizing:border-box;width:100%;min-width:0;height:26px;padding:0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;
+    background:rgba(255,255,255,.6);color:inherit;font:inherit;outline:none}
+  .twk-field:focus{border-color:rgba(0,0,0,.25);background:rgba(255,255,255,.85)}
+  select.twk-field{padding-right:22px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='rgba(0,0,0,.5)' d='M0 0h10L5 6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center}
+
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+    background:#fff;border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;
+    background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:left .15s cubic-bezier(.3,.7,.4,1),width .15s}
+  .twk-seg.dragging .twk-seg-thumb{transition:none}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;min-height:22px;
+    border-radius:6px;cursor:default;padding:4px 6px;line-height:1.2;
+    overflow-wrap:anywhere}
+
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+
+  .twk-num{display:flex;align-items:center;box-sizing:border-box;min-width:0;height:26px;padding:0 0 0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;background:rgba(255,255,255,.6)}
+  .twk-num-lbl{font-weight:500;color:rgba(41,38,27,.6);cursor:ew-resize;
+    user-select:none;padding-right:8px}
+  .twk-num input{flex:1;min-width:0;height:100%;border:0;background:transparent;
+    font:inherit;font-variant-numeric:tabular-nums;text-align:right;padding:0 8px 0 0;
+    outline:none;color:inherit;-moz-appearance:textfield}
+  .twk-num input::-webkit-inner-spin-button,.twk-num input::-webkit-outer-spin-button{
+    -webkit-appearance:none;margin:0}
+  .twk-num-unit{padding-right:8px;color:rgba(41,38,27,.45)}
+
+  .twk-btn{appearance:none;height:26px;padding:0 12px;border:0;border-radius:7px;
+    background:rgba(0,0,0,.78);color:#fff;font:inherit;font-weight:500;cursor:default}
+  .twk-btn:hover{background:rgba(0,0,0,.88)}
+  .twk-btn.secondary{background:rgba(0,0,0,.06);color:inherit}
+  .twk-btn.secondary:hover{background:rgba(0,0,0,.1)}
+
+  .twk-swatch{appearance:none;-webkit-appearance:none;width:56px;height:22px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:6px;padding:0;cursor:default;
+    background:transparent;flex-shrink:0}
+  .twk-swatch::-webkit-color-swatch-wrapper{padding:0}
+  .twk-swatch::-webkit-color-swatch{border:0;border-radius:5.5px}
+  .twk-swatch::-moz-color-swatch{border:0;border-radius:5.5px}
+
+  .twk-chips{display:flex;gap:6px}
+  .twk-chip{position:relative;appearance:none;flex:1;min-width:0;height:46px;
+    padding:0;border:0;border-radius:6px;overflow:hidden;cursor:default;
+    box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.06);
+    transition:transform .12s cubic-bezier(.3,.7,.4,1),box-shadow .12s}
+  .twk-chip:hover{transform:translateY(-1px);
+    box-shadow:0 0 0 .5px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.12)}
+  .twk-chip[data-on="1"]{box-shadow:0 0 0 1.5px rgba(0,0,0,.85),
+    0 2px 6px rgba(0,0,0,.15)}
+  .twk-chip>span{position:absolute;top:0;bottom:0;right:0;width:34%;
+    display:flex;flex-direction:column;box-shadow:-1px 0 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i{flex:1;box-shadow:0 -1px 0 rgba(0,0,0,.1)}
+  .twk-chip>span>i:first-child{box-shadow:none}
+  .twk-chip svg{position:absolute;top:6px;left:6px;width:13px;height:13px;
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+`;
+
+// ── useTweaks ───────────────────────────────────────────────────────────────
+// Single source of truth for tweak values. setTweak persists via the host
+// (__edit_mode_set_keys → host rewrites the EDITMODE block on disk).
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  // Accepts either setTweak('key', value) or setTweak({ key: value, ... }) so a
+  // useState-style call doesn't write a "[object Object]" key into the persisted
+  // JSON block.
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
+      ? keyOrEdits : { [keyOrEdits]: val };
+    setValues((prev) => ({ ...prev, ...edits }));
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits }, '*');
+    // Same-window signal so in-page listeners (deck-stage rail thumbnails)
+    // can react — the parent message only reaches the host, not peers.
+    window.dispatchEvent(new CustomEvent('tweakchange', { detail: edits }));
+  }, []);
+  return [values, setTweak];
+}
+
+// ── TweaksPanel ─────────────────────────────────────────────────────────────
+// Floating shell. Registers the protocol listener BEFORE announcing
+// availability — if the announce ran first, the host's activate could land
+// before our handler exists and the toolbar toggle would silently no-op.
+// The close button posts __edit_mode_dismissed so the host's toolbar toggle
+// flips off in lockstep; the host echoes __deactivate_edit_mode back which
+// is what actually hides the panel.
+function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  // Auto-inject a rail toggle when a <deck-stage> is on the page. The
+  // toggle drives the deck's per-viewer _railVisible via window message;
+  // state is mirrored from the same localStorage key the deck reads so
+  // the control reflects reality across reloads. The mechanism is the
+  // message — authors who want custom placement can post it directly
+  // and pass noDeckControls to suppress this one.
+  const hasDeckStage = React.useMemo(
+    () => typeof document !== 'undefined' && !!document.querySelector('deck-stage'),
+    [],
+  );
+  // deck-stage enables its rail in connectedCallback, but this panel can
+  // mount before that element has upgraded. The initial read catches the
+  // common case; the listener covers mounting first. (Older deck-stage.js
+  // copies still wait for the host's __omelette_rail_enabled postMessage —
+  // same listener handles those.)
+  const [railEnabled, setRailEnabled] = React.useState(
+    () => hasDeckStage && !!document.querySelector('deck-stage')?._railEnabled,
+  );
+  React.useEffect(() => {
+    if (!hasDeckStage || railEnabled) return undefined;
+    const onMsg = (e) => {
+      if (e.data && e.data.type === '__omelette_rail_enabled') setRailEnabled(true);
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [hasDeckStage, railEnabled]);
+  const [railVisible, setRailVisible] = React.useState(() => {
+    try { return localStorage.getItem('deck-stage.railVisible') !== '0'; } catch (e) { return true; }
+  });
+  const toggleRail = (on) => {
+    setRailVisible(on);
+    window.postMessage({ type: '__deck_rail_visible', on }, '*');
+  };
+  const offsetRef = React.useRef({ x: 16, y: 16 });
+  const PAD = 16;
+
+  const clampToViewport = React.useCallback(() => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const w = panel.offsetWidth, h = panel.offsetHeight;
+    const maxRight = Math.max(PAD, window.innerWidth - w - PAD);
+    const maxBottom = Math.max(PAD, window.innerHeight - h - PAD);
+    offsetRef.current = {
+      x: Math.min(maxRight, Math.max(PAD, offsetRef.current.x)),
+      y: Math.min(maxBottom, Math.max(PAD, offsetRef.current.y)),
+    };
+    panel.style.right = offsetRef.current.x + 'px';
+    panel.style.bottom = offsetRef.current.y + 'px';
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    clampToViewport();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', clampToViewport);
+      return () => window.removeEventListener('resize', clampToViewport);
+    }
+    const ro = new ResizeObserver(clampToViewport);
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, [open, clampToViewport]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      const t = e?.data?.type;
+      if (t === '__activate_edit_mode') setOpen(true);
+      else if (t === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  const dismiss = () => {
+    setOpen(false);
+    window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+  };
+
+  const onDragStart = (e) => {
+    const panel = dragRef.current;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const startRight = window.innerWidth - r.right;
+    const startBottom = window.innerHeight - r.bottom;
+    const move = (ev) => {
+      offsetRef.current = {
+        x: startRight - (ev.clientX - sx),
+        y: startBottom - (ev.clientY - sy),
+      };
+      clampToViewport();
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+
+  if (!open) return null;
+  return (
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" data-noncommentable=""
+           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" aria-label="Close tweaks"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={dismiss}>✕</button>
+        </div>
+        <div className="twk-body">
+          {children}
+          {hasDeckStage && railEnabled && !noDeckControls && (
+            <TweakSection label="Deck">
+              <TweakToggle label="Thumbnail rail" value={railVisible} onChange={toggleRail} />
+            </TweakSection>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Layout helpers ──────────────────────────────────────────────────────────
+
+function TweakSection({ label, children }) {
+  return (
+    <>
+      <div className="twk-sect">{label}</div>
+      {children}
+    </>
+  );
+}
+
+function TweakRow({ label, value, children, inline = false }) {
+  return (
+    <div className={inline ? 'twk-row twk-row-h' : 'twk-row'}>
+      <div className="twk-lbl">
+        <span>{label}</span>
+        {value != null && <span className="twk-val">{value}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────
+
+function TweakSlider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
+  return (
+    <TweakRow label={label} value={`${value}${unit}`}>
+      <input type="range" className="twk-slider" min={min} max={max} step={step}
+             value={value} onChange={(e) => onChange(Number(e.target.value))} />
+    </TweakRow>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value ? '1' : '0'}
+              role="switch" aria-checked={!!value}
+              onClick={() => onChange(!value)}><i /></button>
+    </div>
+  );
+}
+
+function TweakRadio({ label, value, options, onChange }) {
+  const trackRef = React.useRef(null);
+  const [dragging, setDragging] = React.useState(false);
+  // The active value is read by pointer-move handlers attached for the lifetime
+  // of a drag — ref it so a stale closure doesn't fire onChange for every move.
+  const valueRef = React.useRef(value);
+  valueRef.current = value;
+
+  // Segments wrap mid-word once per-segment width runs out. The track is
+  // ~248px (280 panel − 28 body pad − 4 seg pad), each button loses 12px
+  // to its own padding, and 11.5px system-ui averages ~6.3px/char — so 2
+  // options fit ~16 chars each, 3 fit ~10. Past that (or >3 options), fall
+  // back to a dropdown rather than wrap.
+  const labelLen = (o) => String(typeof o === 'object' ? o.label : o).length;
+  const maxLen = options.reduce((m, o) => Math.max(m, labelLen(o)), 0);
+  const fitsAsSegments = maxLen <= ({ 2: 16, 3: 10 }[options.length] ?? 0);
+  if (!fitsAsSegments) {
+    // <select> emits strings — map back to the original option value so the
+    // fallback stays type-preserving (numbers, booleans) like the segment path.
+    const resolve = (s) => {
+      const m = options.find((o) => String(typeof o === 'object' ? o.value : o) === s);
+      return m === undefined ? s : typeof m === 'object' ? m.value : m;
+    };
+    return <TweakSelect label={label} value={value} options={options}
+                        onChange={(s) => onChange(resolve(s))} />;
+  }
+  const opts = options.map((o) => (typeof o === 'object' ? o : { value: o, label: o }));
+  const idx = Math.max(0, opts.findIndex((o) => o.value === value));
+  const n = opts.length;
+
+  const segAt = (clientX) => {
+    const r = trackRef.current.getBoundingClientRect();
+    const inner = r.width - 4;
+    const i = Math.floor(((clientX - r.left - 2) / inner) * n);
+    return opts[Math.max(0, Math.min(n - 1, i))].value;
+  };
+
+  const onPointerDown = (e) => {
+    setDragging(true);
+    const v0 = segAt(e.clientX);
+    if (v0 !== valueRef.current) onChange(v0);
+    const move = (ev) => {
+      if (!trackRef.current) return;
+      const v = segAt(ev.clientX);
+      if (v !== valueRef.current) onChange(v);
+    };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  return (
+    <TweakRow label={label}>
+      <div ref={trackRef} role="radiogroup" onPointerDown={onPointerDown}
+           className={dragging ? 'twk-seg dragging' : 'twk-seg'}>
+        <div className="twk-seg-thumb"
+             style={{ left: `calc(2px + ${idx} * (100% - 4px) / ${n})`,
+                      width: `calc((100% - 4px) / ${n})` }} />
+        {opts.map((o) => (
+          <button key={o.value} type="button" role="radio" aria-checked={o.value === value}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakSelect({ label, value, options, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <select className="twk-field" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => {
+          const v = typeof o === 'object' ? o.value : o;
+          const l = typeof o === 'object' ? o.label : o;
+          return <option key={v} value={v}>{l}</option>;
+        })}
+      </select>
+    </TweakRow>
+  );
+}
+
+function TweakText({ label, value, placeholder, onChange }) {
+  return (
+    <TweakRow label={label}>
+      <input className="twk-field" type="text" value={value} placeholder={placeholder}
+             onChange={(e) => onChange(e.target.value)} />
+    </TweakRow>
+  );
+}
+
+function TweakNumber({ label, value, min, max, step = 1, unit = '', onChange }) {
+  const clamp = (n) => {
+    if (min != null && n < min) return min;
+    if (max != null && n > max) return max;
+    return n;
+  };
+  const startRef = React.useRef({ x: 0, val: 0 });
+  const onScrubStart = (e) => {
+    e.preventDefault();
+    startRef.current = { x: e.clientX, val: value };
+    const decimals = (String(step).split('.')[1] || '').length;
+    const move = (ev) => {
+      const dx = ev.clientX - startRef.current.x;
+      const raw = startRef.current.val + dx * step;
+      const snapped = Math.round(raw / step) * step;
+      onChange(clamp(Number(snapped.toFixed(decimals))));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return (
+    <div className="twk-num">
+      <span className="twk-num-lbl" onPointerDown={onScrubStart}>{label}</span>
+      <input type="number" value={value} min={min} max={max} step={step}
+             onChange={(e) => onChange(clamp(Number(e.target.value)))} />
+      {unit && <span className="twk-num-unit">{unit}</span>}
+    </div>
+  );
+}
+
+// Relative-luminance contrast pick — checkmarks drawn over a swatch need to
+// read on both #111 and #fafafa without per-option configuration. Hex input
+// only (#rgb / #rrggbb); named or rgb()/hsl() colors fall through to "light".
+function __twkIsLight(hex) {
+  const h = String(hex).replace('#', '');
+  const x = h.length === 3 ? h.replace(/./g, (c) => c + c) : h.padEnd(6, '0');
+  const n = parseInt(x.slice(0, 6), 16);
+  if (Number.isNaN(n)) return true;
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return r * 299 + g * 587 + b * 114 > 148000;
+}
+
+const __TwkCheck = ({ light }) => (
+  <svg viewBox="0 0 14 14" aria-hidden="true">
+    <path d="M3 7.2 5.8 10 11 4.2" fill="none" strokeWidth="2.2"
+          strokeLinecap="round" strokeLinejoin="round"
+          stroke={light ? 'rgba(0,0,0,.78)' : '#fff'} />
+  </svg>
+);
+
+// TweakColor — curated color/palette picker. Each option is either a single
+// hex string or an array of 1-5 hex strings; the card adapts — a lone color
+// renders solid, a palette renders colors[0] as the hero (left ~2/3) with the
+// rest stacked in a sharp column on the right. onChange emits the
+// option in the shape it was passed (string stays string, array stays array).
+// Without options it falls back to the native color input for back-compat.
+function TweakColor({ label, value, options, onChange }) {
+  if (!options || !options.length) {
+    return (
+      <div className="twk-row twk-row-h">
+        <div className="twk-lbl"><span>{label}</span></div>
+        <input type="color" className="twk-swatch" value={value}
+               onChange={(e) => onChange(e.target.value)} />
+      </div>
+    );
+  }
+  // Native <input type=color> emits lowercase hex per the HTML spec, so
+  // compare case-insensitively. String() guards JSON.stringify(undefined),
+  // which returns the primitive undefined (no .toLowerCase).
+  const key = (o) => String(JSON.stringify(o)).toLowerCase();
+  const cur = key(value);
+  return (
+    <TweakRow label={label}>
+      <div className="twk-chips" role="radiogroup">
+        {options.map((o, i) => {
+          const colors = Array.isArray(o) ? o : [o];
+          const [hero, ...rest] = colors;
+          const sup = rest.slice(0, 4);
+          const on = key(o) === cur;
+          return (
+            <button key={i} type="button" className="twk-chip" role="radio"
+                    aria-checked={on} data-on={on ? '1' : '0'}
+                    aria-label={colors.join(', ')} title={colors.join(' · ')}
+                    style={{ background: hero }}
+                    onClick={() => onChange(o)}>
+              {sup.length > 0 && (
+                <span>
+                  {sup.map((c, j) => <i key={j} style={{ background: c }} />)}
+                </span>
+              )}
+              {on && <__TwkCheck light={__twkIsLight(hero)} />}
+            </button>
+          );
+        })}
+      </div>
+    </TweakRow>
+  );
+}
+
+function TweakButton({ label, onClick, secondary = false }) {
+  return (
+    <button type="button" className={secondary ? 'twk-btn secondary' : 'twk-btn'}
+            onClick={onClick}>{label}</button>
+  );
+}
+
+Object.assign(window, {
+  useTweaks, TweaksPanel, TweakSection, TweakRow,
+  TweakSlider, TweakToggle, TweakRadio, TweakSelect,
+  TweakText, TweakNumber, TweakColor, TweakButton,
+});
+
+</script>
+
+<script type="text/babel">
+// ── Components.jsx ────────────────────────────────────────────────────────
+// Components.jsx — Luvax shared UI primitives (v2 — theme-aware, responsive)
+//
+// Uses CSS variables for theming (defined in colors_and_type.css).
+// Components write `var(--lx-ink)` etc. into inline styles so they re-theme
+// automatically when the html[data-theme] attribute or tweak-driven CSS vars change.
+
+const { useState, useEffect, useRef } = React;
+
+// CSS variable shorthands (used as strings in style props)
+const v = {
+  base:        'var(--lx-base)',
+  surface:     'var(--lx-surface)',
+  surfaceRaised:'var(--lx-surface-raised)',
+  surfaceSunken:'var(--lx-surface-sunken)',
+  ink:         'var(--lx-ink)',
+  ink2:        'var(--lx-ink-2)',
+  ink3:        'var(--lx-ink-3)',
+  inkInverse:  'var(--lx-ink-inverse)',
+  border:      'var(--lx-border)',
+  borderStrong:'var(--lx-border-strong)',
+  borderSubtle:'var(--lx-border-subtle)',
+  accent:      'var(--lx-accent)',
+  accentDark:  'var(--lx-accent-dark)',
+  accentDim:   'var(--lx-accent-dim)',
+  accentText:  'var(--lx-accent-text)',
+  error:       'var(--lx-error)',
+  errorDim:    'var(--lx-error-dim)',
+  errorText:   'var(--lx-error-text)',
+  success:     'var(--lx-success)',
+  successText: 'var(--lx-success-text)',
+  scrim:       'var(--lx-scrim)',
+  fontDisplay: 'var(--font-display)',
+  fontBody:    'var(--font-body)',
+  fontMono:    'var(--font-mono)',
+};
+
+// ─── Viewport hook ────────────────────────────────────────────────
+
+function useViewport() {
+  const get = () => {
+    const w = window.innerWidth;
+    if (w >= 1200) return 'desktop';
+    if (w >= 768)  return 'tablet';
+    return 'mobile';
+  };
+  const [vp, setVp] = useState(get);
+  useEffect(() => {
+    const handler = () => setVp(get());
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return vp;
+}
+
+// ─── Icons (Lucide style) ─────────────────────────────────────────
+
+const ICONS = {
+  home:     <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
+  explore:  <><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></>,
+  plus:     <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+  profile:  <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+  bell:     <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>,
+  back:     <><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></>,
+  close:    <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+  heart:    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>,
+  reply:    <><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></>,
+  share:    <><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>,
+  image:    <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></>,
+  video:    <><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></>,
+  type:     <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></>,
+  hash:     <><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></>,
+  bookmark: <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>,
+  settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
+  chevronRight: <polyline points="9 18 15 12 9 6"/>,
+  send:     <><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>,
+  more:     <><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></>,
+  check:    <polyline points="20 6 9 17 4 12"/>,
+  eye:      <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+};
+
+function LxIcon({ name, size = 20, color, filled = false, stroke = 1.5 }) {
+  const node = ICONS[name];
+  if (!node) return null;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24"
+         fill={filled ? (color || v.ink) : 'none'}
+         stroke={color || v.ink}
+         strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+      {node}
+    </svg>
+  );
+}
+
+// ─── Avatar ──────────────────────────────────────────────────────
+
+const AVATAR_COLORS = ['#C8A97E', '#7A9E7A', '#9B7EA8', '#7A9EB8', '#C47168', '#B89468', '#5E8260'];
+
+function LxAvatar({ size = 36, idx = 0, ring = false, hasStory = false, viewed = false }) {
+  const color = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+  if (hasStory) {
+    return (
+      <div style={{
+        width: size + 6, height: size + 6,
+        borderRadius: '50%',
+        padding: 2,
+        background: viewed ? v.border : v.accent,
+        flexShrink: 0,
+      }}>
+        <div style={{
+          width: '100%', height: '100%', borderRadius: '50%',
+          background: color, border: `2px solid ${v.base}`,
+        }} />
+      </div>
+    );
+  }
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', background: color,
+      flexShrink: 0,
+      outline: ring ? `2px solid ${v.accent}` : 'none',
+      outlineOffset: ring ? 2 : 0,
+    }} />
+  );
+}
+
+// ─── Tag / chip ──────────────────────────────────────────────────
+
+function LxTag({ children, active = false, onClick, size = 'md' }) {
+  const sizes = {
+    sm: { fontSize: 11, padding: '3px 9px' },
+    md: { fontSize: 12, padding: '5px 12px' },
+  };
+  return (
+    <span onClick={onClick} style={{
+      display: 'inline-flex', alignItems: 'center', gap: 3,
+      fontFamily: v.fontBody, fontWeight: 500,
+      borderRadius: 999,
+      background: active ? v.accentDim : v.surface,
+      color: active ? v.accentText : v.ink2,
+      border: `1px solid ${active ? 'transparent' : 'var(--lx-border)'}`,
+      cursor: onClick ? 'pointer' : 'default',
+      whiteSpace: 'nowrap',
+      ...sizes[size],
+    }}>{children}</span>
+  );
+}
+
+// ─── Button ──────────────────────────────────────────────────────
+
+function LxBtn({ children, variant = 'primary', size = 'md', onClick, disabled = false, style = {} }) {
+  const sizes = {
+    sm: { fontSize: 12, padding: '5px 14px' },
+    md: { fontSize: 14, padding: '9px 20px' },
+    lg: { fontSize: 16, padding: '12px 28px' },
+  };
+  const variants = {
+    primary:   { background: v.accent, color: v.inkInverse, border: 'none' },
+    secondary: { background: v.surface, color: v.ink, border: `1px solid ${v.border}` },
+    ghost:     { background: 'transparent', color: v.ink, border: `1px solid ${v.border}` },
+    danger:    { background: 'transparent', color: v.error, border: `1px solid ${v.error}` },
+  };
+  if (disabled) {
+    variants.primary = { background: v.surfaceRaised, color: v.ink3, border: 'none' };
+  }
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      fontFamily: v.fontBody, fontWeight: 500, borderRadius: 999,
+      cursor: disabled ? 'default' : 'pointer', letterSpacing: '-0.01em',
+      transition: 'all 150ms ease-out',
+      ...sizes[size], ...variants[variant], ...style,
+    }}>{children}</button>
+  );
+}
+
+// ─── Divider ─────────────────────────────────────────────────────
+
+function LxDivider({ mx = 0 }) {
+  return <div style={{ height: 1, background: v.border, margin: `0 ${mx}px` }} />;
+}
+
+// ─── Bottom Sheet ────────────────────────────────────────────────
+
+function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+  return (
+    <>
+      <div onClick={onClose} style={{
+        position: 'fixed', inset: 0, background: v.scrim,
+        opacity: open ? 1 : 0,
+        pointerEvents: open ? 'auto' : 'none',
+        transition: 'opacity 200ms ease-out',
+        zIndex: 999,
+      }} />
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        maxWidth: 640, margin: '0 auto',
+        background: v.base,
+        borderTopLeftRadius: 16, borderTopRightRadius: 16,
+        boxShadow: '0 -8px 30px rgba(0,0,0,0.18)',
+        transform: open ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+        zIndex: 1000, height,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: v.border }} />
+        </div>
+        {children}
+      </div>
+    </>
+  );
+}
+
+// ─── Glass Top Bar ───────────────────────────────────────────────
+
+function LxTopBar({ left, center, right }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '10px 16px', gap: 12,
+      background: v.glassBg || 'var(--lx-glass-bg)',
+      backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+      borderBottom: `1px solid ${v.border}`,
+      position: 'sticky', top: 0, zIndex: 10,
+    }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>{left}</div>
+      <div style={{ display: 'flex', alignItems: 'center' }}>{center}</div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16 }}>{right}</div>
+    </div>
+  );
+}
+
+// ─── Top Tab Strip (Facebook-style icon tabs in app bar) ─────────
+
+function LxTopTabs({ active, navigate }) {
+  const tabs = [
+    { id: 'feed', icon: 'home', label: 'home' },
+    { id: 'explore', icon: 'explore', label: 'explore' },
+    { id: 'compose', icon: 'plus', label: 'post' },
+    { id: 'notifications', icon: 'bell', label: 'activity' },
+  ];
+  return (
+    <div style={{ display: 'flex', alignItems: 'stretch', height: 56, gap: 4, flex: 1, justifyContent: 'center', maxWidth: 560 }}>
+      {tabs.map(t => {
+        const isActive = active === t.id;
+        return (
+          <button key={t.id} onClick={() => navigate(t.id)} style={{
+            flex: 1, maxWidth: 110,
+            background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 2,
+            position: 'relative',
+            color: isActive ? v.accent : v.ink3,
+            transition: 'color 150ms ease-out',
+          }}>
+            <LxIcon name={t.icon} size={22} color={isActive ? v.accent : v.ink3} stroke={isActive ? 1.8 : 1.5} />
+            {/* active underline */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: '20%', right: '20%',
+              height: 2.5, borderRadius: 2,
+              background: isActive ? v.accent : 'transparent',
+              transition: 'background 150ms ease-out',
+            }} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Persistent App Bar (Facebook-style) ─────────────────────────
+// Rendered once at App level. Content swaps based on screen context
+// but the element itself stays mounted — no flicker on navigation.
+
+function LxAppBar({ screen, navigate, params, viewport }) {
+  // Main tabs (logo + tab strip + right actions)
+  const isMainTab = ['feed', 'explore', 'compose', 'notifications', 'profile'].includes(screen);
+
+  // Subpage context (back + title)
+  const subpages = {
+    post: 'post',
+    settings: 'settings',
+  };
+  const isSubpage = subpages[screen];
+
+  // Match the body layout widths so the navbar sits over the same columns.
+  // Desktop: 300 (spacer) + 680 (feed) + 300 (rail) = 1280.
+  // Tablet:  body is constrained to 640.
+  const innerMaxWidth = viewport === 'desktop' ? 1280 : viewport === 'tablet' ? 640 : '100%';
+  const sideWidth     = viewport === 'desktop' ? 300  : viewport === 'tablet' ? 'auto' : 'auto';
+
+  return (
+    <header style={{
+      position: 'sticky', top: 0, zIndex: 100,
+      height: 56, flexShrink: 0,
+      display: 'flex', justifyContent: 'center',
+      background: 'var(--lx-glass-bg)',
+      backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+      borderBottom: `1px solid ${v.border}`,
+    }}>
+      <div style={{
+        width: '100%', maxWidth: innerMaxWidth,
+        display: 'flex', alignItems: 'stretch',
+        padding: '0 16px', gap: 12,
+      }}>
+        {/* Left: logo OR back — sits over the left spacer column on desktop */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, width: sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 120 : undefined) }}>
+          {isSubpage ? (
+            <>
+              <button onClick={() => navigate('feed')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', alignItems: 'center' }}>
+                <LxIcon name="back" size={20} color={v.ink} />
+              </button>
+              <span style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 600, color: v.ink }}>{isSubpage}</span>
+            </>
+          ) : (
+            <button onClick={() => navigate('feed')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: v.fontDisplay, fontSize: 22, fontWeight: 700, color: v.ink, letterSpacing: '-0.03em' }}>
+              luvax
+            </button>
+          )}
+        </div>
+
+        {/* Center: tab strip on main pages (desktop/tablet only) — sits over the feed column */}
+        {isMainTab && viewport !== 'mobile' && (
+          <LxTopTabs active={screen} navigate={navigate} />
+        )}
+
+        {/* Right: search/notif/profile — sits over the rail column on desktop */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, width: sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 120 : undefined), justifyContent: 'flex-end' }}>
+          {viewport !== 'mobile' && (
+            <button onClick={() => navigate('explore')} style={{
+              background: v.surface, border: 'none', borderRadius: 999,
+              padding: '8px 12px', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+              color: v.ink3, fontFamily: v.fontBody, fontSize: 13,
+            }}>
+              <LxIcon name="explore" size={15} color={v.ink3} />
+              <span>search</span>
+            </button>
+          )}
+          <button style={{ background: v.surface, border: 'none', borderRadius: '50%', width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <LxIcon name="bell" size={18} color={v.ink2} />
+            <span style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', background: v.accent }} />
+          </button>
+          <button onClick={() => navigate('profile')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <LxAvatar size={32} idx={0} ring={screen === 'profile'} />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// ─── Persistent Bottom Nav (mobile only) ─────────────────────────
+
+function LxBottomNav({ active, navigate }) {
+  const tabs = [
+    { id: 'feed', icon: 'home', label: 'home' },
+    { id: 'explore', icon: 'explore', label: 'explore' },
+    { id: 'compose', icon: 'plus', label: 'post' },
+    { id: 'notifications', icon: 'bell', label: 'activity' },
+    { id: 'profile', icon: 'profile', label: 'you' },
+  ];
+  return (
+    <nav style={{
+      display: 'flex', alignItems: 'stretch', justifyContent: 'space-around',
+      padding: '0',
+      background: 'var(--lx-glass-bg)',
+      backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+      borderTop: `1px solid ${v.border}`,
+      position: 'sticky', bottom: 0, zIndex: 100,
+      flexShrink: 0,
+    }}>
+      {tabs.map(t => {
+        const isActive = active === t.id;
+        return (
+          <button key={t.id} onClick={() => navigate(t.id)} style={{
+            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 2, height: 56,
+            background: 'none', border: 'none', cursor: 'pointer',
+            position: 'relative',
+            transition: 'color 150ms ease-out',
+          }}>
+            <LxIcon name={t.icon} size={22} color={isActive ? v.accent : v.ink3} stroke={isActive ? 1.8 : 1.5} />
+            {/* active underline (Facebook-style) */}
+            <div style={{
+              position: 'absolute', top: 0, left: '25%', right: '25%',
+              height: 2.5, borderRadius: 2,
+              background: isActive ? v.accent : 'transparent',
+            }} />
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+// ─── Persistent Sidebar (desktop only) ───────────────────────────
+
+function LxSidebar({ active, navigate }) {
+  const tabs = [
+    { id: 'feed', icon: 'home', label: 'home' },
+    { id: 'explore', icon: 'explore', label: 'explore' },
+    { id: 'compose', icon: 'plus', label: 'post' },
+    { id: 'profile', icon: 'profile', label: 'profile' },
+    { id: 'settings', icon: 'settings', label: 'settings' },
+  ];
+  return (
+    <aside style={{
+      width: 220, flexShrink: 0,
+      borderRight: `1px solid ${v.border}`,
+      padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 4,
+      position: 'sticky', top: 0, alignSelf: 'flex-start', height: '100vh',
+    }}>
+      <div style={{
+        fontFamily: v.fontDisplay, fontSize: 24, fontWeight: 700,
+        color: v.ink, letterSpacing: '-0.03em',
+        padding: '4px 12px 28px',
+      }}>luvax</div>
+      {tabs.map(t => {
+        const isActive = active === t.id;
+        return (
+          <button key={t.id} onClick={() => navigate(t.id)} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 12px', borderRadius: 8,
+            background: isActive ? v.surface : 'transparent',
+            color: isActive ? v.ink : v.ink2,
+            border: 'none', cursor: 'pointer',
+            fontFamily: v.fontBody, fontSize: 14, fontWeight: isActive ? 600 : 500,
+            textAlign: 'left',
+            transition: 'background 150ms ease-out',
+          }}>
+            <LxIcon name={t.icon} size={20} color={isActive ? v.ink : v.ink3} />
+            {t.label}
+          </button>
+        );
+      })}
+    </aside>
+  );
+}
+
+// ─── Right rail (desktop) ────────────────────────────────────────
+
+function LxRightRail() {
+  const trending = ['light', 'analog', 'morning', 'silence', 'film', 'observation'];
+  const suggested = [
+    { idx: 1, name: 'sol.r',  bio: 'morning, window, coffee' },
+    { idx: 2, name: 'jo.x',   bio: 'reading slowly in 2026' },
+    { idx: 3, name: 'ren.ko', bio: 'design, restraint' },
+  ];
+  return (
+    <aside style={{
+      width: 300, flexShrink: 0,
+      padding: '20px 20px',
+      display: 'flex', flexDirection: 'column', gap: 24,
+      position: 'sticky', top: 56, alignSelf: 'flex-start',
+      maxHeight: 'calc(100vh - 56px)', overflowY: 'auto',
+    }}>
+      <div>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>trending</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {trending.map((t, i) => (
+            <div key={t} style={{ display: 'flex', alignItems: 'baseline', gap: 8, cursor: 'pointer' }}>
+              <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, width: 18 }}>{String(i+1).padStart(2,'0')}</span>
+              <span style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, fontWeight: 500 }}>#{t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>suggested</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {suggested.map(u => (
+            <div key={u.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <LxAvatar size={36} idx={u.idx} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>{u.name}</div>
+                <div style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.bio}</div>
+              </div>
+              <LxBtn variant="ghost" size="sm">follow</LxBtn>
+            </div>
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Persistent App Shell ────────────────────────────────────────
+// Nav chrome is rendered ONCE here — never unmounts during screen change.
+// Screens only render their body content.
+
+function LxShell({ screen, navigate, params, children, showRightRail = true }) {
+  const vp = useViewport();
+
+  if (vp === 'desktop') {
+    const RAIL_W = 300;
+    return (
+      <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
+        <LxAppBar screen={screen} navigate={navigate} params={params} viewport={vp} />
+        <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'flex-start' }}>
+          {/* Left spacer mirrors the right rail so the feed is centered in the viewport */}
+          {showRightRail && <div style={{ width: RAIL_W, flexShrink: 0 }} aria-hidden="true" />}
+          <main style={{
+            width: 680, flexShrink: 0, minWidth: 0,
+            borderLeft: `1px solid ${v.border}`,
+            borderRight: `1px solid ${v.border}`,
+            minHeight: 'calc(100vh - 56px)',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            {children}
+          </main>
+          {showRightRail && <LxRightRail />}
+        </div>
+      </div>
+    );
+  }
+
+  if (vp === 'tablet') {
+    return (
+      <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column', maxWidth: 640, margin: '0 auto', borderLeft: `1px solid ${v.border}`, borderRight: `1px solid ${v.border}` }}>
+        <LxAppBar screen={screen} navigate={navigate} params={params} viewport={vp} />
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {children}
+        </main>
+        <LxBottomNav active={screen} navigate={navigate} />
+      </div>
+    );
+  }
+
+  // mobile
+  return (
+    <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
+      <LxAppBar screen={screen} navigate={navigate} params={params} viewport={vp} />
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </main>
+      <LxBottomNav active={screen} navigate={navigate} />
+    </div>
+  );
+}
+
+Object.assign(window, {
+  v, useViewport, LxIcon, LxAvatar, LxTag, LxBtn, LxDivider,
+  LxBottomSheet, LxTopBar, LxBottomNav, LxSidebar, LxRightRail, LxShell, LxAppBar, LxTopTabs,
+  AVATAR_COLORS,
+});
+
+</script>
+
+<script type="text/babel">
+// ── Feed.jsx ──────────────────────────────────────────────────────────────
+// Feed.jsx — Home feed with stories carousel + density support
+
+const STORIES = [
+  { id: 's0', author: 'you', idx: 0, hasStory: false, isOwn: true },
+  { id: 's1', author: 'sol.r',  idx: 1, hasStory: true, viewed: false, type: 'photo',
+    bg: '#C4BCB2', text: null, caption: 'morning' },
+  { id: 's2', author: 'jo.x',   idx: 2, hasStory: true, viewed: false, type: 'text',
+    bg: '#1A1816', text: 'three minutes of\nreal quiet today', caption: null },
+  { id: 's3', author: 'ren.ko', idx: 3, hasStory: true, viewed: false, type: 'video',
+    bg: '#5C574F', text: null, caption: 'walking somewhere' },
+  { id: 's4', author: 'lea.p',  idx: 4, hasStory: true, viewed: true, type: 'photo',
+    bg: '#BDB0A0', text: null, caption: 'film, 2023' },
+  { id: 's5', author: 'noa.b',  idx: 5, hasStory: true, viewed: true, type: 'text',
+    bg: '#C8A97E', text: 'observation\nis a practice', caption: null },
+  { id: 's6', author: 'mara.v', idx: 6, hasStory: true, viewed: true, type: 'photo',
+    bg: '#D5C9BE', text: null, caption: null },
+];
+
+const FEED_POSTS = [
+  { id: 1, idx: 0, author: 'mara.v', time: '14m', text: 'light is the medium, not the message.',
+    tags: ['observation', 'light'], type: 'text', likes: 42 },
+  { id: 2, idx: 1, author: 'sol.r', time: '2h', text: 'morning, window, coffee.',
+    tags: ['photography'], type: 'image', media: { color: '#C4BCB2', h: 320 }, likes: 128 },
+  { id: 3, idx: 2, author: 'jo.x', time: '43m', text: 'three minutes of real quiet today',
+    tags: [], type: 'text', likes: 18 },
+  { id: 4, idx: 3, author: 'ren.ko', time: '5h', text: 'the architecture of a thought before it becomes a word',
+    tags: ['writing'], type: 'image', media: { color: '#D5C9BE', h: 380 }, likes: 89 },
+  { id: 5, idx: 4, author: 'noa.b', time: '1h', text: 'been watching the same shadow move for an hour. worth it.',
+    tags: ['present'], type: 'text', likes: 31 },
+  { id: 6, idx: 5, author: 'lea.p', time: '3h', text: 'grain on film is the texture of memory',
+    tags: ['film', 'analog'], type: 'image', media: { color: '#BDB0A0', h: 280 }, likes: 64 },
+];
+
+function StoriesCarousel({ navigate }) {
+  return (
+    <div style={{
+      display: 'flex', gap: 14, overflowX: 'auto',
+      padding: '14px 16px 16px',
+      borderBottom: `1px solid ${v.border}`,
+      flexShrink: 0, scrollbarWidth: 'none',
+    }}>
+      {STORIES.map(s => (
+        <button key={s.id}
+          onClick={() => s.isOwn ? navigate('story-compose') : navigate('story-view', { story: s })}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+            flexShrink: 0, padding: 0,
+          }}>
+          {s.isOwn ? (
+            <div style={{
+              width: 54, height: 54, borderRadius: '50%',
+              background: v.surface, border: `1px dashed ${v.borderStrong}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <LxIcon name="plus" size={20} color={v.ink2} />
+            </div>
+          ) : (
+            <LxAvatar size={48} idx={s.idx} hasStory viewed={s.viewed} />
+          )}
+          <span style={{
+            fontFamily: v.fontBody, fontSize: 11, fontWeight: 500,
+            color: s.viewed ? v.ink3 : v.ink,
+            maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{s.author}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PostCard({ post, navigate, density = 'cozy', showTags = true }) {
+  const [liked, setLiked] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
+  const pad = density === 'dense' ? '10px 12px 12px' : '14px 16px 16px';
+  const gap = density === 'dense' ? 8 : 10;
+
+  return (
+    <article style={{
+      background: v.surface, borderRadius: 12, overflow: 'hidden',
+      boxShadow: '0 2px 8px rgba(26,24,22,0.06)',
+    }}>
+      {post.type === 'image' && (
+        <div onClick={() => navigate('post', { post })} style={{
+          height: post.media.h, background: post.media.color,
+          cursor: 'pointer',
+        }} />
+      )}
+      <div style={{ padding: pad }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
+          <LxAvatar size={26} idx={post.idx} />
+          <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, cursor: 'pointer' }}
+                onClick={() => navigate('profile', { user: { name: post.author, idx: post.idx } })}>
+            {post.author}
+          </span>
+          <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>·</span>
+          <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{post.time}</span>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto', padding: 4, color: v.ink3 }}>
+            <LxIcon name="more" size={16} color={v.ink3} />
+          </button>
+        </div>
+
+        <p onClick={() => navigate('post', { post })} style={{
+          fontFamily: v.fontBody,
+          fontSize: post.type === 'text' ? 16 : 14,
+          color: v.ink, lineHeight: 1.5, margin: 0,
+          letterSpacing: '-0.01em', cursor: 'pointer',
+        }}>{post.text}</p>
+
+        {showTags && post.tags.length > 0 && (
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: gap }}>
+            {post.tags.map(t => <LxTag key={t} size="sm">#{t}</LxTag>)}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 18, marginTop: gap + 2, alignItems: 'center' }}>
+          <button onClick={() => setLiked(l => !l)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <LxIcon name="heart" size={17} color={liked ? v.accent : v.ink3} filled={liked} />
+            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>{liked ? post.likes + 1 : post.likes}</span>
+          </button>
+          <button onClick={() => navigate('post', { post })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <LxIcon name="reply" size={17} color={v.ink3} />
+            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>{Math.floor(post.likes/8)+2}</span>
+          </button>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <LxIcon name="share" size={17} color={v.ink3} />
+          </button>
+          <button onClick={() => setSaved(s => !s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
+            <LxIcon name="bookmark" size={17} color={saved ? v.ink : v.ink3} filled={saved} />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FeedScreen({ navigate, tweaks, viewport }) {
+  const isMulti = viewport === 'tablet' || viewport === 'desktop';
+  const gap = tweaks.density === 'dense' ? 8 : 12;
+
+  return (
+    <>
+      <StoriesCarousel navigate={navigate} />
+
+      <div style={{
+        flex: 1, padding: '14px 16px',
+        paddingBottom: 24,
+      }}>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '2px 2px 12px' }}>today</div>
+
+        {isMulti ? (
+          <div style={{
+            columnCount: viewport === 'desktop' ? 2 : 2,
+            columnGap: gap,
+          }}>
+            {FEED_POSTS.map(p => (
+              <div key={p.id} style={{ breakInside: 'avoid', marginBottom: gap, display: 'inline-block', width: '100%' }}>
+                <PostCard post={p} navigate={navigate} density={tweaks.density} showTags={tweaks.showTags} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap }}>
+            {FEED_POSTS.map(p => (
+              <PostCard key={p.id} post={p} navigate={navigate} density={tweaks.density} showTags={tweaks.showTags} />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+Object.assign(window, { FeedScreen, StoriesCarousel, PostCard });
+
+</script>
+
+<script type="text/babel">
+// ── Stories.jsx ───────────────────────────────────────────────────────────
+// Stories.jsx — Story viewer + Story composer
+// Desktop/tablet: centered modal overlay with the app dimmed behind, so users
+// feel they're still in luvax. Mobile: full-bleed phone-style.
+
+const STORY_CARD_RADIUS = 18;
+const STORY_RATIO = 9 / 16;
+
+// Shared chrome: dimmed backdrop + close, with a 9:16 card centered.
+function StoryStage({ children, onClose, footer, viewport }) {
+  const isMobile = viewport === 'mobile';
+
+  if (isMobile) {
+    // Full-bleed mobile: card fills viewport, reply/composer below.
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, background: '#000', zIndex: 1000,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          {children}
+          <button onClick={onClose} aria-label="close" style={{
+            position: 'absolute', top: 14, right: 12, zIndex: 5,
+            background: 'rgba(0,0,0,0.35)', border: 'none', cursor: 'pointer',
+            width: 34, height: 34, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <LxIcon name="close" size={20} color="#fff" />
+          </button>
+        </div>
+        {footer}
+      </div>
+    );
+  }
+
+  // Desktop / tablet — modal layered over the app
+  // Card sizing: keep 9:16, sized off the viewport height.
+  const cardHeight = `min(82vh, 720px)`;
+  const cardWidth = `calc(${cardHeight} * ${STORY_RATIO})`;
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(15,13,11,0.78)',
+      backdropFilter: 'blur(14px)',
+      WebkitBackdropFilter: 'blur(14px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 24,
+    }}>
+      {/* Global close, top-right of overlay */}
+      <button onClick={onClose} aria-label="close" style={{
+        position: 'absolute', top: 20, right: 20,
+        background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer',
+        width: 38, height: 38, borderRadius: '50%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <LxIcon name="close" size={20} color="#fff" />
+      </button>
+
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+        height: cardHeight,
+      }}>
+        <div style={{
+          width: cardWidth, height: '100%',
+          borderRadius: STORY_CARD_RADIUS, overflow: 'hidden', position: 'relative',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
+        }}>
+          {children}
+        </div>
+        {footer && (
+          <div style={{ width: cardWidth }}>
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+function StoryViewScreen({ navigate, params, viewport: vpProp }) {
+  const vp = vpProp || useViewport();
+  const story = params?.story || { author: 'sol.r', idx: 1, type: 'photo', bg: '#C4BCB2', caption: 'morning' };
+  const [progress, setProgress] = React.useState(0);
+
+  React.useEffect(() => {
+    const t = setInterval(() => {
+      setProgress(p => {
+        if (p >= 100) { clearInterval(t); navigate('feed'); return 100; }
+        return p + 1.5;
+      });
+    }, 80);
+    return () => clearInterval(t);
+  }, []);
+
+  const isDark = story.bg === '#1A1816' || story.bg === '#5C574F';
+  const textInk = isDark ? '#F9F7F4' : '#1A1816';
+
+  const card = (
+    <div style={{
+      position: 'absolute', inset: 0,
+      background: story.bg,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {story.type === 'text' && story.text && (
+        <div style={{
+          fontFamily: v.fontDisplay, fontSize: 38, fontWeight: 600,
+          color: textInk,
+          textAlign: 'center', lineHeight: 1.2, letterSpacing: '-0.02em',
+          padding: '0 32px', whiteSpace: 'pre-line',
+        }}>{story.text}</div>
+      )}
+      {story.type === 'video' && (
+        <div style={{
+          color: 'rgba(255,255,255,0.75)', fontFamily: v.fontMono, fontSize: 12,
+          position: 'absolute', bottom: 24, left: 16,
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          <LxIcon name="video" size={14} color="rgba(255,255,255,0.75)" />
+          <span>0:24</span>
+        </div>
+      )}
+
+      {/* Progress bar */}
+      <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', gap: 4 }}>
+        <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.3)', borderRadius: 1, overflow: 'hidden' }}>
+          <div style={{ width: `${progress}%`, height: '100%', background: '#fff', transition: 'width 80ms linear' }} />
+        </div>
+      </div>
+
+      {/* Author header */}
+      <div style={{
+        position: 'absolute', top: 24, left: 14, right: 14,
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <LxAvatar size={30} idx={story.idx} />
+        <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: '#fff', textShadow: '0 1px 6px rgba(0,0,0,0.4)' }}>{story.author}</span>
+        <span style={{ fontFamily: v.fontMono, fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>2h</span>
+      </div>
+
+      {/* Caption */}
+      {story.caption && (
+        <div style={{
+          position: 'absolute', bottom: 24, left: 16, right: 16,
+          fontFamily: v.fontBody, fontSize: 15, fontWeight: 500,
+          color: '#fff', textShadow: '0 1px 8px rgba(0,0,0,0.55)',
+        }}>{story.caption}</div>
+      )}
+
+      {/* Tap zones (visible only on mobile but harmless elsewhere) */}
+      <button onClick={() => navigate('feed')} style={{
+        position: 'absolute', left: 0, top: 60, bottom: 80, width: '30%',
+        background: 'transparent', border: 'none', cursor: 'pointer',
+      }} aria-label="previous" />
+      <button onClick={() => navigate('feed')} style={{
+        position: 'absolute', right: 0, top: 60, bottom: 80, width: '30%',
+        background: 'transparent', border: 'none', cursor: 'pointer',
+      }} aria-label="next" />
+    </div>
+  );
+
+  const replyBar = (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: vp === 'mobile' ? '12px 16px 20px' : '4px 0',
+      background: vp === 'mobile' ? '#000' : 'transparent',
+    }}>
+      <input
+        placeholder={`reply to ${story.author}…`}
+        style={{
+          flex: 1, fontFamily: v.fontBody, fontSize: 14,
+          background: 'rgba(255,255,255,0.08)', color: '#fff',
+          border: '1px solid rgba(255,255,255,0.18)',
+          borderRadius: 999, padding: '11px 16px', outline: 'none',
+        }} />
+      <button aria-label="like" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', cursor: 'pointer', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LxIcon name="heart" size={18} color="#fff" />
+      </button>
+      <button aria-label="send" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', cursor: 'pointer', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LxIcon name="send" size={18} color="#fff" />
+      </button>
+    </div>
+  );
+
+  return (
+    <StoryStage viewport={vp} onClose={() => navigate('feed')} footer={replyBar}>
+      {card}
+    </StoryStage>
+  );
+}
+
+
+function StoryComposerScreen({ navigate, viewport: vpProp }) {
+  const vp = vpProp || useViewport();
+  const [mode, setMode] = React.useState('photo'); // photo | video | text
+  const [text, setText] = React.useState('');
+  const [bgColor, setBgColor] = React.useState('#C8A97E');
+
+  const textBgs = ['#C8A97E', '#7A9E7A', '#1A1816', '#F0EDE8', '#C4847A', '#5C574F'];
+  const isDark = bgColor === '#1A1816' || bgColor === '#5C574F';
+
+  const card = (
+    <div style={{
+      position: 'absolute', inset: 0,
+      background: mode === 'text' ? bgColor : '#2a2622',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {mode === 'text' && (
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="type something…"
+          style={{
+            fontFamily: v.fontDisplay, fontSize: 30, fontWeight: 600,
+            color: isDark ? '#F9F7F4' : '#1A1816',
+            background: 'transparent', border: 'none', outline: 'none',
+            textAlign: 'center', letterSpacing: '-0.02em', lineHeight: 1.2,
+            resize: 'none', width: '82%', height: 180, padding: 0,
+          }}
+        />
+      )}
+      {mode === 'photo' && (
+        <div style={{ color: 'rgba(255,255,255,0.65)', fontFamily: v.fontBody, fontSize: 14, textAlign: 'center' }}>
+          <LxIcon name="image" size={48} color="rgba(255,255,255,0.45)" />
+          <div style={{ marginTop: 12 }}>tap to pick a photo</div>
+        </div>
+      )}
+      {mode === 'video' && (
+        <div style={{ color: 'rgba(255,255,255,0.65)', fontFamily: v.fontBody, fontSize: 14, textAlign: 'center' }}>
+          <LxIcon name="video" size={48} color="rgba(255,255,255,0.45)" />
+          <div style={{ marginTop: 12 }}>tap to record · max 60s</div>
+        </div>
+      )}
+
+      {/* Text mode: color picker rail inside the card */}
+      {mode === 'text' && (
+        <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {textBgs.map(c => (
+            <button key={c} onClick={() => setBgColor(c)} aria-label={`background ${c}`} style={{
+              width: 26, height: 26, borderRadius: '50%', background: c,
+              border: bgColor === c ? '2px solid #fff' : '2px solid rgba(255,255,255,0.35)',
+              cursor: 'pointer',
+            }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const canShare = !(mode === 'text' && !text.trim());
+
+  const controls = (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 12,
+      padding: vp === 'mobile' ? '14px 16px 20px' : '4px 0',
+      background: vp === 'mobile' ? '#000' : 'transparent',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 18 }}>
+        {[['photo', 'image'], ['video', 'video'], ['text', 'type']].map(([m, ic]) => (
+          <button key={m} onClick={() => setMode(m)} style={{
+            background: mode === m ? 'rgba(255,255,255,0.12)' : 'transparent',
+            border: '1px solid ' + (mode === m ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)'),
+            cursor: 'pointer', padding: '6px 12px', borderRadius: 999,
+            display: 'flex', alignItems: 'center', gap: 6,
+            color: mode === m ? '#fff' : 'rgba(255,255,255,0.65)',
+            fontFamily: v.fontBody, fontSize: 12, fontWeight: 500,
+          }}>
+            <LxIcon name={ic} size={15} color={mode === m ? '#fff' : 'rgba(255,255,255,0.65)'} />
+            {m}
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={() => navigate('feed')}
+        disabled={!canShare}
+        style={{
+          width: '100%', fontFamily: v.fontBody, fontSize: 14, fontWeight: 600,
+          background: canShare ? v.accent : 'rgba(255,255,255,0.12)',
+          color: canShare ? '#1A1816' : 'rgba(255,255,255,0.4)',
+          border: 'none', borderRadius: 999, padding: '12px 20px',
+          cursor: canShare ? 'pointer' : 'default',
+        }}>
+        share to story
+      </button>
+    </div>
+  );
+
+  return (
+    <StoryStage viewport={vp} onClose={() => navigate('feed')} footer={controls}>
+      {card}
+    </StoryStage>
+  );
+}
+
+Object.assign(window, { StoryViewScreen, StoryComposerScreen });
+
+</script>
+
+<script type="text/babel">
+// ── Composer.jsx ──────────────────────────────────────────────────────────
+// Composer.jsx — post composer with type tabs (photo / video / text)
+
+const SUGGESTED_TAGS = ['observation', 'photography', 'writing', 'light', 'analog', 'film', 'silence', 'texture', 'morning', 'film2025'];
+
+function ComposerScreen({ navigate }) {
+  const [type, setType] = React.useState('text'); // text | photo | video
+  const [caption, setCaption] = React.useState('');
+  const [selectedTags, setSelectedTags] = React.useState([]);
+  const maxChars = 280;
+
+  // Auto-extract hashtags from caption
+  const captionTags = React.useMemo(() => {
+    const matches = caption.match(/#(\w+)/g) || [];
+    return matches.map(m => m.slice(1).toLowerCase());
+  }, [caption]);
+
+  const allTags = Array.from(new Set([...captionTags, ...selectedTags]));
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const insertTag = (tag) => {
+    if (!caption.includes(`#${tag}`)) {
+      setCaption(c => c ? `${c} #${tag}` : `#${tag}`);
+    }
+  };
+
+  return (
+    <>
+      {/* Sub-toolbar: cancel + post button (AppBar already shows back + title) */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 16px', borderBottom: `1px solid ${v.border}`,
+        background: v.base,
+      }}>
+        <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 500, color: v.ink2 }}>new post</span>
+        <button onClick={() => navigate('feed')} disabled={!caption.trim() && type === 'text'}
+          style={{
+            fontFamily: v.fontBody, fontSize: 14, fontWeight: 600,
+            background: (!caption.trim() && type === 'text') ? v.surfaceRaised : v.accent,
+            color: (!caption.trim() && type === 'text') ? v.ink3 : v.inkInverse,
+            border: 'none', borderRadius: 999, padding: '7px 16px',
+            cursor: (!caption.trim() && type === 'text') ? 'default' : 'pointer',
+          }}>
+          post it
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
+        {/* Type tabs */}
+        <div style={{
+          display: 'flex', gap: 0, padding: '12px 16px 4px',
+          borderBottom: `1px solid ${v.border}`,
+        }}>
+          {[['text', 'type', 'text'], ['photo', 'image', 'photo'], ['video', 'video', 'video']].map(([t, ic, label]) => (
+            <button key={t} onClick={() => setType(t)} style={{
+              flex: 1, background: 'none', border: 'none', cursor: 'pointer',
+              padding: '10px 0',
+              borderBottom: type === t ? `2px solid ${v.ink}` : '2px solid transparent',
+              marginBottom: -1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              fontFamily: v.fontBody, fontSize: 13, fontWeight: type === t ? 600 : 500,
+              color: type === t ? v.ink : v.ink3,
+            }}>
+              <LxIcon name={ic} size={16} color={type === t ? v.ink : v.ink3} />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Author + composer */}
+        <div style={{ display: 'flex', gap: 12, padding: '20px 16px 0' }}>
+          <LxAvatar size={36} idx={0} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, marginBottom: 8 }}>you</div>
+
+            {type === 'photo' && (
+              <div style={{
+                aspectRatio: '4/5', background: v.surfaceSunken,
+                borderRadius: 12, border: `1px dashed ${v.border}`,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                cursor: 'pointer', marginBottom: 14,
+              }}>
+                <LxIcon name="image" size={36} color={v.ink3} />
+                <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>tap to add a photo</span>
+                <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>jpg, png · max 10MB</span>
+              </div>
+            )}
+            {type === 'video' && (
+              <div style={{
+                aspectRatio: '4/5', background: v.surfaceSunken,
+                borderRadius: 12, border: `1px dashed ${v.border}`,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                cursor: 'pointer', marginBottom: 14,
+              }}>
+                <LxIcon name="video" size={36} color={v.ink3} />
+                <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>tap to add a video</span>
+                <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>mp4 · max 60s · 50MB</span>
+              </div>
+            )}
+
+            <textarea
+              value={caption}
+              onChange={e => setCaption(e.target.value.slice(0, maxChars))}
+              placeholder={type === 'text' ? 'say something real...' : 'add a caption (optional)'}
+              style={{
+                width: '100%', fontFamily: v.fontBody,
+                fontSize: type === 'text' ? 17 : 14, color: v.ink,
+                background: 'transparent', border: 'none', outline: 'none',
+                resize: 'none', lineHeight: 1.55, letterSpacing: '-0.01em',
+                minHeight: type === 'text' ? 120 : 60, padding: 0,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Hashtag suggestions */}
+        <div style={{ padding: '8px 16px 4px', marginLeft: 48 }}>
+          <div style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <LxIcon name="hash" size={12} color={v.ink3} />
+            hashtags {allTags.length > 0 && <span style={{ color: v.accentText, marginLeft: 4 }}>({allTags.length})</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {SUGGESTED_TAGS.map(t => (
+              <LxTag key={t} active={allTags.includes(t)} onClick={() => captionTags.includes(t) ? null : insertTag(t)}>
+                #{t}
+              </LxTag>
+            ))}
+          </div>
+        </div>
+
+        <LxDivider />
+
+        {/* Bottom action bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
+            <LxIcon name="hash" size={13} color={v.ink3} />
+            <span>auto-tagged: {captionTags.length}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {caption.length > 0 && (
+              <div style={{
+                width: 22, height: 22, borderRadius: '50%',
+                background: `conic-gradient(var(--lx-accent) ${caption.length / maxChars * 360}deg, var(--lx-surface-raised) 0deg)`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{ width: 17, height: 17, borderRadius: '50%', background: v.base }} />
+              </div>
+            )}
+            <span style={{
+              fontFamily: v.fontMono, fontSize: 11,
+              color: caption.length > maxChars * 0.9 ? v.error : v.ink3,
+            }}>
+              {maxChars - caption.length}
+            </span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+Object.assign(window, { ComposerScreen });
+
+</script>
+
+<script type="text/babel">
+// ── PostDetail.jsx ────────────────────────────────────────────────────────
+// PostDetail.jsx — single post + bottom-sheet comments
+
+const REPLIES = [
+  { idx: 1, author: 'sol.r',  time: '8m',  text: 'yes. this.', likes: 4 },
+  { idx: 2, author: 'jo.x',   time: '22m', text: 'been thinking about this all week', likes: 12 },
+  { idx: 3, author: 'ren.ko', time: '1h',  text: 'mcluhan said it loud, you said it quieter. better.', likes: 28 },
+  { idx: 4, author: 'lea.p',  time: '2h',  text: 'saving this one', likes: 3 },
+  { idx: 5, author: 'noa.b',  time: '3h',  text: 'morning thought', likes: 1 },
+];
+
+function CommentRow({ r }) {
+  const [liked, setLiked] = React.useState(false);
+  return (
+    <div style={{ padding: '12px 16px', display: 'flex', gap: 10 }}>
+      <LxAvatar size={32} idx={r.idx} />
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>{r.author}</span>
+          <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{r.time}</span>
+        </div>
+        <p style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.5, margin: 0 }}>{r.text}</p>
+        <div style={{ display: 'flex', gap: 14, marginTop: 6, alignItems: 'center' }}>
+          <button onClick={() => setLiked(l => !l)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: v.fontMono, fontSize: 10, color: v.ink3, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <LxIcon name="heart" size={12} color={liked ? v.accent : v.ink3} filled={liked} />
+            {liked ? r.likes + 1 : r.likes}
+          </button>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: v.fontBody, fontSize: 11, fontWeight: 500, color: v.ink3 }}>reply</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommentsSheet({ open, onClose }) {
+  const [text, setText] = React.useState('');
+  return (
+    <LxBottomSheet open={open} onClose={onClose} height="75vh">
+      <div style={{ padding: '4px 16px 8px', borderBottom: `1px solid ${v.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 600, color: v.ink }}>comments</div>
+        <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>{REPLIES.length}</span>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {REPLIES.map((r, i) => (
+          <React.Fragment key={r.author}>
+            <CommentRow r={r} />
+            {i < REPLIES.length - 1 && <div style={{ height: 1, background: v.borderSubtle, marginLeft: 58 }} />}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <div style={{
+        padding: '10px 12px 16px',
+        borderTop: `1px solid ${v.border}`,
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: v.base,
+      }}>
+        <LxAvatar size={28} idx={0} />
+        <input
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder="add a comment..."
+          style={{
+            flex: 1, fontFamily: v.fontBody, fontSize: 14, color: v.ink,
+            background: v.surfaceSunken, border: `1px solid ${v.border}`,
+            borderRadius: 999, padding: '9px 14px', outline: 'none',
+          }} />
+        <button disabled={!text.trim()} style={{
+          background: 'none', border: 'none',
+          cursor: text.trim() ? 'pointer' : 'default',
+          padding: 4, opacity: text.trim() ? 1 : 0.4,
+        }}>
+          <LxIcon name="send" size={20} color={v.accent} />
+        </button>
+      </div>
+    </LxBottomSheet>
+  );
+}
+
+function PostDetailScreen({ navigate, params = {} }) {
+  const [liked, setLiked] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
+  const [commentsOpen, setCommentsOpen] = React.useState(false);
+  const post = params.post || {
+    idx: 0, author: 'mara.v', time: '14m',
+    text: 'light is the medium, not the message.',
+    tags: ['observation', 'light'], type: 'text', likes: 48,
+  };
+
+  return (
+    <>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Media if any */}
+        {post.type === 'image' && post.media && (
+          <div style={{ height: 360, background: post.media.color }} />
+        )}
+
+        {/* Body */}
+        <div style={{ padding: '20px 16px 16px' }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
+            <LxAvatar size={42} idx={post.idx} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>{post.author}</div>
+              <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 1 }}>{post.time} ago</div>
+            </div>
+            <LxBtn variant="primary" size="sm">follow</LxBtn>
+          </div>
+
+          <p style={{
+            fontFamily: v.fontBody,
+            fontSize: post.type === 'text' ? 22 : 16,
+            fontWeight: 400, color: v.ink,
+            lineHeight: post.type === 'text' ? 1.4 : 1.55, margin: 0,
+            letterSpacing: '-0.02em',
+          }}>{post.text}</p>
+
+          {post.tags && post.tags.length > 0 && (
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 14 }}>
+              {post.tags.map(t => <LxTag key={t}>#{t}</LxTag>)}
+            </div>
+          )}
+
+          {/* Stats row */}
+          <div style={{ display: 'flex', gap: 16, marginTop: 16, fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
+            <span>{liked ? post.likes + 1 : post.likes} likes · {REPLIES.length} replies</span>
+            <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <LxIcon name="eye" size={12} color={v.ink3} />
+              {Math.floor(post.likes * 18)}
+            </span>
+          </div>
+
+          {/* Reaction bar */}
+          <div style={{ display: 'flex', gap: 20, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${v.border}`, alignItems: 'center' }}>
+            <button onClick={() => setLiked(l => !l)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <LxIcon name="heart" size={22} color={liked ? v.accent : v.ink} filled={liked} />
+              <span style={{ fontFamily: v.fontBody, fontSize: 13, color: liked ? v.accent : v.ink, fontWeight: 500 }}>like</span>
+            </button>
+            <button onClick={() => setCommentsOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <LxIcon name="reply" size={22} color={v.ink} />
+              <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink, fontWeight: 500 }}>reply</span>
+            </button>
+            <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <LxIcon name="share" size={22} color={v.ink} />
+            </button>
+            <button onClick={() => setSaved(s => !s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
+              <LxIcon name="bookmark" size={22} color={saved ? v.ink : v.ink} filled={saved} />
+            </button>
+          </div>
+        </div>
+
+        {/* Preview of replies (top 2) */}
+        <div style={{ borderTop: `8px solid ${v.surfaceSunken}` }}>
+          <div style={{ padding: '14px 16px 8px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{REPLIES.length} replies</span>
+            <button onClick={() => setCommentsOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.accentText }}>view all</button>
+          </div>
+          {REPLIES.slice(0, 2).map(r => <CommentRow key={r.author} r={r} />)}
+          <button onClick={() => setCommentsOpen(true)} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: '12px 16px 20px', fontFamily: v.fontBody, fontSize: 13, fontWeight: 500,
+            color: v.ink2, textAlign: 'left', width: '100%',
+          }}>
+            view {REPLIES.length - 2} more replies →
+          </button>
+        </div>
+      </div>
+
+      <CommentsSheet open={commentsOpen} onClose={() => setCommentsOpen(false)} />
+    </>
+  );
+}
+
+Object.assign(window, { PostDetailScreen });
+
+</script>
+
+<script type="text/babel">
+// ── Profile.jsx ───────────────────────────────────────────────────────────
+// Profile.jsx — user profile screen (responsive)
+
+const PROFILE_POSTS = [
+  { id: 1, color: '#D5CFC6', tall: true },
+  { id: 2, color: '#C4BCB2', tall: false },
+  { id: 3, color: '#BDB0A0', tall: false },
+  { id: 4, color: '#C8C0B4', tall: true },
+  { id: 5, color: '#DDD7CF', tall: false },
+  { id: 6, color: '#E8E3DC', tall: false },
+  { id: 7, color: '#D8C9B8', tall: false },
+  { id: 8, color: '#C8A97E', tall: true },
+  { id: 9, color: '#A8885A', tall: false },
+];
+
+function ProfileScreen({ navigate, params = {}, viewport }) {
+  const [tab, setTab] = React.useState('posts');
+  const [following, setFollowing] = React.useState(false);
+  const user = params.user || {
+    name: 'mara.v', handle: '@mara.v', idx: 0,
+    bio: 'light, shadow, and the space between a thought and a word.',
+    posts: 84, following: 240, followers: '8.4k',
+  };
+  const isSelf = !params.user;
+
+  const cols = viewport === 'desktop' ? 3 : viewport === 'tablet' ? 3 : 3;
+
+  return (
+    <>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Cover band */}
+        <div style={{ height: 88, background: v.surfaceRaised }} />
+
+        {/* Avatar + follow */}
+        <div style={{ padding: '0 16px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -40 }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: '#C8A97E',
+            border: `3px solid var(--lx-base)`,
+            flexShrink: 0,
+          }} />
+          {!isSelf && (
+            <LxBtn
+              variant={following ? 'secondary' : 'primary'}
+              size="sm"
+              onClick={() => setFollowing(f => !f)}
+              style={{ marginBottom: 8 }}>
+              {following ? 'following' : 'follow'}
+            </LxBtn>
+          )}
+          {isSelf && (
+            <LxBtn variant="secondary" size="sm" style={{ marginBottom: 8 }} onClick={() => navigate('settings')}>
+              edit profile
+            </LxBtn>
+          )}
+        </div>
+
+        {/* Name + bio */}
+        <div style={{ padding: '12px 16px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontFamily: v.fontDisplay, fontSize: 22, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em' }}>{user.name}</div>
+          </div>
+          <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 2 }}>{user.handle}</div>
+          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.5, marginTop: 10, maxWidth: 480 }}>{user.bio}</div>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: 28, padding: '16px 16px 16px', borderBottom: `1px solid ${v.border}` }}>
+          {[['posts', user.posts], ['following', user.following], ['followers', user.followers]].map(([label, val]) => (
+            <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <span style={{ fontFamily: v.fontMono, fontSize: 16, fontWeight: 500, color: v.ink }}>{val}</span>
+              <span style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: `1px solid ${v.border}` }}>
+          {['posts', 'photos', 'liked'].map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{
+              flex: 1, fontFamily: v.fontBody, fontSize: 13, fontWeight: 500,
+              color: tab === t ? v.ink : v.ink3,
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '12px 0',
+              borderBottom: tab === t ? `2px solid var(--lx-ink)` : '2px solid transparent',
+              marginBottom: -1, letterSpacing: '0.01em',
+            }}>{t}</button>
+          ))}
+        </div>
+
+        {/* Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: 2 }}>
+          {PROFILE_POSTS.map(p => (
+            <div key={p.id} onClick={() => navigate('post')} style={{
+              background: p.color,
+              aspectRatio: p.tall ? '3/4' : '1/1',
+              borderRadius: 4, cursor: 'pointer',
+            }} />
+          ))}
+        </div>
+
+        <div style={{ height: 24 }} />
+      </div>
+    </>
+  );
+}
+
+Object.assign(window, { ProfileScreen });
+
+</script>
+
+<script type="text/babel">
+// ── Explore.jsx ───────────────────────────────────────────────────────────
+// Explore.jsx — discover screen (responsive)
+
+const TOPICS = ['photography', 'writing', 'analog', 'architecture', 'light', 'film', 'silence', 'texture', 'morning', 'observation'];
+
+const TRENDING = [
+  { idx: 0, author: 'noa.b',  text: 'the moment before sunrise is the only honest time', tags: ['light'], img: false },
+  { idx: 2, author: 'jo.x',   text: 'reading a physical book in 2026 feels radical', tags: ['offline'], img: true, color: '#C4BCB2', h: 240 },
+  { idx: 3, author: 'ren.ko', text: 'negative space is not empty', tags: ['design', 'observation'], img: false },
+  { idx: 1, author: 'sol.r',  text: 'roll of film from three years ago, developed today', tags: ['film', 'analog'], img: true, color: '#BDB0A0', h: 280 },
+  { idx: 4, author: 'lea.p',  text: 'the texture of an old wall is its autobiography', tags: ['texture'], img: false },
+  { idx: 5, author: 'mara.v', text: 'walked past the same tree every morning. today it was different.', tags: ['present'], img: true, color: '#D5C9BE', h: 320 },
+  { idx: 6, author: 'kai.o',  text: 'making my room emptier on purpose', tags: ['minimalism'], img: false },
+  { idx: 0, author: 'eli.w',  text: 'rain on a tin roof is the best podcast', tags: ['sound'], img: true, color: '#5C574F', h: 220 },
+];
+
+function MiniCard({ p, navigate }) {
+  return (
+    <div onClick={() => navigate('post', { post: p })} style={{
+      background: v.surface, borderRadius: 10, overflow: 'hidden',
+      cursor: 'pointer', breakInside: 'avoid', marginBottom: 8,
+      display: 'inline-block', width: '100%',
+    }}>
+      {p.img && <div style={{ height: p.h, background: p.color }} />}
+      <div style={{ padding: '10px 12px 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <LxAvatar size={18} idx={p.idx} />
+          <span style={{ fontFamily: v.fontBody, fontSize: 11, fontWeight: 500, color: v.ink2 }}>{p.author}</span>
+        </div>
+        <p style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink, lineHeight: 1.5, margin: 0 }}>{p.text}</p>
+        {p.tags && p.tags.length > 0 && (
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 }}>
+            {p.tags.map(t => (
+              <span key={t} style={{ fontFamily: v.fontMono, fontSize: 9, color: v.accentText, fontWeight: 500 }}>#{t}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ExploreScreen({ navigate, viewport }) {
+  const [query, setQuery] = React.useState('');
+  const [activeTopic, setActiveTopic] = React.useState(null);
+
+  const cols = viewport === 'desktop' ? 3 : 2;
+
+  return (
+    <>
+      <div style={{
+        padding: '12px 16px 14px',
+        background: v.base,
+        borderBottom: `1px solid ${v.border}`,
+      }}>
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
+            <LxIcon name="explore" size={15} color={v.ink3} />
+          </div>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="search people, hashtags..."
+            style={{
+              width: '100%', fontFamily: v.fontBody, fontSize: 15, color: v.ink,
+              background: v.surfaceSunken, border: `1px solid ${v.border}`,
+              borderRadius: 999, padding: '10px 14px 10px 34px',
+              outline: 'none', boxSizing: 'border-box',
+            }} />
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Topic chips */}
+        <div style={{ display: 'flex', gap: 6, padding: '12px 16px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {TOPICS.map(t => (
+            <LxTag key={t} active={activeTopic === t} onClick={() => setActiveTopic(activeTopic === t ? null : t)}>
+              #{t}
+            </LxTag>
+          ))}
+        </div>
+
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 16px 12px' }}>
+          trending today
+        </div>
+
+        {/* Masonry grid */}
+        <div style={{ padding: '0 16px 24px', columnCount: cols, columnGap: 8 }}>
+          {TRENDING.map((p, i) => <MiniCard key={i} p={p} navigate={navigate} />)}
+        </div>
+      </div>
+    </>
+  );
+}
+
+Object.assign(window, { ExploreScreen });
+
+</script>
+
+<script type="text/babel">
+// ── Notifications.jsx ─────────────────────────────────────────────────────
+// Notifications.jsx — activity feed
+
+const NOTIFS = [
+  { idx: 1, type: 'like',    actor: 'sol.r',  text: 'liked your post', target: 'light is the medium, not the message.', time: '2m', unread: true },
+  { idx: 2, type: 'follow',  actor: 'jo.x',   text: 'followed you', target: null, time: '14m', unread: true },
+  { idx: 3, type: 'comment', actor: 'ren.ko', text: 'commented', target: 'mcluhan said it loud, you said it quieter.', time: '1h', unread: true },
+  { idx: 4, type: 'like',    actor: 'lea.p',  text: 'liked your post', target: 'three minutes of real quiet today', time: '3h', unread: false },
+  { idx: 5, type: 'mention', actor: 'noa.b',  text: 'mentioned you', target: '@mara.v this reminded me of you', time: '5h', unread: false },
+  { idx: 0, type: 'story',   actor: 'eli.w',  text: 'viewed your story', target: null, time: '8h', unread: false },
+  { idx: 1, type: 'follow_request', actor: 'kai.o', text: 'requested to follow you', target: null, time: '1d', unread: false },
+];
+
+const TYPE_ICON = {
+  like: 'heart', follow: 'profile', follow_request: 'profile',
+  comment: 'reply', mention: 'hash', story: 'eye',
+};
+
+const TYPE_COLOR = {
+  like: '#C47168', follow: '#7A9E7A', follow_request: '#7A9E7A',
+  comment: '#C8A97E', mention: '#9B7EA8', story: '#7A9EB8',
+};
+
+function NotificationsScreen({ navigate }) {
+  const [tab, setTab] = React.useState('all');
+
+  return (
+    <>
+      <div style={{ display: 'flex', borderBottom: `1px solid ${v.border}`, position: 'sticky', top: 0, background: v.base, zIndex: 5 }}>
+        {['all', 'mentions', 'requests'].map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{
+            flex: 1, fontFamily: v.fontBody, fontSize: 13, fontWeight: 500,
+            color: tab === t ? v.ink : v.ink3,
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: '12px 0',
+            borderBottom: tab === t ? `2px solid var(--lx-ink)` : '2px solid transparent',
+            marginBottom: -1,
+          }}>{t}</button>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '14px 16px 6px' }}>today</div>
+        {NOTIFS.slice(0, 3).map((n, i) => <NotifRow key={i} n={n} navigate={navigate} />)}
+
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px 16px 6px' }}>this week</div>
+        {NOTIFS.slice(3).map((n, i) => <NotifRow key={i + 3} n={n} navigate={navigate} />)}
+      </div>
+    </>
+  );
+}
+
+function NotifRow({ n, navigate }) {
+  return (
+    <div onClick={() => n.target && navigate('post')} style={{
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      padding: '12px 16px',
+      background: n.unread ? 'var(--lx-accent-dim)' : 'transparent',
+      cursor: n.target ? 'pointer' : 'default',
+      borderBottom: `1px solid ${v.borderSubtle}`,
+      position: 'relative',
+    }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <LxAvatar size={40} idx={n.idx} />
+        <div style={{
+          position: 'absolute', bottom: -2, right: -2,
+          width: 20, height: 20, borderRadius: '50%',
+          background: TYPE_COLOR[n.type],
+          border: `2px solid var(--lx-base)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <LxIcon name={TYPE_ICON[n.type]} size={10} color="#fff" stroke={2} filled={n.type === 'like'} />
+        </div>
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
+          <strong style={{ fontWeight: 600 }}>{n.actor}</strong> <span style={{ color: v.ink2 }}>{n.text}</span>
+        </div>
+        {n.target && (
+          <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            "{n.target}"
+          </div>
+        )}
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{n.time}</div>
+      </div>
+
+      {n.type === 'follow_request' && (
+        <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
+          <LxBtn variant="primary" size="sm">accept</LxBtn>
+          <LxBtn variant="ghost" size="sm">decline</LxBtn>
+        </div>
+      )}
+    </div>
+  );
+}
+
+Object.assign(window, { NotificationsScreen });
+
+</script>
+
+<script type="text/babel">
+// ── Onboarding.jsx ────────────────────────────────────────────────────────
+// Onboarding.jsx — multi-step signup flow
+
+const INTEREST_CATEGORIES = [
+  'photography', 'writing', 'film', 'analog', 'design', 'architecture',
+  'music', 'reading', 'nature', 'travel', 'art', 'food',
+  'cycling', 'running', 'coffee', 'minimalism',
+];
+
+function OnboardingScreen({ navigate }) {
+  const [step, setStep] = React.useState(0);
+  const [data, setData] = React.useState({
+    email: '', password: '', username: '', displayName: '', bio: '', interests: [],
+  });
+
+  const next = () => setStep(s => s + 1);
+  const back = () => setStep(s => Math.max(0, s - 1));
+  const update = (k, v) => setData(d => ({ ...d, [k]: v }));
+  const toggleInterest = (i) => setData(d => ({
+    ...d,
+    interests: d.interests.includes(i) ? d.interests.filter(x => x !== i) : [...d.interests, i],
+  }));
+
+  const steps = [
+    // 0 — welcome
+    {
+      validate: () => true,
+      render: () => (
+        <div style={{ textAlign: 'center', paddingTop: 60 }}>
+          <div style={{ fontFamily: v.fontDisplay, fontSize: 72, fontWeight: 800, color: v.ink, letterSpacing: '-0.04em', lineHeight: 0.95, marginBottom: 16 }}>luvax</div>
+          <p style={{ fontFamily: v.fontBody, fontSize: 17, color: v.ink2, lineHeight: 1.5, maxWidth: 320, margin: '0 auto 40px', letterSpacing: '-0.01em' }}>
+            a light-first social network.<br />pure social, no noise.
+          </p>
+          <LxBtn variant="primary" size="lg" onClick={next} style={{ minWidth: 200 }}>get started</LxBtn>
+          <div style={{ marginTop: 16, fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+            already have an account? <span style={{ color: v.ink, cursor: 'pointer', fontWeight: 500 }} onClick={() => navigate('feed')}>sign in</span>
+          </div>
+        </div>
+      ),
+    },
+    // 1 — email + password
+    {
+      validate: () => data.email.includes('@') && data.password.length >= 8,
+      render: () => (
+        <div>
+          <h1 style={{ fontFamily: v.fontDisplay, fontSize: 30, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em', marginBottom: 4 }}>create your account</h1>
+          <p style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, marginBottom: 28 }}>start with the basics. you can change everything later.</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2, marginBottom: 6 }}>email</label>
+              <input type="email" value={data.email} onChange={e => update('email', e.target.value)} placeholder="you@example.com"
+                style={inputStyle()} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2, marginBottom: 6 }}>password</label>
+              <input type="password" value={data.password} onChange={e => update('password', e.target.value)} placeholder="at least 8 characters"
+                style={inputStyle()} />
+              <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 6 }}>
+                {data.password.length >= 8 ? '✓ strong enough' : `${data.password.length}/8`}
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    // 2 — username
+    {
+      validate: () => data.username.length >= 3 && /^[a-z0-9._]+$/.test(data.username),
+      render: () => (
+        <div>
+          <h1 style={{ fontFamily: v.fontDisplay, fontSize: 30, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em', marginBottom: 4 }}>pick a handle</h1>
+          <p style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, marginBottom: 28 }}>this is how people will find you. lowercase letters, numbers, periods, and underscores.</p>
+
+          <label style={{ display: 'block', fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2, marginBottom: 6 }}>username</label>
+          <div style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontFamily: v.fontMono, fontSize: 14, color: v.ink3 }}>@</span>
+            <input value={data.username} onChange={e => update('username', e.target.value.toLowerCase())} placeholder="your.handle"
+              style={{ ...inputStyle(), paddingLeft: 30 }} />
+          </div>
+          {data.username.length > 0 && (
+            <div style={{ fontFamily: v.fontMono, fontSize: 10, color: data.username.length >= 3 && /^[a-z0-9._]+$/.test(data.username) ? v.successText : v.errorText, marginTop: 6 }}>
+              {data.username.length >= 3 && /^[a-z0-9._]+$/.test(data.username) ? '✓ looks good' : 'min 3 chars, lowercase only'}
+            </div>
+          )}
+
+          <div style={{ marginTop: 28 }}>
+            <label style={{ display: 'block', fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2, marginBottom: 6 }}>display name <span style={{ color: v.ink3, fontWeight: 400 }}>(optional)</span></label>
+            <input value={data.displayName} onChange={e => update('displayName', e.target.value)} placeholder="what to call you"
+              style={inputStyle()} />
+          </div>
+        </div>
+      ),
+    },
+    // 3 — bio + interests
+    {
+      validate: () => data.interests.length >= 3,
+      render: () => (
+        <div>
+          <h1 style={{ fontFamily: v.fontDisplay, fontSize: 30, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em', marginBottom: 4 }}>what's your scene?</h1>
+          <p style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, marginBottom: 24 }}>pick at least 3. we'll use these to shape your feed.</p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+            {INTEREST_CATEGORIES.map(i => (
+              <LxTag key={i} active={data.interests.includes(i)} onClick={() => toggleInterest(i)}>
+                {i}
+              </LxTag>
+            ))}
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2, marginBottom: 6 }}>bio <span style={{ color: v.ink3, fontWeight: 400 }}>(optional)</span></label>
+            <textarea value={data.bio} onChange={e => update('bio', e.target.value.slice(0, 160))} placeholder="a sentence about you"
+              style={{ ...inputStyle(), resize: 'none', minHeight: 64, lineHeight: 1.5 }} />
+            <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4, textAlign: 'right' }}>{160 - data.bio.length}</div>
+          </div>
+        </div>
+      ),
+    },
+    // 4 — done
+    {
+      validate: () => true,
+      render: () => (
+        <div style={{ textAlign: 'center', paddingTop: 60 }}>
+          <div style={{ fontFamily: v.fontDisplay, fontSize: 44, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
+            welcome,<br />@{data.username || 'friend'}.
+          </div>
+          <p style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink2, lineHeight: 1.5, maxWidth: 300, margin: '0 auto 40px' }}>
+            we sent a verification link to <strong style={{ color: v.ink }}>{data.email || 'your email'}</strong>. you can keep going while you wait.
+          </p>
+          <LxBtn variant="primary" size="lg" onClick={() => navigate('feed')} style={{ minWidth: 200 }}>open feed</LxBtn>
+        </div>
+      ),
+    },
+  ];
+
+  const current = steps[step];
+
+  return (
+    <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column', maxWidth: 480, margin: '0 auto' }}>
+      {/* Progress / back */}
+      {step > 0 && step < steps.length - 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', padding: '14px 16px', gap: 12 }}>
+          <button onClick={back} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+            <LxIcon name="back" size={20} color={v.ink} />
+          </button>
+          <div style={{ flex: 1, display: 'flex', gap: 4 }}>
+            {steps.slice(1, -1).map((_, i) => (
+              <div key={i} style={{
+                flex: 1, height: 3, borderRadius: 2,
+                background: i + 1 <= step ? v.accent : v.border,
+              }} />
+            ))}
+          </div>
+          <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{step}/{steps.length - 2}</span>
+        </div>
+      )}
+
+      <div style={{ flex: 1, padding: '20px 24px 24px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1 }}>{current.render()}</div>
+
+        {step > 0 && step < steps.length - 1 && (
+          <LxBtn
+            variant="primary"
+            size="lg"
+            onClick={() => current.validate() ? next() : null}
+            disabled={!current.validate()}
+            style={{ marginTop: 24, width: '100%' }}>
+            {step === steps.length - 2 ? 'finish' : 'continue'}
+          </LxBtn>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function inputStyle() {
+  return {
+    width: '100%', fontFamily: v.fontBody, fontSize: 15, color: v.ink,
+    background: v.surfaceSunken, border: `1px solid ${v.border}`,
+    borderRadius: 8, padding: '11px 14px', outline: 'none',
+    boxSizing: 'border-box',
+  };
+}
+
+Object.assign(window, { OnboardingScreen });
+
+</script>
+
+<script type="text/babel">
+// ── Settings.jsx ──────────────────────────────────────────────────────────
+// Settings.jsx — privacy, notifications, account preferences
+
+function SettingsRow({ label, sub, control, onClick }) {
+  return (
+    <div onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '14px 16px',
+      borderBottom: `1px solid ${v.borderSubtle}`,
+      cursor: onClick ? 'pointer' : 'default',
+    }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink }}>{label}</div>
+        {sub && <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, marginTop: 2 }}>{sub}</div>}
+      </div>
+      {control}
+    </div>
+  );
+}
+
+function Toggle({ on, onChange }) {
+  return (
+    <button onClick={e => { e.stopPropagation(); onChange(!on); }} style={{
+      width: 38, height: 22, borderRadius: 999,
+      background: on ? v.accent : v.surfaceRaised,
+      border: 'none', position: 'relative', cursor: 'pointer',
+      transition: 'background 150ms ease-out',
+    }}>
+      <div style={{
+        position: 'absolute', top: 2, left: on ? 18 : 2,
+        width: 18, height: 18, borderRadius: '50%', background: '#fff',
+        transition: 'left 150ms ease-out',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+      }} />
+    </button>
+  );
+}
+
+function SectionHeader({ children }) {
+  return (
+    <div style={{
+      fontFamily: v.fontMono, fontSize: 10, color: v.ink3,
+      letterSpacing: '0.1em', textTransform: 'uppercase',
+      padding: '20px 16px 8px',
+    }}>{children}</div>
+  );
+}
+
+function SettingsScreen({ navigate }) {
+  const [s, setS] = React.useState({
+    isPrivate: false,
+    notifyLikes: true,
+    notifyComments: true,
+    notifyFollows: true,
+    notifyMentions: true,
+    notifyStoryViews: false,
+    notifyMessages: true,
+    showActivity: true,
+    allowStoryReplies: true,
+    allowMessageRequests: true,
+  });
+  const set = (k) => (val) => setS(p => ({ ...p, [k]: val }));
+
+  return (
+    <>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
+        {/* Account */}
+        <SectionHeader>account</SectionHeader>
+        <SettingsRow label="edit profile" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
+        <SettingsRow label="change password" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
+        <SettingsRow
+          label="email"
+          sub="mara@example.com · verified"
+          control={<LxIcon name="check" size={16} color={v.success} />}
+        />
+
+        {/* Privacy */}
+        <SectionHeader>privacy</SectionHeader>
+        <SettingsRow
+          label="private account"
+          sub="only approved followers can see your posts"
+          control={<Toggle on={s.isPrivate} onChange={set('isPrivate')} />}
+        />
+        <SettingsRow
+          label="show activity status"
+          sub="let people see when you were last active"
+          control={<Toggle on={s.showActivity} onChange={set('showActivity')} />}
+        />
+        <SettingsRow
+          label="allow story replies"
+          sub="people can dm you in response to stories"
+          control={<Toggle on={s.allowStoryReplies} onChange={set('allowStoryReplies')} />}
+        />
+        <SettingsRow
+          label="allow message requests"
+          sub="people you don't follow can dm you"
+          control={<Toggle on={s.allowMessageRequests} onChange={set('allowMessageRequests')} />}
+        />
+        <SettingsRow label="blocked users" sub="0 blocked" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
+
+        {/* Notifications */}
+        <SectionHeader>notifications</SectionHeader>
+        <SettingsRow label="likes" control={<Toggle on={s.notifyLikes} onChange={set('notifyLikes')} />} />
+        <SettingsRow label="comments &amp; replies" control={<Toggle on={s.notifyComments} onChange={set('notifyComments')} />} />
+        <SettingsRow label="new followers" control={<Toggle on={s.notifyFollows} onChange={set('notifyFollows')} />} />
+        <SettingsRow label="mentions" control={<Toggle on={s.notifyMentions} onChange={set('notifyMentions')} />} />
+        <SettingsRow label="story views" control={<Toggle on={s.notifyStoryViews} onChange={set('notifyStoryViews')} />} />
+        <SettingsRow label="messages" control={<Toggle on={s.notifyMessages} onChange={set('notifyMessages')} />} />
+
+        {/* Support */}
+        <SectionHeader>support</SectionHeader>
+        <SettingsRow label="help center" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
+        <SettingsRow label="terms &amp; privacy" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
+        <SettingsRow label="about luvax" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
+
+        {/* Danger */}
+        <div style={{ padding: '32px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink2, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '6px 0' }}>sign out</button>
+          <button style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.error, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '6px 0' }}>delete account</button>
+        </div>
+
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, textAlign: 'center', padding: '20px 16px' }}>luvax · v1.0 · 2026</div>
+      </div>
+    </>
+  );
+}
+
+Object.assign(window, { SettingsScreen });
+
+</script>
+
+<script type="text/babel">
+// ── App ───────────────────────────────────────────────────────────────────
+const { useState, useEffect } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "#C8A97E",
+  "dark": false,
+  "font": "syne",
+  "density": "cozy",
+  "showTags": true
+}/*EDITMODE-END*/;
+
+const ACCENT_PALETTES = [
+  '#C8A97E',
+  '#7A9E7A',
+  '#C4847A',
+];
+
+const FONT_MAP = {
+  syne:  "'Syne', sans-serif",
+  serif: "'Instrument Serif', serif",
+};
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [screen, setScreen] = useState('feed');
+  const [params, setParams] = useState({});
+  const [history, setHistory] = useState([]);
+  const viewport = useViewport();
+
+  const navigate = (to, p = {}) => {
+    setHistory(h => screen !== to ? [...h, screen] : h);
+    setScreen(to);
+    setParams(p);
+    window.scrollTo(0, 0);
+  };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', t.dark ? 'dark' : 'light');
+    root.setAttribute('data-density', t.density);
+    root.style.setProperty('--lx-accent', t.accent);
+    root.style.setProperty('--lx-accent-dim',
+      `color-mix(in srgb, ${t.accent} ${t.dark ? '22%' : '28%'}, var(--lx-base))`);
+    root.style.setProperty('--lx-accent-dark',
+      `color-mix(in srgb, ${t.accent} 78%, #000)`);
+    root.style.setProperty('--lx-accent-text',
+      t.dark ? `color-mix(in srgb, ${t.accent} 60%, #fff)` : `color-mix(in srgb, ${t.accent} 60%, #000)`);
+    root.style.setProperty('--font-display', FONT_MAP[t.font] || FONT_MAP.syne);
+  }, [t.dark, t.accent, t.font, t.density]);
+
+  const screenProps = { navigate, params, tweaks: t, viewport };
+
+  if (screen === 'onboarding') {
+    return <><OnboardingScreen {...screenProps} /><MyTweaks t={t} setTweak={setTweak} navigate={navigate} /></>;
+  }
+
+  const screens = {
+    feed:          <FeedScreen          {...screenProps} />,
+    explore:       <ExploreScreen       {...screenProps} />,
+    compose:       <ComposerScreen      {...screenProps} />,
+    post:          <PostDetailScreen    {...screenProps} />,
+    profile:       <ProfileScreen       {...screenProps} />,
+    notifications: <NotificationsScreen {...screenProps} />,
+    settings:      <SettingsScreen      {...screenProps} />,
+  };
+
+  const isStory = screen === 'story-view' || screen === 'story-compose';
+  if (isStory) {
+    const baseScreen = [...history].reverse().find(s => s !== 'story-view' && s !== 'story-compose' && s !== 'onboarding') || 'feed';
+    const baseShowRail = (baseScreen === 'feed' || baseScreen === 'explore') && viewport === 'desktop';
+    const Overlay = screen === 'story-view' ? StoryViewScreen : StoryComposerScreen;
+    return (
+      <>
+        <LxShell screen={baseScreen} navigate={navigate} params={{}} showRightRail={baseShowRail}>
+          {screens[baseScreen] || screens.feed}
+        </LxShell>
+        <Overlay {...screenProps} />
+        <MyTweaks t={t} setTweak={setTweak} navigate={navigate} />
+      </>
+    );
+  }
+
+  const showRail = (screen === 'feed' || screen === 'explore') && viewport === 'desktop';
+
+  return (
+    <>
+      <LxShell screen={screen} navigate={navigate} params={params} showRightRail={showRail}>
+        {screens[screen] || screens.feed}
+      </LxShell>
+      <MyTweaks t={t} setTweak={setTweak} navigate={navigate} />
+    </>
+  );
+}
+
+function MyTweaks({ t, setTweak, navigate }) {
+  return (
+    <TweaksPanel>
+      <TweakSection label="Theme" />
+      <TweakColor
+        label="Accent"
+        value={t.accent}
+        options={ACCENT_PALETTES}
+        onChange={(v) => setTweak('accent', v)} />
+      <TweakToggle
+        label="Dark mode"
+        value={t.dark}
+        onChange={(v) => setTweak('dark', v)} />
+
+      <TweakSection label="Typography" />
+      <TweakRadio
+        label="Display font"
+        value={t.font}
+        options={['syne', 'serif']}
+        onChange={(v) => setTweak('font', v)} />
+
+      <TweakSection label="Feed" />
+      <TweakRadio
+        label="Density"
+        value={t.density}
+        options={['cozy', 'dense']}
+        onChange={(v) => setTweak('density', v)} />
+      <TweakToggle
+        label="Show tags"
+        value={t.showTags}
+        onChange={(v) => setTweak('showTags', v)} />
+
+      <TweakSection label="Jump to" />
+      <TweakButton label="Onboarding" onClick={() => navigate('onboarding')} />
+      <TweakButton label="Story viewer" onClick={() => navigate('story-view')} />
+      <TweakButton label="Story composer" onClick={() => navigate('story-compose')} />
+      <TweakButton label="Settings" onClick={() => navigate('settings')} />
+    </TweaksPanel>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+</body>
+</html>
