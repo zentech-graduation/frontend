@@ -16,7 +16,7 @@ import {
   usePasswordToggle,
 } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
-import { registerSchema } from '@/components/auth/authSchemas';
+import { registerSchema } from '@/features/auth/utils/authSchemas';
 
 function buildUsername(name, email) {
   const baseSource = name?.trim() || email?.split('@')[0] || 'luvax-user';

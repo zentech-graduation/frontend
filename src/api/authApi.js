@@ -228,7 +228,9 @@ export const authApi = {
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
-      response_type: 'token id_token',
+      // Authorization-code flow only. The implicit flow (token id_token) is
+      // retired — tokens must never be delivered via the URL fragment.
+      response_type: 'code',
       scope: 'openid email profile',
       prompt: 'select_account',
       include_granted_scopes: 'true',
@@ -255,40 +257,11 @@ export const authApi = {
     );
   },
 
-  decodeJwt(token) {
-    if (!token) {
-      return null;
-    }
-
-    const payload = token.split('.')[1];
-
-    if (!payload) {
-      return null;
-    }
-
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
-
-    return JSON.parse(window.atob(padded));
-  },
-
-  buildUserFromGoogleClaims(claims) {
-    if (!claims) {
-      return null;
-    }
-
-    return {
-      id: claims.sub,
-      name: claims.name,
-      email: claims.email,
-      avatar: claims.picture,
-      picture: claims.picture,
-      givenName: claims.given_name,
-      familyName: claims.family_name,
-      provider: 'google',
-      emailVerified: claims.email_verified,
-    };
-  },
+  // decodeJwt and buildUserFromGoogleClaims have been intentionally removed.
+  // Parsing JWTs client-side via window.atob provides no integrity guarantee —
+  // an attacker can forge any claims in the base64 payload. User identity must
+  // be established exclusively by the backend after verifying the token
+  // signature. Profile data is fetched from /users/me post-exchange.
 
   normalizeMessage,
 };

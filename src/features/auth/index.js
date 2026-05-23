@@ -5,5 +5,6 @@
  * Add exports here as the feature grows.
  */
 
-// export { default as LoginPage } from './components/LoginPage';
-// export { useLogin, useLogout } from './hooks/useAuth';
+export { default as LoginPage } from './components/LoginPage';
+export { useLogin, useLogout } from './hooks/useAuth';
+export * from './utils/authSchemas';
