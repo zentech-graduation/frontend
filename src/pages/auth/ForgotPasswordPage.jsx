@@ -70,12 +70,6 @@ export default function ForgotPasswordPage() {
             Send reset link
           </AuthButton>
 
-          {requestState.success ? (
-            <div className="auth-form__meta auth-form__meta--center">
-              <span>Already have a reset token?</span>
-              <Link to="/reset-password">Reset password now</Link>
-            </div>
-          ) : null}
         </form>
       </AuthShell>
     </AuthPageLayout>
