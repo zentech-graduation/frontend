@@ -175,14 +175,6 @@ export default function RegisterPage() {
             </AuthAlert>
           ) : null}
 
-          {accountExists && emailValue?.trim() ? (
-            <div className="auth-form__meta auth-form__meta--center">
-              <span>This email may already be waiting for verification.</span>
-              <Link to={`/verify-email?email=${encodeURIComponent(emailValue.trim().toLowerCase())}`}>
-                Verify email
-              </Link>
-            </div>
-          ) : null}
 
           <AuthButton type="submit" loading={isSubmitting}>
             create account
