@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { authApi } from '@/api/authApi';
 import { AuthAlert, AuthButton, AuthInput, AuthShell } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
-import { emailSchema } from '@/components/auth/authSchemas';
+import { emailSchema } from '@/features/auth/utils/authSchemas';
 
 export default function ForgotPasswordPage() {
   const [requestState, setRequestState] = useState({ error: '', success: '' });
