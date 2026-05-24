@@ -1,0 +1,189 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  toMessageView,
+  toThread,
+  toThreadSummary,
+} from '@/features/messages/utils/messageViewModel';
+
+const ME = '11111111-1111-1111-1111-111111111111';
+const OTHER = '22222222-2222-2222-2222-222222222222';
+
+const participants = [
+  { userId: ME, username: 'me', displayName: 'Me', avatarUrl: null },
+  { userId: OTHER, username: 'priya_m', displayName: 'Priya', avatarUrl: 'https://cdn/p.jpg' },
+];
+
+const message = (overrides) => ({
+  id: 'm1',
+  senderId: OTHER,
+  messageType: 'text',
+  content: 'hello',
+  mediaAssetId: null,
+  media: null,
+  sharedPostId: null,
+  sharedStoryId: null,
+  replyToId: null,
+  isDeleted: false,
+  createdAt: '2026-08-18T10:15:00Z',
+  ...overrides,
+});
+
+describe('toThreadSummary', () => {
+  it('names a direct conversation after the other participant, never the viewer', () => {
+    const view = toThreadSummary(
+      { id: 'c1', isGroup: false, participants, unreadCount: 2, lastMessage: message({}) },
+      ME
+    );
+    expect(view.name).toBe('Priya');
+    expect(view.username).toBe('priya_m');
+    expect(view.unread).toBe(2);
+  });
+
+  it('names a group after the group and counts its members', () => {
+    const view = toThreadSummary(
+      {
+        id: 'c2',
+        isGroup: true,
+        groupName: 'Design',
+        groupAvatarUrl: 'https://cdn/g.jpg',
+        participants,
+        unreadCount: 0,
+        lastMessage: null,
+      },
+      ME
+    );
+    expect(view.name).toBe('Design');
+    expect(view.isGroup).toBe(true);
+    expect(view.avatarUrl).toBe('https://cdn/g.jpg');
+    expect(view.username).toContain('2');
+  });
+
+  it('previews the last message, and stays blank when there is none', () => {
+    const withLast = toThreadSummary(
+      { id: 'c1', isGroup: false, participants, unreadCount: 0, lastMessage: message({}) },
+      ME
+    );
+    expect(withLast.preview).toBe('hello');
+
+    const empty = toThreadSummary(
+      { id: 'c3', isGroup: false, participants, unreadCount: 0, lastMessage: null },
+      ME
+    );
+    expect(empty.preview).toBe('');
+  });
+
+  it('describes an attachment preview rather than showing an empty row', () => {
+    const view = toThreadSummary(
+      {
+        id: 'c4',
+        isGroup: false,
+        participants,
+        unreadCount: 0,
+        lastMessage: message({ content: null, mediaAssetId: 'a1' }),
+      },
+      ME
+    );
+    expect(view.preview).not.toBe('');
+  });
+});
+
+describe('toMessageView', () => {
+  const ctx = { participants, currentUserId: ME, loadedMessages: [] };
+
+  it('marks the viewer as me and everyone else as them', () => {
+    expect(toMessageView(message({ senderId: ME }), ctx).from).toBe('me');
+    expect(toMessageView(message({ senderId: OTHER }), ctx).from).toBe('them');
+  });
+
+  it('renders a deleted message as a placeholder, not its old content', () => {
+    const view = toMessageView(message({ isDeleted: true, content: 'secret' }), ctx);
+    expect(view.kind).toBe('deleted');
+    expect(view.text).not.toContain('secret');
+  });
+
+  it('quotes a reply when the referenced message is loaded', () => {
+    const target = message({ id: 'm0', content: 'original', senderId: OTHER });
+    const view = toMessageView(message({ id: 'm2', replyToId: 'm0' }), {
+      ...ctx,
+      loadedMessages: [target],
+    });
+    expect(view.kind).toBe('reply');
+    expect(view.replyText).toBe('original');
+    expect(view.replyTo).toBe('Priya');
+  });
+
+  it('still renders a reply when the referenced message is outside the loaded page', () => {
+    // Fetching the referenced message per bubble would be an N+1 while scrolling, so the quote is
+    // dropped rather than fetched. The bubble must still read as a reply.
+    const view = toMessageView(message({ id: 'm2', replyToId: 'gone' }), ctx);
+    expect(view.kind).toBe('reply');
+    expect(view.replyText).toBeNull();
+  });
+
+  it('exposes resolved media so a recipient can render an image', () => {
+    const view = toMessageView(
+      message({
+        messageType: 'image',
+        content: null,
+        mediaAssetId: 'a1',
+        media: { mediaAssetId: 'a1', mediaType: 'IMAGE', cdnUrl: 'https://cdn/i.jpg' },
+      }),
+      ctx
+    );
+    expect(view.kind).toBe('file');
+    expect(view.media.cdnUrl).toBe('https://cdn/i.jpg');
+  });
+
+  it('marks a shared story so the bubble can label it', () => {
+    const view = toMessageView(
+      message({ messageType: 'story_share', content: 'love this', sharedStoryId: 's1' }),
+      ctx
+    );
+    expect(view.kind).toBe('post');
+    expect(view.sharedStoryId).toBe('s1');
+    expect(view.meta).toContain('story');
+  });
+
+  it('resolves the sender from the participant list rather than the message', () => {
+    // MessageResponse carries only senderId; the profile lives on the conversation.
+    const view = toMessageView(message({ senderId: OTHER }), ctx);
+    expect(view.senderName).toBe('Priya');
+    expect(view.senderAvatarUrl).toBe('https://cdn/p.jpg');
+  });
+
+  it('formats the timestamp as a short local time', () => {
+    const view = toMessageView(message({ createdAt: '2026-08-18T10:15:00Z' }), ctx);
+    expect(view.time).toMatch(/\d{1,2}:\d{2}/);
+  });
+
+  it('survives a sender who is no longer a participant', () => {
+    const view = toMessageView(message({ senderId: 'ghost' }), ctx);
+    expect(view.from).toBe('them');
+    expect(view.senderName).toBeTruthy();
+  });
+});
+
+describe('toThread', () => {
+  it('combines the summary with mapped messages', () => {
+    const conversation = {
+      id: 'c1',
+      isGroup: false,
+      participants,
+      unreadCount: 0,
+      lastMessage: null,
+    };
+    const thread = toThread(conversation, [message({ id: 'a' }), message({ id: 'b' })], ME);
+    expect(thread.name).toBe('Priya');
+    expect(thread.messages).toHaveLength(2);
+    expect(thread.participants).toHaveLength(2);
+  });
+
+  it('resolves replies across the whole loaded set, not just earlier pages', () => {
+    const conversation = { id: 'c1', isGroup: false, participants, unreadCount: 0 };
+    const first = message({ id: 'm0', content: 'first' });
+    const reply = message({ id: 'm1', replyToId: 'm0' });
+    const thread = toThread(conversation, [reply, first], ME);
+    expect(thread.messages[0].replyText).toBe('first');
+  });
+});
