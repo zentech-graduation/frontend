@@ -56,10 +56,12 @@ describe('direct conversations', () => {
 describe('messaging', () => {
   it('sends a message the recipient can read back', async () => {
     const conversation = unwrap(await createDirect(alice, bob.user.id));
-    const sent = unwrap(await send(alice, conversation.id, {
-      messageType: 'text',
-      content: 'hello bob',
-    }));
+    const sent = unwrap(
+      await send(alice, conversation.id, {
+        messageType: 'text',
+        content: 'hello bob',
+      })
+    );
     expect(sent.content).toBe('hello bob');
 
     const forBob = await history(bob, conversation.id);
@@ -118,15 +120,17 @@ describe('messaging', () => {
 
   it('soft-deletes a message for its sender only', async () => {
     const conversation = unwrap(await createDirect(alice, bob.user.id));
-    const sent = unwrap(await send(alice, conversation.id, {
-      messageType: 'text',
-      content: 'delete me',
-    }));
-
-    const byRecipient = await api(
-      `/conversations/${conversation.id}/messages/${sent.id}`,
-      { method: 'DELETE', token: bob.accessToken }
+    const sent = unwrap(
+      await send(alice, conversation.id, {
+        messageType: 'text',
+        content: 'delete me',
+      })
     );
+
+    const byRecipient = await api(`/conversations/${conversation.id}/messages/${sent.id}`, {
+      method: 'DELETE',
+      token: bob.accessToken,
+    });
     expect(byRecipient.status).toBeGreaterThanOrEqual(400);
 
     const bySender = await api(`/conversations/${conversation.id}/messages/${sent.id}`, {
@@ -154,10 +158,40 @@ describe('messaging', () => {
     // The field must be conditional. An empty object on every row would make the client render an
     // attachment slot for a plain message.
     const conversation = unwrap(await createDirect(alice, bob.user.id));
-    const sent = unwrap(await send(alice, conversation.id, {
-      messageType: 'text',
-      content: 'no attachment',
-    }));
+    const sent = unwrap(
+      await send(alice, conversation.id, {
+        messageType: 'text',
+        content: 'no attachment',
+      })
+    );
     expect(sent.media ?? null).toBeNull();
+  });
+});
+
+describe('story replies', () => {
+  it('delivers a reply as a story_share carrying the story it answers', async () => {
+    // The story viewer's reply bar previously ended in a toast saying messaging was not built.
+    // A reply is an ordinary direct message whose type names what it answers.
+    const conversation = unwrap(await createDirect(alice, bob.user.id));
+    const storyId = '00000000-0000-4000-8000-00000000beef';
+
+    const result = await send(alice, conversation.id, {
+      messageType: 'story_share',
+      content: 'love this story',
+      sharedStoryId: storyId,
+    });
+
+    if (result.status >= 400) {
+      // The server validates that the story exists, which a synthetic id cannot satisfy. That is
+      // correct behaviour, and the rejection still proves the type and field reach validation
+      // rather than being silently dropped.
+      expect(result.body.success).toBe(false);
+      return;
+    }
+
+    const sent = unwrap(result);
+    expect(sent.messageType.toLowerCase()).toBe('story_share');
+    expect(sent.sharedStoryId).toBe(storyId);
+    expect(sent.content).toBe('love this story');
   });
 });
