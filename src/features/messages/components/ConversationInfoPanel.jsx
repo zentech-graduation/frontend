@@ -146,7 +146,7 @@ export function ConversationInfoPanel({
             textAlign: 'center',
           }}
         >
-          {activeThread.mediaLabel}
+          {activeThread.isGroup ? activeThread.username : `@${activeThread.username}`}
         </div>
       </div>
     </aside>

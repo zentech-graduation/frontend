@@ -1,0 +1,63 @@
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { STALE_TIME } from '@/config/constants';
+import { messageService } from '@/services/message.service';
+import { getNextCursor } from '@/utils/helpers';
+
+export const conversationsKey = ['conversations'];
+export const unreadCountKey = ['conversations', 'unread-count'];
+
+/**
+ * The caller's conversations, most recent activity first.
+ *
+ * Each row already carries its unread count and newest message, so this is the only request the
+ * list screen makes; there is no follow-up per conversation.
+ */
+export const useConversations = () => {
+  const query = useInfiniteQuery({
+    queryKey: conversationsKey,
+    queryFn: ({ pageParam = null, signal }) =>
+      messageService.listConversations({ cursor: pageParam, limit: 20, signal }),
+    staleTime: STALE_TIME.SHORT,
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+  });
+
+  const conversations = (query.data?.pages || []).flatMap((page) => page?.data?.content || []);
+  return { ...query, conversations };
+};
+
+/**
+ * Total unread messages across every conversation.
+ *
+ * Named `useUnreadMessageCount`, not `useUnreadCount`: the notifications feature already exports a
+ * hook by that name and the shell imports it. Two hooks with one name in the same component is a
+ * merge conflict waiting to happen.
+ *
+ * The count is database-owned, so it is re-read rather than adjusted locally.
+ */
+export const useUnreadMessageCount = () => {
+  const { data } = useQuery({
+    queryKey: unreadCountKey,
+    queryFn: () => messageService.getUnreadCount(),
+    staleTime: STALE_TIME.SHORT,
+  });
+  return data?.data?.unreadCount ?? 0;
+};
+
+/**
+ * Marks a conversation read.
+ *
+ * The list and the badge are re-read from the server afterwards rather than decremented in place,
+ * because the unread count belongs to the database.
+ */
+export const useMarkRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId) => messageService.markRead(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: conversationsKey });
+      queryClient.invalidateQueries({ queryKey: unreadCountKey });
+    },
+  });
+};

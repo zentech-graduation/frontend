@@ -1,23 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
-import { THREADS } from './data/mockThreads';
+import { useAuthStore } from '@/store/useAuthStore';
+import { toThread, toThreadSummary } from './utils/messageViewModel';
+import { useConversations, useMarkRead } from './hooks/useConversations';
+import { useMessages, useDeleteMessage, useSendMessage } from './hooks/useMessages';
 import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
 import { MediaPlaceholder } from './components/MediaPlaceholder';
 import { useLuvaxTweaks } from '@/features/luvax/LuvaxTweaksContext';
+import { toast } from '@/features/luvax/components/Toast';
 
 export function MessagesScreen() {
   const { viewport } = useLuvaxTweaks();
-  const [threads, setThreads] = useState(THREADS);
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const { conversations, isLoading: conversationsLoading } = useConversations();
+  // The adapter owns every mapping from the API shape onto what these panels render.
+  const threads = useMemo(
+    () => conversations.map((conversation) => toThreadSummary(conversation, currentUserId)),
+    [conversations, currentUserId]
+  );
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
-  const [activeThreadId, setActiveThreadId] = useState('priya');
+  const [activeThreadId, setActiveThreadId] = useState(null);
   const [threadOpen, setThreadOpen] = useState(viewport !== 'mobile');
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
-  const [composerSeed, setComposerSeed] = useState(0);
   const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
@@ -33,8 +42,24 @@ export function MessagesScreen() {
     );
   }, [search, threads]);
 
-  const activeThread =
-    threads.find((thread) => thread.id === activeThreadId) || filteredThreads[0] || threads[0];
+  const activeConversation =
+    conversations.find((conversation) => conversation.id === activeThreadId) || null;
+  const { messages: activeMessages } = useMessages(activeConversation?.id);
+  const activeThread = activeConversation
+    ? toThread(activeConversation, activeMessages, currentUserId)
+    : null;
+
+  const markRead = useMarkRead();
+  const sendMessage = useSendMessage(activeConversation?.id);
+  const deleteMessage = useDeleteMessage(activeConversation?.id);
+
+  useEffect(() => {
+    if (activeConversation?.id) {
+      markRead.mutate(activeConversation.id);
+    }
+    // markRead is recreated each render; depending on it would re-fire the mutation continuously.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversation?.id]);
 
   useEffect(() => {
     if (!activeThreadId && filteredThreads[0]) {
@@ -66,27 +91,10 @@ export function MessagesScreen() {
   // declaration, which is safe only because effects run after the component body has
   // finished evaluating - an ordering the reader should not have to reconstruct.
   const handleCompose = () => {
-    const newThreadId = `new-${composerSeed + 1}`;
-    const newThread = {
-      id: newThreadId,
-      idx: 6,
-      initials: 'N',
-      name: 'new conversation',
-      username: 'draft',
-      preview: 'start writing...',
-      time: 'now',
-      unread: 0,
-      accent: 'rgba(200, 169, 126, 0.16)',
-      mediaLabel: 'shared files',
-      media: [],
-      messages: [],
-    };
-
-    setComposerSeed((seed) => seed + 1);
-    setThreads((current) => [newThread, ...current]);
-    setActiveThreadId(newThreadId);
-    setDraft('');
-    setReplyingTo(null);
+    // Starting a conversation needs a recipient, and no picker exists yet. The previous behaviour
+    // inserted a local placeholder conversation that was never sent anywhere and vanished on
+    // reload, which read as a working compose. Saying so is better than looking like it worked.
+    toast('choose someone from their profile to start a conversation');
   };
 
   useEffect(() => {
@@ -114,7 +122,7 @@ export function MessagesScreen() {
         delete window.__lxMessagesBack;
       }
     };
-  }, [composerSeed, threadOpen, viewport]);
+  }, [threadOpen, viewport]);
 
   useEffect(() => {
     if (viewport !== 'mobile') {
@@ -140,45 +148,43 @@ export function MessagesScreen() {
       setThreadOpen(true);
       setMobileInfoOpen(false);
     }
-    setThreads((current) =>
-      current.map((thread) => (thread.id === threadId ? { ...thread, unread: 0 } : thread))
-    );
+    // Unread is database-owned. Opening the conversation marks it read server-side through the
+    // effect above, and the list is re-read from the response.
   };
 
   const handleSend = () => {
     const value = draft.trim();
-    if (!value || !activeThread) return;
+    if (!value || !activeConversation) return;
 
-    setThreads((current) =>
-      current.map((thread) => {
-        if (thread.id !== activeThread.id) return thread;
-        return {
-          ...thread,
-          preview: value,
-          time: 'now',
-          messages: [
-            ...thread.messages,
-            replyingTo
-              ? {
-                  id: `${thread.id}-${Date.now()}`,
-                  from: 'me',
-                  kind: 'reply',
-                  replyTo: replyingTo.from === 'me' ? 'you' : activeThread.name,
-                  replyText: replyingTo.text,
-                  text: value,
-                  time: 'now',
-                }
-              : {
-                  id: `${thread.id}-${Date.now()}`,
-                  from: 'me',
-                  kind: 'text',
-                  text: value,
-                  time: 'now',
-                },
-          ],
-        };
-      })
-    );
+    const idempotencyKey =
+      globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    sendMessage.mutate({
+      idempotencyKey,
+      body: {
+        messageType: 'text',
+        content: value,
+        replyToId: replyingTo?.id || null,
+      },
+      // Shaped like a MessageResponse so the adapter renders it with no special case, and so a
+      // rollback simply removes it again.
+      optimisticMessage: {
+        id: `pending-${idempotencyKey}`,
+        conversationId: activeConversation.id,
+        senderId: currentUserId,
+        messageType: 'text',
+        content: value,
+        mediaAssetId: null,
+        media: null,
+        sharedPostId: null,
+        sharedStoryId: null,
+        replyToId: replyingTo?.id || null,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
     setDraft('');
     setReplyingTo(null);
   };
@@ -188,22 +194,8 @@ export function MessagesScreen() {
   };
 
   const handleDeleteConfirm = () => {
-    if (!activeThread || !pendingDeleteMessageId) return;
-    if (!activeThread) return;
-    setThreads((current) =>
-      current.map((thread) => {
-        if (thread.id !== activeThread.id) return thread;
-        return {
-          ...thread,
-          preview: 'message was deleted',
-          messages: thread.messages.map((message) =>
-            message.id === pendingDeleteMessageId
-              ? { ...message, kind: 'deleted', text: 'this message was deleted' }
-              : message
-          ),
-        };
-      })
-    );
+    if (!activeConversation || !pendingDeleteMessageId) return;
+    deleteMessage.mutate(pendingDeleteMessageId);
     setPendingDeleteMessageId(null);
   };
 
