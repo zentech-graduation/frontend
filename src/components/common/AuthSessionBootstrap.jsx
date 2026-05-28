@@ -9,6 +9,7 @@ const GUEST_PATHS = new Set([
   '/forgot-password',
   '/reset-password',
   '/verify-email',
+  '/oauth2/callback',
   '/oauth/callback',
 ]);
 
