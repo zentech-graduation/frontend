@@ -45,7 +45,6 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     control,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -61,9 +60,6 @@ export default function RegisterPage() {
     control,
     name: 'password',
   });
-  const emailValue = watch('email');
-  const normalizedError = serverError.toLowerCase();
-  const accountExists = normalizedError.includes('already exists');
 
   useEffect(() => {
     if (!successMessage) {
@@ -106,7 +102,7 @@ export default function RegisterPage() {
     try {
       window.location.href = authApi.getGoogleLoginUrl();
     } catch (error) {
-      setServerError(authApi.normalizeMessage(error, 'Google OAuth is not configured yet.'));
+      setServerError(authApi.normalizeMessage(error, 'Unable to start Google sign in right now.'));
     }
   };
 
@@ -174,7 +170,6 @@ export default function RegisterPage() {
               Your account has been created successfully. Redirecting to email verification...
             </AuthAlert>
           ) : null}
-
 
           <AuthButton type="submit" loading={isSubmitting}>
             create account

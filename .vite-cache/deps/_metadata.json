@@ -2,7 +2,7 @@
   "hash": "6dc5ee67",
   "configHash": "2465b9e7",
   "lockfileHash": "5eb0b055",
-  "browserHash": "e44b2618",
+  "browserHash": "7d186529",
   "optimized": {
     "@hookform/resolvers/zod": {
       "src": "../../node_modules/@hookform/resolvers/zod/dist/zod.mjs",
@@ -74,6 +74,12 @@
       "src": "../../node_modules/zustand/esm/index.mjs",
       "file": "zustand.js",
       "fileHash": "26abb356",
+      "needsInterop": false
+    },
+    "zustand/middleware": {
+      "src": "../../node_modules/zustand/esm/middleware.mjs",
+      "file": "zustand_middleware.js",
+      "fileHash": "be470121",
       "needsInterop": false
     }
   },

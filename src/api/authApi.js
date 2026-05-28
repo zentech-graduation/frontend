@@ -7,9 +7,7 @@ import {
 } from '@/api/axiosClient';
 import { useAuthStore } from '@/store/useAuthStore';
 
-const GOOGLE_OAUTH_STATE_KEY = 'luvax-google-oauth-state';
-const GOOGLE_OAUTH_NONCE_KEY = 'luvax-google-oauth-nonce';
-const DEFAULT_GOOGLE_REDIRECT_PATH = '/oauth/callback';
+const DEFAULT_GOOGLE_AUTHORIZATION_PATH = '/api/v1/auth/oauth2/authorize/google';
 
 const getPayload = (response) => response?.data?.data ?? response?.data ?? {};
 
@@ -31,6 +29,30 @@ const normalizeUser = (payload) => {
 
 const normalizeMessage = (error, fallback) =>
   error?.response?.data?.message || error?.response?.data?.error || error?.message || fallback;
+
+const isGoogleCallbackPath = (pathname) =>
+  /\/(?:auth\/oauth2\/callback|oauth2\/callback|oauth\/callback)\/?/i.test(pathname);
+
+const containsProviderPlaceholder = (value) =>
+  /\{provider\}/i.test(value) || /%7Bprovider/i.test(value);
+
+const deriveBackendOriginFromApiUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL?.trim();
+
+  if (!apiUrl) {
+    return '';
+  }
+
+  try {
+    const parsedUrl = new URL(apiUrl);
+    parsedUrl.pathname = '';
+    parsedUrl.search = '';
+    parsedUrl.hash = '';
+    return parsedUrl.toString().replace(/\/$/, '');
+  } catch {
+    return apiUrl.replace(/\/api(?:\/v\d+)?(?:\/.*)?$/i, '').replace(/\/$/, '');
+  }
+};
 
 const buildRequestBody = (payload = {}) =>
   Object.fromEntries(
@@ -180,88 +202,58 @@ export const authApi = {
     return getPayload(response);
   },
 
-  async exchangeOAuthToken(accessToken) {
+  async exchangeOAuthCode(code) {
     const response = await publicClient.post(
       '/auth/oauth2/exchange',
       buildRequestBody({
-        token: accessToken,
+        code,
       })
     );
 
     return extractAuthSession(response);
   },
 
-  createGoogleOAuthState() {
-    const state = crypto.randomUUID();
-    const nonce = crypto.randomUUID();
+  getDefaultGoogleAuthorizationUrl() {
+    const backendOrigin = deriveBackendOriginFromApiUrl();
 
-    sessionStorage.setItem(GOOGLE_OAUTH_STATE_KEY, state);
-    sessionStorage.setItem(GOOGLE_OAUTH_NONCE_KEY, nonce);
-
-    return { state, nonce };
-  },
-
-  consumeGoogleOAuthState() {
-    const state = sessionStorage.getItem(GOOGLE_OAUTH_STATE_KEY);
-    const nonce = sessionStorage.getItem(GOOGLE_OAUTH_NONCE_KEY);
-
-    sessionStorage.removeItem(GOOGLE_OAUTH_STATE_KEY);
-    sessionStorage.removeItem(GOOGLE_OAUTH_NONCE_KEY);
-
-    return { state, nonce };
-  },
-
-  buildGoogleRedirectUri() {
-    const redirectPath = import.meta.env.VITE_GOOGLE_REDIRECT_PATH || DEFAULT_GOOGLE_REDIRECT_PATH;
-    return `${window.location.origin}${redirectPath}`;
-  },
-
-  getGoogleOAuthUrl() {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
-    if (!clientId) {
-      throw new Error('Missing VITE_GOOGLE_CLIENT_ID for Google OAuth.');
+    if (!backendOrigin) {
+      throw new Error(
+        'Missing Google OAuth start URL. Configure VITE_API_URL so the frontend can derive the backend authorization endpoint.'
+      );
     }
 
-    const { state, nonce } = this.createGoogleOAuthState();
-    const redirectUri = this.buildGoogleRedirectUri();
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      // Authorization-code flow only. The implicit flow (token id_token) is
-      // retired — tokens must never be delivered via the URL fragment.
-      response_type: 'code',
-      scope: 'openid email profile',
-      prompt: 'select_account',
-      include_granted_scopes: 'true',
-      state,
-      nonce,
-    });
-
-    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    return `${backendOrigin}${DEFAULT_GOOGLE_AUTHORIZATION_PATH}`;
   },
 
   getGoogleLoginUrl() {
-    const envGoogleAuthUrl = import.meta.env.VITE_GOOGLE_AUTH_URL;
+    const envGoogleAuthUrl =
+      import.meta.env.VITE_GOOGLE_AUTH_URL?.trim() || this.getDefaultGoogleAuthorizationUrl();
 
     if (envGoogleAuthUrl) {
-      return envGoogleAuthUrl;
-    }
+      const loginUrl = new URL(envGoogleAuthUrl, window.location.origin);
 
-    if (import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-      return this.getGoogleOAuthUrl();
+      if (
+        containsProviderPlaceholder(loginUrl.pathname) ||
+        containsProviderPlaceholder(loginUrl.href)
+      ) {
+        throw new Error(
+          'Invalid VITE_GOOGLE_AUTH_URL. Replace {provider} with the real provider name, for example /api/v1/auth/oauth2/authorize/google.'
+        );
+      }
+
+      if (isGoogleCallbackPath(loginUrl.pathname)) {
+        throw new Error(
+          'Invalid VITE_GOOGLE_AUTH_URL. Use the backend authorization start endpoint, not /auth/oauth2/callback/google.'
+        );
+      }
+
+      return loginUrl.toString();
     }
 
     throw new Error(
-      'Google OAuth is not configured. Add VITE_GOOGLE_CLIENT_ID for frontend-only OAuth or VITE_GOOGLE_AUTH_URL for a backend redirect endpoint.'
+      'Missing Google OAuth start URL. Configure VITE_GOOGLE_AUTH_URL or a valid VITE_API_URL so the frontend can reach the backend authorization endpoint.'
     );
   },
-
-  // decodeJwt and buildUserFromGoogleClaims have been intentionally removed.
-  // Parsing JWTs client-side via window.atob provides no integrity guarantee —
-  // an attacker can forge any claims in the base64 payload. User identity must
-  // be established exclusively by the backend after verifying the token
-  // signature. Profile data is fetched from /users/me post-exchange.
 
   normalizeMessage,
 };

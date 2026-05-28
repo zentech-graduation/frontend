@@ -13,6 +13,7 @@ import RegisterPage from '@/pages/auth/RegisterPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import HomePage from '@/pages/HomePage';
+import LuvaxPage from '@/pages/LuvaxPage';
 
 function RootLayout() {
   return (
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
       {
         path: '/',
         element: <HomePage />,
+      },
+      {
+        path: '/app',
+        element: <LuvaxPage />,
       },
       {
         element: <GuestRoute />,
@@ -56,6 +61,10 @@ const router = createBrowserRouter([
             element: <ResetPasswordPage />,
           },
         ],
+      },
+      {
+        path: '/oauth2/callback',
+        element: <OAuthCallbackPage />,
       },
       {
         path: '/oauth/callback',
