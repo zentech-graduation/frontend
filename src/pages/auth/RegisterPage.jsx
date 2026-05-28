@@ -16,7 +16,7 @@ import {
   usePasswordToggle,
 } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
-import { registerSchema } from '@/components/auth/authSchemas';
+import { registerSchema } from '@/features/auth/utils/authSchemas';
 
 function buildUsername(name, email) {
   const baseSource = name?.trim() || email?.split('@')[0] || 'luvax-user';
@@ -45,7 +45,6 @@ export default function RegisterPage() {
     register,
     handleSubmit,
     control,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -61,9 +60,6 @@ export default function RegisterPage() {
     control,
     name: 'password',
   });
-  const emailValue = watch('email');
-  const normalizedError = serverError.toLowerCase();
-  const accountExists = normalizedError.includes('already exists');
 
   useEffect(() => {
     if (!successMessage) {
@@ -106,7 +102,7 @@ export default function RegisterPage() {
     try {
       window.location.href = authApi.getGoogleLoginUrl();
     } catch (error) {
-      setServerError(authApi.normalizeMessage(error, 'Google OAuth is not configured yet.'));
+      setServerError(authApi.normalizeMessage(error, 'Unable to start Google sign in right now.'));
     }
   };
 
@@ -173,15 +169,6 @@ export default function RegisterPage() {
             <AuthAlert tone="success">
               Your account has been created successfully. Redirecting to email verification...
             </AuthAlert>
-          ) : null}
-
-          {accountExists && emailValue?.trim() ? (
-            <div className="auth-form__meta auth-form__meta--center">
-              <span>This email may already be waiting for verification.</span>
-              <Link to={`/verify-email?email=${encodeURIComponent(emailValue.trim().toLowerCase())}`}>
-                Verify email
-              </Link>
-            </div>
           ) : null}
 
           <AuthButton type="submit" loading={isSubmitting}>

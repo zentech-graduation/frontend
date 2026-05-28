@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { authApi } from '@/api/authApi';
 import { AuthAlert, AuthButton, AuthInput, AuthShell } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
-import { emailSchema } from '@/components/auth/authSchemas';
+import { emailSchema } from '@/features/auth/utils/authSchemas';
 
 export default function ForgotPasswordPage() {
   const [requestState, setRequestState] = useState({ error: '', success: '' });
@@ -70,12 +70,6 @@ export default function ForgotPasswordPage() {
             Send reset link
           </AuthButton>
 
-          {requestState.success ? (
-            <div className="auth-form__meta auth-form__meta--center">
-              <span>Already have a reset token?</span>
-              <Link to="/reset-password">Reset password now</Link>
-            </div>
-          ) : null}
         </form>
       </AuthShell>
     </AuthPageLayout>

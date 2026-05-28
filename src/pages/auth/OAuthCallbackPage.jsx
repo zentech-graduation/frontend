@@ -1,88 +1,83 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
 import PageLoader from '@/components/common/PageLoader';
 import { useAuthStore } from '@/store/useAuthStore';
 
+/**
+ * OAuthCallbackPage
+ *
+ * Handles the redirect back from a Google OAuth flow.
+ *
+ * Security invariants enforced here:
+ * 1. The URL hash is NEVER parsed for access_token / id_token.
+ *    The implicit flow (response_type=token id_token) is retired - only the
+ *    backend-driven authorization-code flow is supported.
+ *    If hash tokens are present the page fails closed with an explicit error.
+ * 2. CSRF state validation belongs to the backend's signed HttpOnly cookie
+ *    repository, so the frontend does not persist or validate `state`.
+ * 3. The backend redirects to this page with a short-lived `?code=...` value
+ *    that the frontend exchanges via /auth/oauth2/exchange for a real session.
+ */
 export default function OAuthCallbackPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
   const logout = useAuthStore((state) => state.logout);
   const [errorMessage, setErrorMessage] = useState('');
-  const searchError = searchParams.get('error');
-  const hashValue = window.location.hash;
-  const hashError = new URLSearchParams(hashValue.replace(/^#/, '')).get('error');
-  const callbackError = searchError || hashError || '';
+  const didRun = useRef(false);
+
+  const callbackError = searchParams.get('error') || '';
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    const hashParams = new URLSearchParams(hashValue.replace(/^#/, ''));
-    const hashAccessToken = hashParams.get('access_token');
-    const hashIdToken = hashParams.get('id_token');
-    const hashState = hashParams.get('state');
+    if (didRun.current) return;
+    didRun.current = true;
 
     if (callbackError) {
       return;
     }
 
+    const rawHash = window.location.hash;
+    if (rawHash) {
+      const hashParams = new URLSearchParams(rawHash.replace(/^#/, ''));
+      if (hashParams.get('access_token') || hashParams.get('id_token')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setErrorMessage(
+          'Implicit OAuth flow is not supported. Please contact support if this error persists.'
+        );
+        return;
+      }
+    }
+
     const finishOAuth = async () => {
       try {
-        if (hashAccessToken || hashIdToken) {
-          const { state: storedState, nonce: storedNonce } = authApi.consumeGoogleOAuthState();
+        const code = searchParams.get('code');
 
-          if (storedState && hashState && storedState !== hashState) {
-            throw new Error('Invalid Google OAuth state.');
-          }
+        window.history.replaceState({}, document.title, window.location.pathname);
 
-          const claims = authApi.decodeJwt(hashIdToken);
-
-          if (storedNonce && claims?.nonce && storedNonce !== claims.nonce) {
-            throw new Error('Invalid Google OAuth nonce.');
-          }
-
-          const oauthToken = hashAccessToken || hashIdToken;
-          const profile = authApi.buildUserFromGoogleClaims(claims);
-
-          if (!oauthToken || !profile) {
-            throw new Error('Google OAuth callback did not include usable profile data.');
-          }
-
-          setAuth({
-            accessToken: oauthToken,
-            refreshToken: null,
-            user: profile,
-          });
-
-          window.history.replaceState({}, document.title, window.location.pathname);
-          navigate('/dashboard', { replace: true });
-          return;
+        if (!code) {
+          throw new Error('OAuth callback did not include an exchange code.');
         }
 
-        if (!token) {
-          setErrorMessage('OAuth callback did not include a token.');
-          return;
+        const exchange = await authApi.exchangeOAuthCode(code);
+
+        if (!exchange?.accessToken) {
+          throw new Error('Token exchange did not return a valid session.');
         }
 
-        let profile = null;
-        let refreshToken = null;
-
-        try {
-          profile = await authApi.getCurrentUser();
-        } catch {
-          const exchange = await authApi.exchangeOAuthToken(token);
-          profile = exchange.user;
-          refreshToken = exchange.refreshToken;
-        }
-
+        let profile = exchange.user;
         if (!profile) {
           profile = await authApi.getCurrentUser();
         }
 
+        if (!profile) {
+          throw new Error('Could not retrieve user profile after OAuth sign in.');
+        }
+
         setAuth({
-          accessToken: token,
-          refreshToken,
+          accessToken: exchange.accessToken,
+          refreshToken: exchange.refreshToken ?? null,
           user: profile,
         });
 
@@ -94,7 +89,7 @@ export default function OAuthCallbackPage() {
     };
 
     finishOAuth();
-  }, [callbackError, hashValue, logout, navigate, searchParams, setAuth]);
+  }, [callbackError, logout, navigate, searchParams, setAuth]);
 
   if (callbackError) {
     return (

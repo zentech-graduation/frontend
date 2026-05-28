@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,7 +14,7 @@ import {
   usePasswordToggle,
 } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
-import { resetPasswordSchema } from '@/components/auth/authSchemas';
+import { resetPasswordSchema } from '@/features/auth/utils/authSchemas';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -41,6 +41,15 @@ export default function ResetPasswordPage() {
     control,
     name: 'password',
   });
+
+  // Scrub the token query parameter from the URL immediately after the token
+  // has been captured into defaultValues. useLayoutEffect runs synchronously
+  // before paint so the token never appears in the rendered address bar.
+  useLayoutEffect(() => {
+    if (token) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!serverState.success) {

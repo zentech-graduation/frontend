@@ -822,19 +822,25 @@ function Footer() {
         </div>
         <div style={{ display: 'flex', gap: 22, alignItems: 'center' }}>
           {['privacy', 'terms', 'press', 'contact'].map((label) => (
-            <a
+            <button
               key={label}
-              href="#"
-              onClick={(event) => event.preventDefault()}
+              type="button"
+              onClick={() => {
+                // TODO: wire to real routes when legal/press pages are built.
+              }}
               style={{
                 fontFamily: 'var(--font-body)',
                 fontSize: 13,
                 color: 'var(--lx-ink-2)',
                 textDecoration: 'none',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
               }}
             >
               {label}
-            </a>
+            </button>
           ))}
         </div>
       </div>
