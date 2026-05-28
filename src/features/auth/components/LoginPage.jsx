@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
@@ -42,7 +42,7 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
@@ -51,7 +51,10 @@ export default function LoginPage() {
       password: '',
     },
   });
-  const emailValue = watch('email');
+  const emailValue = useWatch({
+    control,
+    name: 'email',
+  });
 
   const canVerify = serverError.toLowerCase().includes('inactive') && emailValue?.trim();
 
@@ -102,7 +105,7 @@ export default function LoginPage() {
     try {
       window.location.href = authApi.getGoogleLoginUrl();
     } catch (error) {
-      setServerError(authApi.normalizeMessage(error, 'Google OAuth is not configured yet.'));
+      setServerError(authApi.normalizeMessage(error, 'Unable to start Google sign in right now.'));
     }
   };
 
@@ -156,7 +159,9 @@ export default function LoginPage() {
           {canVerify ? (
             <div className="auth-form__meta auth-form__meta--center">
               <span>Your account still needs verification.</span>
-              <Link to={`/verify-email?email=${encodeURIComponent(emailValue.trim().toLowerCase())}`}>
+              <Link
+                to={`/verify-email?email=${encodeURIComponent(emailValue.trim().toLowerCase())}`}
+              >
                 Verify email
               </Link>
             </div>
