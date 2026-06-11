@@ -113,12 +113,26 @@ export const toMessageView = (message, { participants, currentUserId, loadedMess
   };
 };
 
+/**
+ * Attachments from the loaded history, newest first.
+ *
+ * There is no endpoint that lists a conversation's media, so this is what the info panel's grid can
+ * honestly show: the attachments on the pages already fetched. It grows as the reader scrolls back.
+ * The alternative considered was leaving the grid on fixture data, which would have shown every
+ * conversation the same invented six images.
+ */
+const mediaOf = (messages) =>
+  (messages || [])
+    .filter((message) => !message.isDeleted && message.media)
+    .map((message) => ({ id: message.id, ...message.media }));
+
 /** A conversation plus its loaded history, in the shape the thread panel renders. */
 export const toThread = (conversation, messages, currentUserId) => {
   const loaded = messages || [];
   return {
     ...toThreadSummary(conversation, currentUserId),
     participants: conversation.participants || [],
+    media: mediaOf(loaded),
     messages: loaded.map((message) =>
       toMessageView(message, {
         participants: conversation.participants,

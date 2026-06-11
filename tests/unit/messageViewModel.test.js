@@ -186,4 +186,37 @@ describe('toThread', () => {
     const thread = toThread(conversation, [reply, first], ME);
     expect(thread.messages[0].replyText).toBe('first');
   });
+
+  it('derives shared media from the loaded messages', () => {
+    // The info panel read `activeThread.media`, which toThread never produced, so opening the panel
+    // threw. The grid now shows real attachments from the pages already fetched.
+    const conversation = { id: 'c1', isGroup: false, participants, unreadCount: 0 };
+    const withMedia = message({
+      id: 'm1',
+      mediaAssetId: 'asset-1',
+      media: { mediaAssetId: 'asset-1', mediaType: 'image', cdnUrl: 'https://cdn/x.jpg' },
+    });
+    const thread = toThread(conversation, [withMedia, message({ id: 'm2' })], ME);
+
+    expect(Array.isArray(thread.media)).toBe(true);
+    expect(thread.media).toHaveLength(1);
+    expect(thread.media[0].id).toBe('m1');
+    expect(thread.media[0].cdnUrl).toBe('https://cdn/x.jpg');
+  });
+
+  it('always produces a media array, even with no history', () => {
+    const conversation = { id: 'c1', isGroup: false, participants, unreadCount: 0 };
+    expect(toThread(conversation, [], ME).media).toEqual([]);
+    expect(toThread(conversation, null, ME).media).toEqual([]);
+  });
+
+  it('omits attachments on deleted messages', () => {
+    const conversation = { id: 'c1', isGroup: false, participants, unreadCount: 0 };
+    const removed = message({
+      id: 'm1',
+      isDeleted: true,
+      media: { mediaAssetId: 'a', mediaType: 'image', cdnUrl: 'https://cdn/gone.jpg' },
+    });
+    expect(toThread(conversation, [removed], ME).media).toEqual([]);
+  });
 });
