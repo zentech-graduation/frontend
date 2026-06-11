@@ -15,7 +15,7 @@ import { useFollow, useUnfollow, useBlock, useUnblock, useBlockedUsers } from '.
 import { useDrainEmptyPages } from '../hooks/useDrainEmptyPages';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { BlockConfirmDialog } from './BlockConfirmDialog';
-import { ConfirmModal } from './ConfirmModal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { FollowListModal } from './FollowListModal';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { ROUTES, routeTo } from '@/config/constants';

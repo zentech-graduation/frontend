@@ -34,7 +34,7 @@ import { useViewport } from '../hooks/useViewport';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { ReportModal } from './ReportModal';
 import { toast } from './Toast';
-import { ConfirmModal } from './ConfirmModal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo } from '@/config/constants';
 
