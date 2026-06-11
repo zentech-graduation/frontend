@@ -271,6 +271,7 @@ export function MessagesScreen() {
       {showRightRail ? (
         <ConversationInfoPanel
           activeThread={activeThread}
+          currentUserId={currentUserId}
           setPreviewItem={setPreviewItem}
           compact={isTablet}
         />
@@ -303,6 +304,7 @@ export function MessagesScreen() {
           >
             <ConversationInfoPanel
               activeThread={activeThread}
+              currentUserId={currentUserId}
               setPreviewItem={setPreviewItem}
               mobileOverlay
               onClose={() => setMobileInfoOpen(false)}
