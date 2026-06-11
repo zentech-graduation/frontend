@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The real-time connection now authenticates with a single-use ticket instead of carrying the access token in the address, which kept a valid credential in server access logs long after it expired.
 
 ### Fixed
+- Opening a conversation's info panel no longer fails. The shared-media grid now shows the real attachments from the history loaded so far, and says so when there are none.
+- A group conversation's header no longer renders its member count as though it were a username handle.
 - Screens no longer call viewport and message-draft hooks conditionally. React identifies hooks by call order, so the previous arrangement could bind state to the wrong value once a screen was rendered both with and without a viewport prop, or once a message thread was opened and closed.
 - The search field and the explore search field now settle on the address bar's terms in a single render instead of showing the previous terms briefly first.
 - Lint no longer scans the build dependency cache, so it reports only real findings and finishes in seconds rather than minutes.
@@ -23,6 +25,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Continuous integration now runs lint and unit tests in addition to the build.
 
 ### Added
+- Direct messages are real. The conversation list, message history, sending, and deleting now read and write actual conversations instead of a fixed demo set.
+- Unread counts per conversation and on the shell's message badge, cleared when you open the conversation.
+- Group conversations: see who is in a group, rename it, remove a member, and leave. Renaming and removing are offered only to group admins, matching what the server allows.
+- New messages appear while a conversation is open, without a refresh.
+- Attachments on a message are shown with the message rather than as a generic "sent an attachment" line.
 - Unit test coverage for the session store, the token refresh queue, and the route guards.
 - A live API test suite that verifies the backend contract against a running stack, including the real sign-up and email verification path.
 - A development-only warning when real-time updates fail to connect repeatedly, so a misconfigured endpoint is visible during integration instead of failing silently.
@@ -35,7 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The story viewer now has visible previous/next buttons, alongside the existing tap zones, so you can move through a person's stories - and straight into the next person's - without closing and reopening the viewer.
 - On desktop, the story viewer shows the previous and next story as dimmed previews beside the main one, so its neighbours are visible without stepping through them.
 - You can like a story from the heart in the viewer, which bumps the same way a post's like does; on mobile, double-tapping the story also likes it and pops a heart over the media, matching double-tap on a post.
-- You can reply to a story from the viewer. Sending shows a confirmation, but nothing is delivered yet - the messaging feature this depends on isn't built.
+- You can reply to a story from the viewer. The reply is delivered as a direct message to the story's author, carrying the story it answers, the way Instagram does it.
 - Clicking outside the story card - anywhere on the dimmed backdrop - closes the story viewer, the same as the close button.
 - Clicking a notification about a comment now opens the post it belongs to and scrolls to that comment, flashing it briefly, instead of opening the notifier's profile.
 - You can set a profile banner (cover image) from the edit screen, uploaded from your device or pasted as a URL and cleared the same way as the avatar; it shows across the top of your profile.
