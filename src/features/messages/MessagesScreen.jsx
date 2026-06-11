@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { toThread, toThreadSummary } from './utils/messageViewModel';
 import { useConversations, useMarkRead } from './hooks/useConversations';
 import { useMessages, useDeleteMessage, useSendMessage } from './hooks/useMessages';
+import { useLiveMessages } from './hooks/useLiveMessages';
 import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
@@ -48,6 +49,8 @@ export function MessagesScreen() {
   const activeThread = activeConversation
     ? toThread(activeConversation, activeMessages, currentUserId)
     : null;
+
+  useLiveMessages(activeConversation?.id);
 
   const markRead = useMarkRead();
   const sendMessage = useSendMessage(activeConversation?.id);
