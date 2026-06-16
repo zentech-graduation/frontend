@@ -1,5 +1,7 @@
 import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router-dom';
 
+import { ROUTES } from '@/config/constants';
+
 /**
  * RouterErrorPage
  *
@@ -58,7 +60,7 @@ export default function RouterErrorPage() {
         <button className="router-error-page__btn" onClick={() => navigate(-1)}>
           Go back
         </button>
-        <button className="router-error-page__btn router-error-page__btn--primary" onClick={() => navigate('/', { replace: true })}>
+        <button className="router-error-page__btn router-error-page__btn--primary" onClick={() => navigate(ROUTES.HOME, { replace: true })}>
           Home
         </button>
       </div>

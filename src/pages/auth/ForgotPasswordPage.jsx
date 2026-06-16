@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { authApi } from '@/api/authApi';
 import { AuthAlert, AuthButton, AuthInput, AuthShell } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
+import { ROUTES } from '@/config/constants';
 import { emailSchema } from '@/features/auth/utils/authSchemas';
 
 export default function ForgotPasswordPage() {
@@ -47,7 +48,7 @@ export default function ForgotPasswordPage() {
         subtitle="Enter your email and we will send you a secure reset link."
         footer={
           <p>
-            Remembered it? <Link to="/login">Back to sign in</Link>
+            Remembered it? <Link to={ROUTES.LOGIN}>Back to sign in</Link>
           </p>
         }
       >
