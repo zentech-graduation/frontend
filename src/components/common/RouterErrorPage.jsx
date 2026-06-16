@@ -42,7 +42,9 @@ export default function RouterErrorPage() {
   }
 
   // Log for developer inspection — never rendered to the user in production.
-  console.error('[RouterErrorPage]', error);
+  if (import.meta.env.DEV) {
+    console.error('[RouterErrorPage]', error);
+  }
 
   return (
     <main className="router-error-page">

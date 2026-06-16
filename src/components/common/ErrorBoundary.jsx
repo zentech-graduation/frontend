@@ -24,7 +24,9 @@ export default class GlobalErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     // Replace with a real error-reporting integration (e.g. Sentry.captureException)
-    console.error('[GlobalErrorBoundary]', error, info?.componentStack);
+    if (import.meta.env.DEV) {
+      console.error('[GlobalErrorBoundary]', error, info?.componentStack);
+    }
   }
 
   handleReset() {
