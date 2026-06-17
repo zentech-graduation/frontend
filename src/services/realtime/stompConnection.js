@@ -333,3 +333,13 @@ export const closeConnection = (endpoint) => {
     teardownClient(conn);
   }
 };
+
+// A signed-out browser must not keep an authenticated socket open, and until now nothing called
+// closeConnection despite its documentation claiming otherwise. The teardown is driven from here
+// rather than from the store's logout action because this module already depends on the store, and
+// the reverse edge would be an import cycle.
+useAuthStore.subscribe((state, previous) => {
+  if (previous?.isAuthenticated && !state.isAuthenticated) {
+    closeConnection();
+  }
+});
