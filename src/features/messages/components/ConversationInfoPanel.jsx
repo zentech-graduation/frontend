@@ -6,6 +6,7 @@ import { LxIcon } from '@/components/ui/lx-icon';
 import { LxAvatar } from '@/components/ui/lx-avatar';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useGroupMutations } from '../hooks/useGroupMutations';
+import { AddParticipants } from './AddParticipants';
 import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
 
@@ -110,7 +111,8 @@ export function ConversationInfoPanel({
   const [renaming, setRenaming] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [confirm, setConfirm] = useState(null);
-  const { rename, removeParticipant, leave } = useGroupMutations(activeThread?.id);
+  const [adding, setAdding] = useState(false);
+  const { rename, addParticipants, removeParticipant, leave } = useGroupMutations(activeThread?.id);
 
   if (!activeThread) return null;
 
@@ -250,6 +252,15 @@ export function ConversationInfoPanel({
                   rename
                 </button>
               ) : null}
+              {iAmAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => setAdding((open) => !open)}
+                  style={pillButton()}
+                >
+                  {adding ? 'done' : 'add people'}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() =>
@@ -295,6 +306,13 @@ export function ConversationInfoPanel({
             <div style={SECTION_LABEL}>
               members ({participants.filter((p) => !p.leftAt).length})
             </div>
+            {adding ? (
+              <AddParticipants
+                existingIds={participants.filter((p) => !p.leftAt).map((p) => p.userId)}
+                pending={addParticipants.isPending}
+                onAdd={(userId) => addParticipants.mutate([userId])}
+              />
+            ) : null}
             {participants.map((participant) => (
               <ParticipantRow
                 key={participant.userId}

@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - Direct messages are real. The conversation list, message history, sending, and deleting now read and write actual conversations instead of a fixed demo set.
 - Unread counts per conversation and on the shell's message badge, cleared when you open the conversation.
-- Group conversations: see who is in a group, rename it, remove a member, and leave. Renaming and removing are offered only to group admins, matching what the server allows.
+- Group conversations: see who is in a group, rename it, add people by searching for them, remove a member, and leave. Renaming, adding, and removing are offered only to group admins, matching what the server allows.
 - New messages appear while a conversation is open, without a refresh.
 - Attachments on a message are shown with the message rather than as a generic "sent an attachment" line.
 - Unit test coverage for the session store, the token refresh queue, and the route guards.

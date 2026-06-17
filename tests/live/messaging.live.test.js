@@ -270,3 +270,21 @@ describe('group conversations', () => {
     expect(result.status).toBeGreaterThanOrEqual(400);
   }, 60000);
 });
+
+describe('participant picker source', () => {
+  it('returns rows whose identity is nested under user', async () => {
+    // The group picker reads `row.user.id` and `row.user.username`. Reading them off the row
+    // itself yielded a list of blank entries that still looked populated, so the nesting is
+    // pinned here rather than rediscovered in the UI.
+    const page = unwrap(
+      await api(`/users/search?q=${encodeURIComponent(bob.user.username.slice(0, 8))}&limit=5`, {
+        token: alice.accessToken,
+      })
+    );
+
+    expect(Array.isArray(page.content)).toBe(true);
+    const row = page.content.find((candidate) => candidate.user?.id === bob.user.id);
+    expect(row).toBeTruthy();
+    expect(row.user.username).toBe(bob.user.username);
+  }, 60000);
+});
