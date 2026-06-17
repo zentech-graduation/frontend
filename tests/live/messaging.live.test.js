@@ -194,3 +194,83 @@ describe('story replies', () => {
     expect(sent.content).toBe('love this story');
   });
 });
+
+describe('mutual follow provisioning', () => {
+  const follow = (from, targetId) =>
+    api(`/social/follow/${targetId}`, { method: 'POST', token: from.accessToken });
+  const unfollow = (from, targetId) =>
+    api(`/social/follow/${targetId}`, { method: 'DELETE', token: from.accessToken });
+
+  it('gives both people a conversation without either sending anything', async () => {
+    // The headline behaviour: opening Messages should not be an empty room for people who already
+    // follow each other.
+    const carol = await createVerifiedUser();
+    const dave = await createVerifiedUser();
+
+    await follow(carol, dave.user.id);
+    // One direction is not a relationship, so nothing should exist yet.
+    const before = unwrap(await api('/conversations?limit=20', { token: carol.accessToken }));
+    expect(before.content).toHaveLength(0);
+
+    await follow(dave, carol.user.id);
+
+    // Both sides: the conversation belongs to the pair, not to whoever followed last.
+    for (const viewer of [carol, dave]) {
+      const list = unwrap(await api('/conversations?limit=20', { token: viewer.accessToken }));
+      expect(list.content).toHaveLength(1);
+      expect(list.content[0].lastMessage ?? null).toBeNull();
+    }
+  }, 120000);
+
+  it('removes the conversation again when the follow is undone and nothing was said', async () => {
+    const erin = await createVerifiedUser();
+    const frank = await createVerifiedUser();
+    await follow(erin, frank.user.id);
+    await follow(frank, erin.user.id);
+
+    await unfollow(erin, frank.user.id);
+
+    const list = unwrap(await api('/conversations?limit=20', { token: erin.accessToken }));
+    expect(list.content).toHaveLength(0);
+  }, 120000);
+
+  it('keeps a conversation that has messages when the follow is undone', async () => {
+    // The data-loss guard, asserted through the real API rather than only in the backend suite.
+    const gina = await createVerifiedUser();
+    const hank = await createVerifiedUser();
+    await follow(gina, hank.user.id);
+    await follow(hank, gina.user.id);
+
+    const list = unwrap(await api('/conversations?limit=20', { token: gina.accessToken }));
+    const conversationId = list.content[0].id;
+    await api(`/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      token: gina.accessToken,
+      body: { messageType: 'text', content: 'said out loud' },
+    });
+
+    await unfollow(gina, hank.user.id);
+
+    const after = unwrap(await api('/conversations?limit=20', { token: gina.accessToken }));
+    expect(after.content.map((c) => c.id)).toContain(conversationId);
+  }, 120000);
+});
+
+describe('starting a conversation from compose', () => {
+  it('creates a conversation with someone who does not follow back', async () => {
+    const stranger = await createVerifiedUser();
+
+    const created = unwrap(
+      await api('/conversations', {
+        method: 'POST',
+        token: alice.accessToken,
+        body: { targetUserId: stranger.user.id },
+      })
+    );
+
+    expect(created.id).toBeTruthy();
+    expect(created.participants.map((p) => p.userId).sort()).toEqual(
+      [alice.user.id, stranger.user.id].sort()
+    );
+  }, 60000);
+});

@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toThread, toThreadSummary } from './utils/messageViewModel';
-import { useConversations, useMarkRead } from './hooks/useConversations';
+import { conversationsKey, useConversations, useMarkRead } from './hooks/useConversations';
 import { useMessages, useDeleteMessage, useSendMessage } from './hooks/useMessages';
 import { useLiveMessages } from './hooks/useLiveMessages';
 import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
 import { MediaPlaceholder } from './components/MediaPlaceholder';
+import { PersonPicker } from './components/PersonPicker';
+import { messageService } from '@/services/message.service';
 import { useLuvaxTweaks } from '@/features/luvax/LuvaxTweaksContext';
 import { toast } from '@/features/luvax/components/Toast';
 
@@ -29,6 +32,8 @@ export function MessagesScreen() {
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
   const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
+  const [composing, setComposing] = useState(false);
+  const queryClient = useQueryClient();
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
 
@@ -93,12 +98,23 @@ export function MessagesScreen() {
   // Declared above the effect that calls it. The effect body referenced it before its
   // declaration, which is safe only because effects run after the component body has
   // finished evaluating - an ordering the reader should not have to reconstruct.
-  const handleCompose = () => {
-    // Starting a conversation needs a recipient, and no picker exists yet. The previous behaviour
-    // inserted a local placeholder conversation that was never sent anywhere and vanished on
-    // reload, which read as a working compose. Saying so is better than looking like it worked.
-    toast('choose someone from their profile to start a conversation');
-  };
+  // Auto-provisioning covers people who already follow each other back. This covers everyone else,
+  // including the first message to someone who has not followed back.
+  const startConversation = useMutation({
+    mutationFn: (targetUserId) => messageService.createDirect(targetUserId),
+    onSuccess: (response) => {
+      const conversation = response?.data;
+      setComposing(false);
+      queryClient.invalidateQueries({ queryKey: conversationsKey });
+      if (conversation?.id) {
+        setActiveThreadId(conversation.id);
+        setThreadOpen(true);
+      }
+    },
+    onError: (error) => toast(error?.message || 'could not start that conversation'),
+  });
+
+  const handleCompose = () => setComposing(true);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -308,6 +324,56 @@ export function MessagesScreen() {
               setPreviewItem={setPreviewItem}
               mobileOverlay
               onClose={() => setMobileInfoOpen(false)}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {composing ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="new message"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2147483400,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={() => setComposing(false)}
+            style={{ position: 'absolute', inset: 0, background: v.scrim }}
+          />
+          <div
+            style={{
+              position: 'relative',
+              width: 340,
+              maxWidth: '100%',
+              background: v.base,
+              borderRadius: 16,
+              padding: 20,
+              boxShadow: '0 20px 60px rgba(26,24,22,0.26)',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: v.fontDisplay,
+                fontWeight: 700,
+                fontSize: 16,
+                color: v.ink,
+                marginBottom: 12,
+              }}
+            >
+              new message
+            </div>
+            <PersonPicker
+              excludeIds={threads.map((thread) => thread.counterpartId).filter(Boolean)}
+              pending={startConversation.isPending}
+              onPick={(userId) => startConversation.mutate(userId)}
             />
           </div>
         </div>

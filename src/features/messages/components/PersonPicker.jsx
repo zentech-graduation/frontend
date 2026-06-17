@@ -9,16 +9,16 @@ const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 300;
 
 /**
- * Picks people to add to a group.
+ * Picks a person to start a conversation with.
  *
  * Search is debounced and requires two characters: the endpoint is a trigram search over every
- * user, and firing it on each keystroke from the first letter would ask the database to rank
- * most of the table on every press.
+ * user, and firing it on each keystroke from the first letter would ask the database to rank most
+ * of the table on every press.
  *
- * Members already in the group are filtered out of the results rather than shown and rejected,
- * since adding someone twice is not something the server accepts.
+ * `excludeIds` filters people out of the results rather than showing them and rejecting the
+ * choice afterwards.
  */
-export function AddParticipants({ existingIds, onAdd, pending }) {
+export function PersonPicker({ excludeIds = [], onPick, pending }) {
   const [term, setTerm] = useState('');
   const [debounced, setDebounced] = useState('');
 
@@ -36,15 +36,15 @@ export function AddParticipants({ existingIds, onAdd, pending }) {
   // Each row is a summary plus the viewer's relationship to it, so the identity is one level down.
   const results = (data?.data?.content || [])
     .map((row) => row.user || row)
-    .filter((candidate) => candidate?.id && !existingIds.includes(candidate.id));
+    .filter((candidate) => candidate?.id && !excludeIds.includes(candidate.id));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <input
         value={term}
         onChange={(event) => setTerm(event.target.value)}
-        placeholder="search people to add"
-        aria-label="search people to add"
+        placeholder="search for someone"
+        aria-label="search for someone"
         style={{
           height: 32,
           borderRadius: 999,
@@ -59,7 +59,7 @@ export function AddParticipants({ existingIds, onAdd, pending }) {
       />
 
       {debounced.length >= MIN_QUERY_LENGTH && !isFetching && results.length === 0 ? (
-        <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>nobody to add</div>
+        <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>no one found</div>
       ) : null}
 
       {results.map((candidate) => (
@@ -68,7 +68,7 @@ export function AddParticipants({ existingIds, onAdd, pending }) {
           type="button"
           disabled={pending}
           onClick={() => {
-            onAdd(candidate.id);
+            onPick(candidate.id);
             setTerm('');
             setDebounced('');
           }}
