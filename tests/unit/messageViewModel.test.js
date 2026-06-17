@@ -32,7 +32,7 @@ const message = (overrides) => ({
 describe('toThreadSummary', () => {
   it('names a direct conversation after the other participant, never the viewer', () => {
     const view = toThreadSummary(
-      { id: 'c1', isGroup: false, participants, unreadCount: 2, lastMessage: message({}) },
+      { id: 'c1', participants, unreadCount: 2, lastMessage: message({}) },
       ME
     );
     expect(view.name).toBe('Priya');
@@ -40,34 +40,15 @@ describe('toThreadSummary', () => {
     expect(view.unread).toBe(2);
   });
 
-  it('names a group after the group and counts its members', () => {
-    const view = toThreadSummary(
-      {
-        id: 'c2',
-        isGroup: true,
-        groupName: 'Design',
-        groupAvatarUrl: 'https://cdn/g.jpg',
-        participants,
-        unreadCount: 0,
-        lastMessage: null,
-      },
-      ME
-    );
-    expect(view.name).toBe('Design');
-    expect(view.isGroup).toBe(true);
-    expect(view.avatarUrl).toBe('https://cdn/g.jpg');
-    expect(view.username).toContain('2');
-  });
-
   it('previews the last message, and stays blank when there is none', () => {
     const withLast = toThreadSummary(
-      { id: 'c1', isGroup: false, participants, unreadCount: 0, lastMessage: message({}) },
+      { id: 'c1', participants, unreadCount: 0, lastMessage: message({}) },
       ME
     );
     expect(withLast.preview).toBe('hello');
 
     const empty = toThreadSummary(
-      { id: 'c3', isGroup: false, participants, unreadCount: 0, lastMessage: null },
+      { id: 'c3', participants, unreadCount: 0, lastMessage: null },
       ME
     );
     expect(empty.preview).toBe('');
@@ -77,7 +58,6 @@ describe('toThreadSummary', () => {
     const view = toThreadSummary(
       {
         id: 'c4',
-        isGroup: false,
         participants,
         unreadCount: 0,
         lastMessage: message({ content: null, mediaAssetId: 'a1' }),
@@ -168,7 +148,6 @@ describe('toThread', () => {
   it('combines the summary with mapped messages', () => {
     const conversation = {
       id: 'c1',
-      isGroup: false,
       participants,
       unreadCount: 0,
       lastMessage: null,
@@ -180,7 +159,7 @@ describe('toThread', () => {
   });
 
   it('resolves replies across the whole loaded set, not just earlier pages', () => {
-    const conversation = { id: 'c1', isGroup: false, participants, unreadCount: 0 };
+    const conversation = { id: 'c1', participants, unreadCount: 0 };
     const first = message({ id: 'm0', content: 'first' });
     const reply = message({ id: 'm1', replyToId: 'm0' });
     const thread = toThread(conversation, [reply, first], ME);
@@ -190,7 +169,7 @@ describe('toThread', () => {
   it('derives shared media from the loaded messages', () => {
     // The info panel read `activeThread.media`, which toThread never produced, so opening the panel
     // threw. The grid now shows real attachments from the pages already fetched.
-    const conversation = { id: 'c1', isGroup: false, participants, unreadCount: 0 };
+    const conversation = { id: 'c1', participants, unreadCount: 0 };
     const withMedia = message({
       id: 'm1',
       mediaAssetId: 'asset-1',
@@ -205,13 +184,13 @@ describe('toThread', () => {
   });
 
   it('always produces a media array, even with no history', () => {
-    const conversation = { id: 'c1', isGroup: false, participants, unreadCount: 0 };
+    const conversation = { id: 'c1', participants, unreadCount: 0 };
     expect(toThread(conversation, [], ME).media).toEqual([]);
     expect(toThread(conversation, null, ME).media).toEqual([]);
   });
 
   it('omits attachments on deleted messages', () => {
-    const conversation = { id: 'c1', isGroup: false, participants, unreadCount: 0 };
+    const conversation = { id: 'c1', participants, unreadCount: 0 };
     const removed = message({
       id: 'm1',
       isDeleted: true,

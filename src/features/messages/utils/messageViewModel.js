@@ -33,10 +33,9 @@ export const formatMessageTime = (isoString) => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-/** The other party in a direct conversation, or null for a group. */
+/** The other party in the conversation. */
 export const counterpartOf = (conversation, currentUserId) => {
-  if (!conversation || conversation.isGroup) return null;
-  const others = (conversation.participants || []).filter(
+  const others = (conversation?.participants || []).filter(
     (participant) => participant.userId !== currentUserId
   );
   return others[0] || null;
@@ -70,18 +69,17 @@ const kindOf = (message) => {
 /** One row in the conversation list. */
 export const toThreadSummary = (conversation, currentUserId) => {
   const counterpart = counterpartOf(conversation, currentUserId);
-  const isGroup = Boolean(conversation.isGroup);
-  const memberCount = (conversation.participants || []).length;
 
   return {
     id: conversation.id,
-    isGroup,
-    name: isGroup ? conversation.groupName || 'group' : nameOf(counterpart),
-    username: isGroup ? `${memberCount} members` : counterpart?.username || '',
-    avatarUrl: isGroup ? conversation.groupAvatarUrl || null : counterpart?.avatarUrl || null,
+    name: nameOf(counterpart),
+    username: counterpart?.username || '',
+    avatarUrl: counterpart?.avatarUrl || null,
     preview: previewTextOf(conversation.lastMessage),
     time: formatMessageTime(conversation.lastMessageAt),
     unread: conversation.unreadCount || 0,
+    // Carried so the compose picker can exclude people the viewer already has a thread with.
+    counterpartId: counterpart?.userId || null,
   };
 };
 

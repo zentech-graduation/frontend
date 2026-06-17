@@ -97,7 +97,7 @@ export function ChatCenterPanel({
               {activeThread.name}
             </div>
             <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
-              {activeThread.isGroup ? activeThread.username : `@${activeThread.username}`}
+              @{activeThread.username}
             </div>
           </div>
         </div>

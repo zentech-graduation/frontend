@@ -52,7 +52,10 @@ const openClient = (endpoint, ticket, timeoutMs = 10000) => {
   openClients.push(client);
 
   const connected = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`no connect within ${timeoutMs}ms`)), timeoutMs);
+    const timer = setTimeout(
+      () => reject(new Error(`no connect within ${timeoutMs}ms`)),
+      timeoutMs
+    );
     const fail = (why) => {
       clearTimeout(timer);
       reject(new Error(why));

@@ -44,83 +44,6 @@ export const createDirect = async (targetUserId) => {
 };
 
 /**
- * Creates a group conversation.
- * @param {{groupName: string, groupAvatarUrl?: string, participantIds: string[]}} payload
- * @returns {Promise<Object>} ApiResponse envelope wrapping the created conversation.
- */
-export const createGroup = async ({ groupName, groupAvatarUrl, participantIds }) => {
-  const response = await axiosInstance.post(`${CONVERSATION_API_PATH}/group`, {
-    groupName,
-    groupAvatarUrl,
-    participantIds,
-  });
-  return response.data;
-};
-
-/**
- * Renames a group or replaces its avatar.
- * @param {string} conversationId
- * @param {{groupName?: string, groupAvatarUrl?: string}} payload
- * @returns {Promise<Object>} ApiResponse envelope wrapping the updated conversation.
- */
-export const updateGroup = async (conversationId, { groupName, groupAvatarUrl }) => {
-  const response = await axiosInstance.patch(`${CONVERSATION_API_PATH}/${conversationId}`, {
-    groupName,
-    groupAvatarUrl,
-  });
-  return response.data;
-};
-
-/**
- * Lists a conversation's participants, including former members.
- * @param {string} conversationId
- * @returns {Promise<Object>} ApiResponse envelope wrapping the participant list.
- */
-export const listParticipants = async (conversationId) => {
-  const response = await axiosInstance.get(
-    `${CONVERSATION_API_PATH}/${conversationId}/participants`
-  );
-  return response.data;
-};
-
-/**
- * Adds members to a group.
- * @param {string} conversationId
- * @param {string[]} userIds
- * @returns {Promise<Object>} ApiResponse envelope.
- */
-export const addParticipants = async (conversationId, userIds) => {
-  const response = await axiosInstance.post(
-    `${CONVERSATION_API_PATH}/${conversationId}/participants`,
-    { userIds }
-  );
-  return response.data;
-};
-
-/**
- * Removes one member from a group.
- * @param {string} conversationId
- * @param {string} userId
- * @returns {Promise<Object>} ApiResponse envelope.
- */
-export const removeParticipant = async (conversationId, userId) => {
-  const response = await axiosInstance.delete(
-    `${CONVERSATION_API_PATH}/${conversationId}/participants/${userId}`
-  );
-  return response.data;
-};
-
-/**
- * Leaves a conversation the caller is a member of.
- * @param {string} conversationId
- * @returns {Promise<Object>} ApiResponse envelope.
- */
-export const leaveConversation = async (conversationId) => {
-  const response = await axiosInstance.post(`${CONVERSATION_API_PATH}/${conversationId}/leave`);
-  return response.data;
-};
-
-/**
  * Cursor-paginated message history for one conversation, newest first.
  * @param {string} conversationId
  * @param {{cursor?: string, limit?: number, signal?: AbortSignal}} params
@@ -191,12 +114,6 @@ export const messageService = {
   listConversations,
   getConversation,
   createDirect,
-  createGroup,
-  updateGroup,
-  listParticipants,
-  addParticipants,
-  removeParticipant,
-  leaveConversation,
   listMessages,
   sendMessage,
   deleteMessage,

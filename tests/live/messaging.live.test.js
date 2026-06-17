@@ -34,7 +34,6 @@ describe('direct conversations', () => {
     expect([200, 201]).toContain(result.status);
 
     const conversation = unwrap(result);
-    expect(conversation.isGroup).toBe(false);
     expect(conversation.participants.map((p) => p.userId).sort()).toEqual(
       [alice.user.id, bob.user.id].sort()
     );
@@ -194,97 +193,4 @@ describe('story replies', () => {
     expect(sent.sharedStoryId).toBe(storyId);
     expect(sent.content).toBe('love this story');
   });
-});
-
-describe('group conversations', () => {
-  it('creates a group, renames it, and adds then removes a participant', async () => {
-    const carol = await createVerifiedUser();
-
-    const group = unwrap(
-      await api('/conversations/group', {
-        method: 'POST',
-        token: alice.accessToken,
-        body: { groupName: 'plan trip', participantIds: [bob.user.id] },
-      })
-    );
-    expect(group.isGroup).toBe(true);
-    expect(group.groupName).toBe('plan trip');
-
-    const renamed = unwrap(
-      await api(`/conversations/${group.id}`, {
-        method: 'PATCH',
-        token: alice.accessToken,
-        body: { groupName: 'trip confirmed' },
-      })
-    );
-    expect(renamed.groupName).toBe('trip confirmed');
-
-    await api(`/conversations/${group.id}/participants`, {
-      method: 'POST',
-      token: alice.accessToken,
-      body: { userIds: [carol.user.id] },
-    });
-    const withCarol = unwrap(
-      await api(`/conversations/${group.id}/participants`, { token: alice.accessToken })
-    );
-    expect(withCarol.map((p) => p.userId)).toContain(carol.user.id);
-
-    const removed = await api(`/conversations/${group.id}/participants/${carol.user.id}`, {
-      method: 'DELETE',
-      token: alice.accessToken,
-    });
-    expect([200, 204]).toContain(removed.status);
-  }, 60000);
-
-  it('lets a member leave', async () => {
-    const group = unwrap(
-      await api('/conversations/group', {
-        method: 'POST',
-        token: alice.accessToken,
-        body: { groupName: 'leavers', participantIds: [bob.user.id] },
-      })
-    );
-
-    const left = await api(`/conversations/${group.id}/leave`, {
-      method: 'POST',
-      token: bob.accessToken,
-    });
-    expect([200, 204]).toContain(left.status);
-  }, 60000);
-
-  it('refuses to let a non-admin remove another participant', async () => {
-    // Removal is an admin power. Without this the info panel would offer every member a button
-    // that fails only once pressed.
-    const group = unwrap(
-      await api('/conversations/group', {
-        method: 'POST',
-        token: alice.accessToken,
-        body: { groupName: 'authority', participantIds: [bob.user.id] },
-      })
-    );
-
-    const result = await api(`/conversations/${group.id}/participants/${alice.user.id}`, {
-      method: 'DELETE',
-      token: bob.accessToken,
-    });
-    expect(result.status).toBeGreaterThanOrEqual(400);
-  }, 60000);
-});
-
-describe('participant picker source', () => {
-  it('returns rows whose identity is nested under user', async () => {
-    // The group picker reads `row.user.id` and `row.user.username`. Reading them off the row
-    // itself yielded a list of blank entries that still looked populated, so the nesting is
-    // pinned here rather than rediscovered in the UI.
-    const page = unwrap(
-      await api(`/users/search?q=${encodeURIComponent(bob.user.username.slice(0, 8))}&limit=5`, {
-        token: alice.accessToken,
-      })
-    );
-
-    expect(Array.isArray(page.content)).toBe(true);
-    const row = page.content.find((candidate) => candidate.user?.id === bob.user.id);
-    expect(row).toBeTruthy();
-    expect(row.user.username).toBe(bob.user.username);
-  }, 60000);
 });
