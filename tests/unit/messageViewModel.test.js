@@ -158,12 +158,32 @@ describe('toThread', () => {
     expect(thread.participants).toHaveLength(2);
   });
 
+  it('returns messages oldest first so the newest sits at the bottom', () => {
+    // The API answers newest first because that is what paginating backwards through history
+    // needs. Rendering that order directly puts new messages above old ones, which reads as a log
+    // rather than a conversation.
+    const conversation = { id: 'c1', participants, unreadCount: 0 };
+    const older = message({ id: 'm1', content: 'first', createdAt: '2026-08-18T10:00:00Z' });
+    const newer = message({ id: 'm2', content: 'second', createdAt: '2026-08-18T10:05:00Z' });
+
+    const thread = toThread(conversation, [newer, older], ME);
+
+    expect(thread.messages.map((m) => m.text)).toEqual(['first', 'second']);
+  });
+
   it('resolves replies across the whole loaded set, not just earlier pages', () => {
+    // Reversing for display must not break quote resolution, which scans the whole loaded set.
+    // After the flip the reply is last, not first.
     const conversation = { id: 'c1', participants, unreadCount: 0 };
     const first = message({ id: 'm0', content: 'first' });
     const reply = message({ id: 'm1', replyToId: 'm0' });
     const thread = toThread(conversation, [reply, first], ME);
-    expect(thread.messages[0].replyText).toBe('first');
+    expect(thread.messages[1].replyText).toBe('first');
+  });
+
+  it('carries the counterpart id so compose can exclude existing conversations', () => {
+    const summary = toThreadSummary({ id: 'c1', participants, unreadCount: 0 }, ME);
+    expect(summary.counterpartId).toBe(OTHER);
   });
 
   it('derives shared media from the loaded messages', () => {

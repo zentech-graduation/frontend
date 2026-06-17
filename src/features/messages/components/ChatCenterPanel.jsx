@@ -3,6 +3,7 @@ import { v } from '@/config/tokens';
 import { CHAR_LIMITS } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { AvatarVisual } from './AvatarVisual';
+import { ConversationGreeting } from './ConversationGreeting';
 import { MessageBubble } from './MessageBubble';
 
 const autoResizeDraft = (element) => {
@@ -129,6 +130,7 @@ export function ChatCenterPanel({
             justifyContent: activeThread.messages.length <= 1 ? 'space-between' : 'flex-start',
           }}
         >
+          <ConversationGreeting messageCount={activeThread.messages.length} />
           {activeThread.messages.map((message, index) => (
             <div
               key={message.id}

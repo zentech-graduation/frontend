@@ -124,19 +124,24 @@ const mediaOf = (messages) =>
     .filter((message) => !message.isDeleted && message.media)
     .map((message) => ({ id: message.id, ...message.media }));
 
-/** A conversation plus its loaded history, in the shape the thread panel renders. */
+/** A conversation plus its loaded history, oldest first, in the shape the thread panel renders. */
 export const toThread = (conversation, messages, currentUserId) => {
   const loaded = messages || [];
   return {
     ...toThreadSummary(conversation, currentUserId),
     participants: conversation.participants || [],
     media: mediaOf(loaded),
-    messages: loaded.map((message) =>
-      toMessageView(message, {
-        participants: conversation.participants,
-        currentUserId,
-        loadedMessages: loaded,
-      })
-    ),
+    // The API returns newest first because that is what paging backwards through history needs.
+    // Reading wants the opposite, so the flip happens once here rather than in every component
+    // that renders a thread. Quote resolution above still sees the whole unreversed set.
+    messages: loaded
+      .map((message) =>
+        toMessageView(message, {
+          participants: conversation.participants,
+          currentUserId,
+          loadedMessages: loaded,
+        })
+      )
+      .reverse(),
   };
 };
