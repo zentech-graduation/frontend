@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import PageLoader from '@/components/common/PageLoader';
+import { ROUTES } from '@/config/constants';
 import { useAuthStore } from '@/store/useAuthStore';
 
 /**
@@ -43,7 +44,7 @@ export default function ProtectedRoute() {
     // into router state that survives browser history traversal.
     return (
       <Navigate
-        to="/login"
+        to={ROUTES.LOGIN}
         replace
         state={{ from: { pathname: location.pathname } }}
       />

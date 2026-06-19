@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi } from '@/api/authApi';
 import { AuthAlert, AuthShell, InlineAction } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
+import { ROUTES } from '@/config/constants';
 import { useCountdown } from '@/hooks/useCountdown';
 
 const RESEND_SECONDS = 60;
@@ -41,7 +42,7 @@ export default function EmailVerificationPage() {
         // was in-flight (e.g. user clicked away before the server responded).
         if (controller.signal.aborted) return;
 
-        navigate('/login', {
+        navigate(ROUTES.LOGIN, {
           replace: true,
           state: { verificationSuccess: true },
         });
@@ -95,7 +96,7 @@ export default function EmailVerificationPage() {
         }
         footer={
           <p>
-            Already verified? <Link to="/login">Sign in</Link>
+            Already verified? <Link to={ROUTES.LOGIN}>Sign in</Link>
           </p>
         }
       >

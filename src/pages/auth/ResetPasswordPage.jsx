@@ -14,6 +14,7 @@ import {
   usePasswordToggle,
 } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
+import { ROUTES } from '@/config/constants';
 import { resetPasswordSchema } from '@/features/auth/utils/authSchemas';
 
 export default function ResetPasswordPage() {
@@ -57,7 +58,7 @@ export default function ResetPasswordPage() {
     }
 
     const redirectTimer = window.setTimeout(() => {
-      navigate('/login', {
+      navigate(ROUTES.LOGIN, {
         replace: true,
         state: {
           resetSuccess:
@@ -98,7 +99,7 @@ export default function ResetPasswordPage() {
         subtitle="Create a strong password for your Luvax account."
         footer={
           <p>
-            Need a new link? <Link to="/forgot-password">Request another reset email</Link>
+            Need a new link? <Link to={ROUTES.FORGOT_PASSWORD}>Request another reset email</Link>
           </p>
         }
       >

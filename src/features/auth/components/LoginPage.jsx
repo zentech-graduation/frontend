@@ -15,6 +15,7 @@ import {
   usePasswordToggle,
 } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
+import { ROUTES } from '@/config/constants';
 import { loginSchema } from '../utils/authSchemas';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -116,7 +117,7 @@ export default function LoginPage() {
         subtitle=""
         footer={
           <p>
-            new here? <Link to="/register">create an account</Link>
+            new here? <Link to={ROUTES.REGISTER}>create an account</Link>
           </p>
         }
       >
@@ -150,7 +151,7 @@ export default function LoginPage() {
           />
 
           <div className="auth-form__meta auth-form__meta--end">
-            <Link to="/forgot-password">forgot password?</Link>
+            <Link to={ROUTES.FORGOT_PASSWORD}>forgot password?</Link>
           </div>
 
           {successMessage ? <AuthAlert tone="success">{successMessage}</AuthAlert> : null}
@@ -160,7 +161,7 @@ export default function LoginPage() {
             <div className="auth-form__meta auth-form__meta--center">
               <span>Your account still needs verification.</span>
               <Link
-                to={`/verify-email?email=${encodeURIComponent(emailValue.trim().toLowerCase())}`}
+                to={`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(emailValue.trim().toLowerCase())}`}
               >
                 Verify email
               </Link>

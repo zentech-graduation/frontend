@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import PageLoader from '@/components/common/PageLoader';
+import { ROUTES } from '@/config/constants';
 import { useAuthStore } from '@/store/useAuthStore';
 
 export default function GuestRoute() {
@@ -14,7 +15,7 @@ export default function GuestRoute() {
   }
 
   if (isAuthenticated && !isReauthRequest) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
 
   return <Outlet />;

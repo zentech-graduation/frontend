@@ -16,6 +16,7 @@ import {
   usePasswordToggle,
 } from '@/components/auth/AuthPrimitives';
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
+import { ROUTES } from '@/config/constants';
 import { registerSchema } from '@/features/auth/utils/authSchemas';
 
 function buildUsername(name, email) {
@@ -67,7 +68,7 @@ export default function RegisterPage() {
     }
 
     const redirectTimer = window.setTimeout(() => {
-      navigate(`/verify-email?email=${encodeURIComponent(successMessage)}`, {
+      navigate(`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(successMessage)}`, {
         replace: true,
         state: {
           registerSuccess: 'Registration successful. Please verify your email to continue.',
@@ -113,7 +114,7 @@ export default function RegisterPage() {
         subtitle="a small social network for the people you actually know."
         footer={
           <p>
-            already have one? <Link to="/login">sign in</Link>
+            already have one? <Link to={ROUTES.LOGIN}>sign in</Link>
           </p>
         }
       >
