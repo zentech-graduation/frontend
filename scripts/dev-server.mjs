@@ -8,42 +8,44 @@ const DEV_PORT = 5173;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 const shouldReset = process.argv.includes('--reset');
-
-function run(command) {
-  return execSync(`cmd.exe /d /s /c "${command}"`, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  });
-}
+const isWindows = process.platform === 'win32';
 
 function getListeningPids(port) {
   try {
-    const output = run(`netstat -ano -p tcp | findstr LISTENING | findstr :${port}`);
-
-    return [...new Set(
-      output
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => {
-          const parts = line.split(/\s+/);
-          return Number(parts.at(-1));
-        })
-        .filter((pid) => Number.isFinite(pid) && pid > 0)
-    )];
+    if (isWindows) {
+      const output = execSync(`netstat -ano -p tcp | findstr LISTENING | findstr :${port}`, {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        shell: true,
+      });
+      return [...new Set(
+        output.split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => Number(line.split(/\s+/).at(-1)))
+          .filter((pid) => Number.isFinite(pid) && pid > 0)
+      )];
+    } else {
+      const output = execSync(`ss -tlnp sport = :${port}`, { encoding: 'utf8' });
+      const pids = [];
+      for (const match of output.matchAll(/pid=(\d+)/g)) {
+        pids.push(Number(match[1]));
+      }
+      return [...new Set(pids)];
+    }
   } catch {
     return [];
   }
 }
 
 function getProcessName(pid) {
+  if (!isWindows) return null;
   try {
-    const output = run(`tasklist /FI "PID eq ${pid}" /FO CSV /NH`).trim();
-
-    if (!output || output.startsWith('INFO:')) {
-      return null;
-    }
-
+    const output = execSync(`tasklist /FI "PID eq ${pid}" /FO CSV /NH`, {
+      encoding: 'utf8',
+      shell: true,
+    }).trim();
+    if (!output || output.startsWith('INFO:')) return null;
     const [imageName] = output.replace(/^"|"$/g, '').split('","');
     return imageName || null;
   } catch {
@@ -55,11 +57,13 @@ function sleep(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
 
-function killPidTree(pid) {
+function killPid(pid) {
   try {
-    execSync(`taskkill /PID ${pid} /T /F`, {
-      stdio: 'ignore',
-    });
+    if (isWindows) {
+      execSync(`taskkill /PID ${pid} /T /F`, { stdio: 'ignore', shell: true });
+    } else {
+      process.kill(pid, 'SIGTERM');
+    }
     return true;
   } catch {
     return false;
@@ -69,47 +73,33 @@ function killPidTree(pid) {
 function ensureStablePort(port) {
   let pids = getListeningPids(port);
 
-  if (pids.length === 0) {
-    return;
-  }
+  if (pids.length === 0) return;
 
   console.log(`Port ${port} is in use by PID(s): ${pids.join(', ')}. Closing previous dev server(s)...`);
 
   for (const pid of pids) {
-    killPidTree(pid);
+    killPid(pid);
   }
 
   for (let attempt = 0; attempt < 30; attempt += 1) {
     pids = getListeningPids(port);
-
-    if (pids.length === 0) {
-      return;
-    }
-
-    for (const pid of pids) {
-      killPidTree(pid);
-    }
-
+    if (pids.length === 0) return;
+    for (const pid of pids) killPid(pid);
     sleep(200);
   }
 
   const remaining = getListeningPids(port);
-
   if (remaining.length > 0) {
-    const processLabels = remaining.map((pid) => `${pid}${getProcessName(pid) ? ` (${getProcessName(pid)})` : ''}`);
-    console.error(`Unable to free port ${port}. Still in use by: ${processLabels.join(', ')}`);
+    const labels = remaining.map((pid) => `${pid}${getProcessName(pid) ? ` (${getProcessName(pid)})` : ''}`);
+    console.error(`Unable to free port ${port}. Still in use by: ${labels.join(', ')}`);
     process.exit(1);
   }
 }
 
 function resetDevArtifacts() {
-  const viteCacheDir = path.join(projectRoot, 'node_modules', '.vite');
-  const viteTempDir = path.join(projectRoot, '.vite-cache');
-  const distDir = path.join(projectRoot, 'dist');
-
-  rmSync(viteCacheDir, { recursive: true, force: true });
-  rmSync(viteTempDir, { recursive: true, force: true });
-  rmSync(distDir, { recursive: true, force: true });
+  rmSync(path.join(projectRoot, 'node_modules', '.vite'), { recursive: true, force: true });
+  rmSync(path.join(projectRoot, '.vite-cache'), { recursive: true, force: true });
+  rmSync(path.join(projectRoot, 'dist'), { recursive: true, force: true });
 }
 
 if (shouldReset) {
@@ -120,11 +110,11 @@ if (shouldReset) {
 ensureStablePort(DEV_PORT);
 
 const vite = spawn(
-  'cmd.exe',
-  ['/c', 'npx', 'vite', '--port', String(DEV_PORT), '--strictPort', '--configLoader', 'native'],
+  'npx',
+  ['vite', '--port', String(DEV_PORT), '--strictPort', '--configLoader', 'native'],
   {
     stdio: 'inherit',
-    shell: false,
+    shell: isWindows,
   }
 );
 

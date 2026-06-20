@@ -30,7 +30,9 @@ const handleQueryError = (error) => {
   }
 
   // Replace with your error-reporting SDK call (e.g. Sentry.captureException(error))
-  console.error('[QueryClient]', error?.message ?? error);
+  if (import.meta.env.DEV) {
+    console.error('[QueryClient]', error?.message ?? error);
+  }
 };
 
 const queryClient = new QueryClient({
