@@ -1,11 +1,3 @@
-/**
- * useLocalStorage — Syncs a value to localStorage with automatic serialization.
- *
- * @template T
- * @param {string} key - localStorage key
- * @param {T} initialValue - default value if key doesn't exist
- * @returns {[T, (value: T | ((prev: T) => T)) => void]}
- */
 import { useState, useEffect } from 'react';
 
 export function useLocalStorage(key, initialValue) {
@@ -22,7 +14,9 @@ export function useLocalStorage(key, initialValue) {
     try {
       window.localStorage.setItem(key, JSON.stringify(storedValue));
     } catch (error) {
-      console.error(`[useLocalStorage] Failed to set key "${key}":`, error);
+      if (import.meta.env.DEV) {
+        console.error(`[useLocalStorage] Failed to set key "${key}":`, error);
+      }
     }
   }, [key, storedValue]);
 

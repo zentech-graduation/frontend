@@ -9,8 +9,14 @@ export const API_URL = import.meta.env.DEV ? '/api/v1' : ENV_API_URL || 'http://
 /** Route paths — single source of truth for navigation */
 export const ROUTES = {
   HOME: '/',
+  APP: '/app',
   LOGIN: '/login',
   REGISTER: '/register',
+  VERIFY_EMAIL: '/verify-email',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
+  OAUTH_CALLBACK: '/oauth2/callback',
+  OAUTH_CALLBACK_ALT: '/oauth/callback',
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
   NOT_FOUND: '*',

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 
+import { ROUTES } from '@/config/constants';
+
 function Glyph({ children, size = 18, color = 'currentColor', stroke = 1.5 }) {
   return (
     <svg
@@ -133,7 +135,7 @@ function TopNav({ inverted }) {
       <WordMark size={24} inverted={inverted} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <Link
-          to="/login?reauth=1"
+          to={`${ROUTES.LOGIN}?reauth=1`}
           style={{
             background: 'none',
             border: 'none',
@@ -149,7 +151,7 @@ function TopNav({ inverted }) {
           sign in
         </Link>
         <Link
-          to="/register"
+          to={ROUTES.REGISTER}
           style={{
             background: inverted ? '#F9F7F4' : 'var(--lx-ink)',
             color: inverted ? 'var(--lx-ink)' : 'var(--lx-ink-inverse)',
@@ -468,7 +470,7 @@ function Hero({ theme = 'warm' }) {
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <Link
-              to="/register"
+              to={ROUTES.REGISTER}
               style={{
                 background: isDark ? '#F9F7F4' : 'var(--lx-ink)',
                 color: isDark ? 'var(--lx-ink)' : 'var(--lx-ink-inverse)',
@@ -487,7 +489,7 @@ function Hero({ theme = 'warm' }) {
               create your account <ArrowIcon color={isDark ? 'var(--lx-ink)' : 'var(--lx-ink-inverse)'} />
             </Link>
             <Link
-              to="/login?reauth=1"
+              to={`${ROUTES.LOGIN}?reauth=1`}
               style={{
                 background: 'transparent',
                 color: ink,
@@ -763,7 +765,7 @@ function CtaStrip() {
           ads.
         </p>
         <Link
-          to="/register"
+          to={ROUTES.REGISTER}
           style={{
             marginTop: 8,
             background: 'var(--lx-ink)',

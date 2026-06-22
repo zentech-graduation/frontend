@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
+import { ROUTES } from '@/config/constants';
 import { useAuthStore } from '@/store/useAuthStore';
 
 export default function DashboardPage() {
@@ -15,7 +16,7 @@ export default function DashboardPage() {
       // We still clear local auth state even if the backend cookie is already gone.
     } finally {
       logout();
-      navigate('/login', { replace: true });
+      navigate(ROUTES.LOGIN, { replace: true });
     }
   };
 

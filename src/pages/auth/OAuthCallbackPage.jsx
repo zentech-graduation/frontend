@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
 import PageLoader from '@/components/common/PageLoader';
+import { ROUTES } from '@/config/constants';
 import { useAuthStore } from '@/store/useAuthStore';
 
 /**
@@ -81,7 +82,7 @@ export default function OAuthCallbackPage() {
           user: profile,
         });
 
-        navigate('/dashboard', { replace: true });
+        navigate(ROUTES.DASHBOARD, { replace: true });
       } catch (oauthError) {
         logout();
         setErrorMessage(authApi.normalizeMessage(oauthError, 'Unable to complete Google sign in.'));
