@@ -18,9 +18,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `registerSchema` now includes a required `username` field (3–30 chars, alphanumeric + underscores) and makes the `name` (display name) field optional with a 100-character maximum.
 - `resetPasswordSchema` no longer includes a `token` field; the token is extracted from the URL programmatically and is not a form input.
 
-### Removed
-- Deleted dead `useLocalStorage` export from `src/hooks/useCommon.js` — had zero callers and carried a `localStorage.setItem` call that posed a token-misuse risk if invoked with an auth-adjacent key.
-
 ### Added
 - Frontend support for backend-managed Google OAuth2 login, including the `/oauth2/callback` route and exchange-code handling.
 
