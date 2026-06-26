@@ -56,7 +56,7 @@ export default function RegisterPage() {
         password: values.password,
       });
 
-      navigate(ROUTES.VERIFY_EMAIL_NOTICE, { replace: true });
+      navigate(ROUTES.VERIFY_EMAIL_NOTICE, { replace: true, state: { email: values.email } });
     } catch (error) {
       setServerError(authApi.normalizeMessage(error, 'Unable to create your account right now.'));
     }
