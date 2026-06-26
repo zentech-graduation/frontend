@@ -32,7 +32,6 @@ export default function ResetPasswordPage() {
   } = useForm({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      token,
       password: '',
       confirmPassword: '',
     },
@@ -44,7 +43,7 @@ export default function ResetPasswordPage() {
   });
 
   // Scrub the token query parameter from the URL immediately after the token
-  // has been captured into defaultValues. useLayoutEffect runs synchronously
+  // has been captured into the local const. useLayoutEffect runs synchronously
   // before paint so the token never appears in the rendered address bar.
   useLayoutEffect(() => {
     if (token) {
@@ -73,9 +72,14 @@ export default function ResetPasswordPage() {
   const onSubmit = async (values) => {
     setServerState({ error: '', success: '' });
 
+    if (!token) {
+      setServerState({ error: 'This reset link is invalid or expired.', success: '' });
+      return;
+    }
+
     try {
       await authApi.resetPassword({
-        token: values.token,
+        token,
         newPassword: values.password,
       });
 
@@ -91,6 +95,25 @@ export default function ResetPasswordPage() {
     }
   };
 
+  if (!token) {
+    return (
+      <AuthPageLayout>
+        <AuthShell
+          eyebrow="Reset password"
+          title="link expired."
+          subtitle="This reset link is invalid or has expired."
+          footer={
+            <p>
+              <Link to={ROUTES.FORGOT_PASSWORD}>Request a new reset link</Link>
+            </p>
+          }
+        >
+          <div />
+        </AuthShell>
+      </AuthPageLayout>
+    );
+  }
+
   return (
     <AuthPageLayout>
       <AuthShell
@@ -104,15 +127,6 @@ export default function ResetPasswordPage() {
         }
       >
         <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-          <AuthInput
-            label="Reset code or token"
-            type="text"
-            placeholder="Paste the code from your email"
-            autoComplete="one-time-code"
-            error={errors.token?.message}
-            {...register('token')}
-          />
-
           <div className="auth-form__stack">
             <AuthInput
               label="New password"

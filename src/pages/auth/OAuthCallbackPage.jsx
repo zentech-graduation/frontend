@@ -82,7 +82,7 @@ export default function OAuthCallbackPage() {
           user: profile,
         });
 
-        navigate(ROUTES.DASHBOARD, { replace: true });
+        navigate(ROUTES.APP, { replace: true });
       } catch (oauthError) {
         logout();
         setErrorMessage(authApi.normalizeMessage(oauthError, 'Unable to complete Google sign in.'));

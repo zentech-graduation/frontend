@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
@@ -43,7 +43,6 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
@@ -52,12 +51,6 @@ export default function LoginPage() {
       password: '',
     },
   });
-  const emailValue = useWatch({
-    control,
-    name: 'email',
-  });
-
-  const canVerify = serverError.toLowerCase().includes('inactive') && emailValue?.trim();
 
   useEffect(() => {
     if (!isReauthRequest) {
@@ -92,9 +85,16 @@ export default function LoginPage() {
 
       setAuth({ accessToken, refreshToken, user });
 
-      const nextPath = location.state?.from?.pathname || '/dashboard';
+      const nextPath = location.state?.from?.pathname || ROUTES.APP;
       navigate(nextPath, { replace: true });
     } catch (error) {
+      const errorCode = error?.response?.data?.errorCode;
+      if (errorCode === 'EMAIL_NOT_VERIFIED') {
+        navigate(ROUTES.VERIFY_EMAIL_NOTICE, {
+          state: { email: values.email },
+        });
+        return;
+      }
       logout();
       setServerError(authApi.normalizeMessage(error, 'Unable to sign you in right now.'));
     }
@@ -156,17 +156,6 @@ export default function LoginPage() {
 
           {successMessage ? <AuthAlert tone="success">{successMessage}</AuthAlert> : null}
           {serverError ? <AuthAlert>{serverError}</AuthAlert> : null}
-
-          {canVerify ? (
-            <div className="auth-form__meta auth-form__meta--center">
-              <span>Your account still needs verification.</span>
-              <Link
-                to={`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(emailValue.trim().toLowerCase())}`}
-              >
-                Verify email
-              </Link>
-            </div>
-          ) : null}
 
           <AuthButton type="submit" loading={isSubmitting}>
             sign in
