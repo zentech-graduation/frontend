@@ -33,6 +33,36 @@ const authService = {
   getMe: async () => {
     return authApi.getCurrentUser();
   },
+
+  /**
+   * @param {{ token: string, email?: string }} values
+   * @returns {Promise<object>}
+   */
+  verifyEmail: async (values) => authApi.verifyEmail(values),
+
+  /**
+   * @param {{ email: string }} values
+   * @returns {Promise<object>}
+   */
+  resendVerification: async (values) => authApi.resendVerification(values),
+
+  /**
+   * @param {{ email: string }} values
+   * @returns {Promise<object>}
+   */
+  forgotPassword: async (values) => authApi.forgotPassword(values),
+
+  /**
+   * @param {{ token: string, password: string }} values
+   * @returns {Promise<object>}
+   */
+  resetPassword: async (values) => authApi.resetPassword(values),
+
+  /**
+   * @param {string} code
+   * @returns {Promise<{ user: object, accessToken: string, refreshToken: string }>}
+   */
+  exchangeOAuthCode: async (code) => authApi.exchangeOAuthCode(code),
 };
 
 export default authService;
