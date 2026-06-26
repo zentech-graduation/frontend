@@ -91,6 +91,7 @@ export default function LoginPage() {
       const errorCode = error?.response?.data?.errorCode;
       if (errorCode === 'EMAIL_NOT_VERIFIED') {
         navigate(ROUTES.VERIFY_EMAIL_NOTICE, {
+          replace: true,
           state: { email: values.email },
         });
         return;

@@ -85,8 +85,8 @@ export function useRegister() {
   const navigate = useNavigate();
   return useMutation({
     mutationFn: (data) => authService.register(data),
-    onSuccess: () => {
-      navigate(ROUTES.VERIFY_EMAIL_NOTICE, { replace: true });
+    onSuccess: (_, variables) => {
+      navigate(ROUTES.VERIFY_EMAIL_NOTICE, { replace: true, state: { email: variables.email } });
     },
   });
 }
