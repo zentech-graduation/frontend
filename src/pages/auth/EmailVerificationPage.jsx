@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
@@ -6,6 +6,7 @@ import { AuthAlert, AuthShell, InlineAction } from '@/components/auth/AuthPrimit
 import AuthPageLayout from '@/components/auth/AuthPageLayout';
 import { ROUTES } from '@/config/constants';
 import { useCountdown } from '@/hooks/useCountdown';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const RESEND_SECONDS = 60;
 
@@ -16,19 +17,19 @@ export default function EmailVerificationPage() {
   const tokenFromUrl = searchParams.get('token') || '';
   const [resendState, setResendState] = useState({ error: '', success: '' });
   const [tokenError, setTokenError] = useState('');
+  const setAuth = useAuthStore((state) => state.setAuth);
   const { secondsLeft: countdown, isComplete: canResend, start: restartCountdown } =
     useCountdown(RESEND_SECONDS);
 
+  const calledRef = useRef(false);
+
   useEffect(() => {
-    if (!tokenFromUrl) {
+    if (!tokenFromUrl || calledRef.current) {
       return;
     }
-
-    const controller = new AbortController();
+    calledRef.current = true;
 
     const verifyFromUrl = async () => {
-      // Scrub the token from the URL before any async work so it does not
-      // persist in browser history if the call is slow or the user navigates back.
       window.history.replaceState(
         {},
         document.title,
@@ -36,19 +37,22 @@ export default function EmailVerificationPage() {
       );
 
       try {
-        await authApi.verifyEmail({ token: tokenFromUrl });
+        const sessionData = await authApi.verifyEmail({ token: tokenFromUrl });
 
-        // Guard: do not navigate if the component unmounted while the request
-        // was in-flight (e.g. user clicked away before the server responded).
-        if (controller.signal.aborted) return;
-
-        navigate(ROUTES.LOGIN, {
-          replace: true,
-          state: { verificationSuccess: true },
-        });
+        if (sessionData?.accessToken) {
+          setAuth({
+            accessToken: sessionData.accessToken,
+            refreshToken: sessionData.refreshToken ?? null,
+            user: sessionData.user ?? null,
+          });
+          navigate(ROUTES.APP, { replace: true });
+        } else {
+          navigate(ROUTES.LOGIN, {
+            replace: true,
+            state: { verificationSuccess: 'Your email has been verified. Sign in to continue.' },
+          });
+        }
       } catch (error) {
-        if (controller.signal.aborted) return;
-
         setTokenError(
           authApi.normalizeMessage(error, 'The verification link is invalid or has expired.')
         );
@@ -56,11 +60,7 @@ export default function EmailVerificationPage() {
     };
 
     verifyFromUrl();
-
-    return () => {
-      controller.abort();
-    };
-  }, [navigate, tokenFromUrl, email]);
+  }, [navigate, tokenFromUrl, email, setAuth]);
 
   const handleResend = async () => {
     if (!canResend || !email) {
@@ -91,8 +91,8 @@ export default function EmailVerificationPage() {
         title="verify your email."
         subtitle={
           email
-            ? `Vui long xac thuc email cua ban: ${email}.`
-            : 'Vui long xac thuc email cua ban de tiep tuc su dung Luvax.'
+            ? `We sent a verification link to ${email}.`
+            : 'Check your inbox for a verification link.'
         }
         footer={
           <p>

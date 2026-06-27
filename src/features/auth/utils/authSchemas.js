@@ -32,14 +32,21 @@ export const loginSchema = z.object({
  */
 export const registerSchema = z
   .object({
+    username: z
+      .string()
+      .trim()
+      .min(3, 'Username must be at least 3 characters.')
+      .max(30, 'Username must be 30 characters or fewer.')
+      .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
     name: z
       .string()
       .trim()
-      .min(1, 'Display name is required.')
-      .max(50, 'Display name must be 50 characters or fewer.'),
+      .max(100, 'Display name must be 100 characters or fewer.')
+      .optional()
+      .or(z.literal('')),
     email: emailField,
     password: passwordField,
-    confirmPassword: z.string().min(8, 'Please confirm your password.'),
+    confirmPassword: z.string().min(1, 'Please confirm your password.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match.',
@@ -86,13 +93,8 @@ export const forgotPasswordResetSchema = z
 
 export const resetPasswordSchema = z
   .object({
-    token: z
-      .string()
-      .trim()
-      .min(6, 'Reset token is required.')
-      .max(512, 'Reset token is too long.'),
     password: passwordField,
-    confirmPassword: z.string().min(8, 'Please confirm your password.'),
+    confirmPassword: z.string().min(1, 'Please confirm your password.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match.',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
@@ -19,28 +19,10 @@ import AuthPageLayout from '@/components/auth/AuthPageLayout';
 import { ROUTES } from '@/config/constants';
 import { registerSchema } from '@/features/auth/utils/authSchemas';
 
-function buildUsername(name, email) {
-  const baseSource = name?.trim() || email?.split('@')[0] || 'luvax-user';
-  const normalized = baseSource
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '.')
-    .replace(/^\.+|\.+$/g, '')
-    .replace(/\.{2,}/g, '.')
-    .slice(0, 20);
-
-  const safeBase = normalized || 'luvax.user';
-  const uniqueSuffix = Date.now().toString().slice(-6);
-
-  return `${safeBase}.${uniqueSuffix}`.slice(0, 30);
-}
-
 export default function RegisterPage() {
   const navigate = useNavigate();
   const passwordField = usePasswordToggle();
   const [serverError, setServerError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   const {
     register,
@@ -50,6 +32,7 @@ export default function RegisterPage() {
   } = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      username: '',
       name: '',
       email: '',
       password: '',
@@ -62,36 +45,18 @@ export default function RegisterPage() {
     name: 'password',
   });
 
-  useEffect(() => {
-    if (!successMessage) {
-      return undefined;
-    }
-
-    const redirectTimer = window.setTimeout(() => {
-      navigate(`${ROUTES.VERIFY_EMAIL}?email=${encodeURIComponent(successMessage)}`, {
-        replace: true,
-        state: {
-          registerSuccess: 'Registration successful. Please verify your email to continue.',
-        },
-      });
-    }, 1200);
-
-    return () => window.clearTimeout(redirectTimer);
-  }, [navigate, successMessage]);
-
   const onSubmit = async (values) => {
     setServerError('');
-    setSuccessMessage('');
 
     try {
       await authApi.register({
         name: values.name,
-        username: buildUsername(values.name, values.email),
+        username: values.username,
         email: values.email,
         password: values.password,
       });
 
-      setSuccessMessage(values.email);
+      navigate(ROUTES.VERIFY_EMAIL_NOTICE, { replace: true, state: { email: values.email } });
     } catch (error) {
       setServerError(authApi.normalizeMessage(error, 'Unable to create your account right now.'));
     }
@@ -126,6 +91,13 @@ export default function RegisterPage() {
           />
           <AuthDivider />
 
+          <AuthInput
+            label="Username"
+            placeholder="yourname"
+            autoComplete="username"
+            error={errors.username?.message}
+            {...register('username')}
+          />
           <AuthInput
             label="Display name"
             placeholder="Alex Morgan"
@@ -166,11 +138,6 @@ export default function RegisterPage() {
           />
 
           {serverError ? <AuthAlert>{serverError}</AuthAlert> : null}
-          {successMessage ? (
-            <AuthAlert tone="success">
-              Your account has been created successfully. Redirecting to email verification...
-            </AuthAlert>
-          ) : null}
 
           <AuthButton type="submit" loading={isSubmitting}>
             create account

@@ -7,6 +7,7 @@ import ProtectedRoute from '@/components/common/ProtectedRoute';
 import RouterErrorPage from '@/components/common/RouterErrorPage';
 import EmailVerificationPage from '@/pages/auth/EmailVerificationPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
+import VerifyEmailNoticePage from '@/pages/auth/VerifyEmailNoticePage';
 import LoginPage from '@/features/auth/components/LoginPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
@@ -38,6 +39,14 @@ const router = createBrowserRouter([
         element: <LuvaxPage />,
       },
       {
+        path: '/verify-email',
+        element: <EmailVerificationPage />,
+      },
+      {
+        path: '/verify-email-notice',
+        element: <VerifyEmailNoticePage />,
+      },
+      {
         element: <GuestRoute />,
         children: [
           {
@@ -49,18 +58,14 @@ const router = createBrowserRouter([
             element: <RegisterPage />,
           },
           {
-            path: '/verify-email',
-            element: <EmailVerificationPage />,
-          },
-          {
             path: '/forgot-password',
             element: <ForgotPasswordPage />,
           },
-          {
-            path: '/reset-password',
-            element: <ResetPasswordPage />,
-          },
         ],
+      },
+      {
+        path: '/reset-password',
+        element: <ResetPasswordPage />,
       },
       {
         path: '/oauth2/callback',

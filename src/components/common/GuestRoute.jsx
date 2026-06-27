@@ -15,7 +15,7 @@ export default function GuestRoute() {
   }
 
   if (isAuthenticated && !isReauthRequest) {
-    return <Navigate to={ROUTES.DASHBOARD} replace />;
+    return <Navigate to={ROUTES.APP} replace />;
   }
 
   return <Outlet />;
