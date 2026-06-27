@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
@@ -21,16 +21,15 @@ export default function EmailVerificationPage() {
   const { secondsLeft: countdown, isComplete: canResend, start: restartCountdown } =
     useCountdown(RESEND_SECONDS);
 
+  const calledRef = useRef(false);
+
   useEffect(() => {
-    if (!tokenFromUrl) {
+    if (!tokenFromUrl || calledRef.current) {
       return;
     }
-
-    const controller = new AbortController();
+    calledRef.current = true;
 
     const verifyFromUrl = async () => {
-      // Scrub the token from the URL before any async work so it does not
-      // persist in browser history if the call is slow or the user navigates back.
       window.history.replaceState(
         {},
         document.title,
@@ -39,10 +38,6 @@ export default function EmailVerificationPage() {
 
       try {
         const sessionData = await authApi.verifyEmail({ token: tokenFromUrl });
-
-        // Guard: do not navigate if the component unmounted while the request
-        // was in-flight (e.g. user clicked away before the server responded).
-        if (controller.signal.aborted) return;
 
         if (sessionData?.accessToken) {
           setAuth({
@@ -58,8 +53,6 @@ export default function EmailVerificationPage() {
           });
         }
       } catch (error) {
-        if (controller.signal.aborted) return;
-
         setTokenError(
           authApi.normalizeMessage(error, 'The verification link is invalid or has expired.')
         );
@@ -67,10 +60,6 @@ export default function EmailVerificationPage() {
     };
 
     verifyFromUrl();
-
-    return () => {
-      controller.abort();
-    };
   }, [navigate, tokenFromUrl, email, setAuth]);
 
   const handleResend = async () => {
