@@ -23,6 +23,17 @@ export const getFeed = async (params = {}) => {
 };
 
 /**
+ * Retrieves a paginated list of a user's published posts.
+ * @param {string|number} userId - The ID of the user.
+ * @param {Object} params - Query parameters (e.g., cursor, limit).
+ * @returns {Promise<Object>} The paginated posts response.
+ */
+export const getUserPosts = async (userId, params = {}) => {
+  const response = await axiosInstance.get(`${POST_API_PATH}/user/${userId}`, { params });
+  return response.data;
+};
+
+/**
  * Retrieves a single post by ID.
  * @param {string|number} postId - The ID of the post.
  * @returns {Promise<Object>} The post details.
@@ -67,6 +78,7 @@ export const updatePostStatus = async (postId, status) => {
 export const postService = {
   createPost,
   getFeed,
+  getUserPosts,
   getPostById,
   updatePost,
   deletePost,

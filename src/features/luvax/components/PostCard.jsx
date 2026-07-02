@@ -39,7 +39,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
       {/* Media Renderer */}
       {media && media.cdnUrl && (
         <div 
-          onClick={() => navigate('post', { post })} 
+          onClick={() => navigate('post', { postId: post.id })} 
           style={{ cursor: 'pointer', position: 'relative', width: '100%' }}
         >
           {media.mediaType === 'VIDEO' ? (
@@ -51,7 +51,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
       )}
       {/* Fallback for mock data (before real backend connects) */}
       {!media && post.type === 'image' && post.media && (
-        <div onClick={() => navigate('post', { post })} style={{
+        <div onClick={() => navigate('post', { postId: post.id })} style={{
           height: post.media.h, background: post.media.color,
           cursor: 'pointer',
         }} />
@@ -73,7 +73,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
         </div>
 
         {/* Caption */}
-        <p onClick={() => navigate('post', { post })} style={{
+        <p onClick={() => navigate('post', { postId: post.id })} style={{
           fontFamily: v.fontBody,
           fontSize: (post.postType === 'TEXT' || post.type === 'text') ? 16 : 14,
           color: v.ink, lineHeight: 1.5, margin: 0,
@@ -96,7 +96,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
               {liked ? (post.likeCount || post.likes || 0) + 1 : (post.likeCount || post.likes || 0)}
             </span>
           </button>
-          <button onClick={() => navigate('post', { post })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <button onClick={() => navigate('post', { postId: post.id })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
             <LxIcon name="reply" size={17} color={v.ink3} />
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
               {post.commentCount || Math.floor((post.likes || 0)/8)+2}

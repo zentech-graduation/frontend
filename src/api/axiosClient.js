@@ -207,7 +207,19 @@ const REDACTED_PATTERNS = [
  * without requiring changes at each call site.
  */
 const normalizeAxiosError = (error) => {
-  if (!error?.response) {
+  if (!error || !error.isAxiosError) {
+    // If it's a generic JS Error (like thrown during refresh token checks), keep its message
+    if (error && !error.response && error.message) {
+      return error;
+    }
+    if (!error?.response) {
+      error = error || new Error('Unknown error');
+      error.message = 'Unable to reach the server. Please check your connection.';
+      return error;
+    }
+  }
+
+  if (!error.response) {
     // Network error or timeout — no HTTP response to inspect.
     error.message = 'Unable to reach the server. Please check your connection.';
     return error;

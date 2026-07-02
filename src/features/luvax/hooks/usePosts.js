@@ -1,10 +1,29 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { postService } from '@/services/post.service';
 
 export const useFeed = (params = {}) => {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['feed', params],
-    queryFn: () => postService.getFeed(params),
+    queryFn: ({ pageParam = null }) => postService.getFeed({ ...params, cursor: pageParam, limit: 10 }),
+    getNextPageParam: (lastPage) => {
+      // Extract from ApiResponse -> CursorPageResponse
+      const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
+      return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
+    },
+    initialPageParam: null,
+  });
+};
+
+export const useUserPosts = (userId, params = {}) => {
+  return useInfiniteQuery({
+    queryKey: ['userPosts', userId, params],
+    queryFn: ({ pageParam = null }) => postService.getUserPosts(userId, { ...params, cursor: pageParam, limit: 10 }),
+    getNextPageParam: (lastPage) => {
+      const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
+      return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
+    },
+    initialPageParam: null,
+    enabled: !!userId,
   });
 };
 
@@ -22,8 +41,9 @@ export const useCreatePost = () => {
   return useMutation({
     mutationFn: (data) => postService.createPost(data),
     onSuccess: () => {
-      // Invalidate feed so the new post appears
+      // Invalidate feed and userPosts so the new post appears everywhere
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
     },
   });
 };
@@ -36,6 +56,7 @@ export const useUpdatePostStatus = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['post', variables.postId] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
     },
   });
 };
