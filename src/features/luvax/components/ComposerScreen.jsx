@@ -2,12 +2,19 @@ import { useState, useMemo } from 'react';
 import { v } from '../constants/tokens';
 import { SUGGESTED_TAGS } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxDivider } from './primitives';
+import { useCreatePost } from '../hooks/usePosts';
+import { mediaService } from '@/services/media.service';
+import { useRef } from 'react';
 
 // ─── Composer Screen ───────────────────────────────────────────────────────
 export function ComposerScreen({ navigate }) {
   const [type, setType] = useState('text');
   const [caption, setCaption] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
+  const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const maxChars = 280;
 
   const captionTags = useMemo(() => {
@@ -23,11 +30,77 @@ export function ComposerScreen({ navigate }) {
     );
   };
 
+  const handleFileChange = (e) => {
+    const selected = e.target.files[0];
+    if (selected) {
+      setFile(selected);
+      setPreviewUrl(URL.createObjectURL(selected));
+    }
+  };
+
+  const removeFile = (e) => {
+    e.stopPropagation();
+    setFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const insertTag = (tag) => {
     if (!caption.includes(`#${tag}`)) {
       setCaption(c => c ? `${c} #${tag}` : `#${tag}`);
     }
   };
+
+  const createPostMutation = useCreatePost();
+
+  const handlePost = async () => {
+    // If photo or video is selected but no file, block
+    if ((type === 'photo' || type === 'video') && !file) {
+      alert(`Please select a ${type} to post.`);
+      return;
+    }
+    // Backend doesn't support text-only posts
+    if (type === 'text') {
+      alert("Text-only posts are not supported by the backend. Please select photo or video.");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      
+      // Upload media first
+      const mediaAsset = await mediaService.uploadMedia(file);
+      
+      // Map frontend type to backend PostType
+      const backendPostType = type === 'photo' ? 'IMAGE' : (type === 'video' ? 'VIDEO' : 'IMAGE');
+
+      // Convert to proper backend format
+      const payload = {
+        caption: caption,
+        postType: backendPostType,
+        mediaIds: [mediaAsset.id],
+      };
+
+      createPostMutation.mutate(payload, {
+        onSuccess: () => {
+          setCaption('');
+          setFile(null);
+          setPreviewUrl(null);
+          setIsUploading(false);
+          navigate('feed');
+        },
+        onError: (err) => {
+          setIsUploading(false);
+          alert("Failed to post: " + err.message);
+        }
+      });
+    } catch (err) {
+      setIsUploading(false);
+      alert("Failed to upload media: " + err.message);
+    }
+  };
+
+  const isActionDisabled = createPostMutation.isPending || isUploading || ((type === 'photo' || type === 'video') && !file);
 
   return (
     <>
@@ -37,15 +110,15 @@ export function ComposerScreen({ navigate }) {
         background: v.base,
       }}>
         <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 500, color: v.ink2 }}>new post</span>
-        <button onClick={() => navigate('feed')} disabled={!caption.trim() && type === 'text'}
+        <button onClick={handlePost} disabled={isActionDisabled}
           style={{
             fontFamily: v.fontBody, fontSize: 14, fontWeight: 600,
-            background: (!caption.trim() && type === 'text') ? v.surfaceRaised : v.accent,
-            color: (!caption.trim() && type === 'text') ? v.ink3 : v.inkInverse,
+            background: isActionDisabled ? v.surfaceRaised : v.accent,
+            color: isActionDisabled ? v.ink3 : v.inkInverse,
             border: 'none', borderRadius: 999, padding: '7px 16px',
-            cursor: (!caption.trim() && type === 'text') ? 'default' : 'pointer',
+            cursor: isActionDisabled ? 'default' : 'pointer',
           }}>
-          post it
+          {isUploading ? 'uploading...' : (createPostMutation.isPending ? 'posting...' : 'post it')}
         </button>
       </div>
 
@@ -77,28 +150,63 @@ export function ComposerScreen({ navigate }) {
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, marginBottom: 8 }}>you</div>
 
+            {/* Hidden file input */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              accept={type === 'photo' ? "image/*" : "video/*"}
+              onChange={handleFileChange} 
+            />
+
             {type === 'photo' && (
-              <div style={{
-                aspectRatio: '4/5', background: v.surfaceSunken,
-                borderRadius: 12, border: `1px dashed ${v.border}`,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
-                cursor: 'pointer', marginBottom: 14,
-              }}>
-                <LxIcon name="image" size={36} color={v.ink3} />
-                <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>tap to add a photo</span>
-                <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>jpg, png · max 10MB</span>
+              <div 
+                onClick={() => !file && fileInputRef.current.click()}
+                style={{
+                  aspectRatio: '4/5', background: v.surfaceSunken,
+                  borderRadius: 12, border: previewUrl ? 'none' : `1px dashed ${v.border}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  cursor: file ? 'default' : 'pointer', marginBottom: 14, position: 'relative', overflow: 'hidden'
+                }}>
+                {previewUrl ? (
+                  <>
+                    <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button onClick={removeFile} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: 4, cursor: 'pointer' }}>
+                      <LxIcon name="close" size={16} color="#fff" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <LxIcon name="image" size={36} color={v.ink3} />
+                    <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>tap to add a photo</span>
+                    <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>jpg, png · max 10MB</span>
+                  </>
+                )}
               </div>
             )}
             {type === 'video' && (
-              <div style={{
-                aspectRatio: '4/5', background: v.surfaceSunken,
-                borderRadius: 12, border: `1px dashed ${v.border}`,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
-                cursor: 'pointer', marginBottom: 14,
-              }}>
-                <LxIcon name="video" size={36} color={v.ink3} />
-                <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>tap to add a video</span>
-                <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>mp4 · max 60s · 50MB</span>
+              <div 
+                onClick={() => !file && fileInputRef.current.click()}
+                style={{
+                  aspectRatio: '4/5', background: v.surfaceSunken,
+                  borderRadius: 12, border: previewUrl ? 'none' : `1px dashed ${v.border}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  cursor: file ? 'default' : 'pointer', marginBottom: 14, position: 'relative', overflow: 'hidden'
+                }}>
+                {previewUrl ? (
+                  <>
+                    <video src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
+                    <button onClick={removeFile} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: 4, cursor: 'pointer', zIndex: 10 }}>
+                      <LxIcon name="close" size={16} color="#fff" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <LxIcon name="video" size={36} color={v.ink3} />
+                    <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>tap to add a video</span>
+                    <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>mp4 · max 60s · 50MB</span>
+                  </>
+                )}
               </div>
             )}
 
