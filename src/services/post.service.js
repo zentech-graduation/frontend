@@ -50,7 +50,7 @@ export const getPostById = async (postId) => {
  * @returns {Promise<Object>} The updated post.
  */
 export const updatePost = async (postId, data) => {
-  const response = await axiosInstance.put(`${POST_API_PATH}/${postId}`, data);
+  const response = await axiosInstance.patch(`${POST_API_PATH}/${postId}`, data);
   return response.data;
 };
 
