@@ -60,3 +60,28 @@ export const useUpdatePostStatus = () => {
     },
   });
 };
+
+export const useUpdatePost = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postId, data }) => postService.updatePost(postId, data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['post', variables.postId] });
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+    },
+  });
+};
+
+export const useDeletePost = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (postId) => postService.deletePost(postId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+    },
+  });
+};

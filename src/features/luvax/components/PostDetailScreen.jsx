@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { v } from '../constants/tokens';
 import { REPLIES } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxBtn, LxBottomSheet } from './primitives';
-import { usePostDetail } from '../hooks/usePosts';
+import { usePostDetail, useUpdatePost, useDeletePost } from '../hooks/usePosts';
 
 // Simple time ago formatter
 const timeAgo = (dateStr) => {
@@ -88,9 +88,38 @@ export function PostDetailScreen({ navigate, params = {} }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [editCaption, setEditCaption] = useState('');
   
   const postId = params.postId;
   const { data: postResponse, isLoading, isError } = usePostDetail(postId);
+  
+  const updatePost = useUpdatePost();
+  const deletePost = useDeletePost();
+
+  const handleEditOpen = () => {
+    setMenuOpen(false);
+    const post = postResponse?.data || postResponse;
+    setEditCaption(post?.caption || post?.text || '');
+    setEditSheetOpen(true);
+  };
+
+  const handleEditSubmit = () => {
+    if (editCaption.trim() !== '') {
+      updatePost.mutate({ postId, data: { caption: editCaption } });
+      setEditSheetOpen(false);
+    }
+  };
+
+  const handleDelete = () => {
+    setMenuOpen(false);
+    if (window.confirm("Are you sure you want to delete this post?")) {
+      deletePost.mutate(postId, {
+        onSuccess: () => navigate(-1) // go back after delete
+      });
+    }
+  };
   
   if (isLoading) {
     return (
@@ -144,6 +173,20 @@ export function PostDetailScreen({ navigate, params = {} }) {
               <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 1 }}>{timeStr}</div>
             </div>
             <LxBtn variant="primary" size="sm">follow</LxBtn>
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: v.ink3 }}>
+                <LxIcon name="more" size={16} color={v.ink3} />
+              </button>
+              {menuOpen && (
+                <div style={{
+                  position: 'absolute', top: 24, right: 0, background: v.surfaceRaised, border: `1px solid ${v.border}`,
+                  borderRadius: 8, padding: 4, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 100, zIndex: 10
+                }}>
+                  <button onClick={handleEditOpen} style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.ink }}>Edit Post</button>
+                  <button onClick={handleDelete} style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.error }}>Delete Post</button>
+                </div>
+              )}
+            </div>
           </div>
 
           <p style={{
@@ -201,6 +244,24 @@ export function PostDetailScreen({ navigate, params = {} }) {
       </div>
 
       <CommentsSheet open={commentsOpen} onClose={() => setCommentsOpen(false)} />
+
+      <LxBottomSheet open={editSheetOpen} onClose={() => setEditSheetOpen(false)} height="40vh">
+        <div style={{ padding: '4px 16px 8px', borderBottom: `1px solid ${v.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 600, color: v.ink }}>Edit Post</div>
+        </div>
+        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
+          <textarea
+            value={editCaption}
+            onChange={(e) => setEditCaption(e.target.value)}
+            placeholder="Write a caption..."
+            style={{
+              width: '100%', height: 100, fontFamily: v.fontBody, fontSize: 15, color: v.ink,
+              border: `1px solid ${v.border}`, borderRadius: 8, padding: 12, resize: 'none', outline: 'none'
+            }}
+          />
+          <LxBtn variant="primary" onClick={handleEditSubmit}>Save Changes</LxBtn>
+        </div>
+      </LxBottomSheet>
     </>
   );
 }
