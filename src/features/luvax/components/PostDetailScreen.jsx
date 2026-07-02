@@ -2,6 +2,18 @@ import { useState } from 'react';
 import { v } from '../constants/tokens';
 import { REPLIES } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxBtn, LxBottomSheet } from './primitives';
+import { usePostDetail } from '../hooks/usePosts';
+
+// Simple time ago formatter
+const timeAgo = (dateStr) => {
+  if (!dateStr) return 'now';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+};
 
 // ─── Comment Row ───────────────────────────────────────────────────────────
 function CommentRow({ r }) {
@@ -38,12 +50,9 @@ function CommentsSheet({ open, onClose }) {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {REPLIES.map((r, i) => (
-          <div key={r.author}>
-            <CommentRow r={r} />
-            {i < REPLIES.length - 1 && <div style={{ height: 1, background: v.borderSubtle, marginLeft: 58 }} />}
-          </div>
-        ))}
+        <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+          No comments yet
+        </div>
       </div>
 
       <div style={{
@@ -79,49 +88,85 @@ export function PostDetailScreen({ navigate, params = {} }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
-  const post = params.post || {
-    idx: 0, author: 'mara.v', time: '14m',
-    text: 'light is the medium, not the message.',
-    tags: ['observation', 'light'], type: 'text', likes: 48,
-  };
+  
+  const postId = params.postId;
+  const { data: postResponse, isLoading, isError } = usePostDetail(postId);
+  
+  if (isLoading) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: v.ink3 }}>
+        loading post...
+      </div>
+    );
+  }
+
+  if (isError || !postResponse) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: v.error }}>
+        Post not found
+      </div>
+    );
+  }
+
+  const post = postResponse.data || postResponse;
+  
+  const authorName = post.username || post.author || 'Unknown';
+  const authorAvatarUrl = post.userAvatarUrl || null;
+  const timeStr = timeAgo(post.createdAt || post.time);
+  const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map(t => t.slice(1)) : []);
+  const mediaList = post.media || [];
+  const mainMediaUrl = mediaList.length > 0 ? mediaList[0].cdnUrl : null;
+  const mainMediaType = mediaList.length > 0 ? mediaList[0].mediaType : null;
+  const likeCount = post.likeCount || post.likes || 0;
+  const commentCount = post.commentCount || 0;
 
   return (
     <>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {post.type === 'image' && post.media && (
-          <div style={{ height: 360, background: post.media.color }} />
+        {mainMediaUrl && mainMediaType !== 'VIDEO' && (
+          <div style={{ height: 360, background: `url(${mainMediaUrl}) center/cover no-repeat` }} />
+        )}
+        {mainMediaUrl && mainMediaType === 'VIDEO' && (
+          <div style={{ height: 360, background: v.surfaceRaised }}>
+            <video src={mainMediaUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls autoPlay muted loop playsInline />
+          </div>
         )}
 
         <div style={{ padding: '20px 16px 16px' }}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
-            <LxAvatar size={42} idx={post.idx} />
+            {authorAvatarUrl ? (
+              <img src={authorAvatarUrl} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover' }} alt="avatar" />
+            ) : (
+              <LxAvatar size={42} idx={post.idx || 0} />
+            )}
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>{post.author}</div>
-              <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 1 }}>{post.time} ago</div>
+              <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>{authorName}</div>
+              <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 1 }}>{timeStr}</div>
             </div>
             <LxBtn variant="primary" size="sm">follow</LxBtn>
           </div>
 
           <p style={{
             fontFamily: v.fontBody,
-            fontSize: post.type === 'text' ? 22 : 16,
+            fontSize: post.postType === 'TEXT' || post.type === 'text' ? 22 : 16,
             fontWeight: 400, color: v.ink,
-            lineHeight: post.type === 'text' ? 1.4 : 1.55, margin: 0,
+            lineHeight: post.postType === 'TEXT' || post.type === 'text' ? 1.4 : 1.55, margin: 0,
             letterSpacing: '-0.02em',
-          }}>{post.text}</p>
+            whiteSpace: 'pre-wrap',
+          }}>{post.caption || post.text}</p>
 
-          {post.tags && post.tags.length > 0 && (
+          {tags && tags.length > 0 && (
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 14 }}>
-              {post.tags.map(t => <LxTag key={t}>#{t}</LxTag>)}
+              {tags.map(t => <LxTag key={t}>#{t}</LxTag>)}
             </div>
           )}
 
           {/* Stats row */}
           <div style={{ display: 'flex', gap: 16, marginTop: 16, fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
-            <span>{liked ? post.likes + 1 : post.likes} likes · {REPLIES.length} replies</span>
+            <span>{liked ? likeCount + 1 : likeCount} likes · {commentCount} replies</span>
             <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
               <LxIcon name="eye" size={12} color={v.ink3} />
-              {Math.floor(post.likes * 18)}
+              {post.viewCount || Math.floor(likeCount * 18)}
             </span>
           </div>
 
@@ -144,20 +189,14 @@ export function PostDetailScreen({ navigate, params = {} }) {
           </div>
         </div>
 
-        {/* Preview of replies (top 2) */}
+        {/* Preview of replies */}
         <div style={{ borderTop: `8px solid ${v.surfaceSunken}` }}>
           <div style={{ padding: '14px 16px 8px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{REPLIES.length} replies</span>
-            <button onClick={() => setCommentsOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.accentText }}>view all</button>
+            <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{commentCount} replies</span>
           </div>
-          {REPLIES.slice(0, 2).map(r => <CommentRow key={r.author} r={r} />)}
-          <button onClick={() => setCommentsOpen(true)} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: '12px 16px 20px', fontFamily: v.fontBody, fontSize: 13, fontWeight: 500,
-            color: v.ink2, textAlign: 'left', width: '100%',
-          }}>
-            view {REPLIES.length - 2} more replies →
-          </button>
+          <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+            No comments yet
+          </div>
         </div>
       </div>
 

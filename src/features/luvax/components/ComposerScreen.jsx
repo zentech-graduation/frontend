@@ -3,7 +3,7 @@ import { v } from '../constants/tokens';
 import { SUGGESTED_TAGS } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxDivider } from './primitives';
 import { useCreatePost } from '../hooks/usePosts';
-import { mediaService } from '@/services/media.service';
+import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useRef } from 'react';
 
 // ─── Composer Screen ───────────────────────────────────────────────────────
@@ -13,9 +13,10 @@ export function ComposerScreen({ navigate }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const maxChars = 280;
+
+  const { uploadMedia, isUploading, progress } = useMediaUpload();
 
   const captionTags = useMemo(() => {
     const matches = caption.match(/#(\w+)/g) || [];
@@ -66,13 +67,11 @@ export function ComposerScreen({ navigate }) {
     }
 
     try {
-      setIsUploading(true);
-      
       // Upload media first
-      const mediaAsset = await mediaService.uploadMedia(file);
+      const mediaAsset = await uploadMedia(file);
       
       // Map frontend type to backend PostType
-      const backendPostType = type === 'photo' ? 'IMAGE' : (type === 'video' ? 'VIDEO' : 'IMAGE');
+      const backendPostType = type === 'photo' ? 'IMAGE' : 'VIDEO';
 
       // Convert to proper backend format
       const payload = {
@@ -86,16 +85,13 @@ export function ComposerScreen({ navigate }) {
           setCaption('');
           setFile(null);
           setPreviewUrl(null);
-          setIsUploading(false);
           navigate('feed');
         },
         onError: (err) => {
-          setIsUploading(false);
           alert("Failed to post: " + err.message);
         }
       });
     } catch (err) {
-      setIsUploading(false);
       alert("Failed to upload media: " + err.message);
     }
   };
@@ -118,7 +114,7 @@ export function ComposerScreen({ navigate }) {
             border: 'none', borderRadius: 999, padding: '7px 16px',
             cursor: isActionDisabled ? 'default' : 'pointer',
           }}>
-          {isUploading ? 'uploading...' : (createPostMutation.isPending ? 'posting...' : 'post it')}
+          {isUploading ? `uploading ${progress}%` : (createPostMutation.isPending ? 'posting...' : 'post it')}
         </button>
       </div>
 

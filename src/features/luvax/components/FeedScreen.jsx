@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { v } from '../constants/tokens';
 import { STORIES } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxBtn } from './primitives';
@@ -50,10 +51,24 @@ import { PostCard } from './PostCard';
 export function FeedScreen({ navigate, tweaks, viewport }) {
   const isMulti = viewport === 'tablet' || viewport === 'desktop';
   const gap = tweaks.density === 'dense' ? 8 : 12;
-  const { data: feedResponse, isLoading, isError } = useFeed();
+  const { ref, inView } = useInView();
+  const { 
+    data: feedResponse, 
+    isLoading, 
+    isError, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage 
+  } = useFeed();
   
-  // Normalize the paginated response. If it fails, fallback to empty array.
-  const posts = feedResponse?.data?.content || feedResponse?.content || feedResponse || [];
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Flatten the infinite paginated response
+  const posts = feedResponse?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
 
   if (isLoading) {
     return (
@@ -97,6 +112,12 @@ export function FeedScreen({ navigate, tweaks, viewport }) {
             {posts.map(p => (
               <PostCard key={p.id} post={p} navigate={navigate} density={tweaks.density} showTags={tweaks.showTags} />
             ))}
+          </div>
+        )}
+
+        {hasNextPage && (
+          <div ref={ref} style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+            {isFetchingNextPage ? 'loading more...' : 'scroll for more'}
           </div>
         )}
       </div>
