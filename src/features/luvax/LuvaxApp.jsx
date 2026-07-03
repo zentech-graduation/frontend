@@ -9,6 +9,9 @@ import { PostDetailScreen } from './components/PostDetailScreen';
 import { ProfileScreen } from './components/ProfileScreen';
 import { NotificationsScreen } from './components/NotificationsScreen';
 import { SettingsScreen } from './components/SettingsScreen';
+import { BlockedUsersScreen } from './components/BlockedUsersScreen';
+import { FollowersScreen } from './components/FollowersScreen';
+import { FollowingScreen } from './components/FollowingScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { StoryViewScreen, StoryComposerScreen } from './components/StoryScreens';
 
@@ -63,6 +66,9 @@ export function LuvaxApp() {
     profile:       <ProfileScreen       {...screenProps} />,
     notifications: <NotificationsScreen {...screenProps} />,
     settings:      <SettingsScreen      {...screenProps} />,
+    blocked:       <BlockedUsersScreen  {...screenProps} />,
+    followers:     <FollowersScreen     {...screenProps} />,
+    following:     <FollowingScreen     {...screenProps} />,
   };
 
   const isStory = screen === 'story-view' || screen === 'story-compose';

@@ -14,6 +14,18 @@ export const useFeed = (params = {}) => {
   });
 };
 
+export const useExplore = (params = {}) => {
+  return useInfiniteQuery({
+    queryKey: ['explore', params],
+    queryFn: ({ pageParam = null }) => postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10 }),
+    getNextPageParam: (lastPage) => {
+      const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
+      return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
+    },
+    initialPageParam: null,
+  });
+};
+
 export const useUserPosts = (userId, params = {}) => {
   return useInfiniteQuery({
     queryKey: ['userPosts', userId, params],

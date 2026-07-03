@@ -23,6 +23,16 @@ export const getFeed = async (params = {}) => {
 };
 
 /**
+ * Retrieves a paginated list of explore posts via search.
+ */
+export const getExplorePosts = async (params = {}) => {
+  // Backend requires 'q', fallback to a space or wildcard if empty to avoid 400
+  if (!params.q) params.q = 'a'; 
+  const response = await axiosInstance.get(`${POST_API_PATH}/search`, { params });
+  return response.data;
+};
+
+/**
  * Retrieves a paginated list of a user's published posts.
  * @param {string|number} userId - The ID of the user.
  * @param {Object} params - Query parameters (e.g., cursor, limit).
@@ -83,6 +93,7 @@ export const postService = {
   updatePost,
   deletePost,
   updatePostStatus,
+  getExplorePosts,
 };
 
 export default postService;

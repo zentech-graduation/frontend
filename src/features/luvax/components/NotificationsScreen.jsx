@@ -1,7 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { v } from '../constants/tokens';
-import { NOTIFS } from '../constants/data';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
+import { usePendingFollowRequests, useApproveFollowRequest, useRejectFollowRequest } from '../hooks/useSocial';
+import { useNotifications, useMarkAllAsRead } from '../hooks/useNotifications';
+import { useUserProfile } from '../hooks/useUsers';
+
+const timeAgo = (dateStr) => {
+  if (!dateStr) return 'now';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${Math.max(0, minutes)}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+};
 
 const TYPE_ICON = {
   like: 'heart', follow: 'profile', follow_request: 'profile',
@@ -14,38 +26,44 @@ const TYPE_COLOR = {
 };
 
 function NotifRow({ n, navigate }) {
+  const { data: userProfileData } = useUserProfile(n.actorId);
+  const actorProfile = userProfileData?.data || userProfileData;
+
+  const isFollow = n.type === 'follow' || n.type === 'follow_request';
+  const text = isFollow ? 'started following you' : n.type === 'like' ? 'liked your post' : 'interacted with you';
+  const icon = isFollow ? 'profile' : 'heart';
+  const color = isFollow ? '#7A9E7A' : '#C47168';
+  
+  const actorName = actorProfile?.username || actorProfile?.displayName || 'Someone';
+  const avatarSrc = actorProfile?.avatarUrl;
+
   return (
-    <div onClick={() => n.target && navigate('post')} style={{
+    <div onClick={() => n.entityId && navigate('post', { post: { id: n.entityId } })} style={{
       display: 'flex', alignItems: 'flex-start', gap: 12,
       padding: '12px 16px',
-      background: n.unread ? 'var(--lx-accent-dim)' : 'transparent',
-      cursor: n.target ? 'pointer' : 'default',
+      background: !n.isRead ? 'var(--lx-accent-dim)' : 'transparent',
+      cursor: n.entityId ? 'pointer' : 'default',
       borderBottom: `1px solid ${v.borderSubtle}`,
       position: 'relative',
     }}>
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <LxAvatar size={40} idx={n.idx} />
+        <LxAvatar size={40} idx={n.actorProfile?.idx || 0} src={avatarSrc} />
         <div style={{
           position: 'absolute', bottom: -2, right: -2,
           width: 20, height: 20, borderRadius: '50%',
-          background: TYPE_COLOR[n.type],
+          background: color,
           border: `2px solid var(--lx-base)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <LxIcon name={TYPE_ICON[n.type]} size={10} color="#fff" stroke={2} filled={n.type === 'like'} />
+          <LxIcon name={icon} size={10} color="#fff" stroke={2} filled={!isFollow} />
         </div>
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
-          <strong style={{ fontWeight: 600 }}>{n.actor}</strong> <span style={{ color: v.ink2 }}>{n.text}</span>
+          <strong style={{ fontWeight: 600, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); navigate('profile', { user: { id: n.actorId } }); }}>{actorName}</strong> <span style={{ color: v.ink2 }}>{text}</span>
         </div>
-        {n.target && (
-          <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            "{n.target}"
-          </div>
-        )}
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{n.time}</div>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeAgo(n.createdAt)}</div>
       </div>
 
       {n.type === 'follow_request' && (
@@ -58,8 +76,61 @@ function NotifRow({ n, navigate }) {
   );
 }
 
+function RequestRow({ req, navigate, onAccept, onDecline }) {
+  const user = req.requester || {};
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      padding: '12px 16px',
+      borderBottom: `1px solid ${v.borderSubtle}`,
+    }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <LxAvatar size={40} src={user.avatarUrl} />
+        <div style={{
+          position: 'absolute', bottom: -2, right: -2,
+          width: 20, height: 20, borderRadius: '50%',
+          background: TYPE_COLOR['follow_request'],
+          border: `2px solid var(--lx-base)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <LxIcon name={TYPE_ICON['follow_request']} size={10} color="#fff" stroke={2} />
+        </div>
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0, alignSelf: 'center' }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
+          <strong onClick={() => navigate('profile', { user: { id: user.id } })} style={{ fontWeight: 600, cursor: 'pointer' }}>{user.username}</strong> <span style={{ color: v.ink2 }}>requested to follow you</span>
+        </div>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeAgo(req.createdAt)}</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
+        <LxBtn variant="primary" size="sm" onClick={() => onAccept(req.requesterId || user.id)}>accept</LxBtn>
+        <LxBtn variant="ghost" size="sm" onClick={() => onDecline(req.requesterId || user.id)}>decline</LxBtn>
+      </div>
+    </div>
+  );
+}
+
 export function NotificationsScreen({ navigate }) {
   const [tab, setTab] = useState('all');
+  
+  const { data: requestsResponse, isLoading: isLoadingRequests } = usePendingFollowRequests();
+  const approveReq = useApproveFollowRequest();
+  const rejectReq = useRejectFollowRequest();
+  
+  const { data: notifsData, isLoading: isLoadingNotifs } = useNotifications();
+  const markAllAsRead = useMarkAllAsRead();
+
+  const requests = requestsResponse?.data || requestsResponse || [];
+  
+  let notifs = notifsData?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+
+  useEffect(() => {
+    if (tab === 'all') {
+      markAllAsRead.mutate();
+    }
+  }, [tab]);
 
   return (
     <>
@@ -72,16 +143,42 @@ export function NotificationsScreen({ navigate }) {
             padding: '12px 0',
             borderBottom: tab === t ? `2px solid var(--lx-ink)` : '2px solid transparent',
             marginBottom: -1,
-          }}>{t}</button>
+            position: 'relative',
+          }}>
+            {t}
+            {t === 'requests' && requests.length > 0 && (
+              <span style={{ position: 'absolute', top: 12, right: '20%', width: 6, height: 6, borderRadius: '50%', background: v.accent }} />
+            )}
+          </button>
         ))}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '14px 16px 6px' }}>today</div>
-        {NOTIFS.slice(0, 3).map((n, i) => <NotifRow key={i} n={n} navigate={navigate} />)}
-
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px 16px 6px' }}>this week</div>
-        {NOTIFS.slice(3).map((n, i) => <NotifRow key={i + 3} n={n} navigate={navigate} />)}
+        {tab === 'requests' ? (
+          isLoadingRequests ? (
+            <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>loading requests...</div>
+          ) : requests.length > 0 ? (
+            requests.map((r, i) => (
+              <RequestRow 
+                key={i} 
+                req={r} 
+                navigate={navigate} 
+                onAccept={(id) => approveReq.mutate(id)} 
+                onDecline={(id) => rejectReq.mutate(id)} 
+              />
+            ))
+          ) : (
+            <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>No pending requests</div>
+          )
+        ) : (
+          isLoadingNotifs ? (
+            <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>loading notifications...</div>
+          ) : notifs.length > 0 ? (
+            notifs.map((n, i) => <NotifRow key={n.id || i} n={n} navigate={navigate} />)
+          ) : (
+            <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>No notifications yet</div>
+          )
+        )}
       </div>
     </>
   );

@@ -1,6 +1,11 @@
+import { useState, useEffect } from 'react';
 import { v } from '../constants/tokens';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
+import { useAuthStore } from '@/store/useAuthStore';
+import { usePendingFollowRequests, useSuggestedUsers, useFollowing } from '../hooks/useSocial';
+import { useUnreadCount } from '../hooks/useNotifications';
+import { UserCard } from './UserCard';
 
 // ─── Top Tab Strip ─────────────────────────────────────────────────────────
 export function LxTopTabs({ active, navigate }) {
@@ -10,6 +15,12 @@ export function LxTopTabs({ active, navigate }) {
     { id: 'compose', icon: 'plus', label: 'post' },
     { id: 'notifications', icon: 'bell', label: 'activity' },
   ];
+  
+  const { data: requestsResponse } = usePendingFollowRequests();
+  const requests = requestsResponse?.data || requestsResponse || [];
+  const { data: unreadResponse } = useUnreadCount();
+  const unreadCount = unreadResponse?.data?.count || 0;
+  const hasNotifications = requests.length > 0 || unreadCount > 0;
   return (
     <div style={{ display: 'flex', alignItems: 'stretch', height: 56, gap: 4, flex: 1, justifyContent: 'center', maxWidth: 560 }}>
       {tabs.map(t => {
@@ -25,6 +36,9 @@ export function LxTopTabs({ active, navigate }) {
             transition: 'color 150ms ease-out',
           }}>
             <LxIcon name={t.icon} size={22} color={isActive ? v.accent : v.ink3} stroke={isActive ? 1.8 : 1.5} />
+            {t.id === 'notifications' && hasNotifications && (
+              <span style={{ position: 'absolute', top: 6, right: '20%', width: 8, height: 8, borderRadius: '50%', background: v.error }} />
+            )}
             <div style={{
               position: 'absolute', bottom: 0, left: '20%', right: '20%',
               height: 2.5, borderRadius: 2,
@@ -45,11 +59,18 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
   const subpages = {
     post: 'post',
     settings: 'settings',
+    blocked: 'blocked users',
   };
   const isSubpage = subpages[screen];
 
   const innerMaxWidth = viewport === 'desktop' ? 1280 : viewport === 'tablet' ? 640 : '100%';
   const sideWidth     = viewport === 'desktop' ? 300  : viewport === 'tablet' ? 'auto' : 'auto';
+
+  const { data: requestsResponse } = usePendingFollowRequests();
+  const requests = requestsResponse?.data || requestsResponse || [];
+  const { data: unreadResponse } = useUnreadCount();
+  const unreadCount = unreadResponse?.data?.count || 0;
+  const hasNotifications = requests.length > 0 || unreadCount > 0;
 
   return (
     <header style={{
@@ -96,9 +117,9 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
               <span>search</span>
             </button>
           )}
-          <button style={{ background: v.surface, border: 'none', borderRadius: '50%', width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <button onClick={() => navigate('notifications')} style={{ background: v.surface, border: 'none', borderRadius: '50%', width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
             <LxIcon name="bell" size={18} color={v.ink2} />
-            <span style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', background: v.accent }} />
+            {hasNotifications && <span style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', background: v.error }} />}
           </button>
           <button onClick={() => navigate('profile')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             <LxAvatar size={32} idx={0} ring={screen === 'profile'} />
@@ -118,6 +139,12 @@ export function LxBottomNav({ active, navigate }) {
     { id: 'notifications', icon: 'bell', label: 'activity' },
     { id: 'profile', icon: 'profile', label: 'you' },
   ];
+  
+  const { data: requestsResponse } = usePendingFollowRequests();
+  const requests = requestsResponse?.data || requestsResponse || [];
+  const { data: unreadResponse } = useUnreadCount();
+  const unreadCount = unreadResponse?.data?.count || 0;
+  const hasNotifications = requests.length > 0 || unreadCount > 0;
   return (
     <nav style={{
       display: 'flex', alignItems: 'stretch', justifyContent: 'space-around',
@@ -139,6 +166,9 @@ export function LxBottomNav({ active, navigate }) {
             transition: 'color 150ms ease-out',
           }}>
             <LxIcon name={t.icon} size={22} color={isActive ? v.accent : v.ink3} stroke={isActive ? 1.8 : 1.5} />
+            {t.id === 'notifications' && hasNotifications && (
+              <span style={{ position: 'absolute', top: 6, right: '25%', width: 8, height: 8, borderRadius: '50%', background: v.error }} />
+            )}
             <div style={{
               position: 'absolute', top: 0, left: '25%', right: '25%',
               height: 2.5, borderRadius: 2,
@@ -152,13 +182,37 @@ export function LxBottomNav({ active, navigate }) {
 }
 
 // ─── Right Rail (desktop) ──────────────────────────────────────────────────
-export function LxRightRail() {
+export function LxRightRail({ navigate }) {
+  const currentUser = useAuthStore(state => state.user);
+  const key = currentUser ? `lx_blocks_${currentUser.id}` : 'lx_blocks';
+
+  const [blocks, setBlocks] = useState(() => JSON.parse(localStorage.getItem(key) || '[]'));
+  useEffect(() => {
+    const handleBlocksChanged = () => setBlocks(JSON.parse(localStorage.getItem(key) || '[]'));
+    window.addEventListener('lx_blocks_changed', handleBlocksChanged);
+    return () => window.removeEventListener('lx_blocks_changed', handleBlocksChanged);
+  }, [key]);
+
   const trending = ['light', 'analog', 'morning', 'silence', 'film', 'observation'];
-  const suggested = [
-    { idx: 1, name: 'sol.r',  bio: 'morning, window, coffee' },
-    { idx: 2, name: 'jo.x',   bio: 'reading slowly in 2026' },
-    { idx: 3, name: 'ren.ko', bio: 'design, restraint' },
-  ];
+  
+  const { data: myFollowingData } = useFollowing(currentUser?.id);
+  const followingList = myFollowingData?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const followingIds = new Set(followingList.map(u => u.id));
+
+  const { data: suggestedResponse } = useSuggestedUsers();
+  const suggestedRaw = suggestedResponse?.data || suggestedResponse || [];
+  
+  // Filter out blocked users AND users we are already following
+  const suggested = suggestedRaw
+    .filter(u => !blocks.includes(u.id) && !followingIds.has(u.id))
+    .slice(0, 5);
+
+  if (suggested.length === 0) {
+    return (
+      <aside style={{ width: 300, flexShrink: 0, padding: '20px 20px', position: 'sticky', top: 56, alignSelf: 'flex-start' }} />
+    );
+  }
+
   return (
     <aside style={{
       width: 300, flexShrink: 0,
@@ -181,16 +235,14 @@ export function LxRightRail() {
 
       <div>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>suggested</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {suggested.map(u => (
-            <div key={u.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <LxAvatar size={36} idx={u.idx} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>{u.name}</div>
-                <div style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.bio}</div>
-              </div>
-              <LxBtn variant="ghost" size="sm">follow</LxBtn>
-            </div>
+            <UserCard 
+              key={u.id} 
+              user={u} 
+              compact={true} 
+              onAvatarClick={() => navigate ? navigate('profile', { user: { id: u.id, username: u.username } }) : null}
+            />
           ))}
         </div>
       </div>
@@ -218,7 +270,7 @@ export function LxShell({ screen, navigate, params, children, showRightRail = tr
           }}>
             {children}
           </main>
-          {showRightRail && <LxRightRail />}
+          {showRightRail && <LxRightRail navigate={navigate} />}
         </div>
       </div>
     );
