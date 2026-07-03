@@ -111,14 +111,14 @@ export const useAuthStore = create(
       storage: createJSONStorage(() => localStorage),
 
       /**
-       * Only persist the fields that are safe to store in localStorage.
-       * Access token and refresh token are intentionally excluded:
-       * - accessToken: short-lived; should survive only the current tab session.
-       * - refreshToken: must eventually move to an HttpOnly cookie set by the server.
+       * Persist tokens to localStorage so the session survives page reloads (F5).
+       * Note: Eventually, refreshToken should be moved to an HttpOnly cookie.
        */
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
       }),
 
       /**

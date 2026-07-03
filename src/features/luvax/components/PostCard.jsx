@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { v } from '../constants/tokens';
 import { LxIcon, LxAvatar, LxTag, LxBottomSheet, LxBtn } from './primitives';
 import { useUpdatePostStatus, useUpdatePost, useDeletePost } from '../hooks/usePosts';
+import { useAuthStore } from '@/store/useAuthStore';
 
 // Simple time ago formatter
 const timeAgo = (dateStr) => {
@@ -22,6 +23,9 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
   
+  const currentUser = useAuthStore(state => state.user);
+  const isOwner = currentUser?.id === (post.userId || post.authorId);
+
   const updatePost = useUpdatePost();
   const deletePost = useDeletePost();
 
@@ -106,8 +110,14 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
                 position: 'absolute', top: 24, right: 0, background: v.surfaceRaised, border: `1px solid ${v.border}`,
                 borderRadius: 8, padding: 4, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 100, zIndex: 10
               }}>
-                <button onClick={handleEditOpen} style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.ink }}>Edit Post</button>
-                <button onClick={handleDelete} style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.error }}>Delete Post</button>
+                {isOwner ? (
+                  <>
+                    <button onClick={handleEditOpen} style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.ink }}>Edit Post</button>
+                    <button onClick={handleDelete} style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.error }}>Delete Post</button>
+                  </>
+                ) : (
+                  <button onClick={() => setMenuOpen(false)} style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.error }}>Report Post</button>
+                )}
               </div>
             )}
           </div>

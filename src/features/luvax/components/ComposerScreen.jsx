@@ -47,7 +47,10 @@ export function ComposerScreen({ navigate }) {
   };
 
   const insertTag = (tag) => {
-    if (!caption.includes(`#${tag}`)) {
+    const regex = new RegExp(`#${tag}(?![A-Za-z0-9_])`, 'gi');
+    if (regex.test(caption)) {
+      setCaption(c => c.replace(regex, '').replace(/[ \t]{2,}/g, ' ').trim());
+    } else {
       setCaption(c => c ? `${c} #${tag}` : `#${tag}`);
     }
   };
@@ -60,24 +63,23 @@ export function ComposerScreen({ navigate }) {
       alert(`Please select a ${type} to post.`);
       return;
     }
-    // Backend doesn't support text-only posts
-    if (type === 'text') {
-      alert("Text-only posts are not supported by the backend. Please select photo or video.");
-      return;
-    }
 
     try {
-      // Upload media first
-      const mediaAsset = await uploadMedia(file);
+      let mediaIds = [];
+      // Upload media if present
+      if (file) {
+        const mediaAsset = await uploadMedia(file);
+        mediaIds = [mediaAsset.id];
+      }
       
       // Map frontend type to backend PostType
-      const backendPostType = type === 'photo' ? 'IMAGE' : 'VIDEO';
+      const backendPostType = type === 'photo' ? 'IMAGE' : type === 'video' ? 'VIDEO' : 'TEXT';
 
       // Convert to proper backend format
       const payload = {
         caption: caption,
         postType: backendPostType,
-        mediaIds: [mediaAsset.id],
+        mediaIds: mediaIds.length > 0 ? mediaIds : null, // Backend accepts null or empty list for TEXT
       };
 
       createPostMutation.mutate(payload, {
@@ -96,7 +98,7 @@ export function ComposerScreen({ navigate }) {
     }
   };
 
-  const isActionDisabled = createPostMutation.isPending || isUploading || ((type === 'photo' || type === 'video') && !file);
+  const isActionDisabled = createPostMutation.isPending || isUploading || ((type === 'photo' || type === 'video') && !file) || (type === 'text' && !caption.trim());
 
   return (
     <>
@@ -229,7 +231,7 @@ export function ComposerScreen({ navigate }) {
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {SUGGESTED_TAGS.map(t => (
-              <LxTag key={t} active={allTags.includes(t)} onClick={() => captionTags.includes(t) ? null : insertTag(t)}>
+              <LxTag key={t} active={allTags.includes(t)} onClick={() => insertTag(t)}>
                 #{t}
               </LxTag>
             ))}
