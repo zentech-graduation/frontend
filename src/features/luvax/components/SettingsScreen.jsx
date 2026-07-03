@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { v } from '../constants/tokens';
 import { LxIcon, LxBtn } from './primitives';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
 
 // ─── Toggle ─────────────────────────────────────────────────────────────────
@@ -67,6 +68,14 @@ export function SettingsScreen({ navigate }) {
   });
   const set = (k) => (val) => setS(p => ({ ...p, [k]: val }));
   
+  const queryClient = useQueryClient();
+  const logout = useAuthStore(state => state.logout);
+
+  const handleSignOut = () => {
+    queryClient.clear();
+    logout();
+  };
+  
   const currentUser = useAuthStore(state => state.user);
   const key = currentUser ? `lx_blocks_${currentUser.id}` : 'lx_blocks';
   const blocks = JSON.parse(localStorage.getItem(key) || '[]');
@@ -125,7 +134,7 @@ export function SettingsScreen({ navigate }) {
 
         {/* Danger */}
         <div style={{ padding: '32px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink2, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '6px 0' }}>sign out</button>
+          <button onClick={handleSignOut} style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink2, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '6px 0' }}>sign out</button>
           <button style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.error, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '6px 0' }}>delete account</button>
         </div>
 

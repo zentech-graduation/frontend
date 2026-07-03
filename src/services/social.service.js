@@ -71,11 +71,12 @@ export const getSuggestedUsers = async () => {
     const response = await axiosInstance.get(`${USERS_API_PATH}/suggestions`);
     return response.data;
   } catch (err) {
-    // Return mock data if API doesn't exist yet
+    // Return mock data with real database seeder UUIDs so Follow API works
     return {
       data: [
-        { id: '1', username: 'alex', displayName: 'Alex', isVerified: true, followerCount: 1200 },
-        { id: '2', username: 'sam', displayName: 'Sam', isVerified: false, followerCount: 450 }
+        { id: '00000000-0000-0000-0000-000000000002', username: 'seed_author1', displayName: 'Seed Author 1', isVerified: true, followerCount: 1200, bio: 'Seed Author 1' },
+        { id: '00000000-0000-0000-0000-000000000003', username: 'seed_author2', displayName: 'Seed Author 2', isVerified: false, followerCount: 450, bio: 'Seed Author 2' },
+        { id: '00000000-0000-0000-0000-000000000005', username: 'seed_vblocks', displayName: 'Seed VBlocks', isVerified: true, followerCount: 890, bio: 'Seed VBlocks' }
       ]
     };
   }

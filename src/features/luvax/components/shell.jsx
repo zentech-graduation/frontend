@@ -3,8 +3,9 @@ import { v } from '../constants/tokens';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
-import { usePendingFollowRequests } from '../hooks/useSocial';
+import { usePendingFollowRequests, useSuggestedUsers, useFollowing } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
+import { UserCard } from './UserCard';
 
 // ─── Top Tab Strip ─────────────────────────────────────────────────────────
 export function LxTopTabs({ active, navigate }) {
@@ -193,13 +194,25 @@ export function LxRightRail({ navigate }) {
   }, [key]);
 
   const trending = ['light', 'analog', 'morning', 'silence', 'film', 'observation'];
-  const suggestedRaw = [
-    { idx: 1, id: '00000000-0000-0000-0000-000000000002', name: 'seed_author1', bio: 'Seed Author 1' },
-    { idx: 2, id: '00000000-0000-0000-0000-000000000003', name: 'seed_author2', bio: 'Seed Author 2' },
-    { idx: 3, id: '00000000-0000-0000-0000-000000000005', name: 'seed_vblocks', bio: 'Seed VBlocks' },
-  ];
   
-  const suggested = suggestedRaw.filter(u => !blocks.includes(u.id));
+  const { data: myFollowingData } = useFollowing(currentUser?.id);
+  const followingList = myFollowingData?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const followingIds = new Set(followingList.map(u => u.id));
+
+  const { data: suggestedResponse } = useSuggestedUsers();
+  const suggestedRaw = suggestedResponse?.data || suggestedResponse || [];
+  
+  // Filter out blocked users AND users we are already following
+  const suggested = suggestedRaw
+    .filter(u => !blocks.includes(u.id) && !followingIds.has(u.id))
+    .slice(0, 5);
+
+  if (suggested.length === 0) {
+    return (
+      <aside style={{ width: 300, flexShrink: 0, padding: '20px 20px', position: 'sticky', top: 56, alignSelf: 'flex-start' }} />
+    );
+  }
+
   return (
     <aside style={{
       width: 300, flexShrink: 0,
@@ -222,17 +235,14 @@ export function LxRightRail({ navigate }) {
 
       <div>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>suggested</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {suggested.map(u => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-                 onClick={() => navigate ? navigate('profile', { user: { id: u.id, username: u.name } }) : window.location.href = `/profile?user={"id":"${u.id}","username":"${u.name}"}`}>
-              <LxAvatar size={36} idx={u.idx} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>{u.name}</div>
-                <div style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.bio}</div>
-              </div>
-              <LxBtn variant="ghost" size="sm">view</LxBtn>
-            </div>
+            <UserCard 
+              key={u.id} 
+              user={u} 
+              compact={true} 
+              onAvatarClick={() => navigate ? navigate('profile', { user: { id: u.id, username: u.username } }) : null}
+            />
           ))}
         </div>
       </div>
