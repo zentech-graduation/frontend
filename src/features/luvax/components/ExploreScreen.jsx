@@ -1,29 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { v } from '../constants/tokens';
-import { TOPICS, TRENDING } from '../constants/data';
+import { TOPICS } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag } from './primitives';
+import { useExplore } from '../hooks/usePosts';
 
 function MiniCard({ p, navigate }) {
+  const authorName = p.username || p.author || 'Unknown';
+  const avatarUrl = p.userAvatarUrl;
+  const mediaUrl = p.media && p.media.length > 0 ? p.media[0].cdnUrl : null;
+
   return (
     <div onClick={() => navigate('post', { post: p })} style={{
       background: v.surface, borderRadius: 10, overflow: 'hidden',
       cursor: 'pointer', breakInside: 'avoid', marginBottom: 8,
       display: 'inline-block', width: '100%',
     }}>
-      {p.img && <div style={{ height: p.h, background: p.color }} />}
+      {mediaUrl && (
+        p.media[0].mediaType === 'VIDEO' ? (
+          <video src={mediaUrl} style={{ width: '100%', display: 'block' }} muted />
+        ) : (
+          <img src={mediaUrl} style={{ width: '100%', display: 'block' }} alt="post" />
+        )
+      )}
       <div style={{ padding: '10px 12px 12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-          <LxAvatar size={18} idx={p.idx} />
-          <span style={{ fontFamily: v.fontBody, fontSize: 11, fontWeight: 500, color: v.ink2 }}>{p.author}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }} 
+             onClick={(e) => { e.stopPropagation(); navigate('profile', { user: { id: p.userId, username: p.username, displayName: authorName, avatarUrl } }); }}>
+          <LxAvatar size={18} src={avatarUrl} idx={p.idx || 0} />
+          <span style={{ fontFamily: v.fontBody, fontSize: 11, fontWeight: 500, color: v.ink2, cursor: 'pointer' }}>{authorName}</span>
         </div>
-        <p style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink, lineHeight: 1.5, margin: 0 }}>{p.text}</p>
-        {p.tags && p.tags.length > 0 && (
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 }}>
-            {p.tags.map(t => (
-              <span key={t} style={{ fontFamily: v.fontMono, fontSize: 9, color: v.accentText, fontWeight: 500 }}>#{t}</span>
-            ))}
-          </div>
-        )}
+        <p style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink, lineHeight: 1.5, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.caption || p.text}</p>
       </div>
     </div>
   );
@@ -32,6 +38,17 @@ function MiniCard({ p, navigate }) {
 export function ExploreScreen({ navigate, viewport }) {
   const [query, setQuery] = useState('');
   const [activeTopic, setActiveTopic] = useState(null);
+
+  const { ref, inView } = useInView();
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExplore({ q: query });
+
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const posts = data?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
 
   const cols = viewport === 'desktop' ? 3 : 2;
 
@@ -75,8 +92,14 @@ export function ExploreScreen({ navigate, viewport }) {
 
         {/* Masonry grid */}
         <div style={{ padding: '0 16px 24px', columnCount: cols, columnGap: 8 }}>
-          {TRENDING.map((p, i) => <MiniCard key={i} p={p} navigate={navigate} />)}
+          {posts.map((p, i) => <MiniCard key={p.id || i} p={p} navigate={navigate} />)}
         </div>
+
+        {hasNextPage && (
+          <div ref={ref} style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+            {isFetchingNextPage ? 'loading more...' : 'scroll for more'}
+          </div>
+        )}
       </div>
     </>
   );

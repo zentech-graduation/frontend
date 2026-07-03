@@ -3,6 +3,9 @@ import { v } from '../constants/tokens';
 import { REPLIES } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxBtn, LxBottomSheet } from './primitives';
 import { usePostDetail, useUpdatePost, useDeletePost } from '../hooks/usePosts';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useFollow, useUnfollow, useFollowing } from '../hooks/useSocial';
+import { useEffect } from 'react';
 
 // Simple time ago formatter
 const timeAgo = (dateStr) => {
@@ -92,8 +95,24 @@ export function PostDetailScreen({ navigate, params = {} }) {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
   
-  const postId = params.postId;
-  const { data: postResponse, isLoading, isError } = usePostDetail(postId);
+  const postId = params.postId || params.post?.id;
+  const { data: postResponse, isLoading, isError, error } = usePostDetail(postId);
+  
+  const currentUser = useAuthStore(state => state.user);
+  const follow = useFollow();
+  const unfollow = useUnfollow();
+  const { data: myFollowingData } = useFollowing(currentUser?.id);
+  
+  const post = postResponse?.data || postResponse || {};
+  const targetUserId = post.userId || post.authorId || post.user?.id || post.author?.id;
+  const isSelf = currentUser?.id === targetUserId;
+
+  // Compute following directly to avoid useEffect race conditions
+  const following = (() => {
+    if (!myFollowingData || !targetUserId || isSelf) return false;
+    const list = myFollowingData.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+    return list.some(u => u.id === targetUserId);
+  })();
   
   const updatePost = useUpdatePost();
   const deletePost = useDeletePost();
@@ -131,23 +150,33 @@ export function PostDetailScreen({ navigate, params = {} }) {
 
   if (isError || !postResponse) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: v.error }}>
-        Post not found
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: v.error, flexDirection: 'column', gap: 8 }}>
+        <LxIcon name="explore" size={32} color={v.error} />
+        <div>Post not found</div>
       </div>
     );
   }
 
-  const post = postResponse.data || postResponse;
+  const postData = postResponse.data || postResponse;
+
+  const handleFollowToggle = () => {
+    if (!targetUserId) return;
+    if (following) {
+      unfollow.mutate(targetUserId);
+    } else {
+      follow.mutate(targetUserId);
+    }
+  };
   
-  const authorName = post.username || post.author || 'Unknown';
-  const authorAvatarUrl = post.userAvatarUrl || null;
-  const timeStr = timeAgo(post.createdAt || post.time);
-  const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map(t => t.slice(1)) : []);
-  const mediaList = post.media || [];
+  const authorName = postData.username || postData.author || 'Unknown';
+  const authorAvatarUrl = postData.userAvatarUrl || null;
+  const timeStr = timeAgo(postData.createdAt || postData.time);
+  const tags = postData.tags || (postData.caption ? (postData.caption.match(/#(\w+)/g) || []).map(t => t.slice(1)) : []);
+  const mediaList = postData.media || [];
   const mainMediaUrl = mediaList.length > 0 ? mediaList[0].cdnUrl : null;
   const mainMediaType = mediaList.length > 0 ? mediaList[0].mediaType : null;
-  const likeCount = post.likeCount || post.likes || 0;
-  const commentCount = post.commentCount || 0;
+  const likeCount = postData.likeCount || postData.likes || 0;
+  const commentCount = postData.commentCount || 0;
 
   return (
     <>
@@ -163,16 +192,26 @@ export function PostDetailScreen({ navigate, params = {} }) {
 
         <div style={{ padding: '20px 16px 16px' }}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
-            {authorAvatarUrl ? (
-              <img src={authorAvatarUrl} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover' }} alt="avatar" />
-            ) : (
-              <LxAvatar size={42} idx={post.idx || 0} />
-            )}
-            <div style={{ flex: 1 }}>
+            <div onClick={() => targetUserId && navigate('profile', { user: { id: targetUserId } })} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              {authorAvatarUrl ? (
+                <img src={authorAvatarUrl} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover' }} alt="avatar" />
+              ) : (
+                <LxAvatar size={42} idx={postData.idx || 0} />
+              )}
+            </div>
+            <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => targetUserId && navigate('profile', { user: { id: targetUserId } })}>
               <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>{authorName}</div>
               <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 1 }}>{timeStr}</div>
             </div>
-            <LxBtn variant="primary" size="sm">follow</LxBtn>
+            {!isSelf && (
+              <LxBtn 
+                variant={following ? 'secondary' : 'primary'} 
+                size="sm"
+                onClick={handleFollowToggle}
+                disabled={follow.isPending || unfollow.isPending}>
+                {following ? 'following' : 'follow'}
+              </LxBtn>
+            )}
             <div style={{ position: 'relative' }}>
               <button onClick={() => setMenuOpen(!menuOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: v.ink3 }}>
                 <LxIcon name="more" size={16} color={v.ink3} />
@@ -191,12 +230,12 @@ export function PostDetailScreen({ navigate, params = {} }) {
 
           <p style={{
             fontFamily: v.fontBody,
-            fontSize: post.postType === 'TEXT' || post.type === 'text' ? 22 : 16,
+            fontSize: postData.postType === 'TEXT' || postData.type === 'text' ? 22 : 16,
             fontWeight: 400, color: v.ink,
-            lineHeight: post.postType === 'TEXT' || post.type === 'text' ? 1.4 : 1.55, margin: 0,
+            lineHeight: postData.postType === 'TEXT' || postData.type === 'text' ? 1.4 : 1.55, margin: 0,
             letterSpacing: '-0.02em',
             whiteSpace: 'pre-wrap',
-          }}>{post.caption || post.text}</p>
+          }}>{postData.caption || postData.text}</p>
 
           {tags && tags.length > 0 && (
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 14 }}>
@@ -209,7 +248,7 @@ export function PostDetailScreen({ navigate, params = {} }) {
             <span>{liked ? likeCount + 1 : likeCount} likes · {commentCount} replies</span>
             <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
               <LxIcon name="eye" size={12} color={v.ink3} />
-              {post.viewCount || Math.floor(likeCount * 18)}
+              {postData.viewCount || Math.floor(likeCount * 18)}
             </span>
           </div>
 

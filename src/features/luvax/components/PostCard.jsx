@@ -86,11 +86,15 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
       <div style={{ padding: pad }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
-          <LxAvatar size={26} idx={post.idx || 0} src={avatarUrl} />
-          <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, cursor: 'pointer' }}
-                onClick={() => navigate('profile', { user: { id: post.userId || post.authorId, username: post.username, displayName: authorName, avatarUrl: post.userAvatarUrl, idx: post.idx || 0 } })}>
-            {authorName}
-          </span>
+          <div 
+            onClick={() => navigate('profile', { user: { id: post.userId || post.authorId, username: post.username, displayName: authorName, avatarUrl: post.userAvatarUrl, idx: post.idx || 0 } })}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            <LxAvatar size={26} idx={post.idx || 0} src={avatarUrl} />
+            <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>
+              {authorName}
+            </span>
+          </div>
           <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>·</span>
           <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{timeStr}</span>
           <div style={{ position: 'relative', marginLeft: 'auto' }}>

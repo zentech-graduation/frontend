@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { v } from '../constants/tokens';
 import { LxIcon, LxBtn } from './primitives';
+import { useAuthStore } from '@/store/useAuthStore';
 
 // ─── Toggle ─────────────────────────────────────────────────────────────────
 function Toggle({ on, onChange }) {
@@ -65,6 +66,10 @@ export function SettingsScreen({ navigate }) {
     allowMessageRequests: true,
   });
   const set = (k) => (val) => setS(p => ({ ...p, [k]: val }));
+  
+  const currentUser = useAuthStore(state => state.user);
+  const key = currentUser ? `lx_blocks_${currentUser.id}` : 'lx_blocks';
+  const blocks = JSON.parse(localStorage.getItem(key) || '[]');
 
   return (
     <>
@@ -101,7 +106,7 @@ export function SettingsScreen({ navigate }) {
           sub="people you don't follow can dm you"
           control={<Toggle on={s.allowMessageRequests} onChange={set('allowMessageRequests')} />}
         />
-        <SettingsRow label="blocked users" sub="0 blocked" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
+        <SettingsRow label="blocked users" sub={`${blocks.length} blocked`} control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate('blocked')} />
 
         {/* Notifications */}
         <SectionHeader>notifications</SectionHeader>

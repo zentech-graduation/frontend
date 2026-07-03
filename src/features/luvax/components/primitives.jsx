@@ -157,3 +157,37 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
     </>
   );
 }
+
+// ─── Modal ─────────────────────────────────────────────────────────────────
+export function LxModal({ open, onClose, title, children, actions }) {
+  if (!open) return null;
+  return (
+    <>
+      <div onClick={onClose} style={{
+        position: 'fixed', inset: 0, background: v.scrim,
+        zIndex: 1000,
+      }} />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        background: v.base, borderRadius: 12, width: 'calc(100% - 32px)', maxWidth: 320,
+        boxShadow: '0 8px 30px rgba(0,0,0,0.12)', overflow: 'hidden',
+        zIndex: 1001, display: 'flex', flexDirection: 'column'
+      }}>
+        {title && (
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${v.border}`, fontFamily: v.fontDisplay, fontSize: 16, fontWeight: 600, color: v.ink }}>
+            {title}
+          </div>
+        )}
+        <div style={{ padding: '20px', fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.5 }}>
+          {children}
+        </div>
+        {actions && (
+          <div style={{ padding: '12px 20px', borderTop: `1px solid ${v.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8, background: v.surfaceRaised }}>
+            {actions}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+

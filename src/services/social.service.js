@@ -1,7 +1,7 @@
-import axiosInstance from './axios';
+import axiosInstance from './axiosInstance';
 
-const SOCIAL_API_PATH = '/api/v1/social';
-const USERS_API_PATH = '/api/v1/users'; // for suggestions
+const SOCIAL_API_PATH = '/social';
+const USERS_API_PATH = '/users'; // for suggestions
 
 // Follow a user
 export const followUser = async (targetUserId) => {
