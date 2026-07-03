@@ -18,8 +18,18 @@ import { StoryViewScreen, StoryComposerScreen } from './components/StoryScreens'
 // ─── Luvax App Root ────────────────────────────────────────────────────────
 export function LuvaxApp() {
   const [tweaks, setTweakState] = useState(TWEAK_DEFAULTS);
-  const [screen, setScreen] = useState('feed');
-  const [params, setParams] = useState({});
+  const [screen, setScreen] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('lx_screen');
+      return saved ? JSON.parse(saved) : 'feed';
+    } catch { return 'feed'; }
+  });
+  const [params, setParams] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('lx_params');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [history, setHistory] = useState([]);
   const viewport = useViewport();
 
@@ -33,6 +43,10 @@ export function LuvaxApp() {
     setHistory(h => screen !== to ? [...h, screen] : h);
     setScreen(to);
     setParams(p);
+    try {
+      sessionStorage.setItem('lx_screen', JSON.stringify(to));
+      sessionStorage.setItem('lx_params', JSON.stringify(p));
+    } catch (e) { /* ignore */ }
     window.scrollTo(0, 0);
   };
 

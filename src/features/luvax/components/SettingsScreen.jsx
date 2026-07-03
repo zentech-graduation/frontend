@@ -3,6 +3,8 @@ import { v } from '../constants/tokens';
 import { LxIcon, LxBtn } from './primitives';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
+import { authApi } from '@/api/authApi';
+import { clearAuthAndRedirect } from '@/api/axiosClient';
 
 // ─── Toggle ─────────────────────────────────────────────────────────────────
 function Toggle({ on, onChange }) {
@@ -71,9 +73,14 @@ export function SettingsScreen({ navigate }) {
   const queryClient = useQueryClient();
   const logout = useAuthStore(state => state.logout);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await authApi.logout();
+    } catch (e) {
+      // ignore
+    }
     queryClient.clear();
-    logout();
+    clearAuthAndRedirect();
   };
   
   const currentUser = useAuthStore(state => state.user);
