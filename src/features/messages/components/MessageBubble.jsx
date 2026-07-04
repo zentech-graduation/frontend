@@ -3,7 +3,10 @@ import { v } from '@/config/tokens';
 import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { copyToClipboard } from '@/utils/helpers';
+import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
+
+const AVATAR_SIZE = 26;
 
 export function MessageBubble({
   message,
@@ -134,6 +137,24 @@ export function MessageBubble({
     overflowWrap: 'anywhere',
   };
 
+  // The other party's avatar sits at the bottom of their last bubble in a run, echoing how most
+  // chat UIs collapse a burst of consecutive messages down to one identity marker. The viewer's
+  // own messages never carry one - the reader already knows who those are. Mobile drops the column
+  // entirely per the design brief, rather than just hiding the image inside it.
+  const avatarSlot =
+    isMobile || isMine ? null : message.showAvatar ? (
+      <AvatarVisual
+        thread={{ avatarUrl: message.senderAvatarUrl, name: message.senderName }}
+        size={AVATAR_SIZE}
+      />
+    ) : (
+      <div style={{ width: AVATAR_SIZE, flexShrink: 0 }} aria-hidden="true" />
+    );
+
+  const timestamp = message.showTimestamp ? (
+    <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
+  ) : null;
+
   if (message.kind === 'deleted') {
     return (
       <div
@@ -156,172 +177,139 @@ export function MessageBubble({
         >
           {message.text}
         </div>
-        <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
+        {timestamp}
       </div>
     );
   }
 
-  if (message.kind === 'file') {
+  if (message.kind === 'file' || message.kind === 'post') {
+    const isFile = message.kind === 'file';
     return (
       <div
-        style={{ display: 'flex', flexDirection: 'column', gap: 4 }}
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 8,
+          flexDirection: isMine ? 'row-reverse' : 'row',
+        }}
         onMouseEnter={handleHoverStart}
         onMouseLeave={handleHoverEnd}
         onPointerEnter={handleHoverStart}
         onPointerLeave={handleHoverEnd}
       >
+        {avatarSlot}
         <div
-          ref={bubbleRowRef}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-          onMouseMove={handleHoverStart}
-          onPointerMove={handleHoverStart}
-          onPointerDown={handleBubbleInteraction}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: isMine ? 'flex-end' : 'flex-start',
+            gap: 4,
+          }}
         >
           <div
+            ref={bubbleRowRef}
             style={{
-              ...bubbleBase,
-              background: v.surface,
-              border: `1px solid ${v.border}`,
-              padding: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              flexDirection: isMine ? 'row-reverse' : 'row',
             }}
+            onMouseMove={handleHoverStart}
+            onPointerMove={handleHoverStart}
+            onPointerDown={handleBubbleInteraction}
+            onClick={handleTouchMenuToggle}
           >
-            <MediaPlaceholder
-              item={{ label: message.text }}
-              large
-              onClick={() => onPreviewMedia({ label: message.text })}
-            />
-          </div>
-          {showActions ? (
-            <button
-              ref={menuButtonRef}
-              type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label="message actions"
+            <div
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                border: 'none',
-                background: 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                opacity: 0.82,
-                padding: 0,
-                flexShrink: 0,
+                ...bubbleBase,
+                background: isMine ? activeThread.accent || v.accentDim : v.surface,
+                border: isMine ? 'none' : `1px solid ${v.border}`,
+                padding: 12,
               }}
             >
-              <LxIcon name="more" size={11} color={v.ink3} />
-            </button>
-          ) : null}
-        </div>
-        <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
-        <LxDropdownMenu
-          anchorRef={menuButtonRef}
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          items={menuItems}
-          width={182}
-        />
-      </div>
-    );
-  }
-
-  if (message.kind === 'post') {
-    return (
-      <div
-        style={{ display: 'flex', flexDirection: 'column', gap: 4 }}
-        onMouseEnter={handleHoverStart}
-        onMouseLeave={handleHoverEnd}
-        onPointerEnter={handleHoverStart}
-        onPointerLeave={handleHoverEnd}
-      >
-        <div
-          ref={bubbleRowRef}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-          onMouseMove={handleHoverStart}
-          onPointerMove={handleHoverStart}
-          onPointerDown={handleBubbleInteraction}
-        >
-          <div
-            style={{
-              ...bubbleBase,
-              background: v.surface,
-              border: `1px solid ${v.border}`,
-              padding: 12,
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <MediaPlaceholder
-                item={{ label: message.handle }}
-                onClick={() => onPreviewMedia({ label: message.title })}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.accent }}>
-                  {message.handle}
-                </div>
-                <div style={{ color: v.ink, fontSize: 14 }}>{message.title}</div>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 8,
-                    fontFamily: v.fontMono,
-                    fontSize: 11,
-                    color: v.ink3,
-                  }}
-                >
-                  <span>{message.meta}</span>
-                  <button
-                    type="button"
+              {isFile ? (
+                <MediaPlaceholder
+                  item={
+                    message.media
+                      ? { ...message.media, label: message.text }
+                      : { label: message.text }
+                  }
+                  large
+                  onClick={() => onPreviewMedia(message.media || { label: message.text })}
+                />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <MediaPlaceholder
+                    item={{ label: message.handle }}
                     onClick={() => onPreviewMedia({ label: message.title })}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: v.ink3,
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                  >
-                    view
-                  </button>
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.accent }}>
+                      {message.handle}
+                    </div>
+                    <div style={{ color: v.ink, fontSize: 14 }}>{message.title}</div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        fontFamily: v.fontMono,
+                        fontSize: 11,
+                        color: v.ink3,
+                      }}
+                    >
+                      <span>{message.meta}</span>
+                      <button
+                        type="button"
+                        onClick={() => onPreviewMedia({ label: message.title })}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: v.ink3,
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        view
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
+            {showActions ? (
+              <button
+                ref={menuButtonRef}
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                aria-label="message actions"
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  opacity: 0.82,
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+              >
+                <LxIcon name="more" size={11} color={v.ink3} />
+              </button>
+            ) : null}
           </div>
-          {showActions ? (
-            <button
-              ref={menuButtonRef}
-              type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label="message actions"
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                border: 'none',
-                background: 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                opacity: 0.82,
-                padding: 0,
-                flexShrink: 0,
-              }}
-            >
-              <LxIcon name="more" size={11} color={v.ink3} />
-            </button>
-          ) : null}
+          {timestamp}
+          <LxDropdownMenu
+            anchorRef={menuButtonRef}
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            items={menuItems}
+            width={182}
+          />
         </div>
-        <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
-        <LxDropdownMenu
-          anchorRef={menuButtonRef}
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          items={menuItems}
-          width={182}
-        />
       </div>
     );
   }
@@ -335,79 +323,89 @@ export function MessageBubble({
       style={{
         alignSelf: isMine ? 'flex-end' : 'flex-start',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: isMine ? 'flex-end' : 'flex-start',
-        gap: 4,
+        alignItems: 'flex-end',
+        gap: 8,
+        flexDirection: isMine ? 'row-reverse' : 'row',
       }}
     >
+      {avatarSlot}
       <div
-        ref={bubbleRowRef}
         style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          flexDirection: isMine ? 'row-reverse' : 'row',
+          flexDirection: 'column',
+          alignItems: isMine ? 'flex-end' : 'flex-start',
+          gap: 4,
         }}
-        onMouseMove={handleHoverStart}
-        onPointerMove={handleHoverStart}
-        onPointerDown={handleBubbleInteraction}
-        onClick={handleTouchMenuToggle}
       >
         <div
+          ref={bubbleRowRef}
           style={{
-            ...bubbleBase,
-            background: isMine ? activeThread.accent || v.accentDim : v.surface,
-            color: v.ink,
-            border: isMine ? 'none' : `1px solid ${v.border}`,
-            minWidth: isMobile ? 0 : 94,
-            width: isMobile ? '100%' : 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexDirection: isMine ? 'row-reverse' : 'row',
           }}
+          onMouseMove={handleHoverStart}
+          onPointerMove={handleHoverStart}
+          onPointerDown={handleBubbleInteraction}
+          onClick={handleTouchMenuToggle}
         >
-          {message.kind === 'reply' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, color: v.ink2 }}>
-                <span style={{ fontFamily: v.fontMono, fontSize: 11 }}>↳ {message.replyTo}</span>
-                <span style={{ fontSize: 13 }}>{message.replyText}</span>
-              </div>
-              <strong style={{ fontWeight: 600 }}>{message.text}</strong>
-            </div>
-          ) : (
-            message.text
-          )}
-        </div>
-        {showActions ? (
-          <button
-            ref={menuButtonRef}
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-label="message actions"
+          <div
             style={{
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              border: 'none',
-              background: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              opacity: 0.82,
-              padding: 0,
-              flexShrink: 0,
+              ...bubbleBase,
+              background: isMine ? activeThread.accent || v.accentDim : v.surface,
+              color: v.ink,
+              border: isMine ? 'none' : `1px solid ${v.border}`,
+              minWidth: isMobile ? 0 : 94,
+              width: isMobile ? '100%' : 'auto',
             }}
           >
-            <LxIcon name="more" size={11} color={isMine ? v.ink2 : v.ink3} />
-          </button>
-        ) : null}
+            {message.kind === 'reply' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, color: v.ink2 }}>
+                  <span style={{ fontFamily: v.fontMono, fontSize: 11 }}>↳ {message.replyTo}</span>
+                  <span style={{ fontSize: 13 }}>{message.replyText}</span>
+                </div>
+                <strong style={{ fontWeight: 600 }}>{message.text}</strong>
+              </div>
+            ) : (
+              message.text
+            )}
+          </div>
+          {showActions ? (
+            <button
+              ref={menuButtonRef}
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-label="message actions"
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                opacity: 0.82,
+                padding: 0,
+                flexShrink: 0,
+              }}
+            >
+              <LxIcon name="more" size={11} color={isMine ? v.ink2 : v.ink3} />
+            </button>
+          ) : null}
+        </div>
+        {timestamp}
+        <LxDropdownMenu
+          anchorRef={menuButtonRef}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          items={menuItems}
+          width={182}
+        />
       </div>
-      <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
-      <LxDropdownMenu
-        anchorRef={menuButtonRef}
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        items={menuItems}
-        width={182}
-      />
     </div>
   );
 }

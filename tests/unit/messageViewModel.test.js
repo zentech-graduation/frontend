@@ -229,4 +229,52 @@ describe('toThread', () => {
     });
     expect(toThread(conversation, [removed], ME).media).toEqual([]);
   });
+
+  describe('bubble grouping', () => {
+    it('collapses timestamp and avatar across a same-sender run under ten minutes apart', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [
+        message({ id: 'm3', senderId: OTHER, createdAt: '2026-08-18T10:08:00Z' }),
+        message({ id: 'm2', senderId: OTHER, createdAt: '2026-08-18T10:04:00Z' }),
+        message({ id: 'm1', senderId: OTHER, createdAt: '2026-08-18T10:00:00Z' }),
+      ];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.messages.map((m) => [m.id, m.showTimestamp, m.showAvatar])).toEqual([
+        ['m1', false, false],
+        ['m2', false, false],
+        ['m3', true, true],
+      ]);
+    });
+
+    it('breaks the run and re-shows both once the gap passes ten minutes', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [
+        message({ id: 'm2', senderId: OTHER, createdAt: '2026-08-18T10:15:00Z' }),
+        message({ id: 'm1', senderId: OTHER, createdAt: '2026-08-18T10:00:00Z' }),
+      ];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.messages.map((m) => m.showTimestamp)).toEqual([true, true]);
+    });
+
+    it('breaks the run on a sender change even within the ten-minute window', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [
+        message({ id: 'm2', senderId: ME, createdAt: '2026-08-18T10:01:00Z' }),
+        message({ id: 'm1', senderId: OTHER, createdAt: '2026-08-18T10:00:00Z' }),
+      ];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.messages.map((m) => m.showTimestamp)).toEqual([true, true]);
+    });
+
+    it('never shows an avatar on the viewer own messages, even at the end of a run', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [message({ id: 'm1', senderId: ME })];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.messages[0].showAvatar).toBe(false);
+    });
+  });
 });

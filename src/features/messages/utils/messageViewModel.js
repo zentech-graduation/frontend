@@ -108,8 +108,37 @@ export const toMessageView = (message, { participants, currentUserId, loadedMess
     handle: sender?.username ? `@${sender.username}` : null,
     title: null,
     meta: message.sharedStoryId ? 'shared story' : message.sharedPostId ? 'shared post' : null,
+    // Carried only to group consecutive bubbles below; not itself rendered.
+    atMs: message.createdAt ? new Date(message.createdAt).getTime() : null,
   };
 };
+
+/** A run of consecutive bubbles collapses its timestamp and avatar this close together reads as one exchange, not a log. */
+const GROUP_GAP_MS = 10 * 60 * 1000;
+
+/**
+ * Marks each bubble with whether it closes its run of consecutive same-sender messages.
+ *
+ * A run breaks when the sender changes or the gap since the previous bubble exceeds ten minutes.
+ * Only the closing bubble shows its timestamp, and only a closing "them" bubble shows an avatar -
+ * the same collapsing Instagram's own thread view uses.
+ */
+const withGrouping = (messages) =>
+  messages.map((current, index) => {
+    const next = messages[index + 1];
+    const endsRun =
+      !next ||
+      next.from !== current.from ||
+      current.atMs === null ||
+      next.atMs === null ||
+      next.atMs - current.atMs > GROUP_GAP_MS;
+
+    return {
+      ...current,
+      showTimestamp: endsRun,
+      showAvatar: endsRun && current.from === 'them',
+    };
+  });
 
 /**
  * Attachments from the loaded history, newest first.
@@ -134,14 +163,16 @@ export const toThread = (conversation, messages, currentUserId) => {
     // The API returns newest first because that is what paging backwards through history needs.
     // Reading wants the opposite, so the flip happens once here rather than in every component
     // that renders a thread. Quote resolution above still sees the whole unreversed set.
-    messages: loaded
-      .map((message) =>
-        toMessageView(message, {
-          participants: conversation.participants,
-          currentUserId,
-          loadedMessages: loaded,
-        })
-      )
-      .reverse(),
+    messages: withGrouping(
+      loaded
+        .map((message) =>
+          toMessageView(message, {
+            participants: conversation.participants,
+            currentUserId,
+            loadedMessages: loaded,
+          })
+        )
+        .reverse()
+    ),
   };
 };
