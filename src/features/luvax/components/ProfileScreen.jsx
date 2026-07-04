@@ -517,6 +517,22 @@ export function ProfileScreen() {
                   {followLabel}
                 </LxBtn>
               )}
+              {!isBlocking && (
+                <LxBtn
+                  variant="secondary"
+                  size="sm"
+                  style={{
+                    minWidth: 62,
+                    height: 30,
+                    padding: '0 14px',
+                    fontSize: 13,
+                    borderRadius: 999,
+                  }}
+                  onClick={() => navigate(ROUTES.MESSAGES, { state: { openWithUserId: user.id } })}
+                >
+                  message
+                </LxBtn>
+              )}
               <button
                 ref={menuAnchor}
                 aria-label={`more options for @${handle}`}

@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Group conversations. Messaging is one to one.
 
 ### Changed
+- The message composer's attachment, text field, and send buttons are now the same height and vertically aligned, and the send button dims until there is a message to send.
 - New messages now appear below older ones instead of above them, so a conversation reads top to bottom.
 - Application screens and the signed-in shell are now downloaded on demand. A visitor on the sign-in page no longer downloads the composer, story viewer, and message pane before the form is usable; the initial download is roughly a third smaller.
 
@@ -29,6 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Continuous integration now runs lint and unit tests in addition to the build.
 
 ### Added
+- A "message" button now sits next to "follow" on everyone else's profile, opening a direct conversation with them.
+- Chat now supports sending images, videos, and GIFs from the attachment button, and shows the real image or video inline instead of a generic file icon.
 - Chat bubbles now show the other person's avatar and collapse the timestamp across a run of messages sent within ten minutes of each other, instead of stamping every single bubble.
 - Messages now opens with the people you and they follow each other with, each one ready to write to and greeted by "You're now friends. Say hi!" until somebody says something.
 - The compose button now opens a search for the person you want to write to, so you can start a conversation with anyone rather than only from their profile.

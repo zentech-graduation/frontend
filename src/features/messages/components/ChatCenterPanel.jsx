@@ -12,6 +12,8 @@ const autoResizeDraft = (element) => {
   element.style.height = `${Math.min(element.scrollHeight, 136)}px`;
 };
 
+const ACCEPTED_ATTACHMENT_TYPES = 'image/*,video/*';
+
 export function ChatCenterPanel({
   viewport,
   activeThread,
@@ -29,8 +31,17 @@ export function ChatCenterPanel({
   draft,
   setDraft,
   handleSend,
+  onSendAttachment,
+  isSendingAttachment,
 }) {
   const draftInputRef = useRef(null);
+  const attachmentInputRef = useRef(null);
+
+  const handleAttachmentChange = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (file) onSendAttachment?.(file);
+  };
 
   useEffect(() => {
     autoResizeDraft(draftInputRef.current);
@@ -166,9 +177,9 @@ export function ChatCenterPanel({
       <div
         style={{
           borderTop: `1px solid ${v.border}`,
-          padding: replyingTo ? '8px 22px 10px' : '10px 22px',
+          padding: replyingTo ? '10px 22px 12px' : '12px 22px',
           display: 'flex',
-          alignItems: 'flex-end',
+          alignItems: 'center',
           gap: 10,
           flexWrap: 'wrap',
         }}
@@ -223,34 +234,44 @@ export function ChatCenterPanel({
             </button>
           </div>
         ) : null}
+        <input
+          ref={attachmentInputRef}
+          type="file"
+          accept={ACCEPTED_ATTACHMENT_TYPES}
+          onChange={handleAttachmentChange}
+          style={{ display: 'none' }}
+        />
         <button
           type="button"
-          onClick={() => setDraft((current) => `${current}${current ? ' ' : ''}[attachment]`)}
+          onClick={() => attachmentInputRef.current?.click()}
+          disabled={isSendingAttachment}
+          aria-label="attach a photo, video, or gif"
           style={{
-            width: 34,
-            height: 34,
+            width: 36,
+            height: 36,
             borderRadius: '50%',
-            border: 'none',
+            border: `1px solid ${v.borderSubtle}`,
             background: v.surface,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: 'pointer',
+            cursor: isSendingAttachment ? 'wait' : 'pointer',
+            opacity: isSendingAttachment ? 0.6 : 1,
             flexShrink: 0,
           }}
         >
-          <LxIcon name="more" size={15} color={v.ink3} />
+          <LxIcon name="image" size={16} color={v.ink3} />
         </button>
         <div
           style={{
             flex: 1,
-            minHeight: 38,
+            minHeight: 36,
             borderRadius: 22,
             background: v.surfaceSunken,
             border: `1px solid ${v.borderSubtle}`,
             display: 'flex',
-            alignItems: 'flex-end',
-            padding: '10px 16px',
+            alignItems: 'center',
+            padding: '9px 16px',
             overflow: 'hidden',
           }}
         >
@@ -268,7 +289,7 @@ export function ChatCenterPanel({
             placeholder={replyingTo ? 'write a reply...' : 'say something real...'}
             style={{
               flex: 1,
-              minHeight: 22,
+              minHeight: 18,
               maxHeight: 126,
               background: 'transparent',
               border: 'none',
@@ -287,6 +308,7 @@ export function ChatCenterPanel({
         <button
           type="button"
           onClick={handleSend}
+          disabled={!draft.trim()}
           aria-label="send message"
           style={{
             width: 36,
@@ -297,7 +319,8 @@ export function ChatCenterPanel({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: 'pointer',
+            cursor: draft.trim() ? 'pointer' : 'default',
+            opacity: draft.trim() ? 1 : 0.5,
             flexShrink: 0,
           }}
         >

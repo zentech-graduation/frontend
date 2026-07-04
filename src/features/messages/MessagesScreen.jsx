@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -14,9 +15,12 @@ import { PersonPicker } from './components/PersonPicker';
 import { messageService } from '@/services/message.service';
 import { useLuvaxTweaks } from '@/features/luvax/LuvaxTweaksContext';
 import { toast } from '@/features/luvax/components/Toast';
+import { useMediaUpload } from '@/features/luvax/hooks/useMediaUpload';
 
 export function MessagesScreen() {
   const { viewport } = useLuvaxTweaks();
+  const location = useLocation();
+  const navigate = useNavigate();
   const currentUserId = useAuthStore((state) => state.user?.id);
   const { conversations, isLoading: conversationsLoading } = useConversations();
   // The adapter owns every mapping from the API shape onto what these panels render.
@@ -60,6 +64,7 @@ export function MessagesScreen() {
   const markRead = useMarkRead();
   const sendMessage = useSendMessage(activeConversation?.id);
   const deleteMessage = useDeleteMessage(activeConversation?.id);
+  const { uploadMedia, isUploading: isUploadingAttachment } = useMediaUpload();
 
   useEffect(() => {
     if (activeConversation?.id) {
@@ -116,6 +121,17 @@ export function MessagesScreen() {
     },
     onError: (error) => toast(error?.message || 'could not start that conversation'),
   });
+
+  // A profile's "message" button lands here carrying the target in route state rather than a URL
+  // param, so a stale bookmark can never re-trigger it. The state is cleared right after firing, so
+  // navigating back into the thread later - or a browser back/forward - does not replay it.
+  useEffect(() => {
+    const targetUserId = location.state?.openWithUserId;
+    if (!targetUserId) return;
+    startConversation.mutate(targetUserId);
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const handleCompose = () => setComposing(true);
 
@@ -211,6 +227,54 @@ export function MessagesScreen() {
     setReplyingTo(null);
   };
 
+  /**
+   * Uploads an image, video, or GIF through the same pre-signed R2 flow the post composer uses,
+   * then sends it as a media message. The optimistic bubble renders from a local object URL so the
+   * attachment appears immediately, before the CDN URL comes back on the real response.
+   */
+  const handleSendAttachment = async (file) => {
+    if (!file || !activeConversation) return;
+
+    const isVideo = file.type.startsWith('video/');
+    const idempotencyKey =
+      globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    try {
+      const asset = await uploadMedia(file);
+
+      sendMessage.mutate({
+        idempotencyKey,
+        body: {
+          messageType: isVideo ? 'video' : 'image',
+          mediaAssetId: asset.id,
+          replyToId: replyingTo?.id || null,
+        },
+        optimisticMessage: {
+          id: `pending-${idempotencyKey}`,
+          conversationId: activeConversation.id,
+          senderId: currentUserId,
+          messageType: isVideo ? 'video' : 'image',
+          content: null,
+          mediaAssetId: asset.id,
+          media: {
+            mediaAssetId: asset.id,
+            mediaType: isVideo ? 'VIDEO' : 'IMAGE',
+            cdnUrl: asset.cdnUrl || URL.createObjectURL(file),
+          },
+          sharedPostId: null,
+          sharedStoryId: null,
+          replyToId: replyingTo?.id || null,
+          isDeleted: false,
+          deletedAt: null,
+          createdAt: new Date().toISOString(),
+        },
+      });
+      setReplyingTo(null);
+    } catch (error) {
+      toast(error?.uploadMessage || error?.message || "couldn't send that file. try again.");
+    }
+  };
+
   const handleDeleteToggle = (messageId) => {
     setPendingDeleteMessageId(messageId);
   };
@@ -284,6 +348,8 @@ export function MessagesScreen() {
           draft={draft}
           setDraft={setDraft}
           handleSend={handleSend}
+          onSendAttachment={handleSendAttachment}
+          isSendingAttachment={isUploadingAttachment}
         />
       ) : null}
 
