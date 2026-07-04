@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { v } from '@/config/tokens';
 import { ROUTES } from '@/config/constants';
 import { extractPageContent } from '@/utils/helpers';
@@ -25,65 +25,6 @@ const BOTTOM_TABS = [
   ...PRIMARY_TABS,
   { id: 'profile', path: ROUTES.PROFILE, icon: 'profile', label: 'profile' },
 ];
-
-// Hide-on-scroll for the persistent app bar.
-//
-// The design ships the CSS and gives the header the lx-bar hook, but never adds lx-bar-hidden, so
-// the trigger is a derivation rather than a port. It hides once the page is scrolled past the bar's
-// own height and the direction is downward, and reveals on any upward movement, so the bar is always
-// one small scroll-up away. The 6px delta ignores sub-pixel jitter that would otherwise flicker the
-// bar; the 56px floor is the bar height, so the bar never hides while still overlapping the content
-// it belongs to.
-//
-// Two more sources of flicker needed guarding against once the side rail and messages fab started
-// consuming this same signal:
-//
-// - A post/modal overlay locks body scroll by setting `document.body.style.overflow = 'hidden'`.
-//   That lock itself can shift `window.scrollY` (the scrollbar disappearing reflows layout), which
-//   the naive handler read as a real user scroll and used to flip the bar back in mid-overlay-open.
-//   While the lock is active, scroll deltas are only used to resync `lastY`, never to toggle
-//   visibility - so opening a post never moves the nav.
-// - Fast/flicked scrolling fires bursts of alternating-direction scroll events as momentum settles.
-//   A per-toggle cooldown means a flip only takes effect if the bar has been in its current state
-//   for at least COOLDOWN_MS, so a single flick reads as one clean transition instead of a stutter.
-const TOGGLE_COOLDOWN_MS = 220;
-
-function useHideOnScroll() {
-  const [hidden, setHidden] = useState(false);
-  const lastY = useRef(0);
-  const lastToggleAt = useRef(0);
-
-  useEffect(() => {
-    lastY.current = window.scrollY;
-
-    const onScroll = () => {
-      const y = window.scrollY;
-      const delta = y - lastY.current;
-
-      if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
-        lastY.current = y;
-        return;
-      }
-
-      if (Math.abs(delta) < 6) return;
-      lastY.current = y;
-
-      const wantHidden = y > 56 && delta > 0;
-      setHidden((current) => {
-        if (wantHidden === current) return current;
-        const now = performance.now();
-        if (now - lastToggleAt.current < TOGGLE_COOLDOWN_MS) return current;
-        lastToggleAt.current = now;
-        return wantHidden;
-      });
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  return hidden;
-}
 
 // ─── Top Tab Strip ─────────────────────────────────────────────────────────
 export function LxTopTabs({ active, navigate, compact = false }) {
@@ -190,7 +131,7 @@ export function LxTopTabs({ active, navigate, compact = false }) {
 }
 
 // ─── Persistent App Bar ────────────────────────────────────────────────────
-export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
+export function LxAppBar({ screen, navigate, viewport }) {
   const currentUser = useAuthStore((state) => state.user);
   const isMainTab = ['feed', 'explore', 'messages', 'compose', 'notifications', 'profile'].includes(
     screen
@@ -220,12 +161,11 @@ export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
   const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
   const isMobile = viewport === 'mobile';
-  const barHidden = hidden;
 
   return (
     <header
       data-lx-bar="1"
-      className={barHidden ? 'lx-bar lx-bar-hidden' : 'lx-bar'}
+      className="lx-bar"
       style={{
         position: 'sticky',
         top: 0,
@@ -234,6 +174,9 @@ export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
         flexShrink: 0,
         display: 'flex',
         justifyContent: 'center',
+        // The side rail is fixed over this same top-left corner on desktop and tablet, so the bar's
+        // own content is pushed clear of it rather than sitting underneath.
+        paddingLeft: isWide ? RAIL_COLLAPSED_W : 0,
         background: 'var(--lx-glass-bg)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
@@ -682,19 +625,19 @@ function LxMark({ onClick }) {
 // The icon column sits at a fixed offset from the rail's left edge in both
 // states, so it never shifts horizontally when the rail expands - only the
 // label beside it grows in.
-const RAIL_COLLAPSED_W = 60;
+export const RAIL_COLLAPSED_W = 60;
 const RAIL_EXPANDED_W = 196;
 const RAIL_ICON_INSET = 13;
 
 // ─── Left Sub-Nav Rail (desktop/tablet) ────────────────────────────────────
-// A subordinate stand-in for the main bar, not a second main nav: smaller
-// icons than the top bar's own, no divider against the content it floats
-// over, and the tab list vertically centered in the available height rather
-// than pinned under the mark. It appears exactly when useHideOnScroll has
-// hidden the top bar, so navigation is never more than a glance to the left
-// away. Hovering it expands the rail and reveals a text label per icon, the
-// same disclosure Instagram's own collapsed sidebar uses.
-export function LxSideRail({ active, navigate, visible }) {
+// The primary nav on desktop and tablet: it is always on screen rather than a
+// stand-in that appears only when something else disappears, matching the
+// smaller icon-only sidebar Instagram itself keeps visible at all times.
+// `position: fixed` keeps it out of the page's own flex flow, so hovering it
+// open overlays the interface instead of shifting the app's layout. Hovering
+// expands the rail and reveals a text label per icon, the same disclosure
+// Instagram's own collapsed sidebar uses.
+export function LxSideRail({ active, navigate, visible = true }) {
   const currentUser = useAuthStore((state) => state.user);
   const [expanded, setExpanded] = useState(false);
   const { data: requestsResponse } = usePendingFollowRequests();
@@ -842,51 +785,9 @@ export function LxSideRail({ active, navigate, visible }) {
   );
 }
 
-// ─── Floating Messages Button (desktop/tablet) ─────────────────────────────
-// A quiet, slim rectangle - a border, not a filled pill - that stays put
-// regardless of scroll direction rather than tracking the top bar's own
-// hide/show, so it never itself becomes a second thing jumping around the
-// screen. Pairs a label with a send affordance rather than a chat-bubble
-// glyph, matching Instagram's own floating message entry point.
-export function LxMessagesFab({ active, navigate }) {
-  if (active === 'messages') return null;
-  return (
-    <button
-      onClick={() => navigate(ROUTES.MESSAGES)}
-      aria-label="open messages"
-      style={{
-        position: 'fixed',
-        bottom: 24,
-        right: 24,
-        zIndex: 100,
-        height: 34,
-        padding: '0 14px',
-        borderRadius: 999,
-        background: 'var(--lx-glass-bg)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        border: `1px solid ${v.border}`,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 7,
-        cursor: 'pointer',
-      }}
-    >
-      <span style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink2 }}>
-        message
-      </span>
-      <LxIcon name="send" size={13} color={v.ink2} stroke={2} />
-    </button>
-  );
-}
-
 // ─── App Shell ─────────────────────────────────────────────────────────────
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
   const vp = useViewport();
-  // Shared with LxAppBar (which hides on the same signal) so the rail and
-  // the floating messages button appear at exactly the moment the top bar
-  // disappears, rather than each tracking scroll independently.
-  const barHidden = useHideOnScroll();
 
   if (vp === 'desktop') {
     const LEFT_W = 280;
@@ -894,9 +795,8 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
       <div
         style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
       >
-        <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
-        <LxSideRail active={screen} navigate={navigate} visible={barHidden} />
-        <LxMessagesFab active={screen} navigate={navigate} />
+        <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
+        <LxSideRail active={screen} navigate={navigate} />
         <div
           style={{
             display: 'flex',
@@ -946,9 +846,8 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
       <div
         style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
       >
-        <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
-        <LxSideRail active={screen} navigate={navigate} visible={barHidden} />
-        <LxMessagesFab active={screen} navigate={navigate} />
+        <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
+        <LxSideRail active={screen} navigate={navigate} />
         <div
           style={{
             display: 'flex',
@@ -992,7 +891,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
     <div
       style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
     >
-      <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
+      <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
       <main
         key={screen}
         className="lx-fade-in"

@@ -21,8 +21,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 - Group conversations. Messaging is one to one.
+- The floating "message" button on desktop and tablet, now redundant with the always-visible side rail's own message icon.
 
 ### Changed
+- The top bar no longer hides while scrolling; it stays fixed to the top of the page. The side rail is now the primary navigation on desktop and tablet and stays on screen at all times instead of appearing only while the top bar is hidden. The messages screen drops the top bar entirely on desktop and tablet and relies on the rail alone.
 - The message composer's attachment, text field, and send buttons are now the same height and vertically aligned, and the send button dims until there is a message to send.
 - New messages now appear below older ones instead of above them, so a conversation reads top to bottom.
 - Application screens and the signed-in shell are now downloaded on demand. A visitor on the sign-in page no longer downloads the composer, story viewer, and message pane before the form is usable; the initial download is roughly a third smaller.

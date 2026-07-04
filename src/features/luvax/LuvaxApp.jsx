@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, matchPath, useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { TWEAK_DEFAULTS, FONT_MAP } from './constants/data';
 import { useViewport } from './hooks/useViewport';
-import { LxShell, LxAppBar, LxBottomNav } from './components/shell';
+import { LxShell, LxAppBar, LxBottomNav, LxSideRail, RAIL_COLLAPSED_W } from './components/shell';
 import { v } from '@/config/tokens';
 import { APP_SCREENS, DEFAULT_BASE_SCREEN } from '@/routes/appScreens';
 import { LuvaxTweaksProvider } from './LuvaxTweaksContext';
@@ -200,21 +200,27 @@ export function LuvaxApp() {
   }
 
   if (chrome === 'messages') {
-    const msgTop = viewport === 'mobile' ? 0 : 56;
+    // Desktop and tablet drop the top bar entirely here: the side rail is the only nav, so it never
+    // has to duplicate itself in two chrome pieces at once the way a top bar plus a rail would.
     const msgBottom = viewport === 'mobile' ? 56 : 0;
+    const msgLeft = viewport === 'mobile' ? 0 : RAIL_COLLAPSED_W;
 
     return (
       <LuvaxTweaksProvider value={tweakContext}>
         <div style={{ minHeight: '100vh', background: v.base }}>
-          {viewport !== 'mobile' || !messagesThreadOpen ? (
-            <LxAppBar screen={screen} navigate={navigate} viewport={viewport} />
-          ) : null}
+          {viewport === 'mobile' ? (
+            !messagesThreadOpen ? (
+              <LxAppBar screen={screen} navigate={navigate} viewport={viewport} />
+            ) : null
+          ) : (
+            <LxSideRail active={screen} navigate={navigate} />
+          )}
           <div
             style={{
               position: 'fixed',
-              top: msgTop,
+              top: 0,
               bottom: msgBottom,
-              left: 0,
+              left: msgLeft,
               right: 0,
               background: v.base,
               zIndex: 10,
