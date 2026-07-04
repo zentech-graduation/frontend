@@ -552,14 +552,20 @@ export function ProfileScreen() {
               >
                 <LxIcon name="more" size={16} color={v.ink2} />
               </button>
-              <LxDropdownMenu
-                anchorRef={menuAnchor}
-                open={menuOpen}
-                onClose={() => setMenuOpen(false)}
-                items={menuItems}
-                align="right"
-              />
             </div>
+          )}
+          {/* Rendered outside the button row on purpose: that row carries a `transform` for a
+              pixel nudge, and a `transform` on any ancestor becomes the containing block for a
+              `position: fixed` descendant, which broke this menu's fixed-position math under the
+              app's root zoom and left it rendering off-screen. */}
+          {!isSelf && !isBlocking && (
+            <LxDropdownMenu
+              anchorRef={menuAnchor}
+              open={menuOpen}
+              onClose={() => setMenuOpen(false)}
+              items={menuItems}
+              align="right"
+            />
           )}
           {isSelf && (
             <LxBtn

@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The real-time connection now authenticates with a single-use ticket instead of carrying the access token in the address, which kept a valid credential in server access logs long after it expired.
 
 ### Fixed
+- The options menu on someone else's profile now opens where its button is instead of off-screen. A `transform` on the button row broke the menu's fixed-position math once the app's root zoom multiplied the offset a second time.
 - Opening a conversation's info panel no longer fails. The shared-media grid now shows the real attachments from the history loaded so far, and says so when there are none.
 - A group conversation's header no longer renders its member count as though it were a username handle.
 - Screens no longer call viewport and message-draft hooks conditionally. React identifies hooks by call order, so the previous arrangement could bind state to the wrong value once a screen was rendered both with and without a viewport prop, or once a message thread was opened and closed.
