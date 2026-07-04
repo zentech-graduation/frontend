@@ -37,7 +37,7 @@ export function ConvRow({ thread, isActive, onSelect }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {thread.preview} · {thread.time}
+          {[thread.preview, thread.time].filter(Boolean).join(' · ')}
         </div>
       </div>
       {thread.unread ? (

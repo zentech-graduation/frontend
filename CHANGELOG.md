@@ -18,13 +18,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Lint no longer scans the build dependency cache, so it reports only real findings and finishes in seconds rather than minutes.
 - Corrected the session store's documentation, which stated that reloading the page ends the session. It does not: the session is restored from the refresh cookie on load.
 
+### Removed
+- Group conversations. Messaging is one to one.
+
 ### Changed
+- New messages now appear below older ones instead of above them, so a conversation reads top to bottom.
 - Application screens and the signed-in shell are now downloaded on demand. A visitor on the sign-in page no longer downloads the composer, story viewer, and message pane before the form is usable; the initial download is roughly a third smaller.
 
 ### Tests
 - Continuous integration now runs lint and unit tests in addition to the build.
 
 ### Added
+- Messages now opens with the people you and they follow each other with, each one ready to write to and greeted by "You're now friends. Say hi!" until somebody says something.
+- The compose button now opens a search for the person you want to write to, so you can start a conversation with anyone rather than only from their profile.
 - Direct messages are real. The conversation list, message history, sending, and deleting now read and write actual conversations instead of a fixed demo set.
 - Unread counts per conversation and on the shell's message badge, cleared when you open the conversation.
 - Group conversations: see who is in a group, rename it, add people by searching for them, remove a member, and leave. Renaming, adding, and removing are offered only to group admins, matching what the server allows.

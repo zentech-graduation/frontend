@@ -181,6 +181,17 @@ describe('toThread', () => {
     expect(thread.messages[1].replyText).toBe('first');
   });
 
+  it('leaves preview and time empty for a conversation nobody has written in', () => {
+    // An auto-provisioned conversation has no last message and no activity timestamp. The row must
+    // not render a bare separator between two empty strings.
+    const summary = toThreadSummary(
+      { id: 'c1', participants, unreadCount: 0, lastMessage: null, lastMessageAt: null },
+      ME
+    );
+    expect(summary.preview).toBe('');
+    expect(summary.time).toBe('');
+  });
+
   it('carries the counterpart id so compose can exclude existing conversations', () => {
     const summary = toThreadSummary({ id: 'c1', participants, unreadCount: 0 }, ME);
     expect(summary.counterpartId).toBe(OTHER);

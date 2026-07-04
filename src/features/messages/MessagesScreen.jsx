@@ -102,10 +102,13 @@ export function MessagesScreen() {
   // including the first message to someone who has not followed back.
   const startConversation = useMutation({
     mutationFn: (targetUserId) => messageService.createDirect(targetUserId),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       const conversation = response?.data;
       setComposing(false);
-      queryClient.invalidateQueries({ queryKey: conversationsKey });
+      // Awaited, not fired and forgotten: an effect above resets the active thread whenever its id
+      // is absent from the loaded list, so selecting the new conversation before the refetch lands
+      // snaps the panel straight back to the previous thread.
+      await queryClient.invalidateQueries({ queryKey: conversationsKey });
       if (conversation?.id) {
         setActiveThreadId(conversation.id);
         setThreadOpen(true);
