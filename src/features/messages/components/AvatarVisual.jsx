@@ -10,7 +10,7 @@ import { LxAvatar } from '@/components/ui/lx-avatar';
  * The previous fixture carried `accent` and `idx` fields that chose a colour and a placeholder
  * image. Neither exists on the API, so both are gone rather than invented here.
  */
-export function AvatarVisual({ thread, size = 42 }) {
+export function AvatarVisual({ thread, size = 34 }) {
   if (thread?.avatarUrl) {
     return <LxAvatar size={size} src={thread.avatarUrl} />;
   }
@@ -39,7 +39,7 @@ export function AvatarVisual({ thread, size = 42 }) {
         justifyContent: 'center',
         color: v.ink,
         fontFamily: v.fontBody,
-        fontSize: 15,
+        fontSize: Math.max(9, Math.round(size * 0.38)),
         fontWeight: 700,
         flexShrink: 0,
       }}

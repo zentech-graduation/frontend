@@ -25,19 +25,19 @@ export function ConversationListPanel({
     >
       <div
         style={{
-          height: viewport === 'mobile' ? 0 : 56,
+          height: viewport === 'mobile' ? 0 : 52,
           borderBottom: viewport === 'mobile' ? 'none' : `1px solid ${v.border}`,
           display: viewport === 'mobile' ? 'none' : 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: viewport === 'mobile' ? '0' : '0 18px 0 20px',
+          padding: viewport === 'mobile' ? '0' : '0 16px 0 18px',
         }}
       >
         {viewport !== 'mobile' ? (
           <div
             style={{
               fontFamily: v.fontDisplay,
-              fontSize: 16,
+              fontSize: 14.5,
               fontWeight: 700,
               color: v.ink,
               letterSpacing: '-0.03em',
@@ -53,8 +53,8 @@ export function ConversationListPanel({
             onClick={handleCompose}
             aria-label="new message"
             style={{
-              width: 36,
-              height: 36,
+              width: 32,
+              height: 32,
               borderRadius: '50%',
               border: `1px solid ${v.border}`,
               background: 'transparent',
@@ -65,30 +65,30 @@ export function ConversationListPanel({
               boxShadow: 'none',
             }}
           >
-            <LxIcon name="edit" size={13} color={v.ink3} />
+            <LxIcon name="edit" size={12} color={v.ink3} />
           </button>
         ) : null}
       </div>
 
       <div
         style={{
-          padding: viewport === 'mobile' ? '9px 14px 10px' : '10px 16px 12px',
+          padding: viewport === 'mobile' ? '8px 14px 9px' : '9px 14px 10px',
           borderBottom: `1px solid ${v.borderSubtle}`,
         }}
       >
         <div
           style={{
-            height: viewport === 'mobile' ? 32 : 34,
+            height: viewport === 'mobile' ? 30 : 31,
             borderRadius: 999,
             background: v.surfaceSunken,
             border: `1px solid ${v.borderSubtle}`,
             display: 'flex',
             alignItems: 'center',
-            gap: 7,
-            padding: '0 11px',
+            gap: 6,
+            padding: '0 10px',
           }}
         >
-          <LxIcon name="explore" size={13} color={v.ink3} />
+          <LxIcon name="explore" size={12} color={v.ink3} />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -100,7 +100,7 @@ export function ConversationListPanel({
               outline: 'none',
               color: v.ink,
               fontFamily: v.fontBody,
-              fontSize: 13,
+              fontSize: 12,
             }}
           />
         </div>

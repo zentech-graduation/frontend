@@ -52,8 +52,8 @@ export function ChatCenterPanel({
   if (!activeThread) return null;
 
   const mobileHeaderIconButton = {
-    width: 31,
-    height: 31,
+    width: 28,
+    height: 28,
     borderRadius: '50%',
     border: `1px solid ${v.borderSubtle}`,
     background: v.surface,
@@ -73,7 +73,7 @@ export function ChatCenterPanel({
         minHeight: 0,
         overflow: 'hidden',
         display: 'grid',
-        gridTemplateRows: '60px minmax(0, 1fr) auto',
+        gridTemplateRows: '52px minmax(0, 1fr) auto',
         minWidth: 0,
         borderLeft: isDesktop || isTablet ? `1px solid ${v.borderSubtle}` : 'none',
         borderRight: showRightRail ? `1px solid ${v.border}` : 'none',
@@ -103,12 +103,12 @@ export function ChatCenterPanel({
               <LxIcon name="chevronLeft" size={15} color={v.ink2} />
             </button>
           ) : null}
-          <AvatarVisual thread={activeThread} size={40} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-            <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink }}>
+          <AvatarVisual thread={activeThread} size={32} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 700, color: v.ink }}>
               {activeThread.name}
             </div>
-            <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
+            <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>
               @{activeThread.username}
             </div>
           </div>
@@ -129,48 +129,72 @@ export function ChatCenterPanel({
         ref={scrollerRef}
         style={{
           overflowY: 'auto',
-          padding: viewport === 'mobile' ? '18px 24px' : '20px 22px 12px',
+          padding: viewport === 'mobile' ? '14px 20px' : '16px 18px 10px',
         }}
       >
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 28,
+            gap: 14,
             minHeight: '100%',
             justifyContent: activeThread.messages.length <= 1 ? 'space-between' : 'flex-start',
           }}
         >
           <ConversationGreeting messageCount={activeThread.messages.length} />
-          {activeThread.messages.map((message, index) => (
-            <div
-              key={message.id}
-              style={{
-                display: 'flex',
-                justifyContent: message.from === 'me' ? 'flex-end' : 'flex-start',
-                minHeight:
-                  activeThread.messages.length <= 1 && index === 0 && isDesktop ? 420 : 'auto',
-                alignItems:
-                  activeThread.messages.length <= 1 && index === 0 && isDesktop
-                    ? 'flex-start'
-                    : 'stretch',
-              }}
-            >
-              <MessageBubble
-                message={message}
-                viewport={viewport}
-                activeThread={activeThread}
-                onPreviewMedia={setPreviewItem}
-                onDeleteToggle={handleDeleteToggle}
-                onReplyMessage={setReplyingTo}
-                canDelete={
-                  message.from === 'me' &&
-                  message.kind !== 'deleted' &&
-                  index >= activeThread.messages.length - 2
-                }
-              />
-            </div>
-          ))}
+          {activeThread.rows.map((row, index) =>
+            row.rowType === 'separator' ? (
+              <div
+                key={row.id}
+                role="separator"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  padding: '4px 0',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: v.fontMono,
+                    fontSize: 10,
+                    color: v.ink3,
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {row.label}
+                </span>
+              </div>
+            ) : (
+              <div
+                key={row.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: row.from === 'me' ? 'flex-end' : 'flex-start',
+                  minHeight:
+                    activeThread.messages.length <= 1 && index === 0 && isDesktop ? 360 : 'auto',
+                  alignItems:
+                    activeThread.messages.length <= 1 && index === 0 && isDesktop
+                      ? 'flex-start'
+                      : 'stretch',
+                }}
+              >
+                <MessageBubble
+                  message={row}
+                  viewport={viewport}
+                  activeThread={activeThread}
+                  onPreviewMedia={setPreviewItem}
+                  onDeleteToggle={handleDeleteToggle}
+                  onReplyMessage={setReplyingTo}
+                  canDelete={
+                    row.from === 'me' &&
+                    row.kind !== 'deleted' &&
+                    activeThread.messages.findIndex((message) => message.id === row.id) >=
+                      activeThread.messages.length - 2
+                  }
+                />
+              </div>
+            )
+          )}
         </div>
       </div>
 

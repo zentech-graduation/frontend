@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  formatSeparatorLabel,
   toMessageView,
   toThread,
   toThreadSummary,
@@ -27,6 +28,32 @@ const message = (overrides) => ({
   isDeleted: false,
   createdAt: '2026-08-18T10:15:00Z',
   ...overrides,
+});
+
+describe('formatSeparatorLabel', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-18T18:00:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('labels a message from today as "Today"', () => {
+    expect(formatSeparatorLabel('2026-08-18T10:15:00')).toMatch(/^Today, /);
+  });
+
+  it('labels a message from yesterday as "Yesterday"', () => {
+    expect(formatSeparatorLabel('2026-08-17T10:15:00')).toMatch(/^Yesterday, /);
+  });
+
+  it('labels an older message with its date rather than "Today"/"Yesterday"', () => {
+    const label = formatSeparatorLabel('2026-08-10T10:15:00');
+    expect(label).not.toMatch(/^Today|^Yesterday/);
+    expect(label).toContain('10');
+    expect(label).toContain('10:15');
+  });
 });
 
 describe('toThreadSummary', () => {
@@ -230,8 +257,8 @@ describe('toThread', () => {
     expect(toThread(conversation, [removed], ME).media).toEqual([]);
   });
 
-  describe('bubble grouping', () => {
-    it('collapses timestamp and avatar across a same-sender run under ten minutes apart', () => {
+  describe('rows', () => {
+    it('collapses the avatar across a same-sender run under ten minutes apart, with one separator', () => {
       const conversation = { id: 'c1', participants, unreadCount: 0 };
       const messages = [
         message({ id: 'm3', senderId: OTHER, createdAt: '2026-08-18T10:08:00Z' }),
@@ -240,14 +267,15 @@ describe('toThread', () => {
       ];
       const thread = toThread(conversation, messages, ME);
 
-      expect(thread.messages.map((m) => [m.id, m.showTimestamp, m.showAvatar])).toEqual([
-        ['m1', false, false],
-        ['m2', false, false],
-        ['m3', true, true],
+      expect(thread.rows.map((row) => [row.rowType, row.id, row.showAvatar])).toEqual([
+        ['separator', 'sep-m1', undefined],
+        ['message', 'm1', false],
+        ['message', 'm2', false],
+        ['message', 'm3', true],
       ]);
     });
 
-    it('breaks the run and re-shows both once the gap passes ten minutes', () => {
+    it('breaks the run and inserts a new separator once the gap passes ten minutes', () => {
       const conversation = { id: 'c1', participants, unreadCount: 0 };
       const messages = [
         message({ id: 'm2', senderId: OTHER, createdAt: '2026-08-18T10:15:00Z' }),
@@ -255,7 +283,12 @@ describe('toThread', () => {
       ];
       const thread = toThread(conversation, messages, ME);
 
-      expect(thread.messages.map((m) => m.showTimestamp)).toEqual([true, true]);
+      expect(thread.rows.map((row) => row.rowType)).toEqual([
+        'separator',
+        'message',
+        'separator',
+        'message',
+      ]);
     });
 
     it('breaks the run on a sender change even within the ten-minute window', () => {
@@ -266,7 +299,12 @@ describe('toThread', () => {
       ];
       const thread = toThread(conversation, messages, ME);
 
-      expect(thread.messages.map((m) => m.showTimestamp)).toEqual([true, true]);
+      expect(thread.rows.map((row) => row.rowType)).toEqual([
+        'separator',
+        'message',
+        'separator',
+        'message',
+      ]);
     });
 
     it('never shows an avatar on the viewer own messages, even at the end of a run', () => {
@@ -274,7 +312,7 @@ describe('toThread', () => {
       const messages = [message({ id: 'm1', senderId: ME })];
       const thread = toThread(conversation, messages, ME);
 
-      expect(thread.messages[0].showAvatar).toBe(false);
+      expect(thread.rows.find((row) => row.rowType === 'message').showAvatar).toBe(false);
     });
   });
 });

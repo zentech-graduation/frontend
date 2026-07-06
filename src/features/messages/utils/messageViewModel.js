@@ -33,6 +33,38 @@ export const formatMessageTime = (isoString) => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+const isSameCalendarDay = (a, b) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+/**
+ * The label a separator row shows between two clusters of messages: "Today, 3:34 PM", "Yesterday,
+ * ...", or a full date once it is neither. Mirrors the day-boundary language most chat apps use
+ * rather than a bare timestamp, which reads as a log entry instead of a point in a conversation.
+ */
+export const formatSeparatorLabel = (isoString) => {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (isSameCalendarDay(date, now)) return `Today, ${time}`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (isSameCalendarDay(date, yesterday)) return `Yesterday, ${time}`;
+
+  const datePart = date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+  });
+  return `${datePart}, ${time}`;
+};
+
 /** The other party in the conversation. */
 export const counterpartOf = (conversation, currentUserId) => {
   const others = (conversation?.participants || []).filter(
@@ -108,24 +140,49 @@ export const toMessageView = (message, { participants, currentUserId, loadedMess
     handle: sender?.username ? `@${sender.username}` : null,
     title: null,
     meta: message.sharedStoryId ? 'shared story' : message.sharedPostId ? 'shared post' : null,
-    // Carried only to group consecutive bubbles below; not itself rendered.
+    // Carried only to group consecutive bubbles and label separators below; neither is rendered
+    // directly on the bubble itself.
     atMs: message.createdAt ? new Date(message.createdAt).getTime() : null,
+    createdAtIso: message.createdAt || null,
   };
 };
 
-/** A run of consecutive bubbles collapses its timestamp and avatar this close together reads as one exchange, not a log. */
+/** A run of consecutive bubbles collapses its avatar this close together reads as one exchange, not a log. */
 const GROUP_GAP_MS = 10 * 60 * 1000;
 
 /**
- * Marks each bubble with whether it closes its run of consecutive same-sender messages.
+ * Turns the flat message list into thread rows: a separator before the first message of each
+ * cluster, and every message marked with whether it closes its run of consecutive same-sender
+ * bubbles.
  *
- * A run breaks when the sender changes or the gap since the previous bubble exceeds ten minutes.
- * Only the closing bubble shows its timestamp, and only a closing "them" bubble shows an avatar -
- * the same collapsing Instagram's own thread view uses.
+ * A cluster breaks - and gets a new separator - when the sender changes or the gap since the
+ * previous message exceeds ten minutes. A run breaks on the same rule; only a "them" bubble that
+ * closes a run shows an avatar, the same collapsing Instagram's own thread view uses. Showing the
+ * time as a row between clusters rather than text under every bubble is what lets a long burst of
+ * short messages read as one exchange instead of a timestamped log.
  */
-const withGrouping = (messages) =>
-  messages.map((current, index) => {
+const toRows = (messages) => {
+  const rows = [];
+
+  messages.forEach((current, index) => {
+    const previous = messages[index - 1];
     const next = messages[index + 1];
+
+    const startsCluster =
+      !previous ||
+      previous.from !== current.from ||
+      previous.atMs === null ||
+      current.atMs === null ||
+      current.atMs - previous.atMs > GROUP_GAP_MS;
+
+    if (startsCluster) {
+      rows.push({
+        rowType: 'separator',
+        id: `sep-${current.id}`,
+        label: formatSeparatorLabel(current.createdAtIso),
+      });
+    }
+
     const endsRun =
       !next ||
       next.from !== current.from ||
@@ -133,12 +190,11 @@ const withGrouping = (messages) =>
       next.atMs === null ||
       next.atMs - current.atMs > GROUP_GAP_MS;
 
-    return {
-      ...current,
-      showTimestamp: endsRun,
-      showAvatar: endsRun && current.from === 'them',
-    };
+    rows.push({ rowType: 'message', ...current, showAvatar: endsRun && current.from === 'them' });
   });
+
+  return rows;
+};
 
 /**
  * Attachments from the loaded history, newest first.
@@ -156,23 +212,27 @@ const mediaOf = (messages) =>
 /** A conversation plus its loaded history, oldest first, in the shape the thread panel renders. */
 export const toThread = (conversation, messages, currentUserId) => {
   const loaded = messages || [];
+  // The API returns newest first because that is what paging backwards through history needs.
+  // Reading wants the opposite, so the flip happens once here rather than in every component that
+  // renders a thread. Quote resolution above still sees the whole unreversed set.
+  const messageViews = loaded
+    .map((message) =>
+      toMessageView(message, {
+        participants: conversation.participants,
+        currentUserId,
+        loadedMessages: loaded,
+      })
+    )
+    .reverse();
+
   return {
     ...toThreadSummary(conversation, currentUserId),
     participants: conversation.participants || [],
     media: mediaOf(loaded),
-    // The API returns newest first because that is what paging backwards through history needs.
-    // Reading wants the opposite, so the flip happens once here rather than in every component
-    // that renders a thread. Quote resolution above still sees the whole unreversed set.
-    messages: withGrouping(
-      loaded
-        .map((message) =>
-          toMessageView(message, {
-            participants: conversation.participants,
-            currentUserId,
-            loadedMessages: loaded,
-          })
-        )
-        .reverse()
-    ),
+    // The plain per-bubble list, for callers that count or index messages (deletability, the
+    // empty-thread layout). `rows` interleaves it with separators for rendering and must never be
+    // counted or indexed as if it were the message list.
+    messages: messageViews,
+    rows: toRows(messageViews),
   };
 };

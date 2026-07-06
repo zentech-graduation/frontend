@@ -12,25 +12,25 @@ export function ConvRow({ thread, isActive, onSelect }) {
         border: 'none',
         borderLeft: isActive ? `3px solid ${v.accent}` : '3px solid transparent',
         borderBottom: `1px solid ${v.borderSubtle}`,
-        padding: '11px 14px 11px 14px',
+        padding: '9px 14px 9px 14px',
         cursor: 'pointer',
         display: 'grid',
-        gridTemplateColumns: '40px minmax(0, 1fr) auto',
-        gap: 11,
+        gridTemplateColumns: '34px minmax(0, 1fr) auto',
+        gap: 10,
         alignItems: 'center',
         textAlign: 'left',
         color: v.ink,
       }}
     >
-      <AvatarVisual thread={thread} />
-      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div style={{ fontFamily: v.fontBody, fontSize: 13.5, fontWeight: 700, color: v.ink }}>
+      <AvatarVisual thread={thread} size={34} />
+      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 700, color: v.ink }}>
           {thread.name}
         </div>
         <div
           style={{
             fontFamily: v.fontBody,
-            fontSize: 11.5,
+            fontSize: 11,
             color: thread.muted ? v.ink3 : v.ink2,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -43,9 +43,9 @@ export function ConvRow({ thread, isActive, onSelect }) {
       {thread.unread ? (
         <span
           style={{
-            minWidth: 18,
-            height: 18,
-            padding: '0 6px',
+            minWidth: 16,
+            height: 16,
+            padding: '0 5px',
             borderRadius: 999,
             background: v.accent,
             color: v.ink,

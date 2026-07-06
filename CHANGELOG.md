@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The real-time connection now authenticates with a single-use ticket instead of carrying the access token in the address, which kept a valid credential in server access logs long after it expired.
 
 ### Fixed
+- Hovering a chat bubble to reveal reply/copy/delete now responds to a hover anywhere near the message, not only a precise hover on the bubble's own pixels.
 - The options menu on someone else's profile now opens where its button is instead of off-screen. A `transform` on the button row broke the menu's fixed-position math once the app's root zoom multiplied the offset a second time.
 - Opening a conversation's info panel no longer fails. The shared-media grid now shows the real attachments from the history loaded so far, and says so when there are none.
 - A group conversation's header no longer renders its member count as though it were a username handle.
@@ -24,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The floating "message" button on desktop and tablet, now redundant with the always-visible side rail's own message icon.
 
 ### Changed
+- Chat timestamps are now separator rows between clusters of messages instead of text under every bubble, matching how Instagram groups a burst of messages by time.
+- The messaging screen (bubbles, avatars, icons, and list rows) is noticeably smaller and denser; it no longer reads as oversized on a wide display.
 - The top bar no longer hides while scrolling; it stays fixed to the top of the page. The side rail is now the primary navigation on desktop and tablet and stays on screen at all times instead of appearing only while the top bar is hidden. The messages screen drops the top bar entirely on desktop and tablet and relies on the rail alone.
 - The message composer's attachment, text field, and send buttons are now the same height and vertically aligned, and the send button dims until there is a message to send.
 - New messages now appear below older ones instead of above them, so a conversation reads top to bottom.
