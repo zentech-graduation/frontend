@@ -24,7 +24,6 @@ export function ChatCenterPanel({
   openInfo,
   isDesktop,
   isTablet,
-  showRightRail,
   scrollerRef,
   setPreviewItem,
   handleDeleteToggle,
@@ -82,7 +81,6 @@ export function ChatCenterPanel({
         gridTemplateRows: '52px minmax(0, 1fr) auto',
         minWidth: 0,
         borderLeft: isDesktop || isTablet ? `1px solid ${v.borderSubtle}` : 'none',
-        borderRight: showRightRail ? `1px solid ${v.border}` : 'none',
         background: v.base,
       }}
     >
@@ -119,16 +117,16 @@ export function ChatCenterPanel({
             </div>
           </div>
         </div>
-        {viewport === 'mobile' ? (
-          <button
-            type="button"
-            onClick={() => openInfo?.()}
-            aria-label="open chat info"
-            style={mobileHeaderIconButton}
-          >
-            <LxIcon name="alert" size={17} color={v.ink2} />
-          </button>
-        ) : null}
+        {/* The info panel is hidden by default on every viewport and opens from here, as an
+            overlay drawer, rather than sitting permanently in its own column. */}
+        <button
+          type="button"
+          onClick={() => openInfo?.()}
+          aria-label="open chat info"
+          style={mobileHeaderIconButton}
+        >
+          <LxIcon name="alert" size={viewport === 'mobile' ? 17 : 15} color={v.ink2} />
+        </button>
       </div>
 
       <div

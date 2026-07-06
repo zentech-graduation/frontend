@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The floating "message" button on desktop and tablet, now redundant with the always-visible side rail's own message icon.
 
 ### Changed
+- The chat info panel (participant details, shared media) is now hidden by default on every viewport and opens as an overlay from the info button, instead of permanently occupying a column of the messages screen.
 - Photo and video messages render as a plain thumbnail with no card border or rounding around it, and open in a borderless full-screen viewer that closes on a click outside the media instead of a close button.
 - Chat timestamps are now separator rows between clusters of messages instead of text under every bubble, matching how Instagram groups a burst of messages by time.
 - The messaging screen (bubbles, avatars, icons, and list rows) is noticeably smaller and denser; it no longer reads as oversized on a wide display.

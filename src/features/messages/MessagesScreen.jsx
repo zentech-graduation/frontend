@@ -33,7 +33,7 @@ export function MessagesScreen() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [activeThreadId, setActiveThreadId] = useState(null);
   const [threadOpen, setThreadOpen] = useState(viewport !== 'mobile');
-  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [isSending, setIsSending] = useState(false);
@@ -169,7 +169,7 @@ export function MessagesScreen() {
       // Bridges the shell compose and back actions onto window for the mobile pane.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setThreadOpen(true);
-      setMobileInfoOpen(false);
+      setInfoOpen(false);
     }
   }, [viewport]);
 
@@ -186,7 +186,7 @@ export function MessagesScreen() {
     setActiveThreadId(threadId);
     if (viewport === 'mobile') {
       setThreadOpen(true);
-      setMobileInfoOpen(false);
+      setInfoOpen(false);
     }
     // Unread is database-owned. Opening the conversation marks it read server-side through the
     // effect above, and the list is re-read from the response.
@@ -322,13 +322,10 @@ export function MessagesScreen() {
 
   const showDetail = viewport !== 'mobile' || threadOpen;
   const showSidebar = viewport !== 'mobile' || listOnlyMobile;
-  const showRightRail = (viewport === 'desktop' || viewport === 'tablet') && Boolean(activeThread);
   const isDesktop = viewport === 'desktop';
   const isTablet = viewport === 'tablet';
   const desktopSidebar = 320;
-  const desktopRail = 300;
   const tabletSidebar = 316;
-  const tabletRail = 304;
 
   return (
     <div
@@ -338,10 +335,13 @@ export function MessagesScreen() {
         background: v.base,
         color: v.ink,
         display: 'grid',
+        // No third column for the info panel: it is hidden by default on every viewport now and
+        // opens as an overlay from the header's info button, so it never reserves screen width it
+        // isn't using.
         gridTemplateColumns: isDesktop
-          ? `${desktopSidebar}px minmax(520px, 1fr) ${desktopRail}px`
+          ? `${desktopSidebar}px minmax(520px, 1fr)`
           : isTablet
-            ? `${tabletSidebar}px minmax(40px, 1fr) ${tabletRail}px`
+            ? `${tabletSidebar}px minmax(40px, 1fr)`
             : '1fr',
         paddingTop: viewport === 'mobile' ? (threadOpen ? 0 : 56) : 0,
         width: '100%',
@@ -371,10 +371,9 @@ export function MessagesScreen() {
           activeThread={activeThread}
           setActiveThreadId={setActiveThreadId}
           closeThread={() => setThreadOpen(false)}
-          openInfo={() => setMobileInfoOpen(true)}
+          openInfo={() => setInfoOpen(true)}
           isDesktop={isDesktop}
           isTablet={isTablet}
-          showRightRail={showRightRail}
           scrollerRef={scrollerRef}
           setPreviewItem={setPreviewItem}
           handleDeleteToggle={handleDeleteToggle}
@@ -390,18 +389,9 @@ export function MessagesScreen() {
         />
       ) : null}
 
-      {showRightRail ? (
-        <ConversationInfoPanel
-          activeThread={activeThread}
-          currentUserId={currentUserId}
-          setPreviewItem={setPreviewItem}
-          compact={isTablet}
-        />
-      ) : null}
-
-      {viewport === 'mobile' && mobileInfoOpen && activeThread ? (
+      {infoOpen && activeThread ? (
         <div
-          onClick={() => setMobileInfoOpen(false)}
+          onClick={() => setInfoOpen(false)}
           style={{
             position: 'fixed',
             inset: 0,
@@ -410,13 +400,13 @@ export function MessagesScreen() {
             alignItems: 'stretch',
             justifyContent: 'flex-end',
             zIndex: 130,
-            padding: '0 0 0 38px',
+            padding: viewport === 'mobile' ? '0 0 0 38px' : 0,
           }}
         >
           <div
             onClick={(event) => event.stopPropagation()}
             style={{
-              width: 'min(78vw, 340px)',
+              width: viewport === 'mobile' ? 'min(78vw, 340px)' : 320,
               background: v.base,
               border: `1px solid ${v.border}`,
               display: 'flex',
@@ -429,7 +419,7 @@ export function MessagesScreen() {
               currentUserId={currentUserId}
               setPreviewItem={setPreviewItem}
               mobileOverlay
-              onClose={() => setMobileInfoOpen(false)}
+              onClose={() => setInfoOpen(false)}
             />
           </div>
         </div>
