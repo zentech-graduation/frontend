@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The real-time connection now authenticates with a single-use ticket instead of carrying the access token in the address, which kept a valid credential in server access logs long after it expired.
 
 ### Fixed
+- The message composer's attach and send buttons now stay pinned to the bottom of the input as it grows with a longer draft, instead of drifting toward the middle of the pill.
 - Hovering a chat bubble to reveal reply/copy/delete now responds to a hover anywhere near the message, not only a precise hover on the bubble's own pixels.
 - The options menu on someone else's profile now opens where its button is instead of off-screen. A `transform` on the button row broke the menu's fixed-position math once the app's root zoom multiplied the offset a second time.
 - Opening a conversation's info panel no longer fails. The shared-media grid now shows the real attachments from the history loaded so far, and says so when there are none.

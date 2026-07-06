@@ -6,10 +6,12 @@ import { AvatarVisual } from './AvatarVisual';
 import { ConversationGreeting } from './ConversationGreeting';
 import { MessageBubble } from './MessageBubble';
 
+const DRAFT_MAX_HEIGHT = 108;
+
 const autoResizeDraft = (element) => {
   if (!element) return;
   element.style.height = '0px';
-  element.style.height = `${Math.min(element.scrollHeight, 136)}px`;
+  element.style.height = `${Math.min(element.scrollHeight, DRAFT_MAX_HEIGHT)}px`;
 };
 
 const ACCEPTED_ATTACHMENT_TYPES = 'image/*,video/*';
@@ -201,24 +203,22 @@ export function ChatCenterPanel({
       <div
         style={{
           borderTop: `1px solid ${v.border}`,
-          padding: replyingTo ? '10px 22px 12px' : '12px 22px',
+          padding: '10px 18px',
           display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          flexWrap: 'wrap',
+          flexDirection: 'column',
+          gap: 8,
         }}
       >
         {replyingTo ? (
           <div
             style={{
-              width: '100%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: 10,
-              padding: '0 2px 2px',
+              padding: '0 2px',
               fontFamily: v.fontMono,
-              fontSize: 11,
+              fontSize: 10.5,
               color: v.accentText,
             }}
           >
@@ -239,8 +239,8 @@ export function ChatCenterPanel({
               type="button"
               onClick={() => setReplyingTo(null)}
               style={{
-                width: 18,
-                height: 18,
+                width: 16,
+                height: 16,
                 borderRadius: '50%',
                 background: 'rgba(0,0,0,0.14)',
                 border: 'none',
@@ -250,7 +250,7 @@ export function ChatCenterPanel({
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
-                fontSize: 11,
+                fontSize: 10,
                 lineHeight: 1,
               }}
             >
@@ -258,98 +258,109 @@ export function ChatCenterPanel({
             </button>
           </div>
         ) : null}
-        <input
-          ref={attachmentInputRef}
-          type="file"
-          accept={ACCEPTED_ATTACHMENT_TYPES}
-          onChange={handleAttachmentChange}
-          style={{ display: 'none' }}
-        />
-        <button
-          type="button"
-          onClick={() => attachmentInputRef.current?.click()}
-          disabled={isSendingAttachment}
-          aria-label="attach a photo, video, or gif"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            border: `1px solid ${v.borderSubtle}`,
-            background: v.surface,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: isSendingAttachment ? 'wait' : 'pointer',
-            opacity: isSendingAttachment ? 0.6 : 1,
-            flexShrink: 0,
-          }}
-        >
-          <LxIcon name="image" size={16} color={v.ink3} />
-        </button>
-        <div
-          style={{
-            flex: 1,
-            minHeight: 36,
-            borderRadius: 22,
-            background: v.surfaceSunken,
-            border: `1px solid ${v.borderSubtle}`,
-            display: 'flex',
-            alignItems: 'center',
-            padding: '9px 16px',
-            overflow: 'hidden',
-          }}
-        >
-          <textarea
-            ref={draftInputRef}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            maxLength={CHAR_LIMITS.message}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                handleSend();
-              }
+
+        {/* `flex-end` keeps the attach/send buttons pinned to the bottom of the pill as it grows
+            with the draft, next to the last line of text. Centering them against the row - the
+            previous approach - looked fine for one line and left them stranded in the middle of
+            empty space once the draft wrapped to several. */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+          <input
+            ref={attachmentInputRef}
+            type="file"
+            accept={ACCEPTED_ATTACHMENT_TYPES}
+            onChange={handleAttachmentChange}
+            style={{ display: 'none' }}
+          />
+          <button
+            type="button"
+            onClick={() => attachmentInputRef.current?.click()}
+            disabled={isSendingAttachment}
+            aria-label="attach a photo, video, or gif"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: `1px solid ${v.borderSubtle}`,
+              background: v.surface,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: isSendingAttachment ? 'wait' : 'pointer',
+              opacity: isSendingAttachment ? 0.6 : 1,
+              flexShrink: 0,
             }}
-            placeholder={replyingTo ? 'write a reply...' : 'say something real...'}
+          >
+            <LxIcon name="image" size={14} color={v.ink3} />
+          </button>
+          <div
             style={{
               flex: 1,
-              minHeight: 18,
-              maxHeight: 126,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: v.ink,
-              fontFamily: v.fontBody,
-              fontSize: 15,
-              lineHeight: 1.45,
-              resize: 'none',
-              overflowY: 'auto',
-              padding: 0,
+              minWidth: 0,
+              minHeight: 32,
+              borderRadius: 18,
+              background: v.surfaceSunken,
+              border: `1px solid ${v.borderSubtle}`,
+              display: 'flex',
+              alignItems: 'center',
+              padding: '7px 13px',
               boxSizing: 'border-box',
+              overflow: 'hidden',
             }}
-          />
+          >
+            <textarea
+              ref={draftInputRef}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              maxLength={CHAR_LIMITS.message}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder={replyingTo ? 'write a reply...' : 'say something real...'}
+              rows={1}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                minHeight: 16,
+                maxHeight: DRAFT_MAX_HEIGHT,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: v.ink,
+                fontFamily: v.fontBody,
+                fontSize: 13.5,
+                lineHeight: 1.4,
+                resize: 'none',
+                overflowY: 'auto',
+                padding: 0,
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!draft.trim()}
+            aria-label="send message"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: 'none',
+              background: v.accent,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: draft.trim() ? 'pointer' : 'default',
+              opacity: draft.trim() ? 1 : 0.5,
+              flexShrink: 0,
+            }}
+          >
+            <LxIcon name="send" size={14} color={v.ink} />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!draft.trim()}
-          aria-label="send message"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            border: 'none',
-            background: v.accent,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: draft.trim() ? 'pointer' : 'default',
-            opacity: draft.trim() ? 1 : 0.5,
-            flexShrink: 0,
-          }}
-        >
-          <LxIcon name="send" size={16} color={v.ink} />
-        </button>
       </div>
     </section>
   );
