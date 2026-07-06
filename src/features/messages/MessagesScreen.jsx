@@ -4,7 +4,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toThread, toThreadSummary } from './utils/messageViewModel';
-import { conversationsKey, useConversations, useMarkRead } from './hooks/useConversations';
+import {
+  conversationsKey,
+  useConversations,
+  useMarkRead,
+  useMarkUnread,
+  useLeaveConversation,
+} from './hooks/useConversations';
 import { useMessages, useDeleteMessage, useSendMessage } from './hooks/useMessages';
 import { useLiveMessages } from './hooks/useLiveMessages';
 import { ConversationListPanel } from './components/ConversationListPanel';
@@ -13,9 +19,14 @@ import { ConversationInfoPanel } from './components/ConversationInfoPanel';
 import { MediaPlaceholder } from './components/MediaPlaceholder';
 import { PersonPicker } from './components/PersonPicker';
 import { messageService } from '@/services/message.service';
+import { REPORT_TYPES } from '@/services/report.service';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useLuvaxTweaks } from '@/features/luvax/LuvaxTweaksContext';
 import { toast } from '@/features/luvax/components/Toast';
 import { useMediaUpload } from '@/features/luvax/hooks/useMediaUpload';
+import { useBlock } from '@/features/luvax/hooks/useSocial';
+import { ReportModal } from '@/features/luvax/components/ReportModal';
+import { BlockConfirmDialog } from '@/features/luvax/components/BlockConfirmDialog';
 
 export function MessagesScreen() {
   const { viewport } = useLuvaxTweaks();
@@ -38,6 +49,9 @@ export function MessagesScreen() {
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
+  const [deleteThreadTarget, setDeleteThreadTarget] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [blockTarget, setBlockTarget] = useState(null);
   const [composing, setComposing] = useState(false);
   const queryClient = useQueryClient();
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
@@ -64,6 +78,9 @@ export function MessagesScreen() {
   useLiveMessages(activeConversation?.id);
 
   const markRead = useMarkRead();
+  const markUnread = useMarkUnread();
+  const leaveConversation = useLeaveConversation();
+  const block = useBlock();
   const sendMessage = useSendMessage(activeConversation?.id);
   const deleteMessage = useDeleteMessage(activeConversation?.id);
   const { uploadMedia } = useMediaUpload();
@@ -320,6 +337,31 @@ export function MessagesScreen() {
     setPendingDeleteMessageId(null);
   };
 
+  const handleDeleteThreadConfirm = () => {
+    if (!deleteThreadTarget) return;
+    leaveConversation.mutate(deleteThreadTarget.id, {
+      onError: (error) => toast(error?.message || "couldn't delete that chat. try again."),
+    });
+    setDeleteThreadTarget(null);
+  };
+
+  const handleReportThread = (thread) => {
+    setReportTarget({
+      entityType: REPORT_TYPES.USER,
+      entityId: thread.counterpartId,
+      author: thread.name,
+      avatarUrl: thread.avatarUrl,
+    });
+  };
+
+  const handleBlockConfirm = () => {
+    if (!blockTarget) return;
+    block.mutate(blockTarget.counterpartId, {
+      onError: (error) => toast(error?.message || "couldn't block that account. try again."),
+    });
+    setBlockTarget(null);
+  };
+
   const showDetail = viewport !== 'mobile' || threadOpen;
   const showSidebar = viewport !== 'mobile' || listOnlyMobile;
   const isDesktop = viewport === 'desktop';
@@ -362,6 +404,11 @@ export function MessagesScreen() {
           selectThread={selectThread}
           handleCompose={handleCompose}
           viewport={viewport}
+          onMarkRead={(threadId) => markRead.mutate(threadId)}
+          onMarkUnread={(threadId) => markUnread.mutate(threadId)}
+          onDeleteThread={setDeleteThreadTarget}
+          onReportThread={handleReportThread}
+          onBlockThread={setBlockTarget}
         />
       ) : null}
 
@@ -620,6 +667,30 @@ export function MessagesScreen() {
           </div>
         </>
       ) : null}
+
+      <ConfirmModal
+        config={
+          deleteThreadTarget
+            ? {
+                title: `delete chat with ${deleteThreadTarget.name}?`,
+                message:
+                  'this removes it from your inbox only. it comes back if they message you again.',
+                onConfirm: handleDeleteThreadConfirm,
+              }
+            : null
+        }
+        onClose={() => setDeleteThreadTarget(null)}
+      />
+
+      <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
+
+      <BlockConfirmDialog
+        open={Boolean(blockTarget)}
+        handle={blockTarget?.username}
+        pending={block.isPending}
+        onCancel={() => setBlockTarget(null)}
+        onConfirm={handleBlockConfirm}
+      />
     </div>
   );
 }

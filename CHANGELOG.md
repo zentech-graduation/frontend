@@ -39,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Continuous integration now runs lint and unit tests in addition to the build.
 
 ### Added
+- Every conversation now has a "..." menu: mark as read or unread, delete the chat from your own inbox, report the other person, or block them.
 - Chat now stages picked images and videos as a removable preview strip before sending, and lets you attach several files plus a caption in one send.
 - A "message" button now sits next to "follow" on everyone else's profile, opening a direct conversation with them.
 - Chat now supports sending images, videos, and GIFs from the attachment button, and shows the real image or video inline instead of a generic file icon.

@@ -1,15 +1,72 @@
+import { useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
+import { LxIcon } from '@/components/ui/lx-icon';
+import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
 import { AvatarVisual } from './AvatarVisual';
 
-export function ConvRow({ thread, isActive, onSelect }) {
+/**
+ * One row in the conversation list.
+ *
+ * The row itself is a plain `div`, not a `button`: it needs to contain the options trigger as its
+ * own interactive child, and a button cannot nest another button. `onSelect` fires from a click
+ * anywhere on the row except that child, which stops the click reaching here.
+ */
+export function ConvRow({
+  thread,
+  isActive,
+  onSelect,
+  onMarkRead,
+  onMarkUnread,
+  onDelete,
+  onReport,
+  onBlock,
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef(null);
+  const showOptions = hovered || menuOpen;
+
+  const menuItems = useMemo(
+    () =>
+      [
+        thread.unread
+          ? { id: 'read', icon: 'check', label: 'Mark as read', onClick: () => onMarkRead?.() }
+          : {
+              id: 'unread',
+              icon: 'chat',
+              label: 'Mark as unread',
+              onClick: () => onMarkUnread?.(),
+            },
+        {
+          id: 'delete',
+          icon: 'trash',
+          label: 'Delete chat',
+          tone: 'danger',
+          onClick: () => onDelete?.(),
+        },
+        onReport
+          ? { id: 'report', icon: 'flag', label: 'Report', onClick: () => onReport?.() }
+          : null,
+        onBlock
+          ? { id: 'block', icon: 'ban', label: 'Block', tone: 'danger', onClick: () => onBlock?.() }
+          : null,
+      ].filter(Boolean),
+    [thread.unread, onMarkRead, onMarkUnread, onDelete, onReport, onBlock]
+  );
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') onSelect?.();
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         width: '100%',
         background: isActive ? v.accentDim : 'transparent',
-        border: 'none',
         borderLeft: isActive ? `3px solid ${v.accent}` : '3px solid transparent',
         borderBottom: `1px solid ${v.borderSubtle}`,
         padding: '9px 14px 9px 14px',
@@ -40,26 +97,63 @@ export function ConvRow({ thread, isActive, onSelect }) {
           {[thread.preview, thread.time].filter(Boolean).join(' · ')}
         </div>
       </div>
-      {thread.unread ? (
-        <span
-          style={{
-            minWidth: 16,
-            height: 16,
-            padding: '0 5px',
-            borderRadius: 999,
-            background: v.accent,
-            color: v.ink,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: v.fontMono,
-            fontSize: 10,
-            fontWeight: 700,
-          }}
-        >
-          {thread.unread}
-        </span>
-      ) : null}
-    </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {!showOptions && thread.unread ? (
+          <span
+            style={{
+              minWidth: 16,
+              height: 16,
+              padding: '0 5px',
+              borderRadius: 999,
+              background: v.accent,
+              color: v.ink,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              fontWeight: 700,
+            }}
+          >
+            {thread.unread}
+          </span>
+        ) : null}
+        {showOptions ? (
+          <button
+            type="button"
+            ref={menuButtonRef}
+            onClick={(event) => {
+              event.stopPropagation();
+              setMenuOpen((open) => !open);
+            }}
+            aria-label={`options for ${thread.name}`}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            <LxIcon name="more" size={13} color={v.ink3} />
+          </button>
+        ) : null}
+      </div>
+      <div onClick={(event) => event.stopPropagation()}>
+        <LxDropdownMenu
+          anchorRef={menuButtonRef}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          items={menuItems}
+          align="right"
+        />
+      </div>
+    </div>
   );
 }

@@ -102,6 +102,28 @@ export const markRead = async (conversationId) => {
 };
 
 /**
+ * Clears the caller's read marker for a conversation, so every message in it counts as unread
+ * again.
+ * @param {string} conversationId
+ * @returns {Promise<Object>} ApiResponse envelope.
+ */
+export const markUnread = async (conversationId) => {
+  const response = await axiosInstance.post(`${CONVERSATION_API_PATH}/${conversationId}/unread`);
+  return response.data;
+};
+
+/**
+ * Deletes a conversation from the caller's own inbox only. The other participant and the message
+ * history are untouched; a new message from them brings it back.
+ * @param {string} conversationId
+ * @returns {Promise<Object>} ApiResponse envelope.
+ */
+export const leaveConversation = async (conversationId) => {
+  const response = await axiosInstance.delete(`${CONVERSATION_API_PATH}/${conversationId}`);
+  return response.data;
+};
+
+/**
  * Total unread messages across every conversation; drives the navigation badge.
  * @returns {Promise<Object>} ApiResponse envelope wrapping the count.
  */
@@ -118,6 +140,8 @@ export const messageService = {
   sendMessage,
   deleteMessage,
   markRead,
+  markUnread,
+  leaveConversation,
   getUnreadCount,
 };
 

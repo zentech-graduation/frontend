@@ -61,3 +61,33 @@ export const useMarkRead = () => {
     },
   });
 };
+
+/** Marks a conversation unread; same re-read approach as {@link useMarkRead}. */
+export const useMarkUnread = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId) => messageService.markUnread(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: conversationsKey });
+      queryClient.invalidateQueries({ queryKey: unreadCountKey });
+    },
+  });
+};
+
+/**
+ * Deletes a conversation from the caller's own inbox.
+ *
+ * The row disappears from `conversationsKey` on refetch because the server no longer lists it for
+ * this user; nothing here deletes it locally ahead of that, since a failed request must leave the
+ * list exactly as it was.
+ */
+export const useLeaveConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId) => messageService.leaveConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: conversationsKey });
+      queryClient.invalidateQueries({ queryKey: unreadCountKey });
+    },
+  });
+};

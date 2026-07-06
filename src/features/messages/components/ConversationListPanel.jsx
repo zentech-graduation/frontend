@@ -10,6 +10,11 @@ export function ConversationListPanel({
   selectThread,
   handleCompose,
   viewport,
+  onMarkRead,
+  onMarkUnread,
+  onDeleteThread,
+  onReportThread,
+  onBlockThread,
 }) {
   return (
     <aside
@@ -115,6 +120,11 @@ export function ConversationListPanel({
               thread={thread}
               isActive={isActive}
               onSelect={() => selectThread(thread.id)}
+              onMarkRead={() => onMarkRead?.(thread.id)}
+              onMarkUnread={() => onMarkUnread?.(thread.id)}
+              onDelete={() => onDeleteThread?.(thread)}
+              onReport={thread.counterpartId ? () => onReportThread?.(thread) : null}
+              onBlock={thread.counterpartId ? () => onBlockThread?.(thread) : null}
             />
           );
         })}
