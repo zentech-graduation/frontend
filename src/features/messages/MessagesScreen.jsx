@@ -35,6 +35,8 @@ export function MessagesScreen() {
   const [threadOpen, setThreadOpen] = useState(viewport !== 'mobile');
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const [isSending, setIsSending] = useState(false);
   const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
   const [composing, setComposing] = useState(false);
   const queryClient = useQueryClient();
@@ -64,7 +66,7 @@ export function MessagesScreen() {
   const markRead = useMarkRead();
   const sendMessage = useSendMessage(activeConversation?.id);
   const deleteMessage = useDeleteMessage(activeConversation?.id);
-  const { uploadMedia, isUploading: isUploadingAttachment } = useMediaUpload();
+  const { uploadMedia } = useMediaUpload();
 
   useEffect(() => {
     if (activeConversation?.id) {
@@ -190,13 +192,11 @@ export function MessagesScreen() {
     // effect above, and the list is re-read from the response.
   };
 
-  const handleSend = () => {
-    const value = draft.trim();
-    if (!value || !activeConversation) return;
+  const nextIdempotencyKey = () =>
+    globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    const idempotencyKey =
-      globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
+  const sendTextMessage = (value) => {
+    const idempotencyKey = nextIdempotencyKey();
     sendMessage.mutate({
       idempotencyKey,
       body: {
@@ -222,56 +222,91 @@ export function MessagesScreen() {
         createdAt: new Date().toISOString(),
       },
     });
-
-    setDraft('');
-    setReplyingTo(null);
   };
 
   /**
-   * Uploads an image, video, or GIF through the same pre-signed R2 flow the post composer uses,
-   * then sends it as a media message. The optimistic bubble renders from a local object URL so the
+   * Uploads one staged file through the same pre-signed R2 flow the post composer uses, then sends
+   * it as a media message. The optimistic bubble renders from the staged preview URL so the
    * attachment appears immediately, before the CDN URL comes back on the real response.
    */
-  const handleSendAttachment = async (file) => {
-    if (!file || !activeConversation) return;
+  const sendAttachmentMessage = async (item) => {
+    const asset = await uploadMedia(item.file);
+    const idempotencyKey = nextIdempotencyKey();
 
-    const isVideo = file.type.startsWith('video/');
-    const idempotencyKey =
-      globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    sendMessage.mutate({
+      idempotencyKey,
+      body: {
+        messageType: item.isVideo ? 'video' : 'image',
+        mediaAssetId: asset.id,
+        replyToId: replyingTo?.id || null,
+      },
+      optimisticMessage: {
+        id: `pending-${idempotencyKey}`,
+        conversationId: activeConversation.id,
+        senderId: currentUserId,
+        messageType: item.isVideo ? 'video' : 'image',
+        content: null,
+        mediaAssetId: asset.id,
+        media: {
+          mediaAssetId: asset.id,
+          mediaType: item.isVideo ? 'VIDEO' : 'IMAGE',
+          cdnUrl: asset.cdnUrl || item.previewUrl,
+        },
+        sharedPostId: null,
+        sharedStoryId: null,
+        replyToId: replyingTo?.id || null,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date().toISOString(),
+      },
+    });
+  };
 
+  const handleStageAttachments = (files) => {
+    const staged = files.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+      isVideo: file.type.startsWith('video/'),
+    }));
+    setPendingAttachments((current) => [...current, ...staged]);
+  };
+
+  const handleRemovePendingAttachment = (id) => {
+    setPendingAttachments((current) => {
+      const target = current.find((item) => item.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return current.filter((item) => item.id !== id);
+    });
+  };
+
+  /**
+   * Sends every staged attachment, in the order they were picked, followed by the typed caption as
+   * its own trailing message. Each is a separate message rather than one album message - the
+   * bubble grouping already collapses a same-sender burst sent seconds apart into one visual
+   * cluster, so the reader sees one exchange either way.
+   */
+  const handleSend = async () => {
+    const value = draft.trim();
+    if (!activeConversation || (!value && !pendingAttachments.length)) return;
+
+    setIsSending(true);
     try {
-      const asset = await uploadMedia(file);
+      for (const item of pendingAttachments) {
+        // Sequential, not parallel: message order in the thread must match send order.
+        await sendAttachmentMessage(item);
+      }
+      pendingAttachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      setPendingAttachments([]);
 
-      sendMessage.mutate({
-        idempotencyKey,
-        body: {
-          messageType: isVideo ? 'video' : 'image',
-          mediaAssetId: asset.id,
-          replyToId: replyingTo?.id || null,
-        },
-        optimisticMessage: {
-          id: `pending-${idempotencyKey}`,
-          conversationId: activeConversation.id,
-          senderId: currentUserId,
-          messageType: isVideo ? 'video' : 'image',
-          content: null,
-          mediaAssetId: asset.id,
-          media: {
-            mediaAssetId: asset.id,
-            mediaType: isVideo ? 'VIDEO' : 'IMAGE',
-            cdnUrl: asset.cdnUrl || URL.createObjectURL(file),
-          },
-          sharedPostId: null,
-          sharedStoryId: null,
-          replyToId: replyingTo?.id || null,
-          isDeleted: false,
-          deletedAt: null,
-          createdAt: new Date().toISOString(),
-        },
-      });
+      if (value) sendTextMessage(value);
+
+      setDraft('');
       setReplyingTo(null);
     } catch (error) {
-      toast(error?.uploadMessage || error?.message || "couldn't send that file. try again.");
+      toast(error?.uploadMessage || error?.message || "couldn't send that. try again.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -348,8 +383,10 @@ export function MessagesScreen() {
           draft={draft}
           setDraft={setDraft}
           handleSend={handleSend}
-          onSendAttachment={handleSendAttachment}
-          isSendingAttachment={isUploadingAttachment}
+          pendingAttachments={pendingAttachments}
+          onStageAttachments={handleStageAttachments}
+          onRemovePendingAttachment={handleRemovePendingAttachment}
+          isSending={isSending}
         />
       ) : null}
 
@@ -449,12 +486,15 @@ export function MessagesScreen() {
       ) : null}
 
       {previewItem ? (
+        // Clicking the scrim closes the viewer; clicking the media itself must not, so the media
+        // element stops the click from reaching this handler. No card, no rounded corners, no
+        // close button - the raw image or video at its own scale is the whole interface.
         <div
           onClick={() => setPreviewItem(null)}
           style={{
             position: 'fixed',
             inset: 0,
-            background: v.scrim,
+            background: 'rgba(10,9,8,0.92)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -462,42 +502,42 @@ export function MessagesScreen() {
             padding: 24,
           }}
         >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              width: 'min(520px, 100%)',
-              borderRadius: 18,
-              background: v.base,
-              border: `1px solid ${v.border}`,
-              padding: 18,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-            }}
-          >
-            <MediaPlaceholder item={previewItem} large />
-            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>
-              {previewItem.title || previewItem.label}
-            </div>
-            <button
-              type="button"
-              onClick={() => setPreviewItem(null)}
+          {previewItem.cdnUrl ? (
+            (previewItem.mediaType || '').toUpperCase() === 'VIDEO' ? (
+              <video
+                src={previewItem.cdnUrl}
+                controls
+                autoPlay
+                onClick={(event) => event.stopPropagation()}
+                style={{ maxWidth: '92vw', maxHeight: '92vh', display: 'block' }}
+              />
+            ) : (
+              <img
+                src={previewItem.cdnUrl}
+                alt=""
+                onClick={(event) => event.stopPropagation()}
+                style={{ maxWidth: '92vw', maxHeight: '92vh', display: 'block' }}
+              />
+            )
+          ) : (
+            <div
+              onClick={(event) => event.stopPropagation()}
               style={{
-                alignSelf: 'flex-end',
-                height: 34,
-                padding: '0 16px',
-                borderRadius: 999,
-                border: 'none',
-                background: v.accent,
-                color: v.ink,
-                fontFamily: v.fontBody,
-                fontSize: 14,
-                cursor: 'pointer',
+                width: 'min(420px, 100%)',
+                background: v.base,
+                border: `1px solid ${v.border}`,
+                padding: 18,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
               }}
             >
-              close
-            </button>
-          </div>
+              <MediaPlaceholder item={previewItem} large />
+              <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>
+                {previewItem.title || previewItem.label}
+              </div>
+            </div>
+          )}
         </div>
       ) : null}
 

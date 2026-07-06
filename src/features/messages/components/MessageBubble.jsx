@@ -232,25 +232,25 @@ export function MessageBubble({
           onPointerDown={handleBubbleInteraction}
           onClick={handleTouchMenuToggle}
         >
-          <div
-            style={{
-              ...bubbleBase,
-              background: isMine ? activeThread.accent || v.accentDim : v.surface,
-              border: isMine ? 'none' : `1px solid ${v.border}`,
-              padding: 9,
-            }}
-          >
-            {isFile ? (
-              <MediaPlaceholder
-                item={
-                  message.media
-                    ? { ...message.media, label: message.text }
-                    : { label: message.text }
-                }
-                large
-                onClick={() => onPreviewMedia(message.media || { label: message.text })}
-              />
-            ) : (
+          {isFile ? (
+            // A real photo or video is the bubble - no surrounding card, border, or padding
+            // framing it. Chrome around a thumbnail read as over-designed next to a plain photo.
+            <MediaPlaceholder
+              item={
+                message.media ? { ...message.media, label: message.text } : { label: message.text }
+              }
+              large
+              onClick={() => onPreviewMedia(message.media || { label: message.text })}
+            />
+          ) : (
+            <div
+              style={{
+                ...bubbleBase,
+                background: isMine ? activeThread.accent || v.accentDim : v.surface,
+                border: isMine ? 'none' : `1px solid ${v.border}`,
+                padding: 9,
+              }}
+            >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 <MediaPlaceholder
                   item={{ label: message.handle }}
@@ -287,8 +287,8 @@ export function MessageBubble({
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
           {showActions ? (
             <button
               ref={menuButtonRef}

@@ -1,12 +1,16 @@
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 
+const THUMBNAIL_BOX = 220;
+
 /**
  * A message attachment.
  *
- * Renders the real image or video when the server resolved one (`item.cdnUrl`). Shared posts and
- * stories carry no direct media of their own here, so those fall back to a labelled placeholder
- * rather than an empty box.
+ * Renders the real image or video when the server resolved one (`item.cdnUrl`), as a plain
+ * rectangular thumbnail with no card chrome around it - a photo message reads as a photo, not a
+ * bordered tile framing one. Shared posts and stories carry no direct media of their own here, so
+ * those fall back to a labelled placeholder rather than an empty box, and keep the frame since
+ * there is no photo underneath it to speak for itself.
  */
 export function MediaPlaceholder({ item, large = false, onClick }) {
   const isVideo = (item?.mediaType || '').toUpperCase() === 'VIDEO';
@@ -17,11 +21,11 @@ export function MediaPlaceholder({ item, large = false, onClick }) {
         type="button"
         onClick={onClick}
         style={{
-          width: '100%',
-          minHeight: large ? 138 : 82,
-          maxHeight: large ? 360 : 82,
-          borderRadius: large ? 14 : 10,
-          border: `1px solid ${v.border}`,
+          width: large ? THUMBNAIL_BOX : '100%',
+          height: large ? THUMBNAIL_BOX : undefined,
+          aspectRatio: large ? undefined : '1 / 1',
+          maxWidth: '100%',
+          border: 'none',
           background: v.surface,
           overflow: 'hidden',
           cursor: 'pointer',
@@ -55,7 +59,7 @@ export function MediaPlaceholder({ item, large = false, onClick }) {
               background: 'rgba(0,0,0,0.18)',
             }}
           >
-            <LxIcon name="play" filled size={large ? 26 : 18} color="#fff" />
+            <LxIcon name="play" filled size={large ? 26 : 16} color="#fff" />
           </span>
         ) : null}
       </button>

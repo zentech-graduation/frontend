@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The floating "message" button on desktop and tablet, now redundant with the always-visible side rail's own message icon.
 
 ### Changed
+- Photo and video messages render as a plain thumbnail with no card border or rounding around it, and open in a borderless full-screen viewer that closes on a click outside the media instead of a close button.
 - Chat timestamps are now separator rows between clusters of messages instead of text under every bubble, matching how Instagram groups a burst of messages by time.
 - The messaging screen (bubbles, avatars, icons, and list rows) is noticeably smaller and denser; it no longer reads as oversized on a wide display.
 - The top bar no longer hides while scrolling; it stays fixed to the top of the page. The side rail is now the primary navigation on desktop and tablet and stays on screen at all times instead of appearing only while the top bar is hidden. The messages screen drops the top bar entirely on desktop and tablet and relies on the rail alone.
@@ -37,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Continuous integration now runs lint and unit tests in addition to the build.
 
 ### Added
+- Chat now stages picked images and videos as a removable preview strip before sending, and lets you attach several files plus a caption in one send.
 - A "message" button now sits next to "follow" on everyone else's profile, opening a direct conversation with them.
 - Chat now supports sending images, videos, and GIFs from the attachment button, and shows the real image or video inline instead of a generic file icon.
 - Chat bubbles now show the other person's avatar and collapse the timestamp across a run of messages sent within ten minutes of each other, instead of stamping every single bubble.

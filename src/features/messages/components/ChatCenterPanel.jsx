@@ -33,17 +33,21 @@ export function ChatCenterPanel({
   draft,
   setDraft,
   handleSend,
-  onSendAttachment,
-  isSendingAttachment,
+  pendingAttachments,
+  onStageAttachments,
+  onRemovePendingAttachment,
+  isSending,
 }) {
   const draftInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
 
   const handleAttachmentChange = (event) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files || []);
     event.target.value = '';
-    if (file) onSendAttachment?.(file);
+    if (files.length) onStageAttachments?.(files);
   };
+
+  const canSend = Boolean(draft.trim() || pendingAttachments?.length) && !isSending;
 
   useEffect(() => {
     autoResizeDraft(draftInputRef.current);
@@ -259,6 +263,53 @@ export function ChatCenterPanel({
           </div>
         ) : null}
 
+        {pendingAttachments?.length ? (
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '0 2px' }}>
+            {pendingAttachments.map((item) => (
+              <div key={item.id} style={{ position: 'relative', flexShrink: 0 }}>
+                {item.isVideo ? (
+                  <video
+                    src={item.previewUrl}
+                    muted
+                    style={{ width: 56, height: 56, objectFit: 'cover', display: 'block' }}
+                  />
+                ) : (
+                  <img
+                    src={item.previewUrl}
+                    alt=""
+                    style={{ width: 56, height: 56, objectFit: 'cover', display: 'block' }}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => onRemovePendingAttachment?.(item.id)}
+                  aria-label="remove attachment"
+                  style={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -6,
+                    width: 18,
+                    height: 18,
+                    borderRadius: '50%',
+                    border: `1px solid ${v.border}`,
+                    background: v.base,
+                    color: v.ink2,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    lineHeight: 1,
+                    padding: 0,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
         {/* `flex-end` keeps the attach/send buttons pinned to the bottom of the pill as it grows
             with the draft, next to the last line of text. Centering them against the row - the
             previous approach - looked fine for one line and left them stranded in the middle of
@@ -268,13 +319,14 @@ export function ChatCenterPanel({
             ref={attachmentInputRef}
             type="file"
             accept={ACCEPTED_ATTACHMENT_TYPES}
+            multiple
             onChange={handleAttachmentChange}
             style={{ display: 'none' }}
           />
           <button
             type="button"
             onClick={() => attachmentInputRef.current?.click()}
-            disabled={isSendingAttachment}
+            disabled={isSending}
             aria-label="attach a photo, video, or gif"
             style={{
               width: 32,
@@ -285,8 +337,8 @@ export function ChatCenterPanel({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: isSendingAttachment ? 'wait' : 'pointer',
-              opacity: isSendingAttachment ? 0.6 : 1,
+              cursor: isSending ? 'wait' : 'pointer',
+              opacity: isSending ? 0.6 : 1,
               flexShrink: 0,
             }}
           >
@@ -342,7 +394,7 @@ export function ChatCenterPanel({
           <button
             type="button"
             onClick={handleSend}
-            disabled={!draft.trim()}
+            disabled={!canSend}
             aria-label="send message"
             style={{
               width: 32,
@@ -353,8 +405,8 @@ export function ChatCenterPanel({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: draft.trim() ? 'pointer' : 'default',
-              opacity: draft.trim() ? 1 : 0.5,
+              cursor: canSend ? 'pointer' : 'default',
+              opacity: canSend ? 1 : 0.5,
               flexShrink: 0,
             }}
           >
