@@ -207,10 +207,16 @@ export function LuvaxApp() {
 
     return (
       <LuvaxTweaksProvider value={tweakContext}>
-        <div style={{ minHeight: '100vh', background: v.base }}>
+        {/* No min-height: 100vh here. The root's zoom scale (see APP_SCALE above) is a visual
+            transform applied after layout, so a vh-based height renders at vh * zoom - taller
+            than the real viewport - and produced a second, page-level scrollbar alongside the
+            fixed pane's own internal one. Nothing needs this wrapper to have height: every child
+            below is either fixed-positioned (unaffected by the parent's box) or, on mobile, sized
+            by its own content. */}
+        <div style={{ background: v.base }}>
           {viewport === 'mobile' ? (
             !messagesThreadOpen ? (
-              <LxAppBar screen={screen} navigate={navigate} viewport={viewport} />
+              <LxAppBar screen={screen} navigate={navigate} />
             ) : null
           ) : (
             <LxSideRail active={screen} navigate={navigate} />

@@ -246,6 +246,10 @@ button:disabled {
   cursor: default;
 }
 
+.lx-tab-btn {
+  background: none;
+}
+
 .lx-tab-btn,
 .lx-header-icon-btn,
 .lx-avatar-btn,
@@ -278,6 +282,7 @@ button:disabled {
 
 .lx-tab-btn:hover {
   color: var(--lx-ink-2);
+  background: var(--lx-surface);
 }
 
 .lx-header-icon-btn:hover {
