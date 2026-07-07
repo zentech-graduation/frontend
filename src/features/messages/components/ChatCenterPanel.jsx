@@ -201,8 +201,11 @@ export function ChatCenterPanel({
                     display: 'flex',
                     alignItems: 'flex-end',
                     gap: 6,
+                    // `justify-content: flex-end` means the *left* edge once the axis itself is
+                    // reversed, so this always stays in normal row order - never row-reverse. The
+                    // avatar slot is null whenever isMine is true anyway, so there is never
+                    // anything on this row that needs its order flipped.
                     justifyContent: isMine ? 'flex-end' : 'flex-start',
-                    flexDirection: isMine ? 'row-reverse' : 'row',
                   }}
                 >
                   {avatarSlot}
