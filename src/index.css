@@ -413,6 +413,13 @@ button:disabled {
   }
 }
 
+/* The message lightbox crossfades between items on next/prev, the same treatment as story media,
+   instead of the next photo cutting in instantly. Keyed by asset id so React remounts (and thus
+   replays this animation) on every step, not just the first open. */
+.lx-lightbox-media {
+  animation: lx-story-fade-in var(--duration-normal) var(--ease-out);
+}
+
 /* The big centred heart a double-tap pops over the media, in the manner of
    Instagram: it appears already at full size and fades out as it settles,
    rather than growing in. */

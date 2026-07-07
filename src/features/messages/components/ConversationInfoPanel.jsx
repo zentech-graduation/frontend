@@ -39,7 +39,7 @@ export function ConversationInfoPanel({
   const panel = (
     <aside
       style={{
-        height: mobileOverlay ? 'min(804px, calc(100vh - 52px))' : '100%',
+        height: mobileOverlay ? 'min(804px, calc(100vh / var(--lx-scale) - 52px))' : '100%',
         minHeight: 0,
         display: 'flex',
         flexDirection: 'column',

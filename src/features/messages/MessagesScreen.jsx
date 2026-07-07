@@ -45,6 +45,14 @@ import { validateDuration, validateFile } from '@/features/luvax/utils/composerM
 // reads as a lot in a chat thread, and the album viewer (see MessageAlbum) is tuned for that count.
 const MAX_MESSAGE_ATTACHMENTS = 10;
 
+// `vw`/`vh` are computed against the true browser viewport, not adjusted for the root's `zoom`
+// scale (see APP_SCALE in LuvaxApp.jsx) applied to an ancestor - so a raw `92vw` here rendered
+// `zoom` times too large and could push most of the image off-screen. Dividing by --lx-scale
+// cancels the zoom multiplication back out, the same fix already used for this element's own
+// on-screen position elsewhere (see lx-dropdown-menu.jsx).
+const LIGHTBOX_MAX_WIDTH = 'calc(92vw / var(--lx-scale))';
+const LIGHTBOX_MAX_HEIGHT = 'calc(92vh / var(--lx-scale))';
+
 // Light frosted chips over the dark scrim, matching the post viewer's own carousel controls.
 const lightboxArrowStyle = (side) => ({
   position: 'absolute',
@@ -593,7 +601,7 @@ export function MessagesScreen() {
           <div
             onClick={(event) => event.stopPropagation()}
             style={{
-              width: viewport === 'mobile' ? 'min(78vw, 340px)' : 320,
+              width: viewport === 'mobile' ? 'min(calc(78vw / var(--lx-scale)), 340px)' : 320,
               background: v.base,
               border: `1px solid ${v.border}`,
               display: 'flex',
@@ -660,7 +668,12 @@ export function MessagesScreen() {
                       controls
                       autoPlay
                       onClick={(event) => event.stopPropagation()}
-                      style={{ maxWidth: '92vw', maxHeight: '92vh', display: 'block' }}
+                      className="lx-lightbox-media"
+                      style={{
+                        maxWidth: LIGHTBOX_MAX_WIDTH,
+                        maxHeight: LIGHTBOX_MAX_HEIGHT,
+                        display: 'block',
+                      }}
                     />
                   ) : (
                     <img
@@ -668,7 +681,12 @@ export function MessagesScreen() {
                       src={current.cdnUrl}
                       alt=""
                       onClick={(event) => event.stopPropagation()}
-                      style={{ maxWidth: '92vw', maxHeight: '92vh', display: 'block' }}
+                      className="lx-lightbox-media"
+                      style={{
+                        maxWidth: LIGHTBOX_MAX_WIDTH,
+                        maxHeight: LIGHTBOX_MAX_HEIGHT,
+                        display: 'block',
+                      }}
                     />
                   )
                 ) : (
