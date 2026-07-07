@@ -91,3 +91,49 @@ export const useLeaveConversation = () => {
     },
   });
 };
+
+/** Pins a conversation to the top of the caller's own list; re-reads the list on success. */
+export const usePinConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId) => messageService.pinConversation(conversationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationsKey }),
+  });
+};
+
+/** Unpins a conversation for the caller. */
+export const useUnpinConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId) => messageService.unpinConversation(conversationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationsKey }),
+  });
+};
+
+/** Mutes a conversation's notifications for the caller. */
+export const useMuteConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId) => messageService.muteConversation(conversationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationsKey }),
+  });
+};
+
+/** Unmutes a conversation for the caller. */
+export const useUnmuteConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId) => messageService.unmuteConversation(conversationId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationsKey }),
+  });
+};
+
+/** Sets or clears the caller's private label for the other participant in a conversation. */
+export const useSetNickname = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, nickname }) =>
+      messageService.setNickname(conversationId, nickname),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationsKey }),
+  });
+};

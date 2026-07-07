@@ -15,6 +15,11 @@ export function ConversationListPanel({
   onDeleteThread,
   onReportThread,
   onBlockThread,
+  onPinThread,
+  onUnpinThread,
+  onMuteThread,
+  onUnmuteThread,
+  onRenameThread,
 }) {
   return (
     <aside
@@ -125,6 +130,11 @@ export function ConversationListPanel({
               onDelete={() => onDeleteThread?.(thread)}
               onReport={thread.counterpartId ? () => onReportThread?.(thread) : null}
               onBlock={thread.counterpartId ? () => onBlockThread?.(thread) : null}
+              onPin={() => onPinThread?.(thread.id)}
+              onUnpin={() => onUnpinThread?.(thread.id)}
+              onMute={() => onMuteThread?.(thread.id)}
+              onUnmute={() => onUnmuteThread?.(thread.id)}
+              onRename={thread.counterpartId ? () => onRenameThread?.(thread) : null}
             />
           );
         })}

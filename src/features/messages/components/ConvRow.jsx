@@ -20,6 +20,11 @@ export function ConvRow({
   onDelete,
   onReport,
   onBlock,
+  onPin,
+  onUnpin,
+  onMute,
+  onUnmute,
+  onRename,
 }) {
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,6 +42,15 @@ export function ConvRow({
               label: 'Mark as unread',
               onClick: () => onMarkUnread?.(),
             },
+        thread.pinned
+          ? { id: 'unpin', icon: 'pin', label: 'Unpin chat', onClick: () => onUnpin?.() }
+          : { id: 'pin', icon: 'pin', label: 'Pin chat', onClick: () => onPin?.() },
+        thread.muted
+          ? { id: 'unmute', icon: 'bell', label: 'Unmute', onClick: () => onUnmute?.() }
+          : { id: 'mute', icon: 'bellOff', label: 'Mute', onClick: () => onMute?.() },
+        onRename
+          ? { id: 'rename', icon: 'edit', label: 'Set nickname', onClick: () => onRename?.() }
+          : null,
         {
           id: 'delete',
           icon: 'trash',
@@ -51,7 +65,21 @@ export function ConvRow({
           ? { id: 'block', icon: 'ban', label: 'Block', tone: 'danger', onClick: () => onBlock?.() }
           : null,
       ].filter(Boolean),
-    [thread.unread, onMarkRead, onMarkUnread, onDelete, onReport, onBlock]
+    [
+      thread.unread,
+      thread.pinned,
+      thread.muted,
+      onMarkRead,
+      onMarkUnread,
+      onPin,
+      onUnpin,
+      onMute,
+      onUnmute,
+      onRename,
+      onDelete,
+      onReport,
+      onBlock,
+    ]
   );
 
   return (
@@ -81,8 +109,22 @@ export function ConvRow({
     >
       <AvatarVisual thread={thread} size={34} />
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 700, color: v.ink }}>
-          {thread.name}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            fontFamily: v.fontBody,
+            fontSize: 12.5,
+            fontWeight: 700,
+            color: v.ink,
+          }}
+        >
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {thread.name}
+          </span>
+          {thread.pinned ? <LxIcon name="pin" size={10} filled color={v.ink3} /> : null}
+          {thread.muted ? <LxIcon name="bellOff" size={11} color={v.ink3} /> : null}
         </div>
         <div
           style={{

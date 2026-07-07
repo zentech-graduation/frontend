@@ -224,6 +224,36 @@ describe('toThread', () => {
     expect(summary.counterpartId).toBe(OTHER);
   });
 
+  it('carries pinned and muted, defaulting both to false', () => {
+    const summary = toThreadSummary({ id: 'c1', participants, unreadCount: 0 }, ME);
+    expect(summary.pinned).toBe(false);
+    expect(summary.muted).toBe(false);
+
+    const flagged = toThreadSummary(
+      { id: 'c1', participants, unreadCount: 0, pinned: true, muted: true },
+      ME
+    );
+    expect(flagged.pinned).toBe(true);
+    expect(flagged.muted).toBe(true);
+  });
+
+  it("uses the viewer's own nickname for the counterpart in place of their name", () => {
+    const nicknamed = [
+      { userId: ME, username: 'me', displayName: 'Me', avatarUrl: null, nickname: 'Bestie' },
+      { userId: OTHER, username: 'priya_m', displayName: 'Priya', avatarUrl: null },
+    ];
+    const summary = toThreadSummary({ id: 'c1', participants: nicknamed, unreadCount: 0 }, ME);
+    expect(summary.name).toBe('Bestie');
+    expect(summary.nickname).toBe('Bestie');
+
+    const view = toMessageView(message({ senderId: OTHER }), {
+      participants: nicknamed,
+      currentUserId: ME,
+      loadedMessages: [],
+    });
+    expect(view.senderName).toBe('Bestie');
+  });
+
   it('derives shared media from the loaded messages', () => {
     // The info panel read `activeThread.media`, which toThread never produced, so opening the panel
     // threw. The grid now shows real attachments from the pages already fetched.

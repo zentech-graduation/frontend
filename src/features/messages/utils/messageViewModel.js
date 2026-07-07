@@ -73,6 +73,16 @@ export const counterpartOf = (conversation, currentUserId) => {
   return others[0] || null;
 };
 
+/**
+ * The viewer's own private label for the counterpart, or null if unset.
+ *
+ * The API stores this on the viewer's own participant row, not the counterpart's - a nickname is
+ * never another user's label for themselves. Conversations are 1-1 only, so the viewer's own row
+ * unambiguously names the single other participant.
+ */
+const myNicknameForCounterpart = (participants, currentUserId) =>
+  participantOf(participants, currentUserId)?.nickname || null;
+
 /** What a conversation row shows under the name when the message itself has no text. */
 const previewTextOf = (message) => {
   if (!message) return '';
@@ -101,10 +111,11 @@ const kindOf = (message) => {
 /** One row in the conversation list. */
 export const toThreadSummary = (conversation, currentUserId) => {
   const counterpart = counterpartOf(conversation, currentUserId);
+  const nickname = myNicknameForCounterpart(conversation.participants, currentUserId);
 
   return {
     id: conversation.id,
-    name: nameOf(counterpart),
+    name: nickname || nameOf(counterpart),
     username: counterpart?.username || '',
     avatarUrl: counterpart?.avatarUrl || null,
     preview: previewTextOf(conversation.lastMessage),
@@ -112,12 +123,22 @@ export const toThreadSummary = (conversation, currentUserId) => {
     unread: conversation.unreadCount || 0,
     // Carried so the compose picker can exclude people the viewer already has a thread with.
     counterpartId: counterpart?.userId || null,
+    pinned: conversation.pinned || false,
+    muted: conversation.muted || false,
+    nickname,
   };
 };
 
 /** One bubble in the thread. */
 export const toMessageView = (message, { participants, currentUserId, loadedMessages = [] }) => {
   const sender = participantOf(participants, message.senderId);
+  const nickname = myNicknameForCounterpart(participants, currentUserId);
+  // A nickname is the viewer's label for the counterpart only; it never applies to the viewer's
+  // own name on their own bubbles.
+  const displayNameOf = (participant) =>
+    participant && participant.userId !== currentUserId
+      ? nickname || nameOf(participant)
+      : nameOf(participant);
   // Resolved from the loaded page only. Fetching the referenced message per bubble would issue one
   // request per reply while scrolling.
   const repliedTo = message.replyToId
@@ -130,12 +151,12 @@ export const toMessageView = (message, { participants, currentUserId, loadedMess
     kind: kindOf(message),
     text: message.isDeleted ? DELETED_PLACEHOLDER : message.content || '',
     time: formatMessageTime(message.createdAt),
-    senderName: nameOf(sender),
+    senderName: displayNameOf(sender),
     senderAvatarUrl: sender?.avatarUrl || null,
     media: message.media || null,
     sharedPostId: message.sharedPostId || null,
     sharedStoryId: message.sharedStoryId || null,
-    replyTo: repliedTo ? nameOf(participantOf(participants, repliedTo.senderId)) : null,
+    replyTo: repliedTo ? displayNameOf(participantOf(participants, repliedTo.senderId)) : null,
     replyText: repliedTo ? previewTextOf(repliedTo) : null,
     handle: sender?.username ? `@${sender.username}` : null,
     title: null,

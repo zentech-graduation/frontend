@@ -132,6 +132,59 @@ export const getUnreadCount = async () => {
   return response.data;
 };
 
+/**
+ * Pins a conversation to the top of the caller's own conversation list.
+ * @param {string} conversationId
+ * @returns {Promise<Object>} ApiResponse envelope.
+ */
+export const pinConversation = async (conversationId) => {
+  const response = await axiosInstance.post(`${CONVERSATION_API_PATH}/${conversationId}/pin`);
+  return response.data;
+};
+
+/**
+ * Unpins a conversation for the caller.
+ * @param {string} conversationId
+ * @returns {Promise<Object>} ApiResponse envelope.
+ */
+export const unpinConversation = async (conversationId) => {
+  const response = await axiosInstance.delete(`${CONVERSATION_API_PATH}/${conversationId}/pin`);
+  return response.data;
+};
+
+/**
+ * Mutes a conversation's notifications for the caller.
+ * @param {string} conversationId
+ * @returns {Promise<Object>} ApiResponse envelope.
+ */
+export const muteConversation = async (conversationId) => {
+  const response = await axiosInstance.post(`${CONVERSATION_API_PATH}/${conversationId}/mute`);
+  return response.data;
+};
+
+/**
+ * Unmutes a conversation for the caller.
+ * @param {string} conversationId
+ * @returns {Promise<Object>} ApiResponse envelope.
+ */
+export const unmuteConversation = async (conversationId) => {
+  const response = await axiosInstance.delete(`${CONVERSATION_API_PATH}/${conversationId}/mute`);
+  return response.data;
+};
+
+/**
+ * Sets or clears the caller's private label for the other participant in a conversation.
+ * @param {string} conversationId
+ * @param {string|null} nickname Pass null or blank to clear.
+ * @returns {Promise<Object>} ApiResponse envelope.
+ */
+export const setNickname = async (conversationId, nickname) => {
+  const response = await axiosInstance.put(`${CONVERSATION_API_PATH}/${conversationId}/nickname`, {
+    nickname,
+  });
+  return response.data;
+};
+
 export const messageService = {
   listConversations,
   getConversation,
@@ -143,6 +196,11 @@ export const messageService = {
   markUnread,
   leaveConversation,
   getUnreadCount,
+  pinConversation,
+  unpinConversation,
+  muteConversation,
+  unmuteConversation,
+  setNickname,
 };
 
 export default messageService;

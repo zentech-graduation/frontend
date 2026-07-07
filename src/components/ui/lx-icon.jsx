@@ -185,6 +185,19 @@ const ICONS = {
       <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
     </>
   ),
+  pin: (
+    <>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </>
+  ),
+  bellOff: (
+    <>
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      <line x1="3" y1="3" x2="21" y2="21" />
+    </>
+  ),
 };
 
 // Filled variants are distinct artwork, not the outline paths with a fill added. Each shape sets
@@ -248,6 +261,9 @@ const ICONS_FILLED = {
     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" stroke="none" />
   ),
   play: <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />,
+  pin: (
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" fill="currentColor" stroke="none" />
+  ),
 };
 
 export function LxIcon({ name, size = 20, color, filled = false, stroke = 1.5 }) {

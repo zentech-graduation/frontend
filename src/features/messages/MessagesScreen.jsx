@@ -10,6 +10,11 @@ import {
   useMarkRead,
   useMarkUnread,
   useLeaveConversation,
+  usePinConversation,
+  useUnpinConversation,
+  useMuteConversation,
+  useUnmuteConversation,
+  useSetNickname,
 } from './hooks/useConversations';
 import { useMessages, useDeleteMessage, useSendMessage } from './hooks/useMessages';
 import { useLiveMessages } from './hooks/useLiveMessages';
@@ -52,6 +57,8 @@ export function MessagesScreen() {
   const [deleteThreadTarget, setDeleteThreadTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
+  const [nicknameTarget, setNicknameTarget] = useState(null);
+  const [nicknameValue, setNicknameValue] = useState('');
   const [composing, setComposing] = useState(false);
   const queryClient = useQueryClient();
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
@@ -80,6 +87,11 @@ export function MessagesScreen() {
   const markRead = useMarkRead();
   const markUnread = useMarkUnread();
   const leaveConversation = useLeaveConversation();
+  const pinConversation = usePinConversation();
+  const unpinConversation = useUnpinConversation();
+  const muteConversation = useMuteConversation();
+  const unmuteConversation = useUnmuteConversation();
+  const setNickname = useSetNickname();
   const block = useBlock();
   const sendMessage = useSendMessage(activeConversation?.id);
   const deleteMessage = useDeleteMessage(activeConversation?.id);
@@ -362,6 +374,20 @@ export function MessagesScreen() {
     setBlockTarget(null);
   };
 
+  const handleRenameThread = (thread) => {
+    setNicknameTarget(thread);
+    setNicknameValue(thread.nickname || '');
+  };
+
+  const handleSaveNickname = () => {
+    if (!nicknameTarget) return;
+    setNickname.mutate(
+      { conversationId: nicknameTarget.id, nickname: nicknameValue.trim() },
+      { onError: (error) => toast(error?.message || "couldn't save that nickname. try again.") }
+    );
+    setNicknameTarget(null);
+  };
+
   const showDetail = viewport !== 'mobile' || threadOpen;
   const showSidebar = viewport !== 'mobile' || listOnlyMobile;
   const isDesktop = viewport === 'desktop';
@@ -409,6 +435,11 @@ export function MessagesScreen() {
           onDeleteThread={setDeleteThreadTarget}
           onReportThread={handleReportThread}
           onBlockThread={setBlockTarget}
+          onPinThread={(threadId) => pinConversation.mutate(threadId)}
+          onUnpinThread={(threadId) => unpinConversation.mutate(threadId)}
+          onMuteThread={(threadId) => muteConversation.mutate(threadId)}
+          onUnmuteThread={(threadId) => unmuteConversation.mutate(threadId)}
+          onRenameThread={handleRenameThread}
         />
       ) : null}
 
@@ -662,6 +693,105 @@ export function MessagesScreen() {
                 }}
               >
                 delete
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {nicknameTarget ? (
+        <>
+          <div
+            onClick={() => setNicknameTarget(null)}
+            style={{ position: 'fixed', inset: 0, background: v.scrim, zIndex: 1000 }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'calc(100% - 56px)',
+              maxWidth: 348,
+              background: v.base,
+              borderRadius: 18,
+              boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`,
+              zIndex: 1001,
+              padding: '22px 24px 20px',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: v.fontDisplay,
+                fontSize: 18,
+                fontWeight: 700,
+                color: v.ink,
+                letterSpacing: '-0.03em',
+              }}
+            >
+              nickname for {nicknameTarget.name}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <input
+                autoFocus
+                value={nicknameValue}
+                onChange={(event) => setNicknameValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') handleSaveNickname();
+                }}
+                placeholder="only you see this"
+                maxLength={50}
+                style={{
+                  width: '100%',
+                  height: 38,
+                  borderRadius: 999,
+                  background: v.surfaceSunken,
+                  border: `1px solid ${v.borderSubtle}`,
+                  padding: '0 14px',
+                  color: v.ink,
+                  fontFamily: v.fontBody,
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={() => setNicknameTarget(null)}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: '#2c2621',
+                  color: '#c4b9a8',
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveNickname}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: v.accent,
+                  color: v.ink,
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                save
               </button>
             </div>
           </div>
