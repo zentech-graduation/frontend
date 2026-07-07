@@ -31,10 +31,15 @@ export function ConvRow({
   const menuButtonRef = useRef(null);
   const showOptions = hovered || menuOpen;
 
+  // Combines the counted unread total with the caller's independent manual flag: clearing the
+  // read marker alone has no effect when the viewer sent the conversation's own newest messages,
+  // so the toggle (and the badge below) must reflect both, not the count on its own.
+  const isUnread = thread.unread > 0 || thread.manuallyUnread;
+
   const menuItems = useMemo(
     () =>
       [
-        thread.unread
+        isUnread
           ? { id: 'read', icon: 'check', label: 'Mark as read', onClick: () => onMarkRead?.() }
           : {
               id: 'unread',
@@ -59,14 +64,20 @@ export function ConvRow({
           onClick: () => onDelete?.(),
         },
         onReport
-          ? { id: 'report', icon: 'flag', label: 'Report', onClick: () => onReport?.() }
+          ? {
+              id: 'report',
+              icon: 'flag',
+              label: 'Report',
+              tone: 'danger',
+              onClick: () => onReport?.(),
+            }
           : null,
         onBlock
           ? { id: 'block', icon: 'ban', label: 'Block', tone: 'danger', onClick: () => onBlock?.() }
           : null,
       ].filter(Boolean),
     [
-      thread.unread,
+      isUnread,
       thread.pinned,
       thread.muted,
       onMarkRead,
@@ -140,7 +151,7 @@ export function ConvRow({
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {!showOptions && thread.unread ? (
+        {!showOptions && thread.unread > 0 ? (
           <span
             style={{
               minWidth: 16,
@@ -159,6 +170,13 @@ export function ConvRow({
           >
             {thread.unread}
           </span>
+        ) : !showOptions && thread.manuallyUnread ? (
+          // No count to show - manually flagged with nothing new to number - so a plain dot
+          // signals "unread" the same way the number does, without inventing a fake count.
+          <span
+            aria-label="unread"
+            style={{ width: 8, height: 8, borderRadius: '50%', background: v.accent }}
+          />
         ) : null}
         {showOptions ? (
           <button

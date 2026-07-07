@@ -8,7 +8,6 @@ export function ConversationListPanel({
   filteredThreads,
   activeThreadId,
   selectThread,
-  handleCompose,
   viewport,
   onMarkRead,
   onMarkUnread,
@@ -33,53 +32,6 @@ export function ConversationListPanel({
         background: v.base,
       }}
     >
-      <div
-        style={{
-          height: viewport === 'mobile' ? 0 : 52,
-          borderBottom: viewport === 'mobile' ? 'none' : `1px solid ${v.border}`,
-          display: viewport === 'mobile' ? 'none' : 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: viewport === 'mobile' ? '0' : '0 16px 0 18px',
-        }}
-      >
-        {viewport !== 'mobile' ? (
-          <div
-            style={{
-              fontFamily: v.fontDisplay,
-              fontSize: 14.5,
-              fontWeight: 700,
-              color: v.ink,
-              letterSpacing: '-0.03em',
-              lineHeight: 1,
-            }}
-          >
-            messages
-          </div>
-        ) : null}
-        {viewport !== 'mobile' ? (
-          <button
-            type="button"
-            onClick={handleCompose}
-            aria-label="new message"
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              border: `1px solid ${v.border}`,
-              background: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: 'none',
-            }}
-          >
-            <LxIcon name="edit" size={12} color={v.ink3} />
-          </button>
-        ) : null}
-      </div>
-
       <div
         style={{
           padding: viewport === 'mobile' ? '8px 14px 9px' : '9px 14px 10px',

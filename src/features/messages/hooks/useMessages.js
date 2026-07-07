@@ -45,30 +45,34 @@ const withFirstPageContent = (old, updater) => {
  *
  * Rollback is not optional: leaving an unsent message on screen tells the reader something happened
  * that did not.
+ *
+ * `conversationId` travels with each call's variables rather than being fixed when the hook is
+ * created: a conversation that does not exist yet (a profile's "message" button, before either
+ * side has sent anything) has no id to bind at that point, only once the first send resolves one.
  */
-export const useSendMessage = (conversationId) => {
+export const useSendMessage = () => {
   const queryClient = useQueryClient();
-  const key = messagesKey(conversationId);
 
   return useMutation({
-    mutationFn: ({ body, idempotencyKey }) =>
+    mutationFn: ({ conversationId, body, idempotencyKey }) =>
       messageService.sendMessage(conversationId, body, idempotencyKey),
-    onMutate: async ({ optimisticMessage }) => {
+    onMutate: async ({ conversationId, optimisticMessage }) => {
+      const key = messagesKey(conversationId);
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData(key);
       // History is newest first, so a new message belongs at the front.
       queryClient.setQueryData(key, (old) =>
         withFirstPageContent(old, (content) => [optimisticMessage, ...content])
       );
-      return { previous };
+      return { previous, key };
     },
     onError: (_error, _variables, context) => {
       if (context?.previous !== undefined) {
-        queryClient.setQueryData(key, context.previous);
+        queryClient.setQueryData(context.key, context.previous);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: key });
+    onSettled: (_data, _error, variables) => {
+      queryClient.invalidateQueries({ queryKey: messagesKey(variables.conversationId) });
       queryClient.invalidateQueries({ queryKey: conversationsKey });
     },
   });

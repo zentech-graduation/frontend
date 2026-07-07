@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   formatSeparatorLabel,
   toMessageView,
+  toPendingThread,
   toThread,
   toThreadSummary,
 } from '@/features/messages/utils/messageViewModel';
@@ -224,6 +225,17 @@ describe('toThread', () => {
     expect(summary.counterpartId).toBe(OTHER);
   });
 
+  it('carries manuallyUnread, defaulting to false', () => {
+    const summary = toThreadSummary({ id: 'c1', participants, unreadCount: 0 }, ME);
+    expect(summary.manuallyUnread).toBe(false);
+
+    const flagged = toThreadSummary(
+      { id: 'c1', participants, unreadCount: 0, manuallyUnread: true },
+      ME
+    );
+    expect(flagged.manuallyUnread).toBe(true);
+  });
+
   it('carries pinned and muted, defaulting both to false', () => {
     const summary = toThreadSummary({ id: 'c1', participants, unreadCount: 0 }, ME);
     expect(summary.pinned).toBe(false);
@@ -344,5 +356,99 @@ describe('toThread', () => {
 
       expect(thread.rows.find((row) => row.rowType === 'message').showAvatar).toBe(false);
     });
+
+    const mediaMessage = (overrides) =>
+      message({
+        content: null,
+        mediaAssetId: overrides.id,
+        media: {
+          mediaAssetId: overrides.id,
+          mediaType: 'IMAGE',
+          cdnUrl: `https://cdn/${overrides.id}.jpg`,
+        },
+        ...overrides,
+      });
+
+    it('collapses a run of consecutive photo messages from the same sender into one album row', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [
+        mediaMessage({ id: 'm3', senderId: OTHER, createdAt: '2026-08-18T10:00:02Z' }),
+        mediaMessage({ id: 'm2', senderId: OTHER, createdAt: '2026-08-18T10:00:01Z' }),
+        mediaMessage({ id: 'm1', senderId: OTHER, createdAt: '2026-08-18T10:00:00Z' }),
+      ];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.rows.map((row) => row.rowType)).toEqual(['separator', 'album']);
+      const album = thread.rows.find((row) => row.rowType === 'album');
+      expect(album.items.map((item) => item.id)).toEqual(['m1', 'm2', 'm3']);
+      expect(album.from).toBe('them');
+    });
+
+    it('leaves a lone photo message as a plain file row, not a one-item album', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [mediaMessage({ id: 'm1', senderId: OTHER })];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.rows.map((row) => row.rowType)).toEqual(['separator', 'message']);
+      expect(thread.rows[1].kind).toBe('file');
+    });
+
+    it('does not pull a text message sandwiched between photos into the album run', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [
+        mediaMessage({ id: 'm3', senderId: OTHER, createdAt: '2026-08-18T10:00:02Z' }),
+        message({
+          id: 'm2',
+          senderId: OTHER,
+          content: 'in between',
+          createdAt: '2026-08-18T10:00:01Z',
+        }),
+        mediaMessage({ id: 'm1', senderId: OTHER, createdAt: '2026-08-18T10:00:00Z' }),
+      ];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.rows.map((row) => row.rowType)).toEqual([
+        'separator',
+        'message',
+        'message',
+        'message',
+      ]);
+    });
+
+    it('only the last row of an album run shows the avatar, matching a plain run', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [
+        mediaMessage({ id: 'm2', senderId: OTHER, createdAt: '2026-08-18T10:00:01Z' }),
+        mediaMessage({ id: 'm1', senderId: OTHER, createdAt: '2026-08-18T10:00:00Z' }),
+      ];
+      const thread = toThread(conversation, messages, ME);
+
+      const album = thread.rows.find((row) => row.rowType === 'album');
+      expect(album.showAvatar).toBe(true);
+    });
+  });
+});
+
+describe('toPendingThread', () => {
+  it('builds an empty thread with id null from a target user profile', () => {
+    const thread = toPendingThread({
+      id: OTHER,
+      username: 'priya_m',
+      displayName: 'Priya',
+      avatarUrl: 'https://cdn/p.jpg',
+    });
+
+    expect(thread.id).toBeNull();
+    expect(thread.name).toBe('Priya');
+    expect(thread.username).toBe('priya_m');
+    expect(thread.avatarUrl).toBe('https://cdn/p.jpg');
+    expect(thread.counterpartId).toBe(OTHER);
+    expect(thread.messages).toEqual([]);
+    expect(thread.rows).toEqual([]);
+  });
+
+  it('falls back to username when the target has no display name', () => {
+    const thread = toPendingThread({ id: OTHER, username: 'priya_m', avatarUrl: null });
+    expect(thread.name).toBe('priya_m');
   });
 });

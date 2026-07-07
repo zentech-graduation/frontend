@@ -22,7 +22,7 @@ const SECTION_LABEL = {
  */
 export function ConversationInfoPanel({
   activeThread,
-  setPreviewItem,
+  openPreview,
   currentUserId,
   compact = false,
   mobileOverlay = false,
@@ -150,8 +150,12 @@ export function ConversationInfoPanel({
               gap: mobileOverlay ? 8 : compact ? 5 : 6,
             }}
           >
-            {media.map((item) => (
-              <MediaPlaceholder key={item.id} item={item} onClick={() => setPreviewItem(item)} />
+            {media.map((item, index) => (
+              <MediaPlaceholder
+                key={item.id}
+                item={item}
+                onClick={() => openPreview?.(media, index)}
+              />
             ))}
           </div>
         ) : (

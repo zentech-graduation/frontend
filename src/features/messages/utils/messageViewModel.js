@@ -121,7 +121,10 @@ export const toThreadSummary = (conversation, currentUserId) => {
     preview: previewTextOf(conversation.lastMessage),
     time: formatMessageTime(conversation.lastMessageAt),
     unread: conversation.unreadCount || 0,
-    // Carried so the compose picker can exclude people the viewer already has a thread with.
+    // A caller-set flag independent of unreadCount: clearing the read marker only changes the
+    // count when the other participant has newer messages to count, so this is what "mark
+    // unread" actually toggles when the viewer sent the conversation's own newest messages.
+    manuallyUnread: Boolean(conversation.manuallyUnread),
     counterpartId: counterpart?.userId || null,
     pinned: conversation.pinned || false,
     muted: conversation.muted || false,
@@ -172,30 +175,44 @@ export const toMessageView = (message, { participants, currentUserId, loadedMess
 const GROUP_GAP_MS = 10 * 60 * 1000;
 
 /**
+ * Whether two adjacent messages belong to the same run: same sender, both timestamped, and no
+ * more than ten minutes apart. Shared by the avatar-collapsing run below and by album grouping,
+ * which is the same "close enough to read as one exchange" test applied to plain-media messages.
+ */
+const inSameRun = (a, b) =>
+  Boolean(a) &&
+  Boolean(b) &&
+  a.from === b.from &&
+  a.atMs !== null &&
+  b.atMs !== null &&
+  b.atMs - a.atMs <= GROUP_GAP_MS;
+
+/**
  * Turns the flat message list into thread rows: a separator before the first message of each
- * cluster, and every message marked with whether it closes its run of consecutive same-sender
- * bubbles.
+ * cluster, every message marked with whether it closes its run of consecutive same-sender
+ * bubbles, and a run of two or more consecutive plain-media messages collapsed into one album
+ * row.
  *
  * A cluster breaks - and gets a new separator - when the sender changes or the gap since the
  * previous message exceeds ten minutes. A run breaks on the same rule; only a "them" bubble that
  * closes a run shows an avatar, the same collapsing Instagram's own thread view uses. Showing the
  * time as a row between clusters rather than text under every bubble is what lets a long burst of
  * short messages read as one exchange instead of a timestamped log.
+ *
+ * Album grouping reuses that same adjacency rule rather than a dedicated "sent together" marker:
+ * there is no batch id on the message itself, and a burst of photos picked in one send already
+ * lands well inside the ten-minute window, so the existing rule is what "one send" looks like from
+ * the data available.
  */
 const toRows = (messages) => {
   const rows = [];
+  let index = 0;
 
-  messages.forEach((current, index) => {
+  while (index < messages.length) {
+    const current = messages[index];
     const previous = messages[index - 1];
-    const next = messages[index + 1];
 
-    const startsCluster =
-      !previous ||
-      previous.from !== current.from ||
-      previous.atMs === null ||
-      current.atMs === null ||
-      current.atMs - previous.atMs > GROUP_GAP_MS;
-
+    const startsCluster = !inSameRun(previous, current);
     if (startsCluster) {
       rows.push({
         rowType: 'separator',
@@ -204,15 +221,38 @@ const toRows = (messages) => {
       });
     }
 
-    const endsRun =
-      !next ||
-      next.from !== current.from ||
-      current.atMs === null ||
-      next.atMs === null ||
-      next.atMs - current.atMs > GROUP_GAP_MS;
+    if (current.kind === 'file') {
+      let end = index + 1;
+      while (
+        end < messages.length &&
+        messages[end].kind === 'file' &&
+        inSameRun(messages[end - 1], messages[end])
+      ) {
+        end++;
+      }
+      const run = messages.slice(index, end);
+      if (run.length > 1) {
+        const last = run[run.length - 1];
+        const endsRun = !inSameRun(last, messages[end]);
+        rows.push({
+          rowType: 'album',
+          id: `album-${run[0].id}`,
+          from: current.from,
+          senderName: current.senderName,
+          senderAvatarUrl: current.senderAvatarUrl,
+          items: run,
+          showAvatar: endsRun && current.from === 'them',
+        });
+        index = end;
+        continue;
+      }
+    }
 
+    const next = messages[index + 1];
+    const endsRun = !inSameRun(current, next);
     rows.push({ rowType: 'message', ...current, showAvatar: endsRun && current.from === 'them' });
-  });
+    index++;
+  }
 
   return rows;
 };
@@ -257,3 +297,28 @@ export const toThread = (conversation, messages, currentUserId) => {
     rows: toRows(messageViews),
   };
 };
+
+/**
+ * A thread shape for a conversation that does not exist yet - a profile's "message" button,
+ * before either side has sent anything, so there is no conversation row to derive a summary
+ * from. `id: null` is what the rest of the screen uses to tell this apart from a real,
+ * possibly-empty conversation: the first message sent into it is what creates the real row.
+ */
+export const toPendingThread = (targetUser) => ({
+  id: null,
+  name: targetUser.displayName || targetUser.username || UNKNOWN_PARTICIPANT,
+  username: targetUser.username || '',
+  avatarUrl: targetUser.avatarUrl || null,
+  preview: '',
+  time: '',
+  unread: 0,
+  manuallyUnread: false,
+  pinned: false,
+  muted: false,
+  nickname: null,
+  counterpartId: targetUser.id,
+  participants: [],
+  media: [],
+  messages: [],
+  rows: [],
+});

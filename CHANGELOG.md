@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The real-time connection now authenticates with a single-use ticket instead of carrying the access token in the address, which kept a valid credential in server access logs long after it expired.
 
 ### Fixed
+- Sending several photos or videos with a caption in one go now sends them in the order they were picked, with the caption always landing last. The upload for each attachment was awaited but the send itself was not, so the requests raced each other over the network and could land in any order, including the caption arriving in the middle of the photos.
+- The messages screen no longer shows two independent vertical scrollbars. The app's root zoom scale was inflating a `100vh`-based height past the real viewport, which grew the whole page under the screen's own internally-scrolling panel.
+- "Report" in a conversation's menu is now shown in red like "Delete" and "Block", instead of reading as a neutral action.
+- "Mark as unread" now has a visible effect even when you sent the conversation's own newest messages, and a chat you marked unread now correctly offers "Mark as read" the next time you open its menu.
 - The message composer's attach and send buttons now stay pinned to the bottom of the input as it grows with a longer draft, instead of drifting toward the middle of the pill.
 - Hovering a chat bubble to reveal reply/copy/delete now responds to a hover anywhere near the message, not only a precise hover on the bubble's own pixels.
 - The options menu on someone else's profile now opens where its button is instead of off-screen. A `transform` on the button row broke the menu's fixed-position math once the app's root zoom multiplied the offset a second time.
@@ -24,15 +28,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Removed
 - Group conversations. Messaging is one to one.
 - The floating "message" button on desktop and tablet, now redundant with the always-visible side rail's own message icon.
+- The separate "compose" flow (the messages list's pencil button and its person-search picker) and the top bar's mobile "new message" button. Starting a conversation now happens from a person's profile only; nothing is created until you actually send something.
+- The top bar on desktop and tablet. It fully duplicated the side rail's own navigation, search, and profile links.
 
 ### Changed
 - The chat info panel (participant details, shared media) is now hidden by default on every viewport and opens as an overlay from the info button, instead of permanently occupying a column of the messages screen.
 - Photo and video messages render as a plain thumbnail with no card border or rounding around it, and open in a borderless full-screen viewer that closes on a click outside the media instead of a close button.
 - Chat timestamps are now separator rows between clusters of messages instead of text under every bubble, matching how Instagram groups a burst of messages by time.
 - The messaging screen (bubbles, avatars, icons, and list rows) is noticeably smaller and denser; it no longer reads as oversized on a wide display.
-- The top bar no longer hides while scrolling; it stays fixed to the top of the page. The side rail is now the primary navigation on desktop and tablet and stays on screen at all times instead of appearing only while the top bar is hidden. The messages screen drops the top bar entirely on desktop and tablet and relies on the rail alone.
-- The message composer's attachment, text field, and send buttons are now the same height and vertically aligned, and the send button dims until there is a message to send.
+- The side rail is the only navigation on desktop and tablet now, and stays on screen at all times; mobile keeps a minimal top bar for back navigation, the page title, and notifications. Side rail and bottom nav icons highlight on hover.
+- The message composer's attachment, text field, and send buttons are now the same height and vertically aligned, and the send button dims until there is a message to send. Its placeholder reads "Message..." instead of "say something real...".
 - New messages now appear below older ones instead of above them, so a conversation reads top to bottom.
+- Vertical spacing between message bubbles is tighter.
+- Two or more photos or videos sent close together by the same person now group into one album tile - up to four visible, a "+N" overlay for more - instead of a stack of separate bubbles. Opening any tile steps through the rest of the album with next/previous, the same way the post viewer does.
+- A single photo or video message keeps its own aspect ratio inside a capped box instead of being cropped to a fixed square. Video and GIF messages show a duration badge and a play icon rather than playing inline in the thread.
 - Application screens and the signed-in shell are now downloaded on demand. A visitor on the sign-in page no longer downloads the composer, story viewer, and message pane before the form is usable; the initial download is roughly a third smaller.
 
 ### Tests
@@ -46,8 +55,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Chat now supports sending images, videos, and GIFs from the attachment button, and shows the real image or video inline instead of a generic file icon.
 - Chat bubbles now show the other person's avatar and collapse the timestamp across a run of messages sent within ten minutes of each other, instead of stamping every single bubble.
 - Messages now opens with the people you and they follow each other with, each one ready to write to and greeted by "You're now friends. Say hi!" until somebody says something.
-- The compose button now opens a search for the person you want to write to, so you can start a conversation with anyone rather than only from their profile.
 - Direct messages are real. The conversation list, message history, sending, and deleting now read and write actual conversations instead of a fixed demo set.
+- A message can hold up to 10 attachments; picking more, or a file the server would reject, is stopped before upload with an explanation instead of failing later.
 - Unread counts per conversation and on the shell's message badge, cleared when you open the conversation.
 - Group conversations: see who is in a group, rename it, add people by searching for them, remove a member, and leave. Renaming, adding, and removing are offered only to group admins, matching what the server allows.
 - New messages appear while a conversation is open, without a refresh.

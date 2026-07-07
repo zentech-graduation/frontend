@@ -4,7 +4,12 @@ import { CHAR_LIMITS } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { AvatarVisual } from './AvatarVisual';
 import { ConversationGreeting } from './ConversationGreeting';
+import { MessageAlbum } from './MessageAlbum';
 import { MessageBubble } from './MessageBubble';
+
+// Matches MessageBubble's own avatar column - albums sit in the same left/right rail and need to
+// line up with the bubbles above and below them in the same run.
+const ALBUM_AVATAR_SIZE = 21;
 
 const DRAFT_MAX_HEIGHT = 108;
 
@@ -25,7 +30,7 @@ export function ChatCenterPanel({
   isDesktop,
   isTablet,
   scrollerRef,
-  setPreviewItem,
+  openPreview,
   handleDeleteToggle,
   replyingTo,
   setReplyingTo,
@@ -140,35 +145,81 @@ export function ChatCenterPanel({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 14,
+            gap: 6,
             minHeight: '100%',
             justifyContent: activeThread.messages.length <= 1 ? 'space-between' : 'flex-start',
           }}
         >
-          <ConversationGreeting messageCount={activeThread.messages.length} />
-          {activeThread.rows.map((row, index) =>
-            row.rowType === 'separator' ? (
-              <div
-                key={row.id}
-                role="separator"
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  padding: '4px 0',
-                }}
-              >
-                <span
+          <ConversationGreeting
+            messageCount={activeThread.messages.length}
+            pending={!activeThread.id}
+            name={activeThread.name}
+            avatarUrl={activeThread.avatarUrl}
+          />
+          {activeThread.rows.map((row, index) => {
+            if (row.rowType === 'separator') {
+              return (
+                <div
+                  key={row.id}
+                  role="separator"
                   style={{
-                    fontFamily: v.fontMono,
-                    fontSize: 10,
-                    color: v.ink3,
-                    letterSpacing: '0.02em',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    padding: '4px 0',
                   }}
                 >
-                  {row.label}
-                </span>
-              </div>
-            ) : (
+                  <span
+                    style={{
+                      fontFamily: v.fontMono,
+                      fontSize: 10,
+                      color: v.ink3,
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    {row.label}
+                  </span>
+                </div>
+              );
+            }
+
+            if (row.rowType === 'album') {
+              const isMine = row.from === 'me';
+              const isMobile = viewport === 'mobile';
+              const avatarSlot =
+                isMobile || isMine ? null : row.showAvatar ? (
+                  <AvatarVisual
+                    thread={{ avatarUrl: row.senderAvatarUrl, name: row.senderName }}
+                    size={ALBUM_AVATAR_SIZE}
+                  />
+                ) : (
+                  <div style={{ width: ALBUM_AVATAR_SIZE, flexShrink: 0 }} aria-hidden="true" />
+                );
+              return (
+                <div
+                  key={row.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    gap: 6,
+                    justifyContent: isMine ? 'flex-end' : 'flex-start',
+                    flexDirection: isMine ? 'row-reverse' : 'row',
+                  }}
+                >
+                  {avatarSlot}
+                  <MessageAlbum
+                    items={row.items}
+                    onOpenViewer={(items, itemIndex) =>
+                      openPreview?.(
+                        items.map((item) => item.media || { label: item.text }),
+                        itemIndex
+                      )
+                    }
+                  />
+                </div>
+              );
+            }
+
+            return (
               <div
                 key={row.id}
                 style={{
@@ -186,7 +237,7 @@ export function ChatCenterPanel({
                   message={row}
                   viewport={viewport}
                   activeThread={activeThread}
-                  onPreviewMedia={setPreviewItem}
+                  onPreviewMedia={(media) => openPreview?.([media], 0)}
                   onDeleteToggle={handleDeleteToggle}
                   onReplyMessage={setReplyingTo}
                   canDelete={
@@ -197,8 +248,8 @@ export function ChatCenterPanel({
                   }
                 />
               </div>
-            )
-          )}
+            );
+          })}
         </div>
       </div>
 
@@ -368,7 +419,7 @@ export function ChatCenterPanel({
                   handleSend();
                 }
               }}
-              placeholder={replyingTo ? 'write a reply...' : 'say something real...'}
+              placeholder={replyingTo ? 'write a reply...' : 'Message...'}
               rows={1}
               style={{
                 flex: 1,

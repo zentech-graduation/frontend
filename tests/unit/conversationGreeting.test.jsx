@@ -15,4 +15,13 @@ describe('ConversationGreeting', () => {
     const { container } = render(<ConversationGreeting messageCount={1} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('shows the target instead of "now friends" for a conversation that does not exist yet', () => {
+    // "You're now friends" would be false here - a profile's "message" button reaches this state
+    // whether or not the two people follow each other at all.
+    render(<ConversationGreeting messageCount={0} pending name="Priya" avatarUrl={null} />);
+    expect(screen.queryByText(/now friends/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Priya')).toBeInTheDocument();
+    expect(screen.getByText(/start the conversation/i)).toBeInTheDocument();
+  });
 });

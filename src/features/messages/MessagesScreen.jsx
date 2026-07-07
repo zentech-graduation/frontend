@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
+import { LxIcon } from '@/components/ui/lx-icon';
 import { useAuthStore } from '@/store/useAuthStore';
-import { toThread, toThreadSummary } from './utils/messageViewModel';
+import {
+  counterpartOf,
+  toPendingThread,
+  toThread,
+  toThreadSummary,
+} from './utils/messageViewModel';
 import {
   conversationsKey,
   useConversations,
@@ -22,16 +28,42 @@ import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
 import { MediaPlaceholder } from './components/MediaPlaceholder';
-import { PersonPicker } from './components/PersonPicker';
 import { messageService } from '@/services/message.service';
 import { REPORT_TYPES } from '@/services/report.service';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useLuvaxTweaks } from '@/features/luvax/LuvaxTweaksContext';
 import { toast } from '@/features/luvax/components/Toast';
 import { useMediaUpload } from '@/features/luvax/hooks/useMediaUpload';
+import { useMediaConstraints } from '@/features/luvax/hooks/useMediaConstraints';
+import { useUserProfile } from '@/features/luvax/hooks/useUsers';
 import { useBlock } from '@/features/luvax/hooks/useSocial';
 import { ReportModal } from '@/features/luvax/components/ReportModal';
 import { BlockConfirmDialog } from '@/features/luvax/components/BlockConfirmDialog';
+import { validateDuration, validateFile } from '@/features/luvax/utils/composerMedia';
+
+// A message send holds fewer items than a post carousel by design: a burst of ten photos already
+// reads as a lot in a chat thread, and the album viewer (see MessageAlbum) is tuned for that count.
+const MAX_MESSAGE_ATTACHMENTS = 10;
+
+// Light frosted chips over the dark scrim, matching the post viewer's own carousel controls.
+const lightboxArrowStyle = (side) => ({
+  position: 'absolute',
+  top: '50%',
+  [side]: 16,
+  transform: 'translateY(-50%)',
+  width: 36,
+  height: 36,
+  borderRadius: 999,
+  border: 'none',
+  background: 'rgba(255,255,255,0.9)',
+  boxShadow: '0 1px 5px rgba(0,0,0,0.3)',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  zIndex: 2,
+});
 
 export function MessagesScreen() {
   const { viewport } = useLuvaxTweaks();
@@ -50,7 +82,9 @@ export function MessagesScreen() {
   const [activeThreadId, setActiveThreadId] = useState(null);
   const [threadOpen, setThreadOpen] = useState(viewport !== 'mobile');
   const [infoOpen, setInfoOpen] = useState(false);
-  const [previewItem, setPreviewItem] = useState(null);
+  // { items: [media, ...], index } while a lightbox is open, so a multi-photo album can step
+  // through the whole set with next/prev instead of only ever showing the one tile clicked.
+  const [previewGallery, setPreviewGallery] = useState(null);
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
@@ -59,7 +93,10 @@ export function MessagesScreen() {
   const [blockTarget, setBlockTarget] = useState(null);
   const [nicknameTarget, setNicknameTarget] = useState(null);
   const [nicknameValue, setNicknameValue] = useState('');
-  const [composing, setComposing] = useState(false);
+  // Set only by a profile's "message" button, before any conversation exists between the two
+  // people. Nothing is written to the server until the first message actually sends - see
+  // handleSend - so this is the only record of that intent until then.
+  const [pendingTargetUserId, setPendingTargetUserId] = useState(null);
   const queryClient = useQueryClient();
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
@@ -75,14 +112,40 @@ export function MessagesScreen() {
     );
   }, [search, threads]);
 
+  // A pending target resolves to a real conversation the moment one exists for that pair -
+  // whether it was already there (they messaged first, or a mutual follow provisioned one) or
+  // was just created by this screen's own first send below.
   const activeConversation =
-    conversations.find((conversation) => conversation.id === activeThreadId) || null;
+    conversations.find((conversation) => conversation.id === activeThreadId) ||
+    (pendingTargetUserId
+      ? conversations.find(
+          (conversation) =>
+            counterpartOf(conversation, currentUserId)?.userId === pendingTargetUserId
+        )
+      : null) ||
+    null;
   const { messages: activeMessages } = useMessages(activeConversation?.id);
+  const { data: pendingProfileResponse } = useUserProfile(
+    pendingTargetUserId,
+    Boolean(pendingTargetUserId) && !activeConversation
+  );
   const activeThread = activeConversation
     ? toThread(activeConversation, activeMessages, currentUserId)
-    : null;
+    : pendingProfileResponse?.data
+      ? toPendingThread(pendingProfileResponse.data)
+      : null;
 
   useLiveMessages(activeConversation?.id);
+
+  // Promotes a pending target to a real, selected conversation the moment one resolves above -
+  // whether that took a round trip through handleSend or was already sitting in the list.
+  useEffect(() => {
+    if (pendingTargetUserId && activeConversation) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveThreadId(activeConversation.id);
+      setPendingTargetUserId(null);
+    }
+  }, [pendingTargetUserId, activeConversation]);
 
   const markRead = useMarkRead();
   const markUnread = useMarkUnread();
@@ -93,9 +156,10 @@ export function MessagesScreen() {
   const unmuteConversation = useUnmuteConversation();
   const setNickname = useSetNickname();
   const block = useBlock();
-  const sendMessage = useSendMessage(activeConversation?.id);
+  const sendMessage = useSendMessage();
   const deleteMessage = useDeleteMessage(activeConversation?.id);
-  const { uploadMedia } = useMediaUpload();
+  const { uploadMedia, getMediaMetadata } = useMediaUpload();
+  const { constraints: mediaConstraints } = useMediaConstraints();
 
   useEffect(() => {
     if (activeConversation?.id) {
@@ -106,6 +170,9 @@ export function MessagesScreen() {
   }, [activeConversation?.id]);
 
   useEffect(() => {
+    // A pending target is its own selection; the usual "pick something" fallback must not
+    // steal it back to the first real thread while it's still waiting to resolve.
+    if (pendingTargetUserId) return;
     if (!activeThreadId && filteredThreads[0]) {
       if (viewport !== 'mobile') {
         // Reconciles the selected thread with the thread list after it changes.
@@ -115,15 +182,16 @@ export function MessagesScreen() {
     } else if (activeThreadId && !threads.some((thread) => thread.id === activeThreadId)) {
       setActiveThreadId(threads[0]?.id || null);
     }
-  }, [activeThreadId, filteredThreads, threads, viewport]);
+  }, [activeThreadId, filteredThreads, threads, viewport, pendingTargetUserId]);
 
   useEffect(() => {
+    if (pendingTargetUserId) return;
     if (viewport !== 'mobile' && !activeThreadId && threads[0]) {
       // Selects a default thread once the viewport is wide enough to show one.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveThreadId(threads[0].id);
     }
-  }, [viewport, activeThreadId, threads]);
+  }, [viewport, activeThreadId, threads, pendingTargetUserId]);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -131,50 +199,31 @@ export function MessagesScreen() {
     scroller.scrollTop = scroller.scrollHeight;
   }, [activeThreadId, threads]);
 
-  // Declared above the effect that calls it. The effect body referenced it before its
-  // declaration, which is safe only because effects run after the component body has
-  // finished evaluating - an ordering the reader should not have to reconstruct.
-  // Auto-provisioning covers people who already follow each other back. This covers everyone else,
-  // including the first message to someone who has not followed back.
-  const startConversation = useMutation({
-    mutationFn: (targetUserId) => messageService.createDirect(targetUserId),
-    onSuccess: async (response) => {
-      const conversation = response?.data;
-      setComposing(false);
-      // Awaited, not fired and forgotten: an effect above resets the active thread whenever its id
-      // is absent from the loaded list, so selecting the new conversation before the refetch lands
-      // snaps the panel straight back to the previous thread.
-      await queryClient.invalidateQueries({ queryKey: conversationsKey });
-      if (conversation?.id) {
-        setActiveThreadId(conversation.id);
-        setThreadOpen(true);
-      }
-    },
-    onError: (error) => toast(error?.message || 'could not start that conversation'),
-  });
-
   // A profile's "message" button lands here carrying the target in route state rather than a URL
   // param, so a stale bookmark can never re-trigger it. The state is cleared right after firing, so
   // navigating back into the thread later - or a browser back/forward - does not replay it.
+  // No conversation is created here: setting pendingTargetUserId is enough to show the thread
+  // (see activeThread above), and the derivation there already picks up a real conversation if
+  // one exists for this pair. Creating one is deferred to the first actual send, in handleSend.
   useEffect(() => {
     const targetUserId = location.state?.openWithUserId;
     if (!targetUserId) return;
-    startConversation.mutate(targetUserId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveThreadId(null);
+    setPendingTargetUserId(targetUserId);
+    if (viewport === 'mobile') {
+      setThreadOpen(true);
+      setInfoOpen(false);
+    }
     navigate(location.pathname, { replace: true, state: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
-
-  const handleCompose = () => setComposing(true);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
       return undefined;
     }
 
-    window.__lxMessagesCompose = () => {
-      handleCompose();
-      return true;
-    };
     window.__lxMessagesBack = () => {
       if (viewport === 'mobile' && threadOpen) {
         setThreadOpen(false);
@@ -184,9 +233,6 @@ export function MessagesScreen() {
     };
 
     return () => {
-      if (window.__lxMessagesCompose) {
-        delete window.__lxMessagesCompose;
-      }
       if (window.__lxMessagesBack) {
         delete window.__lxMessagesBack;
       }
@@ -195,7 +241,7 @@ export function MessagesScreen() {
 
   useEffect(() => {
     if (viewport !== 'mobile') {
-      // Bridges the shell compose and back actions onto window for the mobile pane.
+      // Bridges the shell back action onto window for the mobile pane.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setThreadOpen(true);
       setInfoOpen(false);
@@ -211,8 +257,11 @@ export function MessagesScreen() {
     );
   }, [threadOpen, viewport]);
 
+  const openPreview = (items, index = 0) => setPreviewGallery({ items, index });
+
   const selectThread = (threadId) => {
     setActiveThreadId(threadId);
+    setPendingTargetUserId(null);
     if (viewport === 'mobile') {
       setThreadOpen(true);
       setInfoOpen(false);
@@ -224,9 +273,10 @@ export function MessagesScreen() {
   const nextIdempotencyKey = () =>
     globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  const sendTextMessage = (value) => {
+  const sendTextMessage = (conversationId, value) => {
     const idempotencyKey = nextIdempotencyKey();
-    sendMessage.mutate({
+    return sendMessage.mutateAsync({
+      conversationId,
       idempotencyKey,
       body: {
         messageType: 'text',
@@ -237,7 +287,7 @@ export function MessagesScreen() {
       // rollback simply removes it again.
       optimisticMessage: {
         id: `pending-${idempotencyKey}`,
-        conversationId: activeConversation.id,
+        conversationId,
         senderId: currentUserId,
         messageType: 'text',
         content: value,
@@ -257,12 +307,17 @@ export function MessagesScreen() {
    * Uploads one staged file through the same pre-signed R2 flow the post composer uses, then sends
    * it as a media message. The optimistic bubble renders from the staged preview URL so the
    * attachment appears immediately, before the CDN URL comes back on the real response.
+   *
+   * Awaits the send itself, not just the upload - `mutate()` fires the request and returns
+   * immediately, so a caller looping over several attachments with only the upload awaited was
+   * racing every send request over the network instead of sending them in order.
    */
-  const sendAttachmentMessage = async (item) => {
+  const sendAttachmentMessage = async (conversationId, item) => {
     const asset = await uploadMedia(item.file);
     const idempotencyKey = nextIdempotencyKey();
 
-    sendMessage.mutate({
+    return sendMessage.mutateAsync({
+      conversationId,
       idempotencyKey,
       body: {
         messageType: item.isVideo ? 'video' : 'image',
@@ -271,7 +326,7 @@ export function MessagesScreen() {
       },
       optimisticMessage: {
         id: `pending-${idempotencyKey}`,
-        conversationId: activeConversation.id,
+        conversationId,
         senderId: currentUserId,
         messageType: item.isVideo ? 'video' : 'image',
         content: null,
@@ -291,14 +346,46 @@ export function MessagesScreen() {
     });
   };
 
-  const handleStageAttachments = (files) => {
-    const staged = files.map((file) => ({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      file,
-      previewUrl: URL.createObjectURL(file),
-      isVideo: file.type.startsWith('video/'),
-    }));
-    setPendingAttachments((current) => [...current, ...staged]);
+  /**
+   * Validates and stages picked files, same checks the post composer runs (type, size, and
+   * measured video duration against the server-published constraints) plus a per-send count cap
+   * the server has no equivalent for.
+   */
+  const handleStageAttachments = async (files) => {
+    const room = MAX_MESSAGE_ATTACHMENTS - pendingAttachments.length;
+    if (room <= 0) {
+      toast(`a message holds ${MAX_MESSAGE_ATTACHMENTS} attachments at most.`);
+      return;
+    }
+
+    let rejection = '';
+    if (files.length > room) {
+      rejection = `a message holds ${MAX_MESSAGE_ATTACHMENTS} attachments at most, so ${room} of the ${files.length} you chose were added.`;
+    }
+
+    const accepted = [];
+    for (const file of files.slice(0, room)) {
+      const check = validateFile(file, mediaConstraints);
+      if (!check.ok) {
+        rejection = check.message;
+        continue;
+      }
+      const metadata = await getMediaMetadata(file).catch(() => null);
+      const durationCheck = validateDuration(file, metadata?.duration, mediaConstraints);
+      if (!durationCheck.ok) {
+        rejection = durationCheck.message;
+        continue;
+      }
+      accepted.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        isVideo: file.type.startsWith('video/'),
+      });
+    }
+
+    if (rejection) toast(rejection);
+    if (accepted.length > 0) setPendingAttachments((current) => [...current, ...accepted]);
   };
 
   const handleRemovePendingAttachment = (id) => {
@@ -314,24 +401,43 @@ export function MessagesScreen() {
    * its own trailing message. Each is a separate message rather than one album message - the
    * bubble grouping already collapses a same-sender burst sent seconds apart into one visual
    * cluster, so the reader sees one exchange either way.
+   *
+   * A pending (not-yet-real) thread has no conversation id to send into, so the first send here
+   * creates one first - the same idempotent create-or-reuse call a mutual-follow auto-provision or
+   * a second "message" click would hit, so two people who both clicked "message" on each other
+   * before either typed anything still end up in the one conversation, not two.
    */
   const handleSend = async () => {
     const value = draft.trim();
-    if (!activeConversation || (!value && !pendingAttachments.length)) return;
+    if ((!activeConversation && !pendingTargetUserId) || (!value && !pendingAttachments.length)) {
+      return;
+    }
 
     setIsSending(true);
     try {
+      let conversationId = activeConversation?.id;
+      if (!conversationId) {
+        const response = await messageService.createDirect(pendingTargetUserId);
+        conversationId = response?.data?.id;
+        // Awaited, not fired and forgotten: the reconciliation effects above reset the active
+        // thread whenever its id is absent from the loaded list, so selecting it before the
+        // refetch lands would snap the panel straight back to the previous thread.
+        await queryClient.invalidateQueries({ queryKey: conversationsKey });
+      }
+
       for (const item of pendingAttachments) {
         // Sequential, not parallel: message order in the thread must match send order.
-        await sendAttachmentMessage(item);
+        await sendAttachmentMessage(conversationId, item);
       }
       pendingAttachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setPendingAttachments([]);
 
-      if (value) sendTextMessage(value);
+      if (value) await sendTextMessage(conversationId, value);
 
       setDraft('');
       setReplyingTo(null);
+      setActiveThreadId(conversationId);
+      setPendingTargetUserId(null);
     } catch (error) {
       toast(error?.uploadMessage || error?.message || "couldn't send that. try again.");
     } finally {
@@ -411,6 +517,10 @@ export function MessagesScreen() {
           : isTablet
             ? `${tabletSidebar}px minmax(40px, 1fr)`
             : '1fr',
+        // Explicit, not auto: an auto row's track size can end up based on its content rather
+        // than the container's own (definite) height, which is what let the message list and
+        // the page itself both grow taller than the viewport and scroll independently.
+        gridTemplateRows: '1fr',
         paddingTop: viewport === 'mobile' ? (threadOpen ? 0 : 56) : 0,
         width: '100%',
         maxWidth: '100%',
@@ -428,7 +538,6 @@ export function MessagesScreen() {
           filteredThreads={filteredThreads}
           activeThreadId={activeThreadId}
           selectThread={selectThread}
-          handleCompose={handleCompose}
           viewport={viewport}
           onMarkRead={(threadId) => markRead.mutate(threadId)}
           onMarkUnread={(threadId) => markUnread.mutate(threadId)}
@@ -453,7 +562,7 @@ export function MessagesScreen() {
           isDesktop={isDesktop}
           isTablet={isTablet}
           scrollerRef={scrollerRef}
-          setPreviewItem={setPreviewItem}
+          openPreview={openPreview}
           handleDeleteToggle={handleDeleteToggle}
           replyingTo={replyingTo}
           setReplyingTo={setReplyingTo}
@@ -495,7 +604,7 @@ export function MessagesScreen() {
             <ConversationInfoPanel
               activeThread={activeThread}
               currentUserId={currentUserId}
-              setPreviewItem={setPreviewItem}
+              openPreview={openPreview}
               mobileOverlay
               onClose={() => setInfoOpen(false)}
             />
@@ -503,62 +612,12 @@ export function MessagesScreen() {
         </div>
       ) : null}
 
-      {composing ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="new message"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 2147483400,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-        >
-          <div
-            onClick={() => setComposing(false)}
-            style={{ position: 'absolute', inset: 0, background: v.scrim }}
-          />
-          <div
-            style={{
-              position: 'relative',
-              width: 340,
-              maxWidth: '100%',
-              background: v.base,
-              borderRadius: 16,
-              padding: 20,
-              boxShadow: '0 20px 60px rgba(26,24,22,0.26)',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: v.fontDisplay,
-                fontWeight: 700,
-                fontSize: 16,
-                color: v.ink,
-                marginBottom: 12,
-              }}
-            >
-              new message
-            </div>
-            <PersonPicker
-              excludeIds={threads.map((thread) => thread.counterpartId).filter(Boolean)}
-              pending={startConversation.isPending}
-              onPick={(userId) => startConversation.mutate(userId)}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {previewItem ? (
+      {previewGallery ? (
         // Clicking the scrim closes the viewer; clicking the media itself must not, so the media
         // element stops the click from reaching this handler. No card, no rounded corners, no
         // close button - the raw image or video at its own scale is the whole interface.
         <div
-          onClick={() => setPreviewItem(null)}
+          onClick={() => setPreviewGallery(null)}
           style={{
             position: 'fixed',
             inset: 0,
@@ -570,42 +629,101 @@ export function MessagesScreen() {
             padding: 24,
           }}
         >
-          {previewItem.cdnUrl ? (
-            (previewItem.mediaType || '').toUpperCase() === 'VIDEO' ? (
-              <video
-                src={previewItem.cdnUrl}
-                controls
-                autoPlay
-                onClick={(event) => event.stopPropagation()}
-                style={{ maxWidth: '92vw', maxHeight: '92vh', display: 'block' }}
-              />
-            ) : (
-              <img
-                src={previewItem.cdnUrl}
-                alt=""
-                onClick={(event) => event.stopPropagation()}
-                style={{ maxWidth: '92vw', maxHeight: '92vh', display: 'block' }}
-              />
-            )
-          ) : (
-            <div
-              onClick={(event) => event.stopPropagation()}
-              style={{
-                width: 'min(420px, 100%)',
-                background: v.base,
-                border: `1px solid ${v.border}`,
-                padding: 18,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 14,
-              }}
-            >
-              <MediaPlaceholder item={previewItem} large />
-              <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>
-                {previewItem.title || previewItem.label}
-              </div>
-            </div>
-          )}
+          {(() => {
+            const { items, index } = previewGallery;
+            const current = items[index];
+            const hasPrev = index > 0;
+            const hasNext = index < items.length - 1;
+            const go = (nextIndex) =>
+              setPreviewGallery((gallery) => (gallery ? { ...gallery, index: nextIndex } : null));
+
+            return (
+              <>
+                {hasPrev ? (
+                  <button
+                    type="button"
+                    aria-label="previous item"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      go(index - 1);
+                    }}
+                    style={lightboxArrowStyle('left')}
+                  >
+                    <LxIcon name="chevronLeft" size={18} color="#1c1a17" />
+                  </button>
+                ) : null}
+                {current.cdnUrl ? (
+                  (current.mediaType || '').toUpperCase() === 'VIDEO' ? (
+                    <video
+                      key={current.mediaAssetId || current.cdnUrl}
+                      src={current.cdnUrl}
+                      controls
+                      autoPlay
+                      onClick={(event) => event.stopPropagation()}
+                      style={{ maxWidth: '92vw', maxHeight: '92vh', display: 'block' }}
+                    />
+                  ) : (
+                    <img
+                      key={current.mediaAssetId || current.cdnUrl}
+                      src={current.cdnUrl}
+                      alt=""
+                      onClick={(event) => event.stopPropagation()}
+                      style={{ maxWidth: '92vw', maxHeight: '92vh', display: 'block' }}
+                    />
+                  )
+                ) : (
+                  <div
+                    onClick={(event) => event.stopPropagation()}
+                    style={{
+                      width: 'min(420px, 100%)',
+                      background: v.base,
+                      border: `1px solid ${v.border}`,
+                      padding: 18,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 14,
+                    }}
+                  >
+                    <MediaPlaceholder item={current} large />
+                    <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>
+                      {current.title || current.label}
+                    </div>
+                  </div>
+                )}
+                {hasNext ? (
+                  <button
+                    type="button"
+                    aria-label="next item"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      go(index + 1);
+                    }}
+                    style={lightboxArrowStyle('right')}
+                  >
+                    <LxIcon name="chevronRight" size={18} color="#1c1a17" />
+                  </button>
+                ) : null}
+                {items.length > 1 ? (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 24,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(255,255,255,0.9)',
+                      borderRadius: 999,
+                      padding: '3px 9px',
+                      fontFamily: v.fontMono,
+                      fontSize: 11,
+                      color: '#1c1a17',
+                    }}
+                  >
+                    {index + 1}/{items.length}
+                  </div>
+                ) : null}
+              </>
+            );
+          })()}
         </div>
       ) : null}
 
