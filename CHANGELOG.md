@@ -7,10 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- The conversation list's "..." menu now shows a dividing line between everyday actions and destructive ones (report, block, delete).
 - The message lightbox now crossfades between photos and videos when stepping through a multi-item album instead of cutting to the next one instantly.
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
 ### Fixed
+- A conversation row's content no longer sits shifted toward the top of the row with empty space below it.
 - Photos and videos opened from a chat no longer render larger than the screen and get cut off. The app's UI-scale setting was inflating anything sized in viewport units past the visible screen.
 - A multi-photo album you send now lines up on your own side of the conversation instead of always sitting flush against the left edge.
 - Pages other than messages no longer become spuriously scrollable, which was also the root cause of the side rail seeming to glitch or get pushed down after hovering it and moving toward a lower tab.

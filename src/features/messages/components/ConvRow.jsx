@@ -61,6 +61,7 @@ export function ConvRow({
           icon: 'trash',
           label: 'Delete chat',
           tone: 'danger',
+          separator: true,
           onClick: () => onDelete?.(),
         },
         onReport
@@ -205,7 +206,10 @@ export function ConvRow({
           </button>
         ) : null}
       </div>
-      <div onClick={(event) => event.stopPropagation()}>
+      {/* display: contents keeps this wrapper out of the row's own grid layout - otherwise it
+          becomes an unaccounted-for 4th item against a 3-column grid, auto-flowing into an
+          implicit second row that adds a full row-gap of dead space below the row's content. */}
+      <div style={{ display: 'contents' }} onClick={(event) => event.stopPropagation()}>
         <LxDropdownMenu
           anchorRef={menuButtonRef}
           open={menuOpen}
