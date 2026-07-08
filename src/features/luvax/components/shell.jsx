@@ -355,7 +355,10 @@ export function LxRightRail({ compact = false }) {
         position: 'sticky',
         top: 0,
         alignSelf: 'flex-start',
-        maxHeight: '100vh',
+        // vh is computed against the true viewport, unadjusted for the root's zoom scale, so a
+        // raw 100vh here rendered taller than the real viewport and could push part of the rail
+        // out of view. Dividing by --lx-scale cancels the zoom multiplication back out.
+        maxHeight: 'calc(100vh / var(--lx-scale))',
         overflowY: 'auto',
       }}
     >
@@ -570,9 +573,10 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
   if (vp === 'desktop') {
     const LEFT_W = 280;
     return (
-      <div
-        style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
-      >
+      // No min-height: 100vh here - it would carry the same zoom-vs-vh mismatch <main> below
+      // has to correct for, and nothing in this row needs it: the rail is fixed-positioned and
+      // <main> establishes the page's real height on its own.
+      <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxSideRail active={screen} navigate={navigate} />
         <div
           style={{
@@ -596,7 +600,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
               minWidth: 0,
               // No column rules. The feed is one continuous surface on the page
               // background, so the borders that boxed the centre column are gone.
-              minHeight: '100vh',
+              minHeight: 'calc(100vh / var(--lx-scale))',
               display: 'flex',
               flexDirection: 'column',
               background: v.base,
@@ -620,9 +624,8 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
     const tabletShellWidth = screen === 'compose' ? 1090 : isWideSettingsPane ? 1010 : 910;
     const tabletRightSpacer = isWideSettingsPane ? LEFT_W : 206;
     return (
-      <div
-        style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
-      >
+      // No min-height: 100vh here - see the desktop branch above for why.
+      <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxSideRail active={screen} navigate={navigate} />
         <div
           style={{
@@ -644,7 +647,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
               flexShrink: 0,
               minWidth: 0,
               // Column rules removed to match the desktop feed's continuous surface.
-              minHeight: '100vh',
+              minHeight: 'calc(100vh / var(--lx-scale))',
               display: 'flex',
               flexDirection: 'column',
               background: v.base,
@@ -664,8 +667,15 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
 
   // mobile
   return (
+    // <main> below is flex: 1, which needs a definite parent height to distribute against, so
+    // (unlike the desktop/tablet branches) this wrapper keeps a real min-height - zoom-corrected.
     <div
-      style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
+      style={{
+        minHeight: 'calc(100vh / var(--lx-scale))',
+        background: v.base,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
       <LxAppBar screen={screen} navigate={navigate} />
       <main

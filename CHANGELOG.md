@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - Photos and videos opened from a chat no longer render larger than the screen and get cut off. The app's UI-scale setting was inflating anything sized in viewport units past the visible screen.
 - A multi-photo album you send now lines up on your own side of the conversation instead of always sitting flush against the left edge.
+- Pages other than messages no longer become spuriously scrollable, which was also the root cause of the side rail seeming to glitch or get pushed down after hovering it and moving toward a lower tab.
 
 ### Security
 - Patched high-severity advisories in the routing, HTTP client, and build tooling dependencies. The routing advisories included an open redirect reachable from ordinary link and navigation handling.

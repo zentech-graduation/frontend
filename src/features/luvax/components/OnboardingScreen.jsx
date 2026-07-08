@@ -365,7 +365,9 @@ export function OnboardingScreen() {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        // Zoom-corrected: see shell.jsx for why a raw 100vh renders taller than the real
+        // viewport inside this app's root-scaled shell.
+        minHeight: 'calc(100vh / var(--lx-scale))',
         background: v.base,
         display: 'flex',
         flexDirection: 'column',
