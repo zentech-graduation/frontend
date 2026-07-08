@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A multi-photo album you send now lines up on your own side of the conversation instead of always sitting flush against the left edge.
 - Pages other than messages no longer become spuriously scrollable, which was also the root cause of the side rail seeming to glitch or get pushed down after hovering it and moving toward a lower tab.
 
+### Changed
+- Consecutive messages from the same person now read as one continuous shape: the outer end of a run of bubbles stays rounded while the corners facing a neighboring message in the run flatten, instead of every bubble having identical rounded corners.
+
 ### Security
 - Patched high-severity advisories in the routing, HTTP client, and build tooling dependencies. The routing advisories included an open redirect reachable from ordinary link and navigation handling.
 - The real-time connection now authenticates with a single-use ticket instead of carrying the access token in the address, which kept a valid credential in server access logs long after it expired.

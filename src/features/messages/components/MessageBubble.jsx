@@ -3,6 +3,7 @@ import { v } from '@/config/tokens';
 import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { copyToClipboard } from '@/utils/helpers';
+import { bubbleCornerRadius } from '../utils/bubbleShape';
 import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
 
@@ -132,7 +133,17 @@ export function MessageBubble({
           : isMobile
             ? 'min(100%, 224px)'
             : 300,
-    borderRadius: 15,
+    // Deleted (tombstone) bubbles stay uniformly rounded - they are never part of a same-sender
+    // run's visual continuity, just a standalone notice - everything else follows the bubble's
+    // position within its run.
+    borderRadius:
+      message.kind === 'deleted'
+        ? 15
+        : bubbleCornerRadius({
+            isMine,
+            isFirstInRun: message.isFirstInRun,
+            isLastInRun: message.isLastInRun,
+          }),
     padding: message.kind === 'deleted' ? '9px 13px' : '9px 13px',
     fontFamily: v.fontBody,
     fontSize: 13.5,

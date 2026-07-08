@@ -315,6 +315,15 @@ describe('toThread', () => {
         ['message', 'm2', false],
         ['message', 'm3', true],
       ]);
+      expect(
+        thread.rows
+          .filter((row) => row.rowType === 'message')
+          .map((row) => [row.isFirstInRun, row.isLastInRun])
+      ).toEqual([
+        [true, false],
+        [false, false],
+        [false, true],
+      ]);
     });
 
     it('breaks the run and inserts a new separator once the gap passes ten minutes', () => {
@@ -382,6 +391,32 @@ describe('toThread', () => {
       const album = thread.rows.find((row) => row.rowType === 'album');
       expect(album.items.map((item) => item.id)).toEqual(['m1', 'm2', 'm3']);
       expect(album.from).toBe('them');
+      // Solo row in its cluster - both ends of the run - same as a standalone bubble.
+      expect(album.isFirstInRun).toBe(true);
+      expect(album.isLastInRun).toBe(true);
+    });
+
+    it('marks an album that follows a text bubble in the same run as not first', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [
+        mediaMessage({ id: 'm3', senderId: OTHER, createdAt: '2026-08-18T10:00:02Z' }),
+        mediaMessage({ id: 'm2', senderId: OTHER, createdAt: '2026-08-18T10:00:01Z' }),
+        message({
+          id: 'm1',
+          senderId: OTHER,
+          content: 'check these out',
+          createdAt: '2026-08-18T10:00:00Z',
+        }),
+      ];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.rows.map((row) => row.rowType)).toEqual(['separator', 'message', 'album']);
+      const textRow = thread.rows.find((row) => row.rowType === 'message');
+      const album = thread.rows.find((row) => row.rowType === 'album');
+      expect(textRow.isFirstInRun).toBe(true);
+      expect(textRow.isLastInRun).toBe(false);
+      expect(album.isFirstInRun).toBe(false);
+      expect(album.isLastInRun).toBe(true);
     });
 
     it('leaves a lone photo message as a plain file row, not a one-item album', () => {

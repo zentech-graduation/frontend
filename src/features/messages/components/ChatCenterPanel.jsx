@@ -211,6 +211,9 @@ export function ChatCenterPanel({
                   {avatarSlot}
                   <MessageAlbum
                     items={row.items}
+                    isMine={isMine}
+                    isFirstInRun={row.isFirstInRun}
+                    isLastInRun={row.isLastInRun}
                     onOpenViewer={(items, itemIndex) =>
                       openPreview?.(
                         items.map((item) => item.media || { label: item.text }),

@@ -242,6 +242,10 @@ const toRows = (messages) => {
           senderAvatarUrl: current.senderAvatarUrl,
           items: run,
           showAvatar: endsRun && current.from === 'them',
+          // Position within the cluster (separator-to-separator span), for the corner-shape
+          // treatment below - an album is one visual block in that cluster, same as a bubble.
+          isFirstInRun: startsCluster,
+          isLastInRun: endsRun,
         });
         index = end;
         continue;
@@ -250,7 +254,13 @@ const toRows = (messages) => {
 
     const next = messages[index + 1];
     const endsRun = !inSameRun(current, next);
-    rows.push({ rowType: 'message', ...current, showAvatar: endsRun && current.from === 'them' });
+    rows.push({
+      rowType: 'message',
+      ...current,
+      showAvatar: endsRun && current.from === 'them',
+      isFirstInRun: startsCluster,
+      isLastInRun: endsRun,
+    });
     index++;
   }
 
