@@ -315,9 +315,11 @@ export function SettingsScreen() {
           onClick={() => {}}
         />
 
-        {/* Danger */}
+        {/* Danger - set apart from the ordinary settings above by a rule, not just extra
+            padding, so sign-out and delete-account don't read as one more row in the same list. */}
+        <div style={{ margin: '24px 16px 0', borderTop: `1px solid ${v.border}` }} />
         <div
-          style={{ padding: '32px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}
+          style={{ padding: '20px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}
         >
           <button
             onClick={handleSignOut}

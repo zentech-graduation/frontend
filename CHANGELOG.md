@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - The message lightbox now crossfades between photos and videos when stepping through a multi-item album instead of cutting to the next one instantly.
+- Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
 ### Fixed
 - Photos and videos opened from a chat no longer render larger than the screen and get cut off. The app's UI-scale setting was inflating anything sized in viewport units past the visible screen.
