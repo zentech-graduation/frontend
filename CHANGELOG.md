@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Consecutive messages from the same person now read as one continuous shape: the outer end of a run of bubbles stays rounded while the corners facing a neighboring message in the run flatten, instead of every bubble having identical rounded corners.
+- The "pin chat" icon is now a thumbtack instead of a map-marker shape.
 
 ### Security
 - Patched high-severity advisories in the routing, HTTP client, and build tooling dependencies. The routing advisories included an open redirect reachable from ordinary link and navigation handling.
