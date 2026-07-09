@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - The bio field on the edit-profile screen now allows the full 500 characters the server accepts, instead of cutting off at 160.
+- The message nickname prompt and a post's comment length limit now read from the same shared constant the rest of the app uses, instead of separate hardcoded numbers that happened to match it.
 - A conversation row's content no longer sits shifted toward the top of the row with empty space below it.
 - Hovering the side rail and moving down to click a lower tab no longer occasionally collapses the rail out from under the cursor before the click lands.
 - Photos and videos opened from a chat no longer render larger than the screen and get cut off. The app's UI-scale setting was inflating anything sized in viewport units past the visible screen.

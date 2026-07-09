@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
+import { CHAR_LIMITS } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
@@ -882,7 +883,7 @@ export function MessagesScreen() {
                   if (event.key === 'Enter') handleSaveNickname();
                 }}
                 placeholder="only you see this"
-                maxLength={50}
+                maxLength={CHAR_LIMITS.nickname}
                 style={{
                   width: '100%',
                   height: 38,
