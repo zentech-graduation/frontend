@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { routeTo } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
+import { LxToggle } from '@/components/ui/lx-toggle';
 import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
 
@@ -19,6 +20,10 @@ const SECTION_LABEL = {
  * Every conversation is between exactly two people, so this shows the other person and what has
  * been shared between them. The group name, member list and membership actions that used to live
  * here went with group chat itself.
+ *
+ * Only the shared-media section scrolls - the header and avatar block stay in place above it, and
+ * the action list stays in place below it, the same way the conversation row's own "..." menu
+ * groups its safe actions above a separator from its dangerous ones.
  */
 export function ConversationInfoPanel({
   activeThread,
@@ -27,6 +32,12 @@ export function ConversationInfoPanel({
   compact = false,
   mobileOverlay = false,
   onClose,
+  onMute,
+  onUnmute,
+  onRename,
+  onReport,
+  onBlock,
+  onDelete,
 }) {
   const navigate = useNavigate();
 
@@ -35,6 +46,20 @@ export function ConversationInfoPanel({
   const participants = activeThread.participants || [];
   const media = activeThread.media || [];
   const counterpart = participants.find((participant) => participant.userId !== currentUserId);
+
+  const actions = [
+    onRename ? { id: 'rename', icon: 'edit', label: 'Set nickname', onClick: onRename } : null,
+    onReport
+      ? { id: 'report', icon: 'flag', label: 'Report', danger: true, onClick: onReport }
+      : null,
+    onBlock ? { id: 'block', icon: 'ban', label: 'Block', danger: true, onClick: onBlock } : null,
+    onDelete
+      ? { id: 'delete', icon: 'trash', label: 'Delete chat', danger: true, onClick: onDelete }
+      : null,
+  ].filter(Boolean);
+  // A single divider marks where the danger group starts, whichever action happens to be first.
+  const firstDangerIndex = actions.findIndex((action) => action.danger);
+  if (firstDangerIndex > 0) actions[firstDangerIndex].separator = true;
 
   const panel = (
     <aside
@@ -45,7 +70,6 @@ export function ConversationInfoPanel({
         flexDirection: 'column',
         background: v.base,
         borderLeft: mobileOverlay ? 'none' : `1px solid ${v.borderSubtle}`,
-        overflowY: 'auto',
       }}
     >
       {mobileOverlay ? (
@@ -61,33 +85,38 @@ export function ConversationInfoPanel({
           }}
         >
           <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink }}>
-            chat info
+            Mute notification
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="close chat info"
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              border: 'none',
-              background: v.surface,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            <LxIcon name="close" size={14} color={v.ink3} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <LxToggle
+              on={Boolean(activeThread.muted)}
+              onChange={(next) => (next ? onMute?.() : onUnmute?.())}
+            />
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="close chat info"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                border: 'none',
+                background: v.surface,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              <LxIcon name="close" size={14} color={v.ink3} />
+            </button>
+          </div>
         </div>
       ) : null}
 
       <div
         style={{
-          borderBottom: `1px solid ${v.border}`,
           padding: mobileOverlay ? '24px 22px 22px' : compact ? '22px 14px 18px' : '28px 22px',
           display: 'flex',
           flexDirection: 'column',
@@ -133,37 +162,61 @@ export function ConversationInfoPanel({
         </button>
       </div>
 
-      <div
-        style={{
-          padding: mobileOverlay ? '16px 20px 22px' : compact ? '16px 14px' : '20px 22px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: mobileOverlay ? 14 : compact ? 12 : 16,
-        }}
-      >
-        <div style={SECTION_LABEL}>shared media</div>
-        {media.length ? (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: mobileOverlay ? 8 : compact ? 5 : 6,
-            }}
-          >
-            {media.map((item, index) => (
-              <MediaPlaceholder
-                key={item.id}
-                item={item}
-                onClick={() => openPreview?.(media, index)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
-            no attachments in the messages loaded so far
-          </div>
-        )}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div
+          style={{
+            padding: mobileOverlay ? '16px 20px 22px' : compact ? '16px 14px' : '20px 22px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: mobileOverlay ? 14 : compact ? 12 : 16,
+          }}
+        >
+          <div style={SECTION_LABEL}>shared media</div>
+          {media.length ? (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: mobileOverlay ? 8 : compact ? 5 : 6,
+              }}
+            >
+              {media.map((item, index) => (
+                <MediaPlaceholder
+                  key={item.id}
+                  item={item}
+                  onClick={() => openPreview?.(media, index)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+              no attachments in the messages loaded so far
+            </div>
+          )}
+        </div>
       </div>
+
+      {actions.length ? (
+        <div
+          style={{
+            borderTop: `1px solid ${v.borderSubtle}`,
+            padding: 7,
+            flexShrink: 0,
+          }}
+        >
+          {actions.map((action) => (
+            <button
+              key={action.id}
+              type="button"
+              onClick={action.onClick}
+              className={`lx-popover-item ${action.danger ? 'is-danger' : ''} ${action.separator ? 'has-separator' : ''}`}
+            >
+              <LxIcon name={action.icon} size={16} color={action.danger ? v.error : v.ink2} />
+              <span>{action.label}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
     </aside>
   );
 

@@ -615,6 +615,12 @@ export function MessagesScreen() {
               openPreview={openPreview}
               mobileOverlay
               onClose={() => setInfoOpen(false)}
+              onMute={() => muteConversation.mutate(activeThreadId)}
+              onUnmute={() => unmuteConversation.mutate(activeThreadId)}
+              onRename={activeThread.counterpartId ? () => handleRenameThread(activeThread) : null}
+              onReport={activeThread.counterpartId ? () => handleReportThread(activeThread) : null}
+              onBlock={activeThread.counterpartId ? () => setBlockTarget(activeThread) : null}
+              onDelete={() => setDeleteThreadTarget(activeThread)}
             />
           </div>
         </div>

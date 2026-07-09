@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- The chat info panel now has a "set nickname / report / block / delete chat" action list at the bottom, matching what was already available from the conversation list's "..." menu.
 - The conversation list's "..." menu now shows a dividing line between everyday actions and destructive ones (report, block, delete).
 - The message lightbox now crossfades between photos and videos when stepping through a multi-item album instead of cutting to the next one instantly.
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
@@ -19,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pages other than messages no longer become spuriously scrollable, which was also the root cause of the side rail seeming to glitch or get pushed down after hovering it and moving toward a lower tab.
 
 ### Changed
+- The chat info panel's header now reads "Mute notification" with a toggle switch instead of a plain "chat info" title, and the divider between the avatar and the shared-media section is gone for a more seamless look. Scrolling the panel now only scrolls the shared-media list; the header and action list stay in place.
 - Side rail icons are slightly larger and now sit centered in the collapsed rail instead of a little left of center.
 - Consecutive messages from the same person now read as one continuous shape: the outer end of a run of bubbles stays rounded while the corners facing a neighboring message in the run flatten, instead of every bubble having identical rounded corners.
 - The "pin chat" icon is now a thumbtack instead of a map-marker shape.
