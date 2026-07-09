@@ -13,11 +13,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - A conversation row's content no longer sits shifted toward the top of the row with empty space below it.
+- Hovering the side rail and moving down to click a lower tab no longer occasionally collapses the rail out from under the cursor before the click lands.
 - Photos and videos opened from a chat no longer render larger than the screen and get cut off. The app's UI-scale setting was inflating anything sized in viewport units past the visible screen.
 - A multi-photo album you send now lines up on your own side of the conversation instead of always sitting flush against the left edge.
 - Pages other than messages no longer become spuriously scrollable, which was also the root cause of the side rail seeming to glitch or get pushed down after hovering it and moving toward a lower tab.
 
 ### Changed
+- Side rail icons are slightly larger and now sit centered in the collapsed rail instead of a little left of center.
 - Consecutive messages from the same person now read as one continuous shape: the outer end of a run of bubbles stays rounded while the corners facing a neighboring message in the run flatten, instead of every bubble having identical rounded corners.
 - The "pin chat" icon is now a thumbtack instead of a map-marker shape.
 

@@ -406,10 +406,12 @@ function LxMark({ onClick }) {
 
 // The icon column sits at a fixed offset from the rail's left edge in both
 // states, so it never shifts horizontally when the rail expands - only the
-// label beside it grows in.
+// label beside it grows in. The inset centers a 20px icon in the collapsed
+// rail's 60px width.
 export const RAIL_COLLAPSED_W = 60;
 const RAIL_EXPANDED_W = 196;
-const RAIL_ICON_INSET = 13;
+const RAIL_ICON_INSET = 20;
+const RAIL_ICON_SIZE = 20;
 
 // ─── Left Sub-Nav Rail (desktop/tablet) ────────────────────────────────────
 // The primary nav on desktop and tablet: it is always on screen rather than a
@@ -490,8 +492,12 @@ export function LxSideRail({ active, navigate, visible = true }) {
         transform: visible ? 'translateX(0)' : 'translateX(-100%)',
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? 'auto' : 'none',
+        // width is deliberately not transitioned: it is also this element's own hover hit-test
+        // box, and animating it let a real mouse's path cross a not-yet-grown edge mid-transition,
+        // firing a spurious mouseleave that collapsed the rail out from under the cursor. Snapping
+        // it instantly removes that race; the label still reveals smoothly via its own transition.
         transition:
-          'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out), width 180ms var(--ease-out)',
+          'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out)',
       }}
     >
       <div style={{ paddingLeft: RAIL_ICON_INSET, flexShrink: 0 }}>
@@ -521,11 +527,11 @@ export function LxSideRail({ active, navigate, visible = true }) {
             >
               <span style={iconWrapStyle}>
                 {isProfile ? (
-                  <LxAvatar size={20} src={currentUser?.avatarUrl} ring={isActive} />
+                  <LxAvatar size={RAIL_ICON_SIZE} src={currentUser?.avatarUrl} ring={isActive} />
                 ) : (
                   <LxIcon
                     name={t.icon}
-                    size={18}
+                    size={RAIL_ICON_SIZE}
                     filled={isActive}
                     color={isActive ? v.accent : v.ink3}
                     stroke={isActive ? 1.7 : 1.5}
@@ -558,7 +564,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
         style={rowStyle(false)}
       >
         <span style={iconWrapStyle}>
-          <LxIcon name="settings" size={18} color={v.ink3} stroke={1.5} />
+          <LxIcon name="settings" size={RAIL_ICON_SIZE} color={v.ink3} stroke={1.5} />
         </span>
         <span style={labelStyle(false)}>settings</span>
       </button>
