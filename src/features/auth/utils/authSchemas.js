@@ -1,10 +1,14 @@
 import { z } from 'zod';
+import { usernameField, displayNameField } from '@/utils/validationFields';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
 // Every rule below mirrors a jakarta.validation annotation on the matching
 // backend request record. The backend is the source of truth: this schema must
 // not reject a value the server accepts, nor accept one the server rejects.
+// `usernameField` and `displayNameField` are shared with profile editing (same
+// backend constraints on both RegisterRequest and UpdateProfileRequest), so
+// they live in the cross-feature utils module instead of being defined here.
 
 const emailField = z
   .string()
@@ -67,23 +71,6 @@ const passwordField = z.string().superRefine((value, ctx) => {
     addIssue('password must contain at least one digit or special character.');
   }
 });
-
-// Backend RegisterRequest.username: @NotBlank @Size(min = 3, max = 30)
-// @Pattern(^[a-zA-Z0-9_.]+$). Dots are permitted.
-const usernameField = z
-  .string()
-  .trim()
-  .min(3, 'username must be at least 3 characters.')
-  .max(30, 'username must be 30 characters or fewer.')
-  .regex(/^[a-zA-Z0-9_.]+$/, 'username may only contain letters, digits, underscores and dots.');
-
-// Backend RegisterRequest.displayName: @Size(max = 100), optional.
-const displayNameField = z
-  .string()
-  .trim()
-  .max(100, 'display name must be 100 characters or fewer.')
-  .optional()
-  .or(z.literal(''));
 
 // One-time tokens arrive from an emailed link and are opaque to the client, so
 // the only client-side rule is that one is present.

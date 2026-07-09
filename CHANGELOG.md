@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Extracted the username and display-name validation rules shared by registration and profile editing into a common module, so both stay in sync with the backend by construction instead of by convention.
+
 ### Added
 - The chat info panel now has a "set nickname / report / block / delete chat" action list at the bottom, matching what was already available from the conversation list's "..." menu.
 - The conversation list's "..." menu now shows a dividing line between everyday actions and destructive ones (report, block, delete).
@@ -13,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
 ### Fixed
+- The bio field on the edit-profile screen now allows the full 500 characters the server accepts, instead of cutting off at 160.
 - A conversation row's content no longer sits shifted toward the top of the row with empty space below it.
 - Hovering the side rail and moving down to click a lower tab no longer occasionally collapses the rail out from under the cursor before the click lands.
 - Photos and videos opened from a chat no longer render larger than the screen and get cut off. The app's UI-scale setting was inflating anything sized in viewport units past the visible screen.
@@ -20,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Pages other than messages no longer become spuriously scrollable, which was also the root cause of the side rail seeming to glitch or get pushed down after hovering it and moving toward a lower tab.
 
 ### Changed
+- Editing your profile now validates the display name, username, and bio against the same rules the server enforces before saving, and points out which field needs fixing instead of only reporting a server error after the fact.
 - The chat info panel's header now reads "Mute notification" with a toggle switch instead of a plain "chat info" title, and the divider between the avatar and the shared-media section is gone for a more seamless look. Scrolling the panel now only scrolls the shared-media list; the header and action list stay in place.
 - Side rail icons are slightly larger and now sit centered in the collapsed rail instead of a little left of center.
 - Consecutive messages from the same person now read as one continuous shape: the outer end of a run of bubbles stays rounded while the corners facing a neighboring message in the run flatten, instead of every bubble having identical rounded corners.
