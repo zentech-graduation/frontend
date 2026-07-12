@@ -14,10 +14,25 @@ import { FollowersScreen } from './components/FollowersScreen';
 import { FollowingScreen } from './components/FollowingScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { StoryViewScreen, StoryComposerScreen } from './components/StoryScreens';
+import { EditProfileScreen } from './components/EditProfileScreen';
+import { ChangePasswordScreen } from './components/ChangePasswordScreen';
 
 // ─── Luvax App Root ────────────────────────────────────────────────────────
 export function LuvaxApp() {
-  const [tweaks, setTweakState] = useState(TWEAK_DEFAULTS);
+  const [tweaks, setTweakState] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return TWEAK_DEFAULTS;
+    }
+
+    if (localStorage.getItem('lxDarkManual') !== null) {
+      return TWEAK_DEFAULTS;
+    }
+
+    return {
+      ...TWEAK_DEFAULTS,
+      dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    };
+  });
   const [screen, setScreen] = useState(() => {
     try {
       const saved = sessionStorage.getItem('lx_screen');
@@ -38,6 +53,31 @@ export function LuvaxApp() {
       ? keyOrEdits : { [keyOrEdits]: val };
     setTweakState(prev => ({ ...prev, ...edits }));
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined;
+    }
+
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    if (localStorage.getItem('lxDarkManual') === null) {
+      setTweak('dark', media.matches);
+    }
+
+    const handleChange = (event) => {
+      if (localStorage.getItem('lxDarkManual') === null) {
+        setTweak('dark', event.matches);
+      }
+    };
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', handleChange);
+      return () => media.removeEventListener('change', handleChange);
+    }
+
+    media.addListener(handleChange);
+    return () => media.removeListener(handleChange);
+  }, []);
 
   const navigate = (to, p = {}) => {
     setHistory(h => screen !== to ? [...h, screen] : h);
@@ -66,7 +106,7 @@ export function LuvaxApp() {
     root.style.setProperty('--font-display', FONT_MAP[tweaks.font] || FONT_MAP.syne);
   }, [tweaks.dark, tweaks.accent, tweaks.font, tweaks.density]);
 
-  const screenProps = { navigate, params, tweaks, viewport };
+  const screenProps = { navigate, params, tweaks, setTweak, viewport };
 
   if (screen === 'onboarding') {
     return <OnboardingScreen {...screenProps} />;
@@ -80,6 +120,8 @@ export function LuvaxApp() {
     profile:       <ProfileScreen       {...screenProps} />,
     notifications: <NotificationsScreen {...screenProps} />,
     settings:      <SettingsScreen      {...screenProps} />,
+    'edit-profile': <EditProfileScreen  {...screenProps} />,
+    'change-password': <ChangePasswordScreen {...screenProps} />,
     blocked:       <BlockedUsersScreen  {...screenProps} />,
     followers:     <FollowersScreen     {...screenProps} />,
     following:     <FollowingScreen     {...screenProps} />,

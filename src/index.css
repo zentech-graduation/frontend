@@ -36,6 +36,40 @@
   --lx-warning-dim:     #F5EED8;
   --lx-warning-text:    #A88A3A;
 
+  /* Utility colors */
+  --lx-white:           #FFFFFF;
+  --lx-white-75:        rgba(255, 255, 255, 0.75);
+  --lx-white-70:        rgba(255, 255, 255, 0.7);
+  --lx-white-65:        rgba(255, 255, 255, 0.65);
+  --lx-white-45:        rgba(255, 255, 255, 0.45);
+  --lx-white-40:        rgba(255, 255, 255, 0.4);
+  --lx-white-35:        rgba(255, 255, 255, 0.35);
+  --lx-white-30:        rgba(255, 255, 255, 0.3);
+  --lx-white-25:        rgba(255, 255, 255, 0.25);
+  --lx-white-18:        rgba(255, 255, 255, 0.18);
+  --lx-white-12:        rgba(255, 255, 255, 0.12);
+  --lx-white-08:        rgba(255, 255, 255, 0.08);
+  --lx-white-04:        rgba(255, 255, 255, 0.04);
+  --lx-black:           #000000;
+  --lx-black-78:        rgba(15, 13, 11, 0.78);
+  --lx-black-55:        rgba(0, 0, 0, 0.55);
+  --lx-black-50:        rgba(0, 0, 0, 0.5);
+  --lx-black-40:        rgba(0, 0, 0, 0.4);
+  --lx-black-35:        rgba(0, 0, 0, 0.35);
+  --lx-story-surface:   #2A2622;
+  --lx-ink-shadow-18:   rgba(26, 24, 22, 0.18);
+  --lx-ink-shadow-25:   rgba(26, 24, 22, 0.25);
+  --lx-ink-shadow-12:   rgba(26, 24, 22, 0.12);
+
+  /* Avatar / social hues */
+  --lx-avatar-0:        #C8A97E;
+  --lx-avatar-1:        #7A9E7A;
+  --lx-avatar-2:        #9B7EA8;
+  --lx-avatar-3:        #7A9EB8;
+  --lx-avatar-4:        #C47168;
+  --lx-avatar-5:        #B89468;
+  --lx-avatar-6:        #5E8260;
+
   /* Glass / scrim */
   --lx-glass-bg:        rgba(249, 247, 244, 0.88);
   --lx-glass-border:    rgba(255, 255, 255, 0.4);
@@ -68,6 +102,7 @@
 /* ─── DARK THEME ─────────────────────────────────────────────────────── */
 
 html[data-theme="dark"] {
+  color-scheme: dark;
   --lx-base:            #1A1816;
   --lx-surface:         #25211D;
   --lx-surface-raised:  #2F2A25;
@@ -95,6 +130,36 @@ html[data-theme="dark"] {
   --lx-glass-bg:        rgba(26, 24, 22, 0.85);
   --lx-glass-border:    rgba(255, 255, 255, 0.08);
   --lx-scrim:           rgba(0, 0, 0, 0.65);
+  --lx-white:           #FFFFFF;
+  --lx-white-75:        rgba(255, 255, 255, 0.75);
+  --lx-white-70:        rgba(255, 255, 255, 0.7);
+  --lx-white-65:        rgba(255, 255, 255, 0.65);
+  --lx-white-45:        rgba(255, 255, 255, 0.45);
+  --lx-white-40:        rgba(255, 255, 255, 0.4);
+  --lx-white-35:        rgba(255, 255, 255, 0.35);
+  --lx-white-30:        rgba(255, 255, 255, 0.3);
+  --lx-white-25:        rgba(255, 255, 255, 0.25);
+  --lx-white-18:        rgba(255, 255, 255, 0.18);
+  --lx-white-12:        rgba(255, 255, 255, 0.12);
+  --lx-white-08:        rgba(255, 255, 255, 0.08);
+  --lx-white-04:        rgba(255, 255, 255, 0.04);
+  --lx-black:           #000000;
+  --lx-black-78:        rgba(15, 13, 11, 0.78);
+  --lx-black-55:        rgba(0, 0, 0, 0.55);
+  --lx-black-50:        rgba(0, 0, 0, 0.5);
+  --lx-black-40:        rgba(0, 0, 0, 0.4);
+  --lx-black-35:        rgba(0, 0, 0, 0.35);
+  --lx-story-surface:   #2A2622;
+  --lx-ink-shadow-18:   rgba(26, 24, 22, 0.18);
+  --lx-ink-shadow-25:   rgba(26, 24, 22, 0.25);
+  --lx-ink-shadow-12:   rgba(26, 24, 22, 0.12);
+  --lx-avatar-0:        #C8A97E;
+  --lx-avatar-1:        #7A9E7A;
+  --lx-avatar-2:        #9B7EA8;
+  --lx-avatar-3:        #7A9EB8;
+  --lx-avatar-4:        #C47168;
+  --lx-avatar-5:        #B89468;
+  --lx-avatar-6:        #5E8260;
 }
 
 /* ─── DENSITY ────────────────────────────────────────────────────────── */
@@ -119,18 +184,28 @@ body,
   min-height: 100%;
 }
 
+html {
+  background: var(--lx-base);
+  scrollbar-gutter: stable;
+  color-scheme: light;
+}
+
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top center, rgba(200, 169, 126, 0.14), transparent 28%),
-    linear-gradient(180deg, #fcfbf8 0%, var(--lx-base) 100%);
+  background: var(--lx-base);
   color: var(--lx-ink);
   font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-y: scroll;
 }
 
 body,
 button,
-input {
+input,
+textarea,
+select {
   font-family: inherit;
 }
 
@@ -140,6 +215,26 @@ a {
 
 button {
   border: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--lx-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--lx-accent-dim);
+  color: var(--lx-ink);
 }
 
 .auth-page {

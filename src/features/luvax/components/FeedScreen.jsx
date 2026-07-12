@@ -10,7 +10,7 @@ export function StoriesCarousel({ navigate }) {
   return (
     <div style={{
       display: 'flex', gap: 14, overflowX: 'auto',
-      padding: '14px 16px 16px',
+      padding: '16px 16px 14px',
       borderBottom: `1px solid ${v.border}`,
       flexShrink: 0, scrollbarWidth: 'none',
     }}>
@@ -25,7 +25,7 @@ export function StoriesCarousel({ navigate }) {
           {s.isOwn ? (
             <div style={{
               width: 54, height: 54, borderRadius: '50%',
-              background: v.surface, border: `1px dashed ${v.borderStrong}`,
+              background: v.surface, border: `1px solid ${v.borderStrong}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>

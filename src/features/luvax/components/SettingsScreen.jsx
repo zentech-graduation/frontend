@@ -17,9 +17,9 @@ function Toggle({ on, onChange }) {
     }}>
       <div style={{
         position: 'absolute', top: 2, left: on ? 18 : 2,
-        width: 18, height: 18, borderRadius: '50%', background: '#fff',
+        width: 18, height: 18, borderRadius: '50%', background: v.white,
         transition: 'left 150ms ease-out',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.18)',
+        boxShadow: `0 1px 3px ${v.shadow18}`,
       }} />
     </button>
   );
@@ -55,7 +55,7 @@ function SettingsRow({ label, sub, control, onClick }) {
 }
 
 // ─── Settings Screen ─────────────────────────────────────────────────────────
-export function SettingsScreen({ navigate }) {
+export function SettingsScreen({ navigate, tweaks, setTweak }) {
   const [s, setS] = useState({
     isPrivate: false,
     notifyLikes: true,
@@ -87,17 +87,37 @@ export function SettingsScreen({ navigate }) {
   const key = currentUser ? `lx_blocks_${currentUser.id}` : 'lx_blocks';
   const blocks = JSON.parse(localStorage.getItem(key) || '[]');
 
+  const handleDarkModeToggle = (value) => {
+    localStorage.setItem('lxDarkManual', '1');
+    if (setTweak) {
+      setTweak('dark', value);
+    }
+  };
+
   return (
     <>
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
         {/* Account */}
         <SectionHeader>account</SectionHeader>
-        <SettingsRow label="edit profile" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
-        <SettingsRow label="change password" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => {}} />
+        <SettingsRow label="edit profile" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate('edit-profile')} />
+        <SettingsRow label="change password" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate('change-password')} />
         <SettingsRow
           label="email"
           sub="mara@example.com · verified"
           control={<LxIcon name="check" size={16} color={v.success} />}
+        />
+
+        {/* Appearance */}
+        <SectionHeader>appearance</SectionHeader>
+        <SettingsRow
+          label="dark mode"
+          sub="follows system · toggle to override"
+          control={
+            <Toggle
+              on={Boolean(tweaks?.dark)}
+              onChange={handleDarkModeToggle}
+            />
+          }
         />
 
         {/* Privacy */}

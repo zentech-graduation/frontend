@@ -169,8 +169,8 @@ export function ComposerScreen({ navigate }) {
                 {previewUrl ? (
                   <>
                     <img src={previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button onClick={removeFile} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: 4, cursor: 'pointer' }}>
-                      <LxIcon name="close" size={16} color="#fff" />
+                    <button onClick={removeFile} style={{ position: 'absolute', top: 8, right: 8, background: v.black50, border: 'none', borderRadius: '50%', padding: 4, cursor: 'pointer' }}>
+                      <LxIcon name="close" size={16} color={v.white} />
                     </button>
                   </>
                 ) : (
@@ -194,8 +194,8 @@ export function ComposerScreen({ navigate }) {
                 {previewUrl ? (
                   <>
                     <video src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
-                    <button onClick={removeFile} style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: 4, cursor: 'pointer', zIndex: 10 }}>
-                      <LxIcon name="close" size={16} color="#fff" />
+                    <button onClick={removeFile} style={{ position: 'absolute', top: 8, right: 8, background: v.black50, border: 'none', borderRadius: '50%', padding: 4, cursor: 'pointer', zIndex: 10 }}>
+                      <LxIcon name="close" size={16} color={v.white} />
                     </button>
                   </>
                 ) : (
