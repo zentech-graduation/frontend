@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TWEAK_DEFAULTS, ACCENT_PALETTES, FONT_MAP } from './constants/data';
 import { useViewport } from './hooks/useViewport';
-import { LxShell } from './components/shell';
+import { LxShell, LxAppBar, LxBottomNav } from './components/shell';
 import { FeedScreen } from './components/FeedScreen';
 import { ExploreScreen } from './components/ExploreScreen';
 import { ComposerScreen } from './components/ComposerScreen';
@@ -14,6 +14,9 @@ import { FollowersScreen } from './components/FollowersScreen';
 import { FollowingScreen } from './components/FollowingScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { StoryViewScreen, StoryComposerScreen } from './components/StoryScreens';
+import '@/features/search/components/LxHeaderSearch';
+import '@/features/messages/components/MessagesScreen';
+import { v } from './constants/tokens';
 
 // ─── Luvax App Root ────────────────────────────────────────────────────────
 export function LuvaxApp() {
@@ -67,9 +70,39 @@ export function LuvaxApp() {
   }, [tweaks.dark, tweaks.accent, tweaks.font, tweaks.density]);
 
   const screenProps = { navigate, params, tweaks, viewport };
+  const GlobalMessagesScreen = typeof window !== 'undefined' ? window.MessagesScreen : null;
 
   if (screen === 'onboarding') {
     return <OnboardingScreen {...screenProps} />;
+  }
+
+  if (screen === 'messages') {
+    const msgTop = viewport === 'mobile' ? 0 : 56;
+    const msgBottom = viewport === 'desktop' ? 0 : 56;
+
+    return (
+      <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
+        {viewport !== 'mobile' && <LxAppBar screen={screen} navigate={navigate} params={params} viewport={viewport} />}
+        <div
+          style={{
+            position: 'fixed',
+            top: msgTop,
+            bottom: msgBottom,
+            left: viewport === 'desktop' ? '50%' : 0,
+            right: 0,
+            width: viewport === 'desktop' ? 680 : '100%',
+            transform: viewport === 'desktop' ? 'translateX(-50%)' : 'none',
+            borderLeft: viewport === 'desktop' ? `1px solid ${v.border}` : 'none',
+            borderRight: viewport === 'desktop' ? `1px solid ${v.border}` : 'none',
+            background: v.base,
+            zIndex: 20,
+          }}
+        >
+          {GlobalMessagesScreen ? <GlobalMessagesScreen {...screenProps} /> : null}
+        </div>
+        {viewport !== 'desktop' && <LxBottomNav active={screen} navigate={navigate} />}
+      </div>
+    );
   }
 
   const screens = {
