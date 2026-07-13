@@ -79,23 +79,25 @@ export function LuvaxApp() {
   if (screen === 'messages') {
     const msgTop = viewport === 'mobile' ? 0 : 56;
     const msgBottom = viewport === 'desktop' ? 0 : 56;
+    const isDesktop = viewport === 'desktop';
 
     return (
-      <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', background: '#1d1915', display: 'flex', flexDirection: 'column' }}>
         {viewport !== 'mobile' && <LxAppBar screen={screen} navigate={navigate} params={params} viewport={viewport} />}
         <div
           style={{
             position: 'fixed',
             top: msgTop,
             bottom: msgBottom,
-            left: viewport === 'desktop' ? '50%' : 0,
+            left: 0,
             right: 0,
-            width: viewport === 'desktop' ? 680 : '100%',
-            transform: viewport === 'desktop' ? 'translateX(-50%)' : 'none',
-            borderLeft: viewport === 'desktop' ? `1px solid ${v.border}` : 'none',
-            borderRight: viewport === 'desktop' ? `1px solid ${v.border}` : 'none',
-            background: v.base,
+            width: '100%',
+            transform: 'none',
+            borderLeft: 'none',
+            borderRight: 'none',
+            background: '#1d1915',
             zIndex: 20,
+            overflow: 'hidden',
           }}
         >
           {GlobalMessagesScreen ? <GlobalMessagesScreen {...screenProps} /> : null}
