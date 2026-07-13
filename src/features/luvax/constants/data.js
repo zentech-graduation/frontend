@@ -5,9 +5,9 @@ export const STORIES = [
   { id: 's1', author: 'sol.r',  idx: 1, hasStory: true, viewed: false, type: 'photo',
     bg: '#C4BCB2', text: null, caption: 'morning' },
   { id: 's2', author: 'jo.x',   idx: 2, hasStory: true, viewed: false, type: 'text',
-    bg: '#1A1816', text: 'three minutes of\nreal quiet today', caption: null },
+    bg: 'var(--lx-ink)', text: 'three minutes of\nreal quiet today', caption: null },
   { id: 's3', author: 'ren.ko', idx: 3, hasStory: true, viewed: false, type: 'video',
-    bg: '#5C574F', text: null, caption: 'walking somewhere' },
+    bg: 'var(--lx-ink-2)', text: null, caption: 'walking somewhere' },
   { id: 's4', author: 'lea.p',  idx: 4, hasStory: true, viewed: true, type: 'photo',
     bg: '#BDB0A0', text: null, caption: 'film, 2023' },
   { id: 's5', author: 'noa.b',  idx: 5, hasStory: true, viewed: true, type: 'text',
@@ -95,7 +95,7 @@ export const FONT_MAP = {
 
 export const TWEAK_DEFAULTS = {
   accent: '#C8A97E',
-  dark: false,
+  dark: true,
   font: 'syne',
   density: 'cozy',
   showTags: true,

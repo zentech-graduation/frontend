@@ -99,7 +99,7 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
         <div style={{ padding: '0 16px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -40 }}>
           <div style={{
             width: 80, height: 80, borderRadius: '50%',
-            background: user?.avatarUrl ? `url(${user.avatarUrl}) center/cover no-repeat` : '#C8A97E',
+            background: user?.avatarUrl ? `url(${user.avatarUrl}) center/cover no-repeat` : v.avatar0,
             border: `3px solid var(--lx-base)`,
             flexShrink: 0,
           }} />

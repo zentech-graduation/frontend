@@ -21,8 +21,8 @@ const TYPE_ICON = {
 };
 
 const TYPE_COLOR = {
-  like: '#C47168', follow: '#7A9E7A', follow_request: '#7A9E7A',
-  comment: '#C8A97E', mention: '#9B7EA8', story: '#7A9EB8',
+  like: v.error, follow: v.success, follow_request: v.success,
+  comment: v.accent, mention: v.avatar2, story: v.avatar3,
 };
 
 function NotifRow({ n, navigate }) {
@@ -32,7 +32,7 @@ function NotifRow({ n, navigate }) {
   const isFollow = n.type === 'follow' || n.type === 'follow_request';
   const text = isFollow ? 'started following you' : n.type === 'like' ? 'liked your post' : 'interacted with you';
   const icon = isFollow ? 'profile' : 'heart';
-  const color = isFollow ? '#7A9E7A' : '#C47168';
+  const color = isFollow ? v.success : v.error;
   
   const actorName = actorProfile?.username || actorProfile?.displayName || 'Someone';
   const avatarSrc = actorProfile?.avatarUrl;
@@ -55,7 +55,7 @@ function NotifRow({ n, navigate }) {
           border: `2px solid var(--lx-base)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <LxIcon name={icon} size={10} color="#fff" stroke={2} filled={!isFollow} />
+          <LxIcon name={icon} size={10} color={v.white} stroke={2} filled={!isFollow} />
         </div>
       </div>
 
@@ -93,7 +93,7 @@ function RequestRow({ req, navigate, onAccept, onDecline }) {
           border: `2px solid var(--lx-base)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <LxIcon name={TYPE_ICON['follow_request']} size={10} color="#fff" stroke={2} />
+          <LxIcon name={TYPE_ICON['follow_request']} size={10} color={v.white} stroke={2} />
         </div>
       </div>
 

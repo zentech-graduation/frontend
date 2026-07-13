@@ -5,6 +5,7 @@ const ICONS = {
   home:     <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
   explore:  <><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></>,
   plus:     <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+  message:  <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>,
   profile:  <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
   bell:     <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>,
   back:     <><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></>,
@@ -39,7 +40,7 @@ export function LxIcon({ name, size = 20, color, filled = false, stroke = 1.5 })
 }
 
 // ─── Avatar ────────────────────────────────────────────────────────────────
-export const AVATAR_COLORS = ['#C8A97E', '#7A9E7A', '#9B7EA8', '#7A9EB8', '#C47168', '#B89468', '#5E8260'];
+export const AVATAR_COLORS = [v.avatar0, v.avatar1, v.avatar2, v.avatar3, v.avatar4, v.avatar5, v.avatar6];
 
 export function LxAvatar({ size = 36, idx = 0, ring = false, hasStory = false, viewed = false }) {
   const color = AVATAR_COLORS[idx % AVATAR_COLORS.length];
@@ -82,9 +83,10 @@ export function LxTag({ children, active = false, onClick, size = 'md' }) {
       borderRadius: 999,
       background: active ? v.accentDim : v.surface,
       color: active ? v.accentText : v.ink2,
-      border: `1px solid ${active ? 'transparent' : 'var(--lx-border)'}`,
+      border: `1px solid ${active ? v.accentDim : v.border}`,
       cursor: onClick ? 'pointer' : 'default',
       whiteSpace: 'nowrap',
+      transition: 'background 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out',
       ...sizes[size],
     }}>{children}</span>
   );
@@ -110,6 +112,7 @@ export function LxBtn({ children, variant = 'primary', size = 'md', onClick, dis
     <button onClick={onClick} disabled={disabled} style={{
       fontFamily: v.fontBody, fontWeight: 500, borderRadius: 999,
       cursor: disabled ? 'default' : 'pointer', letterSpacing: '-0.01em',
+      textTransform: 'lowercase',
       transition: 'all 150ms ease-out',
       ...sizes[size], ...variants[variant], ...style,
     }}>{children}</button>
@@ -143,7 +146,7 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
         maxWidth: 640, margin: '0 auto',
         background: v.base,
         borderTopLeftRadius: 16, borderTopRightRadius: 16,
-        boxShadow: '0 -8px 30px rgba(0,0,0,0.18)',
+        boxShadow: `0 -20px 60px ${v.shadow18}`,
         transform: open ? 'translateY(0)' : 'translateY(100%)',
         transition: 'transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
         zIndex: 1000, height,
@@ -170,7 +173,7 @@ export function LxModal({ open, onClose, title, children, actions }) {
       <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
         background: v.base, borderRadius: 12, width: 'calc(100% - 32px)', maxWidth: 320,
-        boxShadow: '0 8px 30px rgba(0,0,0,0.12)', overflow: 'hidden',
+        boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`, overflow: 'hidden',
         zIndex: 1001, display: 'flex', flexDirection: 'column'
       }}>
         {title && (
