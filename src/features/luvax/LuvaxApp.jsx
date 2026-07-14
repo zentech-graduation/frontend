@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { TWEAK_DEFAULTS, ACCENT_PALETTES, FONT_MAP } from './constants/data';
 import { useViewport } from './hooks/useViewport';
-import { LxShell } from './components/shell';
+import { LxShell, LxAppBar, LxBottomNav } from './components/shell';
+import { v } from './constants/tokens';
 import { FeedScreen } from './components/FeedScreen';
 import { ExploreScreen } from './components/ExploreScreen';
 import { ComposerScreen } from './components/ComposerScreen';
@@ -16,6 +17,7 @@ import { OnboardingScreen } from './components/OnboardingScreen';
 import { StoryViewScreen, StoryComposerScreen } from './components/StoryScreens';
 import { EditProfileScreen } from './components/EditProfileScreen';
 import { ChangePasswordScreen } from './components/ChangePasswordScreen';
+import './components/MessagesScreen';
 
 // ─── Luvax App Root ────────────────────────────────────────────────────────
 export function LuvaxApp() {
@@ -80,6 +82,38 @@ export function LuvaxApp() {
   }, []);
 
   const navigate = (to, p = {}) => {
+    if (typeof to === 'number') {
+      if (
+        to === -1 &&
+        screen === 'messages' &&
+        typeof window !== 'undefined' &&
+        typeof window.__lxMessagesBack === 'function' &&
+        window.__lxMessagesBack()
+      ) {
+        return;
+      }
+
+      if (to !== -1) {
+        return;
+      }
+
+      setHistory(prevHistory => {
+        const nextHistory = [...prevHistory];
+        const previousScreen = nextHistory.pop() || 'feed';
+        setScreen(previousScreen);
+        setParams({});
+
+        try {
+          sessionStorage.setItem('lx_screen', JSON.stringify(previousScreen));
+          sessionStorage.setItem('lx_params', JSON.stringify({}));
+        } catch (e) { /* ignore */ }
+
+        window.scrollTo(0, 0);
+        return nextHistory;
+      });
+      return;
+    }
+
     setHistory(h => screen !== to ? [...h, screen] : h);
     setScreen(to);
     setParams(p);
@@ -107,9 +141,69 @@ export function LuvaxApp() {
   }, [tweaks.dark, tweaks.accent, tweaks.font, tweaks.density]);
 
   const screenProps = { navigate, params, tweaks, setTweak, viewport };
+  const MessagesScreen = typeof window !== 'undefined' ? window.MessagesScreen : null;
 
   if (screen === 'onboarding') {
     return <OnboardingScreen {...screenProps} />;
+  }
+
+  if (screen === 'messages') {
+    const msgTop = viewport === 'mobile' ? 0 : 56;
+    const msgBottom = viewport === 'desktop' ? 0 : 56;
+
+    return (
+      <div style={{ minHeight: '100vh', background: v.base }}>
+        {viewport !== 'mobile' ? (
+          <LxAppBar screen={screen} navigate={navigate} params={params} viewport={viewport} />
+        ) : null}
+        <div
+          style={{
+            position: 'fixed',
+            top: msgTop,
+            bottom: msgBottom,
+            left: 0,
+            right: 0,
+            background: v.base,
+            zIndex: 10,
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '100%',
+              height: '100%',
+              margin: '0 auto',
+              background: v.base,
+              overflow: 'hidden',
+            }}
+          >
+            {MessagesScreen ? (
+              <MessagesScreen {...screenProps} />
+            ) : (
+              <div
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 24,
+                  textAlign: 'center',
+                  color: v.ink2,
+                  fontFamily: v.fontBody,
+                  fontSize: 15,
+                }}
+              >
+                messages screen is not available
+              </div>
+            )}
+          </div>
+        </div>
+        {viewport === 'mobile' ? (
+          <LxAppBar screen={screen} navigate={navigate} params={params} viewport={viewport} />
+        ) : null}
+        {viewport !== 'desktop' ? <LxBottomNav active={screen} navigate={navigate} /> : null}
+      </div>
+    );
   }
 
   const screens = {
