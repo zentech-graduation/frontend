@@ -17,7 +17,7 @@ import { OnboardingScreen } from './components/OnboardingScreen';
 import { StoryViewScreen, StoryComposerScreen } from './components/StoryScreens';
 import { EditProfileScreen } from './components/EditProfileScreen';
 import { ChangePasswordScreen } from './components/ChangePasswordScreen';
-import './components/MessagesScreen';
+import '../messages/MessagesScreen';
 
 // ─── Luvax App Root ────────────────────────────────────────────────────────
 export function LuvaxApp() {
