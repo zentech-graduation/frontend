@@ -142,6 +142,19 @@ export function LuvaxApp() {
 
   const screenProps = { navigate, params, tweaks, setTweak, viewport };
   const MessagesScreen = typeof window !== 'undefined' ? window.MessagesScreen : null;
+  const screens = {
+    feed:          <FeedScreen          {...screenProps} />,
+    explore:       <ExploreScreen       {...screenProps} />,
+    compose:       <ComposerScreen      {...screenProps} />,
+    profile:       <ProfileScreen       {...screenProps} />,
+    notifications: <NotificationsScreen {...screenProps} />,
+    settings:      <SettingsScreen      {...screenProps} />,
+    'edit-profile': <EditProfileScreen  {...screenProps} />,
+    'change-password': <ChangePasswordScreen {...screenProps} />,
+    blocked:       <BlockedUsersScreen  {...screenProps} />,
+    followers:     <FollowersScreen     {...screenProps} />,
+    following:     <FollowingScreen     {...screenProps} />,
+  };
 
   if (screen === 'onboarding') {
     return <OnboardingScreen {...screenProps} />;
@@ -206,20 +219,27 @@ export function LuvaxApp() {
     );
   }
 
-  const screens = {
-    feed:          <FeedScreen          {...screenProps} />,
-    explore:       <ExploreScreen       {...screenProps} />,
-    compose:       <ComposerScreen      {...screenProps} />,
-    post:          <PostDetailScreen    {...screenProps} />,
-    profile:       <ProfileScreen       {...screenProps} />,
-    notifications: <NotificationsScreen {...screenProps} />,
-    settings:      <SettingsScreen      {...screenProps} />,
-    'edit-profile': <EditProfileScreen  {...screenProps} />,
-    'change-password': <ChangePasswordScreen {...screenProps} />,
-    blocked:       <BlockedUsersScreen  {...screenProps} />,
-    followers:     <FollowersScreen     {...screenProps} />,
-    following:     <FollowingScreen     {...screenProps} />,
-  };
+  if (screen === 'post') {
+    const baseScreen = [...history].reverse().find(
+      (s) => s !== 'post' && s !== 'story-view' && s !== 'story-compose' && s !== 'onboarding'
+    ) || 'feed';
+    const baseShowRail = (baseScreen === 'feed' || baseScreen === 'explore') && viewport === 'desktop';
+
+    const baseScreenParams = baseScreen === 'profile' && params?.user
+      ? { user: params.user }
+      : {};
+
+    return (
+      <>
+        <LxShell screen={baseScreen} navigate={navigate} params={baseScreenParams} showRightRail={baseShowRail}>
+          {baseScreen === 'profile'
+            ? <ProfileScreen {...screenProps} params={baseScreenParams} />
+            : screens[baseScreen] || screens.feed}
+        </LxShell>
+        <PostDetailScreen {...screenProps} overlay />
+      </>
+    );
+  }
 
   const isStory = screen === 'story-view' || screen === 'story-compose';
   if (isStory) {

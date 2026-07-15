@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { v } from '../constants/tokens';
-import { LxIcon, LxAvatar, LxTag, LxBottomSheet, LxBtn } from './primitives';
-import { useUpdatePost, useDeletePost } from '../hooks/usePosts';
+import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxTag } from './primitives';
+import { useDeletePost, useUpdatePost } from '../hooks/usePosts';
+import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
+
+const HEART_COLOR = 'var(--lx-error)';
 
 const timeAgo = (dateStr) => {
   if (!dateStr) return 'now';
@@ -14,21 +17,60 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(hours / 24)}d`;
 };
 
+const buildPostLink = (postId) => {
+  if (typeof window === 'undefined') return `luvax://post/${postId}`;
+  return `${window.location.origin}${window.location.pathname}#post-${postId}`;
+};
+
+const copyPostLink = async (postId) => {
+  const link = buildPostLink(postId);
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(link);
+    return;
+  }
+  window.prompt('copy link', link);
+};
+
+const sharePost = async (postId, title) => {
+  const link = buildPostLink(postId);
+  if (navigator?.share) {
+    await navigator.share({ title: title || 'luvax post', url: link });
+    return;
+  }
+  await copyPostLink(postId);
+};
+
 export function PostCard({ post, navigate, density = 'cozy', showTags = true }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
+  const [heartBurst, setHeartBurst] = useState(false);
+  const menuButtonRef = useRef(null);
 
   const currentUser = useAuthStore((state) => state.user);
   const isOwner = currentUser?.id === (post.userId || post.authorId);
 
   const updatePost = useUpdatePost();
   const deletePost = useDeletePost();
+  const follow = useFollow();
+  const unfollow = useUnfollow();
+  const block = useBlock();
+  const { data: myFollowingData } = useFollowing(currentUser?.id);
+
+  const handleLikeToggle = () => {
+    setLiked((previous) => {
+      const next = !previous;
+      if (next) {
+        setHeartBurst(false);
+        window.requestAnimationFrame(() => setHeartBurst(true));
+      }
+      return next;
+    });
+  };
 
   const handleEditOpen = () => {
-    setMenuOpen(false);
     setEditCaption(post.caption || post.text || '');
     setEditSheetOpen(true);
   };
@@ -41,7 +83,6 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
   };
 
   const handleDelete = () => {
-    setMenuOpen(false);
     if (window.confirm('are you sure you want to delete this post?')) {
       deletePost.mutate(post.id);
     }
@@ -51,24 +92,134 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
   const gap = density === 'dense' ? 8 : 10;
 
   const authorName = post.username || post.author || 'unknown';
+  const authorHandle = post.username || post.author || 'unknown';
+  const targetUserId = post.userId || post.authorId;
   const avatarUrl = post.userAvatarUrl;
   const timeStr = timeAgo(post.createdAt || post.time);
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const media = post.media && post.media.length > 0 ? post.media[0] : null;
+  const likeCount = post.likeCount || post.likes || 0;
+  const following = (() => {
+    if (!myFollowingData || !targetUserId || isOwner) return false;
+    const list = myFollowingData.pages?.flatMap((page) => page?.data?.content || page?.content || []) || [];
+    return list.some((user) => user.id === targetUserId);
+  })();
+
+  const handleFollowToggle = () => {
+    if (!targetUserId) return;
+    if (following) {
+      unfollow.mutate(targetUserId);
+      return;
+    }
+    follow.mutate(targetUserId);
+  };
+
+  const menuItems = useMemo(
+    () => [
+      {
+        id: 'like',
+        icon: 'heart',
+        label: liked ? 'Unlike' : 'Like',
+        onClick: handleLikeToggle,
+      },
+      {
+        id: 'share',
+        icon: 'share',
+        label: 'Share',
+        onClick: () => sharePost(post.id, post.caption || post.text),
+      },
+      {
+        id: 'copy',
+        icon: 'link',
+        label: 'Copy link',
+        onClick: () => copyPostLink(post.id),
+      },
+      isOwner
+        ? {
+            id: 'edit',
+            icon: 'edit',
+            label: 'edit post',
+            onClick: handleEditOpen,
+          }
+        : null,
+      isOwner
+        ? {
+            id: 'delete',
+            icon: 'close',
+            label: 'delete post',
+            tone: 'danger',
+            onClick: handleDelete,
+          }
+        : null,
+      !isOwner
+        ? {
+            id: 'view-profile',
+            icon: 'profile',
+            label: "View author's profile",
+            onClick: () =>
+              navigate('profile', {
+                user: {
+                  id: targetUserId,
+                  username: authorHandle,
+                  displayName: authorName,
+                  avatarUrl,
+                },
+              }),
+          }
+        : null,
+      !isOwner
+        ? {
+            id: 'follow-toggle',
+            icon: 'profile',
+            label: `${following ? 'Unfollow' : 'Follow'} @${authorHandle}`,
+            tone: 'danger',
+            separator: true,
+            onClick: handleFollowToggle,
+            disabled: follow.isPending || unfollow.isPending,
+          }
+        : null,
+      !isOwner
+        ? {
+            id: 'block',
+            icon: 'close',
+            label: `Block @${authorHandle}`,
+            tone: 'danger',
+            onClick: () => block.mutate(targetUserId),
+          }
+        : null,
+      !isOwner
+        ? {
+            id: 'report',
+            icon: 'flag',
+            label: 'Report',
+            tone: 'danger',
+            onClick: () => {},
+          }
+        : null,
+    ],
+    [authorHandle, authorName, avatarUrl, block, follow.isPending, following, isOwner, liked, myFollowingData, navigate, post.caption, post.id, post.text, targetUserId, unfollow.isPending]
+  );
 
   return (
     <article
       style={{
         background: v.surface,
         borderRadius: 14,
-        overflow: 'hidden',
         border: `1px solid ${v.borderSubtle}`,
+        boxShadow: '0 2px 8px rgba(26,24,22,0.06)',
       }}
     >
-      {media && media.cdnUrl && (
+      {media && media.cdnUrl ? (
         <div
           onClick={() => navigate('post', { postId: post.id })}
-          style={{ cursor: 'pointer', position: 'relative', width: '100%' }}
+          style={{
+            cursor: 'pointer',
+            position: 'relative',
+            width: '100%',
+            overflow: 'hidden',
+            borderTopLeftRadius: 14,
+            borderTopRightRadius: 14,
+          }}
         >
           {media.mediaType === 'VIDEO' ? (
             <video
@@ -85,18 +236,20 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
             />
           )}
         </div>
-      )}
+      ) : null}
 
-      {!media && post.type === 'image' && post.media && (
+      {!media && post.type === 'image' && post.media ? (
         <div
           onClick={() => navigate('post', { postId: post.id })}
           style={{
             height: post.media.h,
             background: post.media.color,
             cursor: 'pointer',
+            borderTopLeftRadius: 14,
+            borderTopRightRadius: 14,
           }}
         />
-      )}
+      ) : null}
 
       <div style={{ padding: pad }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
@@ -122,56 +275,27 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
           <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>·</span>
           <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{timeStr}</span>
 
-          <div style={{ position: 'relative', marginLeft: 'auto' }}>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: v.ink3 }}
-            >
-              <LxIcon name="more" size={16} color={v.ink3} />
-            </button>
-            {menuOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 24,
-                  right: 0,
-                  background: v.surfaceRaised,
-                  border: `1px solid ${v.border}`,
-                  borderRadius: 8,
-                  padding: 4,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
-                  minWidth: 100,
-                  zIndex: 10,
-                }}
-              >
-                {isOwner ? (
-                  <>
-                    <button
-                      onClick={handleEditOpen}
-                      style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.ink }}
-                    >
-                      edit post
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.error }}
-                    >
-                      delete post
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setMenuOpen(false)}
-                    style={{ background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 13, color: v.error }}
-                  >
-                    report post
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <button
+            ref={menuButtonRef}
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            className="lx-header-icon-btn"
+            style={{
+              background: 'transparent',
+              border: `1px solid ${v.borderSubtle}`,
+              borderRadius: 999,
+              width: 28,
+              height: 28,
+              cursor: 'pointer',
+              marginLeft: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: v.ink3,
+            }}
+          >
+            <LxIcon name="more" size={15} color={v.ink3} />
+          </button>
         </div>
 
         <p
@@ -190,21 +314,37 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
           {post.caption || post.text}
         </p>
 
-        {showTags && tags.length > 0 && (
+        {showTags && tags.length > 0 ? (
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: gap }}>
-            {tags.map((t, idx) => (
-              <LxTag key={idx} size="sm">
-                #{t}
+            {tags.map((tag, index) => (
+              <LxTag key={`${tag}-${index}`} size="sm">
+                #{tag}
               </LxTag>
             ))}
           </div>
-        )}
+        ) : null}
 
         <div style={{ display: 'flex', gap: 18, marginTop: gap + 2, alignItems: 'center' }}>
-          <button onClick={() => setLiked((l) => !l)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <LxIcon name="heart" size={17} color={liked ? v.accent : v.ink3} filled={liked} />
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
-              {liked ? (post.likeCount || post.likes || 0) + 1 : post.likeCount || post.likes || 0}
+          <button
+            type="button"
+            onClick={handleLikeToggle}
+            className={`lx-heart-button ${liked && heartBurst ? 'is-liked' : ''}`}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              color: liked ? HEART_COLOR : v.ink3,
+            }}
+          >
+            <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
+              <LxIcon name="heart" size={17} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
+            </span>
+            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: liked ? HEART_COLOR : v.ink3 }}>
+              {liked ? likeCount + 1 : likeCount}
             </span>
           </button>
           <button onClick={() => navigate('post', { postId: post.id })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -213,14 +353,16 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
               {post.commentCount || Math.floor((post.likes || 0) / 8) + 2}
             </span>
           </button>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          <button type="button" onClick={() => sharePost(post.id, post.caption || post.text)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             <LxIcon name="share" size={17} color={v.ink3} />
           </button>
-          <button onClick={() => setSaved((s) => !s)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
+          <button onClick={() => setSaved((state) => !state)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
             <LxIcon name="bookmark" size={17} color={saved ? v.ink : v.ink3} filled={saved} />
           </button>
         </div>
       </div>
+
+      <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={248} />
 
       <LxBottomSheet open={editSheetOpen} onClose={() => setEditSheetOpen(false)} height="40vh">
         <div style={{ padding: '4px 16px 8px', borderBottom: `1px solid ${v.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -229,7 +371,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
           <textarea
             value={editCaption}
-            onChange={(e) => setEditCaption(e.target.value)}
+            onChange={(event) => setEditCaption(event.target.value)}
             placeholder="write a caption..."
             style={{
               width: '100%',

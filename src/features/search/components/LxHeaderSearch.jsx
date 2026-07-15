@@ -7,8 +7,9 @@ export function LxHeaderSearch({ navigate, viewport }) {
       type="button"
       onClick={() => navigate('explore')}
       aria-label="open search"
+      className="lx-search-btn"
       style={{
-        width: viewport === 'tablet' ? '100%' : 188,
+        width: viewport === 'tablet' ? '100%' : 196,
         minWidth: 0,
         height: 36,
         padding: '0 14px',

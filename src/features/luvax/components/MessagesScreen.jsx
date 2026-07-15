@@ -286,15 +286,15 @@ function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteToggle, 
       <div
         style={{
           ...bubbleBase,
-          background: isMine ? activeThread.accent || v.accentDim : v.surface,
-          color: isMine ? v.inkInverse : v.ink,
-          border: isMine ? 'none' : `1px solid ${v.border}`,
+          background: isMine ? v.accentDim : v.surface,
+          color: v.ink,
+          border: `1px solid ${isMine ? v.accentDim : v.border}`,
           minWidth: 94,
         }}
       >
         {message.kind === 'reply' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, color: 'rgba(249,247,244,0.76)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, color: v.ink2 }}>
               <span style={{ fontFamily: v.fontMono, fontSize: 11 }}>↳ {message.replyTo}</span>
               <span style={{ fontSize: 13 }}>{message.replyText}</span>
             </div>
@@ -324,7 +324,7 @@ function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteToggle, 
               opacity: 0.72,
             }}
           >
-            <LxIcon name="more" size={12} color={isMine ? v.inkInverse : v.ink3} />
+            <LxIcon name="more" size={12} color={v.ink3} />
           </button>
         ) : null}
       </div>
@@ -526,7 +526,7 @@ export function MessagesScreen({ navigate, viewport }) {
               padding: '0 20px',
             }}
           >
-            <h2 style={{ margin: 0, fontFamily: v.fontDisplay, fontSize: 17, fontWeight: 700, color: '#f7f3eb', letterSpacing: '-0.03em' }}>
+            <h2 style={{ margin: 0, fontFamily: v.fontDisplay, fontSize: 17, fontWeight: 700, color: v.ink, letterSpacing: '-0.03em' }}>
               messages
             </h2>
             <button
@@ -572,7 +572,7 @@ export function MessagesScreen({ navigate, viewport }) {
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
-                  color: v.inkInverse,
+                  color: v.ink,
                   fontFamily: v.fontBody,
                   fontSize: 14,
                 }}
@@ -590,7 +590,7 @@ export function MessagesScreen({ navigate, viewport }) {
                   onClick={() => selectThread(thread.id)}
                   style={{
                     width: '100%',
-                    background: isActive ? '#4a4331' : 'transparent',
+                    background: isActive ? v.accentDim : 'transparent',
                     border: 'none',
                     borderLeft: isActive ? `3px solid ${v.accent}` : '3px solid transparent',
                     borderBottom: `1px solid ${v.borderSubtle}`,
@@ -601,15 +601,15 @@ export function MessagesScreen({ navigate, viewport }) {
                     gap: 12,
                     alignItems: 'center',
                     textAlign: 'left',
-                    color: v.inkInverse,
+                    color: v.ink,
                   }}
                 >
                   <AvatarVisual thread={thread} />
                   <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.inkInverse }}>
+                    <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink }}>
                       {thread.name}
                     </div>
-                    <div style={{ fontFamily: v.fontBody, fontSize: 12, color: thread.muted ? v.ink3 : '#d7c39d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontFamily: v.fontBody, fontSize: 12, color: thread.muted ? v.ink3 : v.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {thread.preview} · {thread.time}
                     </div>
                   </div>
@@ -671,7 +671,7 @@ export function MessagesScreen({ navigate, viewport }) {
             ) : null}
             <AvatarVisual thread={activeThread} size={40} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.inkInverse }}>{activeThread.name}</div>
+              <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink }}>{activeThread.name}</div>
               <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>@{activeThread.username}</div>
             </div>
           </div>
@@ -754,7 +754,7 @@ export function MessagesScreen({ navigate, viewport }) {
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
-                  color: v.inkInverse,
+                  color: v.ink,
                   fontFamily: v.fontBody,
                   fontSize: 15,
                 }}
@@ -777,7 +777,7 @@ export function MessagesScreen({ navigate, viewport }) {
                 flexShrink: 0,
               }}
             >
-              <LxIcon name="send" size={16} color="#f7f3eb" />
+              <LxIcon name="send" size={16} color={v.ink} />
             </button>
           </div>
         </section>
@@ -804,7 +804,7 @@ export function MessagesScreen({ navigate, viewport }) {
           >
             <AvatarVisual thread={activeThread} size={66} />
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, color: v.inkInverse }}>{activeThread.name}</div>
+              <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, color: v.ink }}>{activeThread.name}</div>
               <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 4 }}>@{activeThread.username}</div>
             </div>
             <button
@@ -816,7 +816,7 @@ export function MessagesScreen({ navigate, viewport }) {
                 borderRadius: 999,
                 border: 'none',
                 background: v.surface,
-                color: v.inkInverse,
+                color: v.ink,
                 fontFamily: v.fontBody,
                 fontSize: 14,
                 cursor: 'pointer',
@@ -870,7 +870,7 @@ export function MessagesScreen({ navigate, viewport }) {
             }}
           >
             <MediaPlaceholder item={previewItem} large />
-            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.inkInverse }}>{previewItem.title || previewItem.label}</div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>{previewItem.title || previewItem.label}</div>
             <button
               type="button"
               onClick={() => setPreviewItem(null)}
@@ -881,7 +881,7 @@ export function MessagesScreen({ navigate, viewport }) {
                 borderRadius: 999,
                 border: 'none',
                 background: v.accent,
-                color: v.inkInverse,
+                color: v.ink,
                 fontFamily: v.fontBody,
                 fontSize: 14,
                 cursor: 'pointer',
