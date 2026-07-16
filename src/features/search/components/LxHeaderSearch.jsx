@@ -9,9 +9,10 @@ export function LxHeaderSearch({ navigate, viewport }) {
       aria-label="open search"
       className="lx-search-btn"
       style={{
-        width: viewport === 'tablet' ? '100%' : 196,
+        width: viewport === 'tablet' ? 184 : 206,
         minWidth: 0,
-        height: 36,
+        flexShrink: 0,
+        height: viewport === 'tablet' ? 32 : 36,
         padding: '0 14px',
         border: `1px solid ${v.borderSubtle}`,
         borderRadius: 999,
@@ -20,6 +21,7 @@ export function LxHeaderSearch({ navigate, viewport }) {
         display: 'flex',
         alignItems: 'center',
         gap: 8,
+        transform: 'translateY(0px)',
         cursor: 'pointer',
         fontFamily: v.fontBody,
         fontSize: 13,

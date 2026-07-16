@@ -10,7 +10,7 @@ const ICONS = {
   profile: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>,
   bell: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></>,
   back: <><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></>,
-  edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>,
+  edit: <><path d="M12 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4v-5" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L11 15l-4 1 1-4Z" /></>,
   close: <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>,
   heart: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />,
   reply: <><polyline points="9 17 4 12 9 7" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" /></>,
@@ -28,6 +28,9 @@ const ICONS = {
   check: <polyline points="20 6 9 17 4 12" />,
   eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>,
   flag: <><path d="M5 21V5" /><path d="M5 5h11l-2 4 2 4H5" /></>,
+  trash: <><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></>,
+  alert: <><circle cx="12" cy="12" r="8.5" /><line x1="12" y1="7.4" x2="12" y2="13.2" /><circle cx="12" cy="16.4" r="1.1" fill="currentColor" stroke="none" /></>,
+  chevronLeft: <polyline points="14 18 8 12 14 6" />,
 };
 
 export function LxIcon({ name, size = 20, color, filled = false, stroke = 1.5 }) {
@@ -43,7 +46,7 @@ export function LxIcon({ name, size = 20, color, filled = false, stroke = 1.5 })
         />
         <path
           d="M10 22v-5.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V22"
-          fill="var(--lx-story-surface)"
+          fill="var(--lx-base)"
         />
       </svg>
     );

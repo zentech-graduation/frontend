@@ -4,6 +4,7 @@ export const THREADS = [
     idx: 0,
     name: 'priya',
     username: 'priya_m',
+    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
     preview: 'sent you the files!',
     time: '2m',
     unread: 2,

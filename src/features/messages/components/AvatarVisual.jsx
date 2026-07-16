@@ -13,7 +13,7 @@ export function AvatarVisual({ thread, size = 42 }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: v.inkInverse,
+          color: v.ink,
           fontFamily: v.fontBody,
           fontSize: 15,
           fontWeight: 700,

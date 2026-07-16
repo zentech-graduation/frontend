@@ -95,13 +95,42 @@ export function ComposerScreen({ navigate, viewport }) {
   const isActionDisabled = createPostMutation.isPending || isUploading || ((type === 'photo' || type === 'video') && !file) || (type === 'text' && !caption.trim());
   const mediaLabel = type === 'photo' ? 'tap to add a photo' : 'tap to add a video';
   const isDesktop = viewport === 'desktop';
-  const contentLeftInset = isDesktop ? 50 : 48;
-  const mediaBoxMinHeight = isDesktop ? 160 : 220;
+  const isTablet = viewport === 'tablet';
+  const tabletLeftLineInset = 150;
+  const tabletBodyPadLeft = 166;
+  const tabletBodyPadRight = 24;
+  const contentLeftInset = isDesktop ? 50 : isTablet ? tabletBodyPadLeft : 48;
+  const mediaBoxMinHeight = isDesktop ? 160 : 176;
   const mediaMeta = type === 'photo' ? 'jpg, png · max 10MB' : 'mp4 · max 60s · 50MB';
 
   return (
-    <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: `1px solid ${v.border}`, background: v.base }}>
+    <div style={{ position: 'relative', flex: 1, minHeight: '100%' }}>
+      {isTablet ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: tabletLeftLineInset,
+            width: 1,
+            background: v.border,
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+        />
+      ) : null}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: isTablet ? `10px ${tabletBodyPadRight}px 10px ${tabletBodyPadLeft}px` : '10px 16px',
+          borderBottom: isTablet ? 'none' : `1.5px solid ${v.borderStrong}`,
+          background: v.base,
+          position: 'relative',
+        }}
+      >
         <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 500, color: v.ink2 }}>new post</span>
         <button
           onClick={handlePost}
@@ -120,10 +149,31 @@ export function ComposerScreen({ navigate, viewport }) {
         >
           {isUploading ? `uploading ${progress}%` : createPostMutation.isPending ? 'posting...' : 'post it'}
         </button>
+        {isTablet ? (
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: tabletLeftLineInset,
+              right: 0,
+              bottom: 0,
+              height: 1.5,
+              background: v.borderStrong,
+            }}
+          />
+        ) : null}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
-        <div style={{ display: 'flex', gap: 0, padding: '12px 16px 4px', borderBottom: `1px solid ${v.border}` }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 0,
+            padding: isTablet ? `12px ${tabletBodyPadRight}px 4px ${tabletBodyPadLeft}px` : '12px 16px 4px',
+            borderBottom: isTablet ? 'none' : `1.5px solid ${v.borderStrong}`,
+            position: 'relative',
+          }}
+        >
           {[['text', 'type', 'text'], ['photo', 'image', 'photo'], ['video', 'video', 'video']].map(([tabId, icon, label]) => (
             <button
               key={tabId}
@@ -134,7 +184,7 @@ export function ComposerScreen({ navigate, viewport }) {
                 border: 'none',
                 cursor: 'pointer',
                 padding: '10px 0 11px',
-                borderBottom: type === tabId ? `2px solid ${v.ink}` : '2px solid transparent',
+                borderBottom: type === tabId ? `2.5px solid ${v.ink}` : '2.5px solid transparent',
                 marginBottom: -1,
                 display: 'flex',
                 alignItems: 'center',
@@ -150,9 +200,22 @@ export function ComposerScreen({ navigate, viewport }) {
               {label}
             </button>
           ))}
+          {isTablet ? (
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: tabletLeftLineInset,
+                right: 0,
+                bottom: 0,
+                height: 1.5,
+                background: v.borderStrong,
+              }}
+            />
+          ) : null}
         </div>
 
-        <div style={{ display: 'flex', gap: 12, padding: '18px 16px 0' }}>
+        <div style={{ display: 'flex', gap: 12, padding: isTablet ? `18px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px` : '18px 16px 0' }}>
           <LxAvatar size={36} idx={0} />
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, marginBottom: 12 }}>you</div>
@@ -222,7 +285,12 @@ export function ComposerScreen({ navigate, viewport }) {
           </div>
         </div>
 
-        <div style={{ padding: '8px 16px 4px', marginLeft: contentLeftInset }}>
+        <div
+          style={{
+            padding: isTablet ? `8px ${tabletBodyPadRight}px 4px ${contentLeftInset}px` : '8px 16px 4px',
+            marginLeft: isTablet ? 0 : contentLeftInset,
+          }}
+        >
           <div style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
             <LxIcon name="hash" size={12} color={v.ink3} />
             hashtags {allTags.length > 0 ? <span style={{ color: v.accentText, marginLeft: 4 }}>({allTags.length})</span> : null}
@@ -236,9 +304,16 @@ export function ComposerScreen({ navigate, viewport }) {
           </div>
         </div>
 
-        <LxDivider />
+        <LxDivider mx={isTablet ? tabletLeftLineInset : 0} />
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: isTablet ? `14px ${tabletBodyPadRight}px 14px ${tabletBodyPadLeft}px` : '14px 16px',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
             <LxIcon name="hash" size={13} color={v.ink3} />
             <span>auto-tagged: {captionTags.length}</span>
@@ -265,6 +340,6 @@ export function ComposerScreen({ navigate, viewport }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -10,10 +10,13 @@ export function MessagesScreen({ navigate, viewport }) {
   const [threads, setThreads] = useState(THREADS);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
-  const [activeThreadId, setActiveThreadId] = useState('jake');
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [activeThreadId, setActiveThreadId] = useState('priya');
+  const [threadOpen, setThreadOpen] = useState(viewport !== 'mobile');
+  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
   const [composerSeed, setComposerSeed] = useState(0);
-  const listOnlyMobile = viewport === 'mobile' && !activeThreadId;
+  const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
 
   const filteredThreads = useMemo(() => {
@@ -57,23 +60,50 @@ export function MessagesScreen({ navigate, viewport }) {
     }
 
     window.MessagesScreen = MessagesScreen;
+    window.__lxMessagesCompose = () => {
+      handleCompose();
+      return true;
+    };
     window.__lxMessagesBack = () => {
-      if (viewport === 'mobile' && activeThreadId) {
-        setActiveThreadId(null);
+      if (viewport === 'mobile' && threadOpen) {
+        setThreadOpen(false);
         return true;
       }
       return false;
     };
 
     return () => {
+      if (window.__lxMessagesCompose) {
+        delete window.__lxMessagesCompose;
+      }
       if (window.__lxMessagesBack) {
         delete window.__lxMessagesBack;
       }
     };
-  }, [activeThreadId, viewport]);
+  }, [composerSeed, threadOpen, viewport]);
+
+  useEffect(() => {
+    if (viewport !== 'mobile') {
+      setThreadOpen(true);
+      setMobileInfoOpen(false);
+    }
+  }, [viewport]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('lx_messages_thread_open', {
+        detail: { open: viewport === 'mobile' && threadOpen },
+      })
+    );
+  }, [threadOpen, viewport]);
 
   const selectThread = (threadId) => {
     setActiveThreadId(threadId);
+    if (viewport === 'mobile') {
+      setThreadOpen(true);
+      setMobileInfoOpen(false);
+    }
     setThreads((current) =>
       current.map((thread) =>
         thread.id === threadId
@@ -104,6 +134,7 @@ export function MessagesScreen({ navigate, viewport }) {
     setThreads((current) => [newThread, ...current]);
     setActiveThreadId(newThreadId);
     setDraft('');
+    setReplyingTo(null);
   };
 
   const handleSend = () => {
@@ -119,18 +150,29 @@ export function MessagesScreen({ navigate, viewport }) {
           time: 'now',
           messages: [
             ...thread.messages,
-            {
-              id: `${thread.id}-${Date.now()}`,
-              from: 'me',
-              kind: 'text',
-              text: value,
-              time: 'now',
-            },
+            replyingTo
+              ? {
+                  id: `${thread.id}-${Date.now()}`,
+                  from: 'me',
+                  kind: 'reply',
+                  replyTo: replyingTo.from === 'me' ? 'you' : activeThread.name,
+                  replyText: replyingTo.text,
+                  text: value,
+                  time: 'now',
+                }
+              : {
+                  id: `${thread.id}-${Date.now()}`,
+                  from: 'me',
+                  kind: 'text',
+                  text: value,
+                  time: 'now',
+                },
           ],
         };
       })
     );
     setDraft('');
+    setReplyingTo(null);
   };
 
   const handleDeleteToggle = (messageId) => {
@@ -151,30 +193,35 @@ export function MessagesScreen({ navigate, viewport }) {
     );
   };
 
-  const showDetail = viewport !== 'mobile' || Boolean(activeThreadId);
+  const showDetail = viewport !== 'mobile' || threadOpen;
   const showSidebar = viewport !== 'mobile' || listOnlyMobile;
-  const showRightRail = viewport === 'desktop' && Boolean(activeThread);
+  const showRightRail = (viewport === 'desktop' || viewport === 'tablet') && Boolean(activeThread);
   const isDesktop = viewport === 'desktop';
   const isTablet = viewport === 'tablet';
   const desktopSidebar = 320;
   const desktopRail = 300;
+  const tabletSidebar = 316;
+  const tabletRail = 304;
 
   return (
     <div
       style={{
         height: '100%',
+        minHeight: 0,
         background: v.base,
         color: v.ink,
         display: 'grid',
         gridTemplateColumns: isDesktop
           ? `${desktopSidebar}px minmax(520px, 1fr) ${desktopRail}px`
           : isTablet
-            ? '320px minmax(0, 1fr)'
+            ? `${tabletSidebar}px minmax(40px, 1fr) ${tabletRail}px`
             : '1fr',
-        paddingTop: viewport === 'mobile' ? 56 : 0,
+        paddingTop: viewport === 'mobile' ? (threadOpen ? 0 : 56) : 0,
         width: '100%',
         maxWidth: '100%',
         margin: '0 auto',
+        overflow: 'hidden',
+        alignItems: 'stretch',
         borderLeft: viewport !== 'mobile' ? `1px solid ${v.border}` : 'none',
         borderRight: viewport !== 'mobile' ? `1px solid ${v.border}` : 'none',
       }}
@@ -187,6 +234,7 @@ export function MessagesScreen({ navigate, viewport }) {
           activeThreadId={activeThreadId}
           selectThread={selectThread}
           handleCompose={handleCompose}
+          viewport={viewport}
         />
       ) : null}
 
@@ -195,12 +243,16 @@ export function MessagesScreen({ navigate, viewport }) {
           viewport={viewport}
           activeThread={activeThread}
           setActiveThreadId={setActiveThreadId}
+          closeThread={() => setThreadOpen(false)}
+          openInfo={() => setMobileInfoOpen(true)}
           isDesktop={isDesktop}
           isTablet={isTablet}
           showRightRail={showRightRail}
           scrollerRef={scrollerRef}
           setPreviewItem={setPreviewItem}
           handleDeleteToggle={handleDeleteToggle}
+          replyingTo={replyingTo}
+          setReplyingTo={setReplyingTo}
           draft={draft}
           setDraft={setDraft}
           handleSend={handleSend}
@@ -212,7 +264,44 @@ export function MessagesScreen({ navigate, viewport }) {
           activeThread={activeThread}
           navigate={navigate}
           setPreviewItem={setPreviewItem}
+          compact={isTablet}
         />
+      ) : null}
+
+      {viewport === 'mobile' && mobileInfoOpen && activeThread ? (
+        <div
+          onClick={() => setMobileInfoOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: v.scrim,
+            display: 'flex',
+            alignItems: 'stretch',
+            justifyContent: 'flex-end',
+            zIndex: 130,
+            padding: '0 0 0 38px',
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: 'min(78vw, 340px)',
+              background: v.base,
+              border: `1px solid ${v.border}`,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <ConversationInfoPanel
+              activeThread={activeThread}
+              navigate={navigate}
+              setPreviewItem={setPreviewItem}
+              mobileOverlay
+              onClose={() => setMobileInfoOpen(false)}
+            />
+          </div>
+        </div>
       ) : null}
 
       {previewItem ? (
@@ -243,7 +332,7 @@ export function MessagesScreen({ navigate, viewport }) {
             }}
           >
             <MediaPlaceholder item={previewItem} large />
-            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.inkInverse }}>{previewItem.title || previewItem.label}</div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>{previewItem.title || previewItem.label}</div>
             <button
               type="button"
               onClick={() => setPreviewItem(null)}
@@ -254,7 +343,7 @@ export function MessagesScreen({ navigate, viewport }) {
                 borderRadius: 999,
                 border: 'none',
                 background: v.accent,
-                color: v.inkInverse,
+                color: v.ink,
                 fontFamily: v.fontBody,
                 fontSize: 14,
                 cursor: 'pointer',

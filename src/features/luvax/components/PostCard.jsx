@@ -40,13 +40,14 @@ const sharePost = async (postId, title) => {
   await copyPostLink(postId);
 };
 
-export function PostCard({ post, navigate, density = 'cozy', showTags = true }) {
+export function PostCard({ post, navigate, density = 'cozy', showTags = true, viewport = 'desktop' }) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
+  const [saveBurst, setSaveBurst] = useState(false);
   const menuButtonRef = useRef(null);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -60,14 +61,18 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
   const { data: myFollowingData } = useFollowing(currentUser?.id);
 
   const handleLikeToggle = () => {
+    setHeartBurst(false);
+    window.requestAnimationFrame(() => setHeartBurst(true));
     setLiked((previous) => {
       const next = !previous;
-      if (next) {
-        setHeartBurst(false);
-        window.requestAnimationFrame(() => setHeartBurst(true));
-      }
       return next;
     });
+  };
+
+  const handleSaveToggle = () => {
+    setSaveBurst(false);
+    window.requestAnimationFrame(() => setSaveBurst(true));
+    setSaved((state) => !state);
   };
 
   const handleEditOpen = () => {
@@ -99,6 +104,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const media = post.media && post.media.length > 0 ? post.media[0] : null;
   const likeCount = post.likeCount || post.likes || 0;
+  const isMobile = viewport === 'mobile';
   const following = (() => {
     if (!myFollowingData || !targetUserId || isOwner) return false;
     const list = myFollowingData.pages?.flatMap((page) => page?.data?.content || page?.content || []) || [];
@@ -203,10 +209,12 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
   return (
     <article
       style={{
-        background: v.surface,
-        borderRadius: 14,
-        border: `1px solid ${v.borderSubtle}`,
-        boxShadow: '0 2px 8px rgba(26,24,22,0.06)',
+        background: isMobile ? 'transparent' : v.surface,
+        borderRadius: isMobile ? 0 : 14,
+        border: isMobile ? 'none' : `1px solid ${v.borderSubtle}`,
+        boxShadow: isMobile ? 'none' : '0 2px 8px rgba(26,24,22,0.06)',
+        paddingBottom: isMobile ? 12 : 0,
+        borderBottom: isMobile ? `1px solid ${v.border}` : 'none',
       }}
     >
       {media && media.cdnUrl ? (
@@ -217,14 +225,14 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
             position: 'relative',
             width: '100%',
             overflow: 'hidden',
-            borderTopLeftRadius: 14,
-            borderTopRightRadius: 14,
+            borderTopLeftRadius: isMobile ? 0 : 14,
+            borderTopRightRadius: isMobile ? 0 : 14,
           }}
         >
           {media.mediaType === 'VIDEO' ? (
             <video
               src={media.cdnUrl}
-              style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: 500 }}
+              style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: isMobile ? 360 : 500 }}
               controls
               muted
             />
@@ -232,7 +240,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
             <img
               src={media.cdnUrl}
               alt={media.altText || 'post image'}
-              style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: 500 }}
+              style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: isMobile ? 360 : 500 }}
             />
           )}
         </div>
@@ -245,13 +253,13 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
             height: post.media.h,
             background: post.media.color,
             cursor: 'pointer',
-            borderTopLeftRadius: 14,
-            borderTopRightRadius: 14,
+            borderTopLeftRadius: isMobile ? 0 : 14,
+            borderTopRightRadius: isMobile ? 0 : 14,
           }}
         />
       ) : null}
 
-      <div style={{ padding: pad }}>
+      <div style={{ padding: isMobile ? '14px 14px 10px' : pad }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
           <div
             onClick={() =>
@@ -279,19 +287,18 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
             ref={menuButtonRef}
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="lx-header-icon-btn"
             style={{
               background: 'transparent',
-              border: `1px solid ${v.borderSubtle}`,
-              borderRadius: 999,
-              width: 28,
-              height: 28,
+              border: 'none',
+              width: 20,
+              height: 20,
               cursor: 'pointer',
               marginLeft: 'auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: v.ink3,
+              padding: 0,
             }}
           >
             <LxIcon name="more" size={15} color={v.ink3} />
@@ -328,7 +335,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
           <button
             type="button"
             onClick={handleLikeToggle}
-            className={`lx-heart-button ${liked && heartBurst ? 'is-liked' : ''}`}
+            className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
             style={{
               background: 'none',
               border: 'none',
@@ -356,8 +363,10 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true }) 
           <button type="button" onClick={() => sharePost(post.id, post.caption || post.text)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             <LxIcon name="share" size={17} color={v.ink3} />
           </button>
-          <button onClick={() => setSaved((state) => !state)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
-            <LxIcon name="bookmark" size={17} color={saved ? v.ink : v.ink3} filled={saved} />
+          <button onClick={handleSaveToggle} className={saveBurst ? 'lx-bookmark-button is-saved' : 'lx-bookmark-button'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
+            <span className="lx-bookmark-icon" style={{ display: 'inline-flex' }}>
+              <LxIcon name="bookmark" size={17} color={saved ? v.ink : v.ink3} filled={saved} />
+            </span>
           </button>
         </div>
       </div>
