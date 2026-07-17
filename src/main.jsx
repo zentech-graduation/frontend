@@ -8,6 +8,25 @@ import router from './routes/index.jsx';
 import './index.css';
 
 /**
+ * applyTheme
+ *
+ * Applies data-theme synchronously, before React mounts, so first paint never
+ * flashes the wrong theme for users with a manual override or a dark OS preference.
+ */
+function applyTheme() {
+  const manual = window.localStorage.getItem('lxDarkManual');
+  if (manual !== null) {
+    document.documentElement.setAttribute('data-theme', manual === 'true' ? 'dark' : 'light');
+    return;
+  }
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+}
+
+applyTheme();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+/**
  * normalizeQueryError
  *
  * Centralized error handler for all TanStack Query cache events.
