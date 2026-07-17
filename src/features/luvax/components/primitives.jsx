@@ -191,7 +191,7 @@ export function LxDivider({ mx = 0 }) {
   return <div style={{ height: 1, background: v.border, margin: `0 ${mx}px` }} />;
 }
 
-export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196 }) {
+export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196, align = 'left', zIndex = 1200 }) {
   const menuRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0, placement: 'bottom' });
 
@@ -214,7 +214,8 @@ export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196 })
       const top = shouldOpenUp
         ? Math.max(gap, rect.top - menuHeight - 8)
         : Math.min(viewportHeight - menuHeight - gap, rect.bottom + 8);
-      const left = Math.min(Math.max(gap, rect.right - width), viewportWidth - width - gap);
+      const preferredLeft = align === 'right' ? rect.left : rect.right - width;
+      const left = Math.min(Math.max(gap, preferredLeft), viewportWidth - width - gap);
 
       setPosition({
         top,
@@ -231,7 +232,7 @@ export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196 })
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [anchorRef, open, width]);
+  }, [align, anchorRef, open, width]);
 
   useEffect(() => {
     if (!open || typeof window === 'undefined') {
@@ -273,7 +274,7 @@ export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196 })
         top: position.top,
         left: position.left,
         width,
-        zIndex: 1200,
+        zIndex,
       }}
     >
       {items.filter(Boolean).map((item) => (

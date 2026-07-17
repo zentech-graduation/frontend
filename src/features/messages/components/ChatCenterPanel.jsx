@@ -1,7 +1,14 @@
+import { useEffect, useRef } from 'react';
 import { v } from '../../luvax/constants/tokens';
 import { LxIcon } from '../../luvax/components/primitives';
 import { AvatarVisual } from './AvatarVisual';
 import { MessageBubble } from './MessageBubble';
+
+const autoResizeDraft = (element) => {
+  if (!element) return;
+  element.style.height = '0px';
+  element.style.height = `${Math.min(element.scrollHeight, 136)}px`;
+};
 
 export function ChatCenterPanel({
   viewport,
@@ -38,6 +45,12 @@ export function ChatCenterPanel({
     boxShadow: 'none',
   };
 
+  const draftInputRef = useRef(null);
+
+  useEffect(() => {
+    autoResizeDraft(draftInputRef.current);
+  }, [draft, replyingTo]);
+
   return (
     <section
       style={{
@@ -45,7 +58,7 @@ export function ChatCenterPanel({
         minHeight: 0,
         overflow: 'hidden',
         display: 'grid',
-        gridTemplateRows: '60px minmax(0, 1fr) 60px',
+        gridTemplateRows: '60px minmax(0, 1fr) auto',
         minWidth: 0,
         borderLeft: isDesktop || isTablet ? `1px solid ${v.borderSubtle}` : 'none',
         borderRight: showRightRail ? `1px solid ${v.border}` : 'none',
@@ -104,6 +117,7 @@ export function ChatCenterPanel({
             >
               <MessageBubble
                 message={message}
+                viewport={viewport}
                 activeThread={activeThread}
                 onPreviewMedia={setPreviewItem}
                 onDeleteToggle={handleDeleteToggle}
@@ -120,7 +134,7 @@ export function ChatCenterPanel({
           borderTop: `1px solid ${v.border}`,
           padding: replyingTo ? '8px 22px 10px' : '10px 22px',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-end',
           gap: 10,
           flexWrap: 'wrap',
         }}
@@ -157,20 +171,22 @@ export function ChatCenterPanel({
         <div
           style={{
             flex: 1,
-            height: 38,
-            borderRadius: 999,
+            minHeight: 38,
+            borderRadius: 22,
             background: v.surfaceSunken,
             border: `1px solid ${v.borderSubtle}`,
             display: 'flex',
-            alignItems: 'center',
-            padding: '0 14px',
+            alignItems: 'flex-end',
+            padding: '10px 16px',
+            overflow: 'hidden',
           }}
         >
-          <input
+          <textarea
+            ref={draftInputRef}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === 'Enter') {
+              if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 handleSend();
               }
@@ -178,12 +194,19 @@ export function ChatCenterPanel({
             placeholder={replyingTo ? 'write a reply...' : 'say something real...'}
             style={{
               flex: 1,
+              minHeight: 22,
+              maxHeight: 126,
               background: 'transparent',
               border: 'none',
               outline: 'none',
               color: v.ink,
               fontFamily: v.fontBody,
               fontSize: 15,
+              lineHeight: 1.45,
+              resize: 'none',
+              overflowY: 'auto',
+              padding: 0,
+              boxSizing: 'border-box',
             }}
           />
         </div>

@@ -171,7 +171,7 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0 : isTablet ? 4 : 14, flexShrink: 0, width: isWide ? '100%' : sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 244 : undefined), justifyContent: 'flex-end', paddingRight: isDesktop ? 52 : isTablet ? 0 : 0 }}>
-          {isWide && !showBackHeader && HeaderSearch ? <HeaderSearch navigate={navigate} viewport={viewport} /> : null}
+          {isWide && !showBackHeader && HeaderSearch ? <HeaderSearch navigate={navigate} viewport={viewport} screen={screen} params={params} /> : null}
           {screen === 'messages' && isMobile ? (
             <button
               type="button"
@@ -283,10 +283,6 @@ export function LxRightRail({ navigate, compact = false }) {
     .filter(u => !blocks.includes(u.id) && !followingIds.has(u.id))
     .slice(0, 5);
 
-  if (suggested.length === 0) {
-    return <aside style={{ width: compact ? 196 : 280, flexShrink: 0, padding: compact ? '12px 10px 12px 12px' : '20px 20px', position: 'sticky', top: 56, alignSelf: 'flex-start' }} />;
-  }
-
   return (
     <aside style={{
       width: compact ? 196 : 280, flexShrink: 0,
@@ -307,19 +303,21 @@ export function LxRightRail({ navigate, compact = false }) {
         </div>
       </div>
 
-      <div>
-        <div style={{ fontFamily: v.fontMono, fontSize: compact ? 9 : 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: compact ? 10 : 14 }}>suggested</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 6 }}>
-          {suggested.map(u => (
-            <UserCard 
-              key={u.id} 
-              user={u} 
-              compact={true} 
-              onAvatarClick={() => navigate ? navigate('profile', { user: { id: u.id, username: u.username } }) : null}
-            />
-          ))}
+      {suggested.length > 0 ? (
+        <div>
+          <div style={{ fontFamily: v.fontMono, fontSize: compact ? 9 : 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: compact ? 10 : 14 }}>suggested</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 6 }}>
+            {suggested.map(u => (
+              <UserCard 
+                key={u.id} 
+                user={u} 
+                compact={true} 
+                onAvatarClick={() => navigate ? navigate('profile', { user: { id: u.id, username: u.username } }) : null}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
     </aside>
   );
 }

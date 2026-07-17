@@ -5,6 +5,7 @@ import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primi
 import { useDeletePost, usePostDetail, useUpdatePost } from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
+import { useRelativeTime } from '../hooks/useRelativeTime';
 
 const HEART_COLOR = 'var(--lx-error)';
 
@@ -51,15 +52,7 @@ const buildThreadReplies = (authorName) => {
   return baseReplies.slice(0, authorName === 'mara.v' ? 5 : 5);
 };
 
-const buildDefaultExpandedReplyIds = (replies) => {
-  const expanded = new Set();
-  let branch = replies[0];
-  while (branch?.children?.length) {
-    expanded.add(branch.id);
-    branch = branch.children[0];
-  }
-  return expanded;
-};
+const buildDefaultExpandedReplyIds = () => new Set();
 
 const findReplyPath = (replies, targetId, trail = []) => {
   for (const reply of replies) {
@@ -88,16 +81,6 @@ const appendReplyToTree = (replies, targetId, nextReply) =>
     };
   });
 
-const timeAgo = (dateStr) => {
-  if (!dateStr) return 'now';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${Math.max(0, minutes)}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-};
-
 const buildPostLink = (postId) => {
   if (typeof window === 'undefined') return `luvax://post/${postId}`;
   return `${window.location.origin}${window.location.pathname}#post-${postId}`;
@@ -121,9 +104,11 @@ const sharePost = async (postId, title) => {
   await copyPostLink(postId);
 };
 
-function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleReplies }) {
+function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleReplies, navigate, postId, authorProfile }) {
   const [liked, setLiked] = useState(false);
   const [heartBurst, setHeartBurst] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [commentMenuOpen, setCommentMenuOpen] = useState(false);
   const childReplies = reply.children || [];
   const hasNestedReplies = childReplies.length > 0;
   const showReplies = expandedReplyIds.has(reply.id);
@@ -131,6 +116,7 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
   const nestedDepth = isNestedReply ? Math.round(indent / 30) : 0;
   const nestedOffset = isNestedReply ? 23 + Math.max(0, nestedDepth - 1) * 23 : 0;
   const nestedRepliesLift = Math.min(14, 8 + nestedDepth * 2);
+  const commentMenuButtonRef = useRef(null);
   const handleLikeToggle = () => {
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
@@ -139,17 +125,31 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
       return next;
     });
   };
+  const commentMenuItems = [
+    { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
+    { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, reply.text) },
+    { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
+    {
+      id: 'view-profile',
+      icon: 'profile',
+      label: "View author's profile",
+      onClick: () => authorProfile ? navigate?.('profile', { user: authorProfile }) : null,
+    },
+    { id: 'report', icon: 'flag', label: 'Report', tone: 'danger', separator: true, onClick: () => {} },
+  ];
 
   return (
     <div style={{ width: '100%' }}>
       <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
         position: 'relative',
         display: 'grid',
         gridTemplateColumns: '40px minmax(0, 1fr)',
         gap: 12,
         padding: isNestedReply ? '6px 28px 8px 0' : '14px 28px 13px 0',
-        borderBottom: reply.children?.length ? 'none' : `1px solid ${v.borderSubtle}`,
+        borderBottom: hasNestedReplies ? 'none' : `1px solid ${v.borderSubtle}`,
       }}
       >
         <div style={{ marginLeft: indent + nestedOffset }}>
@@ -166,19 +166,26 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
             <button type="button" onClick={() => onReply(reply)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: v.ink3, fontFamily: v.fontBody, fontSize: 11.5, fontWeight: 500 }}>
               Reply
             </button>
-            {reply.author === 'mara.v' ? (
-              <button type="button" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: v.ink3, fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, letterSpacing: '0.04em' }}>
+            {hovered || commentMenuOpen ? (
+              <button
+                ref={commentMenuButtonRef}
+                type="button"
+                onClick={() => setCommentMenuOpen((open) => !open)}
+                style={{ background: 'none', border: 'none', padding: 0, marginTop: -5, cursor: 'pointer', color: v.ink3, fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, lineHeight: 1, letterSpacing: '0.02em' }}
+              >
                 ...
               </button>
             ) : null}
           </div>
           {hasNestedReplies || childReplies.length > 0 ? (
-            <button type="button" onClick={() => onToggleReplies(reply.id)} style={{ background: 'none', border: 'none', padding: 0, marginTop: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: v.ink3, fontFamily: v.fontBody, fontSize: 12, fontWeight: 500 }}>
-              <span style={{ display: 'inline-flex', transform: showReplies ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 160ms ease' }}>
-                <LxIcon name="chevronRight" size={12} color={v.ink3} />
-              </span>
-              <span>{showReplies ? 'Hide replies' : `View replies (${childReplies.length || 1})`}</span>
-            </button>
+            <>
+              <button type="button" onClick={() => onToggleReplies(reply.id)} style={{ background: 'none', border: 'none', padding: 0, marginTop: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: v.ink3, fontFamily: v.fontBody, fontSize: 12, fontWeight: 500 }}>
+                <span style={{ display: 'inline-flex', transform: showReplies ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 160ms ease' }}>
+                  <LxIcon name="chevronRight" size={12} color={v.ink3} />
+                </span>
+                <span>{showReplies ? 'Hide replies' : `View replies (${childReplies.length || 1})`}</span>
+              </button>
+            </>
           ) : null}
         </div>
         <button
@@ -192,6 +199,17 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
           </span>
         </button>
       </div>
+      {!showReplies && hasNestedReplies ? (
+        <div
+          aria-hidden="true"
+          style={{
+            height: 1,
+            background: v.borderSubtle,
+            marginLeft: isNestedReply ? 18 : 0,
+            marginRight: 28,
+          }}
+        />
+      ) : null}
       <div
         style={{
           marginTop: showReplies && childReplies.length > 0 ? -nestedRepliesLift : 0,
@@ -204,10 +222,11 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
       >
         <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
           {childReplies.map((child) => (
-            <CommentRow key={child.id} reply={child} onReply={onReply} indent={indent + 30} expandedReplyIds={expandedReplyIds} onToggleReplies={onToggleReplies} />
+            <CommentRow key={child.id} reply={child} onReply={onReply} indent={indent + 30} expandedReplyIds={expandedReplyIds} onToggleReplies={onToggleReplies} navigate={navigate} postId={postId} authorProfile={authorProfile} />
           ))}
         </div>
       </div>
+      <LxDropdownMenu anchorRef={commentMenuButtonRef} open={commentMenuOpen} onClose={() => setCommentMenuOpen(false)} items={commentMenuItems} width={214} align="right" />
     </div>
   );
 }
@@ -255,12 +274,12 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((tag) => tag.slice(1)) : []);
   const mediaList = post.media || [];
   const mainMedia = mediaList[0] || null;
-  const timeStr = timeAgo(post.createdAt || post.time);
+  const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
 
   useEffect(() => {
     const nextReplies = buildThreadReplies(authorName);
     setThreadReplies(nextReplies);
-    setExpandedReplyIds(buildDefaultExpandedReplyIds(nextReplies));
+    setExpandedReplyIds(buildDefaultExpandedReplyIds());
     setReplyingTo(null);
     setCommentDraft('');
   }, [authorName, postId]);
@@ -390,27 +409,14 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
     });
   };
 
-  const menuItems = useMemo(() => {
-    if (isSelf) {
-      return [
-        { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
-        { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, post.caption || post.text) },
-        { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
-        { id: 'edit', icon: 'edit', label: 'edit post', onClick: handleEditOpen },
-        { id: 'delete', icon: 'close', label: 'delete post', tone: 'danger', onClick: handleDelete },
-      ];
-    }
-
-    return [
+  const menuItems = useMemo(
+    () => [
       { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
       { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, post.caption || post.text) },
       { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
-      { id: 'view-profile', icon: 'profile', label: "View author's profile", onClick: () => navigate('profile', { user: { id: targetUserId, username: authorHandle, displayName: authorName, avatarUrl: authorAvatarUrl } }) },
-      { id: 'follow-toggle', icon: 'profile', label: `${following ? 'Unfollow' : 'Follow'} @${authorHandle}`, tone: 'danger', separator: true, onClick: handleFollowToggle, disabled: follow.isPending || unfollow.isPending },
-      { id: 'block', icon: 'close', label: `Block @${authorHandle}`, tone: 'danger', onClick: () => setBlockModalOpen(true) },
-      { id: 'report', icon: 'flag', label: 'Report', tone: 'danger', onClick: () => {} },
-    ];
-  }, [authorAvatarUrl, authorHandle, authorName, follow.isPending, following, handleFollowToggle, liked, post.caption, post.text, postId, targetUserId, unfollow.isPending]);
+    ],
+    [liked, post.caption, post.text, postId]
+  );
 
   if (isLoading) {
     return (
@@ -433,7 +439,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
     <div
       style={{
         width: 'min(556px, calc(100vw - 32px))',
-        height: 'min(88vh, 780px)',
+        height: 'min(84vh, 728px)',
         background: v.base,
         border: `1px solid ${v.border}`,
         borderRadius: 16,
@@ -496,7 +502,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
         ) : null}
 
         {threadReplies.map((reply) => (
-          <CommentRow key={reply.id} reply={reply} onReply={handleReplySelect} expandedReplyIds={expandedReplyIds} onToggleReplies={handleToggleReplies} />
+          <CommentRow key={reply.id} reply={reply} onReply={handleReplySelect} expandedReplyIds={expandedReplyIds} onToggleReplies={handleToggleReplies} navigate={navigate} postId={postId} authorProfile={{ id: targetUserId, username: authorHandle, displayName: authorName, avatarUrl: authorAvatarUrl }} />
         ))}
       </div>
 
@@ -562,7 +568,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
         container
       )}
 
-      <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={214} />
+      <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={182} zIndex={1605} />
 
       <LxModal
         open={blockModalOpen}

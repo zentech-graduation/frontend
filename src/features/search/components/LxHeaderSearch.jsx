@@ -1,12 +1,29 @@
+import { useEffect, useState } from 'react';
 import { v } from '@/features/luvax/constants/tokens';
 import { LxIcon } from '@/features/luvax/components/primitives';
 
-export function LxHeaderSearch({ navigate, viewport }) {
+export function LxHeaderSearch({ navigate, viewport, screen, params = {} }) {
+  const [query, setQuery] = useState(params?.q || '');
+
+  useEffect(() => {
+    setQuery(params?.q || '');
+  }, [params?.q]);
+
+  const openSearch = (nextQuery = query, focusSearch = true) => {
+    navigate('explore', { q: nextQuery, focusSearch });
+  };
+
+  const submitSearch = () => {
+    const nextQuery = query.trim();
+    openSearch(nextQuery, false);
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => navigate('explore')}
-      aria-label="open search"
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        submitSearch();
+      }}
       className="lx-search-btn"
       style={{
         width: viewport === 'tablet' ? 184 : 206,
@@ -22,7 +39,7 @@ export function LxHeaderSearch({ navigate, viewport }) {
         alignItems: 'center',
         gap: 8,
         transform: 'translateY(0px)',
-        cursor: 'pointer',
+        cursor: 'text',
         fontFamily: v.fontBody,
         fontSize: 13,
         letterSpacing: '-0.01em',
@@ -30,10 +47,34 @@ export function LxHeaderSearch({ navigate, viewport }) {
       }}
     >
       <LxIcon name="explore" size={15} color={v.ink3} />
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        search
-      </span>
-    </button>
+      <input
+        type="search"
+        value={query}
+        aria-label="search posts"
+        placeholder="search"
+        onChange={(event) => {
+          setQuery(event.target.value);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            submitSearch();
+            event.currentTarget.blur();
+          }
+        }}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          border: 'none',
+          outline: 'none',
+          background: 'transparent',
+          color: v.ink2,
+          fontFamily: v.fontBody,
+          fontSize: 13,
+          letterSpacing: '-0.01em',
+        }}
+      />
+    </form>
   );
 }
 

@@ -4,18 +4,9 @@ import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxTag } from '.
 import { useDeletePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useRelativeTime } from '../hooks/useRelativeTime';
 
 const HEART_COLOR = 'var(--lx-error)';
-
-const timeAgo = (dateStr) => {
-  if (!dateStr) return 'now';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-};
 
 const buildPostLink = (postId) => {
   if (typeof window === 'undefined') return `luvax://post/${postId}`;
@@ -100,7 +91,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const authorHandle = post.username || post.author || 'unknown';
   const targetUserId = post.userId || post.authorId;
   const avatarUrl = post.userAvatarUrl;
-  const timeStr = timeAgo(post.createdAt || post.time);
+  const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const media = post.media && post.media.length > 0 ? post.media[0] : null;
   const likeCount = post.likeCount || post.likes || 0;

@@ -16,6 +16,7 @@ export function MessagesScreen({ navigate, viewport }) {
   const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
   const [composerSeed, setComposerSeed] = useState(0);
+  const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
 
@@ -176,6 +177,11 @@ export function MessagesScreen({ navigate, viewport }) {
   };
 
   const handleDeleteToggle = (messageId) => {
+    setPendingDeleteMessageId(messageId);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!activeThread || !pendingDeleteMessageId) return;
     if (!activeThread) return;
     setThreads((current) =>
       current.map((thread) => {
@@ -184,13 +190,14 @@ export function MessagesScreen({ navigate, viewport }) {
           ...thread,
           preview: 'message was deleted',
           messages: thread.messages.map((message) =>
-            message.id === messageId
+            message.id === pendingDeleteMessageId
               ? { ...message, kind: 'deleted', text: 'this message was deleted' }
               : message
           ),
         };
       })
     );
+    setPendingDeleteMessageId(null);
   };
 
   const showDetail = viewport !== 'mobile' || threadOpen;
@@ -353,6 +360,80 @@ export function MessagesScreen({ navigate, viewport }) {
             </button>
           </div>
         </div>
+      ) : null}
+
+      {pendingDeleteMessageId ? (
+        <>
+          <div
+            onClick={() => setPendingDeleteMessageId(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: v.scrim,
+              zIndex: 1000,
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'calc(100% - 56px)',
+              maxWidth: 348,
+              background: v.base,
+              borderRadius: 18,
+              boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`,
+              zIndex: 1001,
+              padding: '22px 24px 20px',
+            }}
+          >
+            <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, color: v.ink, letterSpacing: '-0.03em' }}>
+              delete message?
+            </div>
+            <div style={{ marginTop: 10, fontFamily: v.fontBody, fontSize: 14, lineHeight: 1.45, color: v.ink3 }}>
+              this can't be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={() => setPendingDeleteMessageId(null)}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: '#2c2621',
+                  color: '#c4b9a8',
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: 'var(--lx-error)',
+                  color: '#fff5f2',
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                delete
+              </button>
+            </div>
+          </div>
+        </>
       ) : null}
     </div>
   );
