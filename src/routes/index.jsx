@@ -1,19 +1,15 @@
-import { Outlet, createBrowserRouter } from 'react-router-dom';
+import { Navigate, Outlet, createBrowserRouter, useLocation } from 'react-router-dom';
 
 import AuthSessionBootstrap from '@/components/common/AuthSessionBootstrap';
-import GuestRoute from '@/components/common/GuestRoute';
 import NotFoundPage from '@/components/common/NotFoundPage';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import RouterErrorPage from '@/components/common/RouterErrorPage';
 import EmailVerificationPage from '@/pages/auth/EmailVerificationPage';
-import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import VerifyEmailNoticePage from '@/pages/auth/VerifyEmailNoticePage';
-import LoginPage from '@/features/auth/components/LoginPage';
+import AuthPage from '@/features/auth/components/AuthPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
-import RegisterPage from '@/pages/auth/RegisterPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
-import HomePage from '@/pages/HomePage';
 import LuvaxPage from '@/pages/LuvaxPage';
 
 function RootLayout() {
@@ -25,6 +21,11 @@ function RootLayout() {
   );
 }
 
+function LoginRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/${location.search}`} state={location.state} replace />;
+}
+
 const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -32,7 +33,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <HomePage />,
+        element: <AuthPage />,
       },
       {
         path: '/app',
@@ -47,21 +48,16 @@ const router = createBrowserRouter([
         element: <VerifyEmailNoticePage />,
       },
       {
-        element: <GuestRoute />,
-        children: [
-          {
-            path: '/login',
-            element: <LoginPage />,
-          },
-          {
-            path: '/register',
-            element: <RegisterPage />,
-          },
-          {
-            path: '/forgot-password',
-            element: <ForgotPasswordPage />,
-          },
-        ],
+        path: '/login',
+        element: <LoginRedirect />,
+      },
+      {
+        path: '/register',
+        element: <Navigate to="/?view=register" replace />,
+      },
+      {
+        path: '/forgot-password',
+        element: <Navigate to="/?view=forgot" replace />,
       },
       {
         path: '/reset-password',

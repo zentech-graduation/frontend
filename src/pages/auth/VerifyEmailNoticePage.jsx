@@ -3,8 +3,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation } from 'react-router-dom';
 
-import { AuthAlert, AuthButton, AuthInput, AuthShell } from '@/components/auth/AuthPrimitives';
-import AuthPageLayout from '@/components/auth/AuthPageLayout';
+import Field from '@/features/auth/components/AuthField';
+import '@/features/auth/components/AuthPage.css';
 import { ROUTES } from '@/config/constants';
 import { useResendVerification } from '@/features/auth/hooks/useAuth';
 import { emailSchema } from '@/features/auth/utils/authSchemas';
@@ -34,39 +34,56 @@ export default function VerifyEmailNoticePage() {
   };
 
   return (
-    <AuthPageLayout>
-      <AuthShell
-        eyebrow="Verify your email"
-        title="check your inbox."
-        subtitle="We sent a verification link to your email address. Click the link to activate your account."
-        footer={
-          <p>
-            Already verified? <Link to={ROUTES.LOGIN}>Sign in</Link>
-          </p>
-        }
-      >
-        <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-          <AuthInput
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            error={errors.email?.message}
-            {...register('email')}
-          />
+    <div className="lx-shell">
+      <div className="lx-col lx-enter">
+        <div className="lx-card">
+          <div className="lx-head">
+            <h1 className="lx-h2">check your inbox.</h1>
+            <p className="lx-sub">
+              we sent a verification link to your email address. click the link to activate your
+              account.
+            </p>
+          </div>
 
-          {resendMutation.error ? (
-            <AuthAlert>{resendMutation.error.message}</AuthAlert>
-          ) : null}
-          {successMessage ? (
-            <AuthAlert tone="success">{successMessage}</AuthAlert>
-          ) : null}
+          <form
+            style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+          >
+            <Field
+              id="ven-email"
+              label="email address"
+              type="email"
+              autoComplete="email"
+              error={errors.email?.message}
+              register={register('email')}
+            />
 
-          <AuthButton type="submit" loading={isSubmitting || resendMutation.isPending}>
-            Resend verification email
-          </AuthButton>
-        </form>
-      </AuthShell>
-    </AuthPageLayout>
+            {resendMutation.error ? (
+              <p style={{ color: 'var(--lx-error-text)', fontSize: '14px', margin: 0 }}>
+                {resendMutation.error.message}
+              </p>
+            ) : null}
+            {successMessage ? (
+              <p style={{ color: 'var(--lx-success-text)', fontSize: '14px', margin: 0 }}>
+                {successMessage}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              className="lx-btn-primary"
+              disabled={isSubmitting || resendMutation.isPending}
+            >
+              resend verification email
+            </button>
+          </form>
+
+          <div className="lx-foot-block">
+            already verified? <Link to={ROUTES.LOGIN}>sign in</Link>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

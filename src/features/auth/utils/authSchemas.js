@@ -21,7 +21,7 @@ const passwordField = z
  * Used with React Hook Form's zodResolver.
  */
 export const loginSchema = z.object({
-  email: emailField,
+  email: z.string().trim().min(1, 'username or email is required.'),
   password: z.string().min(8, 'Password must be at least 8 characters.'),
 });
 
@@ -52,6 +52,24 @@ export const registerSchema = z
     message: 'Passwords do not match.',
     path: ['confirmPassword'],
   });
+
+/** Register form schema for the unified AuthPage — single password field, no confirmation. */
+export const authPageRegisterSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, 'Username must be at least 3 characters.')
+    .max(30, 'Username must be 30 characters or fewer.')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
+  name: z
+    .string()
+    .trim()
+    .max(100, 'Display name must be 100 characters or fewer.')
+    .optional()
+    .or(z.literal('')),
+  email: emailField,
+  password: passwordField,
+});
 
 // ─── Email-only ───────────────────────────────────────────────────────────────
 

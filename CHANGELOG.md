@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- The auth entry point's brand panel now shows the luvax logo image instead of a text wordmark, matching the browser tab favicon.
+- The login identifier field now accepts a username or an email address without triggering an email-format validation error.
+
+### Removed
+- Removed the password strength indicator and the "request another reset email" link from the reset-password page.
+
+### Added
+- Extracted the auth field component to `AuthField` so the email verification, verification-notice, and reset-password pages can share it with the unified auth entry point.
+
+### Changed
+- Email verification, verification-notice, and reset-password pages now render with the same design system as the unified auth entry point instead of the old auth UI layer.
+- Theme (light/dark) is now applied synchronously before the app renders, eliminating a flash of the wrong theme on cold page loads for users with a dark OS preference.
+
+### Fixed
+- Fixed the auth entry point's hero image not loading due to a wrong file extension.
+- Fixed a duplicated focus ring appearing around auth form fields on keyboard focus.
+
+### Removed
+- Removed the legacy auth UI component layer (`AuthPageLayout`, `AuthShell`, `AuthPrimitives`, `AuthBrandPanel`) and its dedicated CSS now that all auth pages use the unified design system.
+
+### Added
+- Added a single `AuthPage` component that replaces the old landing page and the separate login, register, and forgot-password pages with one unified entry point at `/`, ported from the approved auth design.
+- Added `authPageRegisterSchema`, a trimmed registration schema (username, display name, email, password) used by the new unified registration form.
+
+### Changed
+- `/` now renders the unified `AuthPage` instead of the old landing page; `/login`, `/register`, and `/forgot-password` now redirect into `AuthPage`'s in-place view state instead of rendering separate pages.
+
+### Removed
+- Removed the old landing page and the separate `LoginPage`, `RegisterPage`, and `ForgotPasswordPage` components, superseded by the unified `AuthPage`.
+
 ### Fixed
 - Email verification token consumed twice in development due to React StrictMode double-invoke; replaced AbortController cancellation approach with a useRef idempotency guard that prevents the single-use token from being called more than once per page visit.
 
