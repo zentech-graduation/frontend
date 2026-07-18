@@ -4,16 +4,7 @@ import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests, useApproveFollowRequest, useRejectFollowRequest } from '../hooks/useSocial';
 import { useNotifications, useMarkAllAsRead } from '../hooks/useNotifications';
 import { useUserProfile } from '../hooks/useUsers';
-
-const timeAgo = (dateStr) => {
-  if (!dateStr) return 'now';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${Math.max(0, minutes)}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-};
+import { useRelativeTime } from '../hooks/useRelativeTime';
 
 const TYPE_ICON = {
   like: 'heart', follow: 'profile', follow_request: 'profile',
@@ -28,6 +19,7 @@ const TYPE_COLOR = {
 function NotifRow({ n, navigate }) {
   const { data: userProfileData } = useUserProfile(n.actorId);
   const actorProfile = userProfileData?.data || userProfileData;
+  const timeStr = useRelativeTime(n.createdAt);
 
   const isFollow = n.type === 'follow' || n.type === 'follow_request';
   const text = isFollow ? 'started following you' : n.type === 'like' ? 'liked your post' : 'interacted with you';
@@ -63,7 +55,7 @@ function NotifRow({ n, navigate }) {
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
           <strong style={{ fontWeight: 600, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); navigate('profile', { user: { id: n.actorId } }); }}>{actorName}</strong> <span style={{ color: v.ink2 }}>{text}</span>
         </div>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeAgo(n.createdAt)}</div>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeStr}</div>
       </div>
 
       {n.type === 'follow_request' && (
@@ -78,6 +70,7 @@ function NotifRow({ n, navigate }) {
 
 function RequestRow({ req, navigate, onAccept, onDecline }) {
   const user = req.requester || {};
+  const timeStr = useRelativeTime(req.createdAt);
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 12,
@@ -101,7 +94,7 @@ function RequestRow({ req, navigate, onAccept, onDecline }) {
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
           <strong onClick={() => navigate('profile', { user: { id: user.id } })} style={{ fontWeight: 600, cursor: 'pointer' }}>{user.username}</strong> <span style={{ color: v.ink2 }}>requested to follow you</span>
         </div>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeAgo(req.createdAt)}</div>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeStr}</div>
       </div>
 
       <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>

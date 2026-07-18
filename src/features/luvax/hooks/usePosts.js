@@ -5,6 +5,11 @@ export const useFeed = (params = {}) => {
   return useInfiniteQuery({
     queryKey: ['feed', params],
     queryFn: ({ pageParam = null }) => postService.getFeed({ ...params, cursor: pageParam, limit: 10 }),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
     getNextPageParam: (lastPage) => {
       // Extract from ApiResponse -> CursorPageResponse
       const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
@@ -18,6 +23,11 @@ export const useExplore = (params = {}) => {
   return useInfiniteQuery({
     queryKey: ['explore', params],
     queryFn: ({ pageParam = null }) => postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10 }),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
     getNextPageParam: (lastPage) => {
       const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
       return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
@@ -30,6 +40,11 @@ export const useUserPosts = (userId, params = {}) => {
   return useInfiniteQuery({
     queryKey: ['userPosts', userId, params],
     queryFn: ({ pageParam = null }) => postService.getUserPosts(userId, { ...params, cursor: pageParam, limit: 10 }),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
     getNextPageParam: (lastPage) => {
       const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
       return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
@@ -44,6 +59,11 @@ export const usePostDetail = (postId) => {
     queryKey: ['post', postId],
     queryFn: () => postService.getPostById(postId),
     enabled: !!postId,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
+    refetchIntervalInBackground: false,
   });
 };
 

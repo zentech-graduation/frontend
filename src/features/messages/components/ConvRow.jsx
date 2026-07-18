@@ -8,26 +8,26 @@ export function ConvRow({ thread, isActive, onSelect }) {
       onClick={onSelect}
       style={{
         width: '100%',
-        background: isActive ? '#4a4331' : 'transparent',
+        background: isActive ? v.accentDim : 'transparent',
         border: 'none',
         borderLeft: isActive ? `3px solid ${v.accent}` : '3px solid transparent',
         borderBottom: `1px solid ${v.borderSubtle}`,
-        padding: '13px 18px 13px 16px',
+        padding: '11px 14px 11px 14px',
         cursor: 'pointer',
         display: 'grid',
-        gridTemplateColumns: '42px minmax(0, 1fr) auto',
-        gap: 12,
+        gridTemplateColumns: '40px minmax(0, 1fr) auto',
+        gap: 11,
         alignItems: 'center',
         textAlign: 'left',
-        color: v.inkInverse,
+        color: v.ink,
       }}
     >
       <AvatarVisual thread={thread} />
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.inkInverse }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 13.5, fontWeight: 700, color: v.ink }}>
           {thread.name}
         </div>
-        <div style={{ fontFamily: v.fontBody, fontSize: 12, color: thread.muted ? v.ink3 : '#d7c39d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 11.5, color: thread.muted ? v.ink3 : v.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {thread.preview} · {thread.time}
         </div>
       </div>

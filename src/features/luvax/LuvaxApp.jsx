@@ -48,6 +48,7 @@ export function LuvaxApp() {
     } catch { return {}; }
   });
   const [history, setHistory] = useState([]);
+  const [messagesThreadOpen, setMessagesThreadOpen] = useState(false);
   const viewport = useViewport();
 
   const setTweak = (keyOrEdits, val) => {
@@ -140,8 +141,34 @@ export function LuvaxApp() {
     root.style.setProperty('--font-display', FONT_MAP[tweaks.font] || FONT_MAP.syne);
   }, [tweaks.dark, tweaks.accent, tweaks.font, tweaks.density]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleMessagesThreadOpen = (event) => {
+      setMessagesThreadOpen(Boolean(event.detail?.open));
+    };
+
+    window.addEventListener('lx_messages_thread_open', handleMessagesThreadOpen);
+    return () => {
+      window.removeEventListener('lx_messages_thread_open', handleMessagesThreadOpen);
+    };
+  }, []);
+
   const screenProps = { navigate, params, tweaks, setTweak, viewport };
   const MessagesScreen = typeof window !== 'undefined' ? window.MessagesScreen : null;
+  const screens = {
+    feed:          <FeedScreen          {...screenProps} />,
+    explore:       <ExploreScreen       {...screenProps} />,
+    compose:       <ComposerScreen      {...screenProps} />,
+    profile:       <ProfileScreen       {...screenProps} />,
+    notifications: <NotificationsScreen {...screenProps} />,
+    settings:      <SettingsScreen      {...screenProps} />,
+    'edit-profile': <EditProfileScreen  {...screenProps} />,
+    'change-password': <ChangePasswordScreen {...screenProps} />,
+    blocked:       <BlockedUsersScreen  {...screenProps} />,
+    followers:     <FollowersScreen     {...screenProps} />,
+    following:     <FollowingScreen     {...screenProps} />,
+  };
 
   if (screen === 'onboarding') {
     return <OnboardingScreen {...screenProps} />;
@@ -149,11 +176,11 @@ export function LuvaxApp() {
 
   if (screen === 'messages') {
     const msgTop = viewport === 'mobile' ? 0 : 56;
-    const msgBottom = viewport === 'desktop' ? 0 : 56;
+    const msgBottom = viewport === 'mobile' ? 56 : 0;
 
     return (
       <div style={{ minHeight: '100vh', background: v.base }}>
-        {viewport !== 'mobile' ? (
+        {viewport !== 'mobile' || (screen === 'messages' && !messagesThreadOpen) ? (
           <LxAppBar screen={screen} navigate={navigate} params={params} viewport={viewport} />
         ) : null}
         <div
@@ -198,35 +225,39 @@ export function LuvaxApp() {
             )}
           </div>
         </div>
-        {viewport === 'mobile' ? (
-          <LxAppBar screen={screen} navigate={navigate} params={params} viewport={viewport} />
-        ) : null}
-        {viewport !== 'desktop' ? <LxBottomNav active={screen} navigate={navigate} /> : null}
+        {viewport === 'mobile' ? <LxBottomNav active={screen} navigate={navigate} /> : null}
       </div>
     );
   }
 
-  const screens = {
-    feed:          <FeedScreen          {...screenProps} />,
-    explore:       <ExploreScreen       {...screenProps} />,
-    compose:       <ComposerScreen      {...screenProps} />,
-    post:          <PostDetailScreen    {...screenProps} />,
-    profile:       <ProfileScreen       {...screenProps} />,
-    notifications: <NotificationsScreen {...screenProps} />,
-    settings:      <SettingsScreen      {...screenProps} />,
-    'edit-profile': <EditProfileScreen  {...screenProps} />,
-    'change-password': <ChangePasswordScreen {...screenProps} />,
-    blocked:       <BlockedUsersScreen  {...screenProps} />,
-    followers:     <FollowersScreen     {...screenProps} />,
-    following:     <FollowingScreen     {...screenProps} />,
-  };
+  if (screen === 'post') {
+    const baseScreen = [...history].reverse().find(
+      (s) => s !== 'post' && s !== 'story-view' && s !== 'story-compose' && s !== 'onboarding'
+    ) || 'feed';
+    const baseShowRail = (baseScreen === 'feed' || baseScreen === 'explore') && (viewport === 'desktop' || viewport === 'tablet');
+
+    const baseScreenParams = baseScreen === 'profile' && params?.user
+      ? { user: params.user }
+      : {};
+
+    return (
+      <>
+        <LxShell screen={baseScreen} navigate={navigate} params={baseScreenParams} showRightRail={baseShowRail}>
+          {baseScreen === 'profile'
+            ? <ProfileScreen {...screenProps} params={baseScreenParams} />
+            : screens[baseScreen] || screens.feed}
+        </LxShell>
+        <PostDetailScreen {...screenProps} overlay />
+      </>
+    );
+  }
 
   const isStory = screen === 'story-view' || screen === 'story-compose';
   if (isStory) {
     const baseScreen = [...history].reverse().find(
       s => s !== 'story-view' && s !== 'story-compose' && s !== 'onboarding'
     ) || 'feed';
-    const baseShowRail = (baseScreen === 'feed' || baseScreen === 'explore') && viewport === 'desktop';
+    const baseShowRail = (baseScreen === 'feed' || baseScreen === 'explore') && (viewport === 'desktop' || viewport === 'tablet');
     const Overlay = screen === 'story-view' ? StoryViewScreen : StoryComposerScreen;
     return (
       <>
@@ -238,7 +269,7 @@ export function LuvaxApp() {
     );
   }
 
-  const showRail = (screen === 'feed' || screen === 'explore') && viewport === 'desktop';
+  const showRail = (screen === 'feed' || screen === 'explore') && (viewport === 'desktop' || viewport === 'tablet');
 
   return (
     <LxShell screen={screen} navigate={navigate} params={params} showRightRail={showRail}>

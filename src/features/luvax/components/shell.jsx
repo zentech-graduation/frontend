@@ -9,7 +9,7 @@ import { UserCard } from './UserCard';
 import '@/features/search/components/LxHeaderSearch';
 
 // ─── Top Tab Strip ─────────────────────────────────────────────────────────
-export function LxTopTabs({ active, navigate }) {
+export function LxTopTabs({ active, navigate, compact = false }) {
   const tabs = [
     { id: 'feed', icon: 'home', label: 'home' },
     { id: 'explore', icon: 'explore', label: 'explore' },
@@ -24,28 +24,36 @@ export function LxTopTabs({ active, navigate }) {
   const unreadCount = unreadResponse?.data?.count || 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
   return (
-    <div style={{ display: 'flex', alignItems: 'stretch', height: 56, gap: 96, flex: 1, justifyContent: 'center', maxWidth: 1080 }}>
+    <div style={{ display: 'flex', alignItems: 'stretch', height: compact ? 52 : 56, gap: compact ? 38 : 74, flex: '0 0 auto', justifyContent: 'center', width: '100%', maxWidth: compact ? 300 : 596, margin: compact ? '0 0 0 130px' : '0 auto' }}>
       {tabs.map(t => {
         const isActive = active === t.id;
         return (
-          <button key={t.id} onClick={() => navigate(t.id)} style={{
-            flex: '0 0 auto', width: 34,
+          <button key={t.id} onClick={() => navigate(t.id)} className="lx-tab-btn" style={{
+            flex: '0 0 auto', width: compact ? 40 : 44, minWidth: compact ? 40 : 44,
             background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 2,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+            paddingTop: compact ? 11 : 16,
             position: 'relative',
             color: isActive ? v.accent : v.ink3,
             transition: 'color 150ms ease-out',
           }}>
-            <LxIcon
-              name={t.icon}
-              size={22}
-              filled={isActive}
-              color={isActive ? v.accent : v.ink3}
-              stroke={isActive ? 1.8 : 1.5}
-            />
+            <span
+              style={{
+                display: 'inline-flex',
+                filter: 'none',
+              }}
+            >
+              <LxIcon
+                name={t.icon}
+                size={compact ? 21 : 23}
+                filled={isActive}
+                color={isActive ? v.accent : v.ink3}
+                stroke={isActive ? 1.8 : 1.5}
+              />
+            </span>
+            <span style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: compact ? 10 : 12, height: 1.5, borderRadius: 999, background: isActive ? 'rgba(200, 169, 126, 0.78)' : 'transparent', opacity: isActive ? 0.45 : 0 }} />
             {t.id === 'notifications' && hasNotifications && (
-              <span style={{ position: 'absolute', top: 10, right: 12, width: 7, height: 7, borderRadius: '50%', background: v.accent }} />
+              <span style={{ position: 'absolute', top: compact ? 12 : 11, right: compact ? 5 : 9, width: 6, height: 6, borderRadius: '50%', background: v.accent }} />
             )}
           </button>
         );
@@ -67,26 +75,27 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
   };
   const isSubpage = Boolean(subpages[screen]);
   const subpageLabel = subpages[screen];
-  const mobileMsgBack = screen === 'messages' && viewport === 'mobile';
+  const mobileMsgBack = screen === 'messages' && viewport === 'mobile' && false;
   const showBackHeader = isSubpage || mobileMsgBack;
 
-  const innerMaxWidth = viewport === 'desktop' ? 1260 : viewport === 'tablet' ? 680 : '100%';
-  const sideWidth     = viewport === 'desktop' ? 280  : viewport === 'tablet' ? 'auto' : 'auto';
+  const isDesktop = viewport === 'desktop';
+  const isTablet = viewport === 'tablet';
+  const isWide = isDesktop || isTablet;
+  const innerMaxWidth = isDesktop ? 1260 : isTablet ? 948 : '100%';
+  const sideWidth = isDesktop ? 280 : isTablet ? 244 : 'auto';
 
   const { data: requestsResponse } = usePendingFollowRequests();
   const requests = requestsResponse?.data || requestsResponse || [];
   const { data: unreadResponse } = useUnreadCount();
   const unreadCount = unreadResponse?.data?.count || 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
-  const isDesktop = viewport === 'desktop';
   const HeaderSearch = typeof window !== 'undefined' ? window.LxHeaderSearch : null;
   const isMobile = viewport === 'mobile';
-  const isTablet = viewport === 'tablet';
 
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 100,
-      height: 56, flexShrink: 0,
+      height: isTablet ? 52 : 56, flexShrink: 0,
       display: 'flex', justifyContent: 'center',
       background: 'var(--lx-glass-bg)',
       backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
@@ -95,12 +104,12 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
       <div style={{
         width: '100%', maxWidth: innerMaxWidth,
         display: 'grid',
-        gridTemplateColumns: isDesktop ? '1fr 1fr 1fr' : 'auto 1fr auto',
+        gridTemplateColumns: isDesktop ? '244px minmax(596px, 1fr) 276px' : isTablet ? '82px minmax(0, 1fr) 244px' : 'auto 1fr auto',
         alignItems: 'stretch',
-        padding: isMobile ? '0 12px' : '0 22px',
-        gap: isMobile ? 0 : 20,
+        padding: isMobile ? '0 12px' : isTablet ? '0 6px' : '0 28px',
+        gap: isMobile ? 0 : isTablet ? 10 : 20,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: isDesktop ? (showBackHeader ? 'center' : 'flex-start') : 'flex-start', gap: 12, flexShrink: 0, width: isDesktop ? '100%' : sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 120 : undefined), paddingLeft: isDesktop && !showBackHeader ? 18 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: isWide ? (showBackHeader ? 'center' : 'flex-start') : 'flex-start', gap: 12, flexShrink: 0, width: isWide ? '100%' : sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 82 : undefined), paddingLeft: isDesktop && !showBackHeader ? 4 : 0 }}>
           {showBackHeader ? (
             <>
               <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', alignItems: 'center' }}>
@@ -111,16 +120,18 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
               </span>
             </>
           ) : isMobile ? (
-            <button
-              type="button"
-              onClick={() => navigate('compose')}
-              aria-label="open composer"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', alignItems: 'center' }}
-            >
-              <LxIcon name="plus" size={20} color={v.ink} />
-            </button>
+            screen === 'messages' ? <div style={{ width: 24, height: 24 }} /> : (
+              <button
+                type="button"
+                onClick={() => navigate('compose')}
+                aria-label="open composer"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, marginLeft: -4, display: 'flex', alignItems: 'center' }}
+              >
+                <LxIcon name="plus" size={22} color={v.ink} />
+              </button>
+            )
           ) : (
-            <button onClick={() => navigate('feed')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: v.fontDisplay, fontSize: 26, fontWeight: 700, color: v.ink, letterSpacing: '-0.05em' }}>
+            <button onClick={() => navigate('feed')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: isTablet ? -10 : 0, fontFamily: v.fontDisplay, fontSize: isTablet ? 21 : 24, fontWeight: 700, color: v.ink, letterSpacing: '-0.045em', lineHeight: 1 }}>
               luvax
             </button>
           )}
@@ -132,14 +143,14 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
             justifyContent: 'center',
             alignItems: 'stretch',
             pointerEvents: isMobile && !showBackHeader ? 'none' : 'auto',
+            minWidth: 0,
           }}
         >
-          {isDesktop && isMainTab ? <LxTopTabs active={screen} navigate={navigate} /> : null}
-          {isTablet && !showBackHeader && HeaderSearch ? <HeaderSearch navigate={navigate} viewport={viewport} /> : null}
+          {isWide && isMainTab ? <LxTopTabs active={screen} navigate={navigate} compact={isTablet} /> : null}
           {isMobile && !showBackHeader ? (
             <button
               type="button"
-              onClick={() => navigate('feed')}
+              onClick={() => navigate(screen === 'messages' ? 'messages' : 'feed')}
               style={{
                 pointerEvents: 'all',
                 background: 'none',
@@ -147,26 +158,45 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
                 cursor: 'pointer',
                 padding: 0,
                 fontFamily: v.fontDisplay,
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: 700,
                 color: v.ink,
-                letterSpacing: '-0.05em',
+                letterSpacing: '-0.04em',
+                lineHeight: 1,
               }}
             >
-              luvax
+              {screen === 'messages' ? 'messages' : 'luvax'}
             </button>
           ) : null}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, width: isDesktop ? '100%' : sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 120 : undefined), justifyContent: isDesktop ? 'flex-end' : 'flex-end', paddingRight: isDesktop ? 18 : 0 }}>
-          {isDesktop && !showBackHeader && HeaderSearch ? <HeaderSearch navigate={navigate} viewport={viewport} /> : null}
-          <button onClick={() => navigate('notifications')} style={{ background: 'transparent', border: `1px solid ${v.borderSubtle}`, borderRadius: '50%', width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-            <LxIcon name="bell" size={18} color={v.ink2} />
-            {hasNotifications && <span style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', background: v.accent }} />}
-          </button>
-          <button onClick={() => navigate('profile')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-            <LxAvatar size={32} idx={0} ring={screen === 'profile'} />
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0 : isTablet ? 4 : 14, flexShrink: 0, width: isWide ? '100%' : sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 244 : undefined), justifyContent: 'flex-end', paddingRight: isDesktop ? 52 : isTablet ? 0 : 0 }}>
+          {isWide && !showBackHeader && HeaderSearch ? <HeaderSearch navigate={navigate} viewport={viewport} screen={screen} params={params} /> : null}
+          {screen === 'messages' && isMobile ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined' && typeof window.__lxMessagesCompose === 'function') {
+                  window.__lxMessagesCompose();
+                }
+              }}
+              aria-label="new message"
+              className="lx-header-icon-btn"
+              style={{ background: 'transparent', border: `1px solid ${v.border}`, borderRadius: '999px', width: 32, minWidth: 32, height: 32, aspectRatio: '1 / 1', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxShadow: 'none', padding: 0, flexShrink: 0, marginRight: 2 }}
+            >
+              <LxIcon name="edit" size={13} color={v.ink2} />
+            </button>
+          ) : (screen !== 'messages' || isTablet || isDesktop) ? (
+            <button onClick={() => navigate('notifications')} className="lx-header-icon-btn" style={{ background: 'none', border: `1px solid ${v.border}`, borderRadius: '999px', width: isTablet ? 34 : 32, minWidth: isTablet ? 34 : 32, height: isTablet ? 34 : 32, aspectRatio: '1 / 1', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxShadow: 'none', padding: 0, flexShrink: 0, marginRight: isMobile ? 2 : 0 }}>
+              <LxIcon name="bell" size={isTablet ? 20 : 19} color={v.ink2} />
+              {hasNotifications && <span style={{ position: 'absolute', top: 5, right: 5, width: 6, height: 6, borderRadius: '50%', background: v.accent }} />}
+            </button>
+          ) : isMobile ? <div style={{ width: 24, height: 24 }} /> : null}
+          {!isMobile && (screen !== 'messages' || isTablet || isDesktop) ? (
+            <button onClick={() => navigate('profile')} className="lx-avatar-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <LxAvatar size={isTablet ? 30 : 32} idx={0} ring={screen === 'profile'} />
+            </button>
+          ) : null}
         </div>
       </div>
     </header>
@@ -202,7 +232,7 @@ export function LxBottomNav({ active, navigate }) {
       {tabs.map(t => {
         const isActive = active === t.id;
         return (
-          <button key={t.id} onClick={() => navigate(t.id)} style={{
+          <button key={t.id} onClick={() => navigate(t.id)} className="lx-tab-btn" style={{
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 2, height: 56,
             background: 'none', border: 'none', cursor: 'pointer',
@@ -211,11 +241,12 @@ export function LxBottomNav({ active, navigate }) {
           }}>
             <LxIcon
               name={t.icon}
-              size={22}
+              size={20}
               filled={isActive}
               color={isActive ? v.accent : v.ink3}
               stroke={isActive ? 1.8 : 1.5}
             />
+            <span style={{ position: 'absolute', top: 0, left: '28%', right: '28%', height: 2, borderRadius: 999, background: isActive ? v.accent : 'transparent' }} />
             {t.id === 'notifications' && hasNotifications && (
               <span style={{ position: 'absolute', top: 6, right: '25%', width: 8, height: 8, borderRadius: '50%', background: v.accent }} />
             )}
@@ -227,7 +258,7 @@ export function LxBottomNav({ active, navigate }) {
 }
 
 // ─── Right Rail (desktop) ──────────────────────────────────────────────────
-export function LxRightRail({ navigate }) {
+export function LxRightRail({ navigate, compact = false }) {
   const currentUser = useAuthStore(state => state.user);
   const key = currentUser ? `lx_blocks_${currentUser.id}` : 'lx_blocks';
 
@@ -252,43 +283,41 @@ export function LxRightRail({ navigate }) {
     .filter(u => !blocks.includes(u.id) && !followingIds.has(u.id))
     .slice(0, 5);
 
-  if (suggested.length === 0) {
-    return <aside style={{ width: 280, flexShrink: 0, padding: '20px 20px', position: 'sticky', top: 56, alignSelf: 'flex-start' }} />;
-  }
-
   return (
     <aside style={{
-      width: 280, flexShrink: 0,
-      padding: '20px 20px',
+      width: compact ? 196 : 280, flexShrink: 0,
+      padding: compact ? '12px 10px 12px 12px' : '20px 20px',
       display: 'flex', flexDirection: 'column', gap: 24,
       position: 'sticky', top: 56, alignSelf: 'flex-start',
       maxHeight: 'calc(100vh - 56px)', overflowY: 'auto',
     }}>
       <div>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>trending</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ fontFamily: v.fontMono, fontSize: compact ? 9 : 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: compact ? 10 : 14 }}>trending</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 9 : 12 }}>
           {trending.map((t, i) => (
             <div key={t} style={{ display: 'flex', alignItems: 'baseline', gap: 8, cursor: 'pointer' }}>
-              <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, width: 18 }}>{String(i+1).padStart(2,'0')}</span>
-              <span style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink, fontWeight: 600 }}>#{t}</span>
+              <span style={{ fontFamily: v.fontMono, fontSize: compact ? 10 : 11, color: v.ink3, width: compact ? 15 : 18 }}>{String(i+1).padStart(2,'0')}</span>
+              <span style={{ fontFamily: v.fontBody, fontSize: compact ? 13 : 15, color: v.ink, fontWeight: 600 }}>#{t}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>suggested</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {suggested.map(u => (
-            <UserCard 
-              key={u.id} 
-              user={u} 
-              compact={true} 
-              onAvatarClick={() => navigate ? navigate('profile', { user: { id: u.id, username: u.username } }) : null}
-            />
-          ))}
+      {suggested.length > 0 ? (
+        <div>
+          <div style={{ fontFamily: v.fontMono, fontSize: compact ? 9 : 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: compact ? 10 : 14 }}>suggested</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 6 }}>
+            {suggested.map(u => (
+              <UserCard 
+                key={u.id} 
+                user={u} 
+                compact={true} 
+                onAvatarClick={() => navigate ? navigate('profile', { user: { id: u.id, username: u.username } }) : null}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
     </aside>
   );
 }
@@ -322,13 +351,28 @@ export function LxShell({ screen, navigate, params, children, showRightRail = tr
   }
 
   if (vp === 'tablet') {
+    const LEFT_W = 82;
+    const isWideSettingsPane = ['settings', 'edit-profile', 'change-password', 'blocked'].includes(screen);
+    const tabletMainWidth = screen === 'compose' ? 784 : isWideSettingsPane ? 704 : 604;
+    const tabletShellWidth = screen === 'compose' ? 1090 : isWideSettingsPane ? 1010 : 910;
+    const tabletRightSpacer = isWideSettingsPane ? LEFT_W : 206;
     return (
-      <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column', maxWidth: 680, margin: '0 auto', borderLeft: `1px solid ${v.border}`, borderRight: `1px solid ${v.border}` }}>
+      <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxAppBar screen={screen} navigate={navigate} params={params} viewport={vp} />
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: 72 }}>
-          {children}
-        </main>
-        <LxBottomNav active={screen} navigate={navigate} />
+        <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: tabletShellWidth, margin: '0 auto' }}>
+          <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
+          <main style={{
+            width: tabletMainWidth, flexShrink: 0, minWidth: 0,
+            borderLeft: screen === 'compose' ? 'none' : `1px solid ${v.border}`,
+            borderRight: `1px solid ${v.border}`,
+            minHeight: 'calc(100vh - 56px)',
+            display: 'flex', flexDirection: 'column',
+            background: v.base,
+          }}>
+            {children}
+          </main>
+          {showRightRail ? <LxRightRail navigate={navigate} compact /> : <div style={{ width: tabletRightSpacer, flexShrink: 0 }} aria-hidden="true" />}
+        </div>
       </div>
     );
   }

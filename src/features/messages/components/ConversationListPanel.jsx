@@ -9,11 +9,14 @@ export function ConversationListPanel({
   activeThreadId,
   selectThread,
   handleCompose,
+  viewport,
 }) {
   return (
     <aside
       style={{
-        borderRight: `1px solid ${v.border}`,
+        height: '100%',
+        minHeight: 0,
+        borderRight: viewport === 'mobile' ? 'none' : `1px solid ${v.border}`,
         display: 'flex',
         flexDirection: 'column',
         minWidth: 0,
@@ -22,51 +25,65 @@ export function ConversationListPanel({
     >
       <div
         style={{
-          height: 60,
-          borderBottom: `1px solid ${v.border}`,
-          display: 'flex',
+          height: viewport === 'mobile' ? 0 : 56,
+          borderBottom: viewport === 'mobile' ? 'none' : `1px solid ${v.border}`,
+          display: viewport === 'mobile' ? 'none' : 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 20px',
+          padding: viewport === 'mobile' ? '0' : '0 18px 0 20px',
         }}
       >
-        <h2 style={{ margin: 0, fontFamily: v.fontDisplay, fontSize: 17, fontWeight: 700, color: '#f7f3eb', letterSpacing: '-0.03em' }}>
-          messages
-        </h2>
-        <button
-          type="button"
-          onClick={handleCompose}
-          aria-label="new message"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            border: `1px solid ${v.border}`,
-            background: v.surface,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <LxIcon name="edit" size={16} color={v.ink3} />
-        </button>
+        {viewport !== 'mobile' ? (
+          <div
+            style={{
+              fontFamily: v.fontDisplay,
+              fontSize: 16,
+              fontWeight: 700,
+              color: v.ink,
+              letterSpacing: '-0.03em',
+              lineHeight: 1,
+            }}
+          >
+            messages
+          </div>
+        ) : null}
+        {viewport !== 'mobile' ? (
+          <button
+            type="button"
+            onClick={handleCompose}
+            aria-label="new message"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              border: `1px solid ${v.border}`,
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: 'none',
+            }}
+          >
+            <LxIcon name="edit" size={13} color={v.ink3} />
+          </button>
+        ) : null}
       </div>
 
-      <div style={{ padding: 16, borderBottom: `1px solid ${v.borderSubtle}` }}>
+      <div style={{ padding: viewport === 'mobile' ? '9px 14px 10px' : '10px 16px 12px', borderBottom: `1px solid ${v.borderSubtle}` }}>
         <div
           style={{
-            height: 40,
+            height: viewport === 'mobile' ? 32 : 34,
             borderRadius: 999,
             background: v.surfaceSunken,
             border: `1px solid ${v.borderSubtle}`,
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            padding: '0 12px',
+            gap: 7,
+            padding: '0 11px',
           }}
         >
-          <LxIcon name="explore" size={14} color={v.ink3} />
+          <LxIcon name="explore" size={13} color={v.ink3} />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -76,9 +93,9 @@ export function ConversationListPanel({
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              color: v.inkInverse,
+              color: v.ink,
               fontFamily: v.fontBody,
-              fontSize: 14,
+              fontSize: 13,
             }}
           />
         </div>

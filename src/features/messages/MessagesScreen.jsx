@@ -10,10 +10,14 @@ export function MessagesScreen({ navigate, viewport }) {
   const [threads, setThreads] = useState(THREADS);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
-  const [activeThreadId, setActiveThreadId] = useState('jake');
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [activeThreadId, setActiveThreadId] = useState('priya');
+  const [threadOpen, setThreadOpen] = useState(viewport !== 'mobile');
+  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
   const [composerSeed, setComposerSeed] = useState(0);
-  const listOnlyMobile = viewport === 'mobile' && !activeThreadId;
+  const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
+  const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
 
   const filteredThreads = useMemo(() => {
@@ -57,23 +61,50 @@ export function MessagesScreen({ navigate, viewport }) {
     }
 
     window.MessagesScreen = MessagesScreen;
+    window.__lxMessagesCompose = () => {
+      handleCompose();
+      return true;
+    };
     window.__lxMessagesBack = () => {
-      if (viewport === 'mobile' && activeThreadId) {
-        setActiveThreadId(null);
+      if (viewport === 'mobile' && threadOpen) {
+        setThreadOpen(false);
         return true;
       }
       return false;
     };
 
     return () => {
+      if (window.__lxMessagesCompose) {
+        delete window.__lxMessagesCompose;
+      }
       if (window.__lxMessagesBack) {
         delete window.__lxMessagesBack;
       }
     };
-  }, [activeThreadId, viewport]);
+  }, [composerSeed, threadOpen, viewport]);
+
+  useEffect(() => {
+    if (viewport !== 'mobile') {
+      setThreadOpen(true);
+      setMobileInfoOpen(false);
+    }
+  }, [viewport]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('lx_messages_thread_open', {
+        detail: { open: viewport === 'mobile' && threadOpen },
+      })
+    );
+  }, [threadOpen, viewport]);
 
   const selectThread = (threadId) => {
     setActiveThreadId(threadId);
+    if (viewport === 'mobile') {
+      setThreadOpen(true);
+      setMobileInfoOpen(false);
+    }
     setThreads((current) =>
       current.map((thread) =>
         thread.id === threadId
@@ -104,6 +135,7 @@ export function MessagesScreen({ navigate, viewport }) {
     setThreads((current) => [newThread, ...current]);
     setActiveThreadId(newThreadId);
     setDraft('');
+    setReplyingTo(null);
   };
 
   const handleSend = () => {
@@ -119,21 +151,37 @@ export function MessagesScreen({ navigate, viewport }) {
           time: 'now',
           messages: [
             ...thread.messages,
-            {
-              id: `${thread.id}-${Date.now()}`,
-              from: 'me',
-              kind: 'text',
-              text: value,
-              time: 'now',
-            },
+            replyingTo
+              ? {
+                  id: `${thread.id}-${Date.now()}`,
+                  from: 'me',
+                  kind: 'reply',
+                  replyTo: replyingTo.from === 'me' ? 'you' : activeThread.name,
+                  replyText: replyingTo.text,
+                  text: value,
+                  time: 'now',
+                }
+              : {
+                  id: `${thread.id}-${Date.now()}`,
+                  from: 'me',
+                  kind: 'text',
+                  text: value,
+                  time: 'now',
+                },
           ],
         };
       })
     );
     setDraft('');
+    setReplyingTo(null);
   };
 
   const handleDeleteToggle = (messageId) => {
+    setPendingDeleteMessageId(messageId);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!activeThread || !pendingDeleteMessageId) return;
     if (!activeThread) return;
     setThreads((current) =>
       current.map((thread) => {
@@ -142,39 +190,45 @@ export function MessagesScreen({ navigate, viewport }) {
           ...thread,
           preview: 'message was deleted',
           messages: thread.messages.map((message) =>
-            message.id === messageId
+            message.id === pendingDeleteMessageId
               ? { ...message, kind: 'deleted', text: 'this message was deleted' }
               : message
           ),
         };
       })
     );
+    setPendingDeleteMessageId(null);
   };
 
-  const showDetail = viewport !== 'mobile' || Boolean(activeThreadId);
+  const showDetail = viewport !== 'mobile' || threadOpen;
   const showSidebar = viewport !== 'mobile' || listOnlyMobile;
-  const showRightRail = viewport === 'desktop' && Boolean(activeThread);
+  const showRightRail = (viewport === 'desktop' || viewport === 'tablet') && Boolean(activeThread);
   const isDesktop = viewport === 'desktop';
   const isTablet = viewport === 'tablet';
   const desktopSidebar = 320;
   const desktopRail = 300;
+  const tabletSidebar = 316;
+  const tabletRail = 304;
 
   return (
     <div
       style={{
         height: '100%',
+        minHeight: 0,
         background: v.base,
         color: v.ink,
         display: 'grid',
         gridTemplateColumns: isDesktop
           ? `${desktopSidebar}px minmax(520px, 1fr) ${desktopRail}px`
           : isTablet
-            ? '320px minmax(0, 1fr)'
+            ? `${tabletSidebar}px minmax(40px, 1fr) ${tabletRail}px`
             : '1fr',
-        paddingTop: viewport === 'mobile' ? 56 : 0,
+        paddingTop: viewport === 'mobile' ? (threadOpen ? 0 : 56) : 0,
         width: '100%',
         maxWidth: '100%',
         margin: '0 auto',
+        overflow: 'hidden',
+        alignItems: 'stretch',
         borderLeft: viewport !== 'mobile' ? `1px solid ${v.border}` : 'none',
         borderRight: viewport !== 'mobile' ? `1px solid ${v.border}` : 'none',
       }}
@@ -187,6 +241,7 @@ export function MessagesScreen({ navigate, viewport }) {
           activeThreadId={activeThreadId}
           selectThread={selectThread}
           handleCompose={handleCompose}
+          viewport={viewport}
         />
       ) : null}
 
@@ -195,12 +250,16 @@ export function MessagesScreen({ navigate, viewport }) {
           viewport={viewport}
           activeThread={activeThread}
           setActiveThreadId={setActiveThreadId}
+          closeThread={() => setThreadOpen(false)}
+          openInfo={() => setMobileInfoOpen(true)}
           isDesktop={isDesktop}
           isTablet={isTablet}
           showRightRail={showRightRail}
           scrollerRef={scrollerRef}
           setPreviewItem={setPreviewItem}
           handleDeleteToggle={handleDeleteToggle}
+          replyingTo={replyingTo}
+          setReplyingTo={setReplyingTo}
           draft={draft}
           setDraft={setDraft}
           handleSend={handleSend}
@@ -212,7 +271,44 @@ export function MessagesScreen({ navigate, viewport }) {
           activeThread={activeThread}
           navigate={navigate}
           setPreviewItem={setPreviewItem}
+          compact={isTablet}
         />
+      ) : null}
+
+      {viewport === 'mobile' && mobileInfoOpen && activeThread ? (
+        <div
+          onClick={() => setMobileInfoOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: v.scrim,
+            display: 'flex',
+            alignItems: 'stretch',
+            justifyContent: 'flex-end',
+            zIndex: 130,
+            padding: '0 0 0 38px',
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: 'min(78vw, 340px)',
+              background: v.base,
+              border: `1px solid ${v.border}`,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <ConversationInfoPanel
+              activeThread={activeThread}
+              navigate={navigate}
+              setPreviewItem={setPreviewItem}
+              mobileOverlay
+              onClose={() => setMobileInfoOpen(false)}
+            />
+          </div>
+        </div>
       ) : null}
 
       {previewItem ? (
@@ -243,7 +339,7 @@ export function MessagesScreen({ navigate, viewport }) {
             }}
           >
             <MediaPlaceholder item={previewItem} large />
-            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.inkInverse }}>{previewItem.title || previewItem.label}</div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>{previewItem.title || previewItem.label}</div>
             <button
               type="button"
               onClick={() => setPreviewItem(null)}
@@ -254,7 +350,7 @@ export function MessagesScreen({ navigate, viewport }) {
                 borderRadius: 999,
                 border: 'none',
                 background: v.accent,
-                color: v.inkInverse,
+                color: v.ink,
                 fontFamily: v.fontBody,
                 fontSize: 14,
                 cursor: 'pointer',
@@ -264,6 +360,80 @@ export function MessagesScreen({ navigate, viewport }) {
             </button>
           </div>
         </div>
+      ) : null}
+
+      {pendingDeleteMessageId ? (
+        <>
+          <div
+            onClick={() => setPendingDeleteMessageId(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: v.scrim,
+              zIndex: 1000,
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'calc(100% - 56px)',
+              maxWidth: 348,
+              background: v.base,
+              borderRadius: 18,
+              boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`,
+              zIndex: 1001,
+              padding: '22px 24px 20px',
+            }}
+          >
+            <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, color: v.ink, letterSpacing: '-0.03em' }}>
+              delete message?
+            </div>
+            <div style={{ marginTop: 10, fontFamily: v.fontBody, fontSize: 14, lineHeight: 1.45, color: v.ink3 }}>
+              this can't be undone.
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={() => setPendingDeleteMessageId(null)}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: '#2c2621',
+                  color: '#c4b9a8',
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: 'var(--lx-error)',
+                  color: '#fff5f2',
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                delete
+              </button>
+            </div>
+          </div>
+        </>
       ) : null}
     </div>
   );
