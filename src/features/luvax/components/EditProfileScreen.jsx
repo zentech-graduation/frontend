@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { v } from '../constants/tokens';
 import { LxAvatar, LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useUpdateMyProfile } from '../hooks/useUsers';
 
 function fieldStyle() {
   return {
@@ -21,6 +22,7 @@ function fieldStyle() {
 export function EditProfileScreen({ navigate }) {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const updateProfile = useUpdateMyProfile();
 
   const [form, setForm] = useState({
     displayName: user?.displayName || user?.firstName || '',
@@ -28,18 +30,31 @@ export function EditProfileScreen({ navigate }) {
     bio: user?.bio || '',
     avatarUrl: user?.avatarUrl || '',
   });
+  const [formError, setFormError] = useState('');
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleSave = () => {
-    setUser({
-      ...user,
-      displayName: form.displayName,
-      username: form.username,
-      bio: form.bio,
-      avatarUrl: form.avatarUrl,
-    });
-    navigate('profile');
+    setFormError('');
+
+    updateProfile.mutate(
+      {
+        displayName: form.displayName,
+        username: form.username,
+        bio: form.bio,
+        avatarUrl: form.avatarUrl,
+      },
+      {
+        onSuccess: (data) => {
+          const updatedUser = data?.data || data;
+          setUser({ ...user, ...updatedUser });
+          navigate('profile');
+        },
+        onError: (error) => {
+          setFormError(error.message || "we couldn't save your profile. try again.");
+        },
+      }
+    );
   };
 
   return (
@@ -90,12 +105,16 @@ export function EditProfileScreen({ navigate }) {
           <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 6, textAlign: 'right' }}>{160 - form.bio.length}</div>
         </div>
 
+        {formError ? (
+          <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.error }}>{formError}</div>
+        ) : null}
+
         <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
-          <LxBtn variant="ghost" onClick={() => navigate('profile')} style={{ flex: 1 }}>
+          <LxBtn variant="ghost" onClick={() => navigate('profile')} style={{ flex: 1 }} disabled={updateProfile.isPending}>
             cancel
           </LxBtn>
-          <LxBtn variant="primary" onClick={handleSave} style={{ flex: 1 }}>
-            save profile
+          <LxBtn variant="primary" onClick={handleSave} style={{ flex: 1 }} disabled={updateProfile.isPending}>
+            {updateProfile.isPending ? 'saving...' : 'save profile'}
           </LxBtn>
         </div>
       </div>
