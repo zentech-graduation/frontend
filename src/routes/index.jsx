@@ -1,6 +1,7 @@
 import { Navigate, Outlet, createBrowserRouter, useLocation } from 'react-router-dom';
 
 import AuthSessionBootstrap from '@/components/common/AuthSessionBootstrap';
+import GuestRoute from '@/components/common/GuestRoute';
 import NotFoundPage from '@/components/common/NotFoundPage';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import RouterErrorPage from '@/components/common/RouterErrorPage';
@@ -32,12 +33,13 @@ const router = createBrowserRouter([
     errorElement: <RouterErrorPage />,
     children: [
       {
-        path: '/',
-        element: <AuthPage />,
-      },
-      {
-        path: '/app',
-        element: <LuvaxPage />,
+        element: <GuestRoute />,
+        children: [
+          {
+            path: '/',
+            element: <AuthPage />,
+          },
+        ],
       },
       {
         path: '/verify-email',
@@ -74,6 +76,10 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          {
+            path: '/app',
+            element: <LuvaxPage />,
+          },
           {
             path: '/dashboard',
             element: <DashboardPage />,
