@@ -16,7 +16,7 @@ const TYPE_COLOR = {
   comment: v.accent, mention: v.avatar2, story: v.avatar3,
 };
 
-function NotifRow({ n, navigate }) {
+function NotifRow({ n, navigate, onAccept, onDecline }) {
   const { data: userProfileData } = useUserProfile(n.actorId);
   const actorProfile = userProfileData?.data || userProfileData;
   const timeStr = useRelativeTime(n.createdAt);
@@ -25,7 +25,7 @@ function NotifRow({ n, navigate }) {
   const text = isFollow ? 'started following you' : n.type === 'like' ? 'liked your post' : 'interacted with you';
   const icon = isFollow ? 'profile' : 'heart';
   const color = isFollow ? v.success : v.error;
-  
+
   const actorName = actorProfile?.username || actorProfile?.displayName || 'Someone';
   const avatarSrc = actorProfile?.avatarUrl;
 
@@ -60,8 +60,26 @@ function NotifRow({ n, navigate }) {
 
       {n.type === 'follow_request' && (
         <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
-          <LxBtn variant="primary" size="sm">accept</LxBtn>
-          <LxBtn variant="ghost" size="sm">decline</LxBtn>
+          <LxBtn
+            variant="primary"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAccept?.(n.actorId);
+            }}
+          >
+            accept
+          </LxBtn>
+          <LxBtn
+            variant="ghost"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDecline?.(n.actorId);
+            }}
+          >
+            decline
+          </LxBtn>
         </div>
       )}
     </div>
@@ -167,7 +185,15 @@ export function NotificationsScreen({ navigate }) {
           isLoadingNotifs ? (
             <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>loading notifications...</div>
           ) : notifs.length > 0 ? (
-            notifs.map((n, i) => <NotifRow key={n.id || i} n={n} navigate={navigate} />)
+            notifs.map((n, i) => (
+              <NotifRow
+                key={n.id || i}
+                n={n}
+                navigate={navigate}
+                onAccept={(id) => approveReq.mutate(id)}
+                onDecline={(id) => rejectReq.mutate(id)}
+              />
+            ))
           ) : (
             <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>No notifications yet</div>
           )
