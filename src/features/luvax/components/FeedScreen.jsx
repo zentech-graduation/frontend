@@ -83,7 +83,7 @@ export function FeedScreen({ navigate, tweaks, viewport }) {
   if (isError) {
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, fontFamily: v.fontBody, fontSize: 14, color: v.error }}>
-        Could not load feed. Is your backend server running?
+        we couldn't load your feed. check your connection and try again.
       </div>
     );
   }

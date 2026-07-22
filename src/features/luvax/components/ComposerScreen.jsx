@@ -15,6 +15,7 @@ export function ComposerScreen({ navigate, viewport }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [formError, setFormError] = useState('');
   const fileInputRef = useRef(null);
 
   const { uploadMedia, isUploading, progress } = useMediaUpload();
@@ -57,8 +58,10 @@ export function ComposerScreen({ navigate, viewport }) {
   const createPostMutation = useCreatePost();
 
   const handlePost = async () => {
+    setFormError('');
+
     if ((type === 'photo' || type === 'video') && !file) {
-      alert(`Please select a ${type} to post.`);
+      setFormError(`please select a ${type} to post.`);
       return;
     }
 
@@ -81,14 +84,15 @@ export function ComposerScreen({ navigate, viewport }) {
           setCaption('');
           setFile(null);
           setPreviewUrl(null);
+          setFormError('');
           navigate('feed');
         },
         onError: (error) => {
-          alert(`Failed to post: ${error.message}`);
+          setFormError(error.message || "we couldn't publish your post. try again.");
         },
       });
-    } catch (error) {
-      alert(`Failed to upload media: ${error.message}`);
+    } catch {
+      setFormError("we couldn't upload your media. try again.");
     }
   };
 
@@ -163,6 +167,19 @@ export function ComposerScreen({ navigate, viewport }) {
           />
         ) : null}
       </div>
+
+      {formError ? (
+        <div
+          style={{
+            padding: isTablet ? `10px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px` : '10px 16px 0',
+            fontFamily: v.fontBody,
+            fontSize: 13,
+            color: v.error,
+          }}
+        >
+          {formError}
+        </div>
+      ) : null}
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
         <div

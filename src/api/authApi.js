@@ -218,7 +218,7 @@ export const authApi = {
 
     if (!backendOrigin) {
       throw new Error(
-        'Missing Google OAuth start URL. Configure VITE_API_URL so the frontend can derive the backend authorization endpoint.'
+        "google sign-in isn't available right now. try signing in with your email instead."
       );
     }
 
@@ -237,13 +237,13 @@ export const authApi = {
         containsProviderPlaceholder(loginUrl.href)
       ) {
         throw new Error(
-          'Invalid VITE_GOOGLE_AUTH_URL. Replace {provider} with the real provider name, for example /api/v1/auth/oauth2/authorize/google.'
+          "google sign-in isn't available right now. try signing in with your email instead."
         );
       }
 
       if (isGoogleCallbackPath(loginUrl.pathname)) {
         throw new Error(
-          'Invalid VITE_GOOGLE_AUTH_URL. Use the backend authorization start endpoint, not /auth/oauth2/callback/google.'
+          "google sign-in isn't available right now. try signing in with your email instead."
         );
       }
 
@@ -251,7 +251,7 @@ export const authApi = {
     }
 
     throw new Error(
-      'Missing Google OAuth start URL. Configure VITE_GOOGLE_AUTH_URL or a valid VITE_API_URL so the frontend can reach the backend authorization endpoint.'
+      "google sign-in isn't available right now. try signing in with your email instead."
     );
   },
 
