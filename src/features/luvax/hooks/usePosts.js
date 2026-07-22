@@ -117,3 +117,53 @@ export const useDeletePost = () => {
     },
   });
 };
+
+export const useLikePost = () => {
+  return useMutation({
+    mutationFn: ({ postId, liked }) =>
+      liked ? postService.unlikePost(postId) : postService.likePost(postId),
+  });
+};
+
+export const useSavePost = () => {
+  return useMutation({
+    mutationFn: ({ postId, saved }) =>
+      saved ? postService.unsavePost(postId) : postService.savePost(postId),
+  });
+};
+
+export const useTopLevelComments = (postId) => {
+  return useInfiniteQuery({
+    queryKey: ['comments', postId],
+    queryFn: ({ pageParam = null }) => postService.getComments(postId, { cursor: pageParam, limit: 20 }),
+    getNextPageParam: (lastPage) => {
+      const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
+      return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
+    },
+    initialPageParam: null,
+    enabled: !!postId,
+  });
+};
+
+export const useCommentReplies = (commentId, enabled) => {
+  return useQuery({
+    queryKey: ['commentReplies', commentId],
+    queryFn: () => postService.getCommentReplies(commentId, { limit: 50 }),
+    enabled: !!commentId && enabled,
+  });
+};
+
+export const useCreateComment = (postId) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ parentId, content }) => postService.createComment(postId, { parentId, content }),
+    onSuccess: (_, variables) => {
+      if (variables.parentId) {
+        queryClient.invalidateQueries({ queryKey: ['commentReplies', variables.parentId] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      }
+    },
+  });
+};
