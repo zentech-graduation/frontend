@@ -378,7 +378,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
               <LxIcon name="heart" size={17} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
             </span>
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: liked ? HEART_COLOR : v.ink3 }}>
-              {liked ? likeCount + 1 : likeCount}
+              {likeCount}
             </span>
           </button>
           <button onClick={() => navigate('post', { postId: post.id })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
