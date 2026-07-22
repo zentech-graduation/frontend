@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { v } from '../constants/tokens';
-import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxTag } from './primitives';
+import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useDeletePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -39,6 +39,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const [editCaption, setEditCaption] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [saveBurst, setSaveBurst] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const menuButtonRef = useRef(null);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -78,10 +79,13 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm('are you sure you want to delete this post?')) {
-      deletePost.mutate(post.id);
-    }
+  const handleDeleteRequest = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    deletePost.mutate(post.id);
+    setDeleteConfirmOpen(false);
   };
 
   const pad = density === 'dense' ? '10px 12px 12px' : '14px 16px 16px';
@@ -145,7 +149,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
             icon: 'close',
             label: 'delete post',
             tone: 'danger',
-            onClick: handleDelete,
+            onClick: handleDeleteRequest,
           }
         : null,
       !isOwner
@@ -391,6 +395,20 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
           </LxBtn>
         </div>
       </LxBottomSheet>
+
+      <LxModal
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        title="delete post"
+        actions={
+          <>
+            <LxBtn variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>cancel</LxBtn>
+            <LxBtn variant="danger" onClick={handleDeleteConfirm}>delete</LxBtn>
+          </>
+        }
+      >
+        are you sure you want to delete this post?
+      </LxModal>
     </article>
   );
 }

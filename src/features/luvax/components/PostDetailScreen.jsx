@@ -239,6 +239,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const [editCaption, setEditCaption] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [threadReplies, setThreadReplies] = useState([]);
@@ -330,12 +331,15 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm('are you sure you want to delete this post?')) {
-      deletePost.mutate(postId, {
-        onSuccess: () => navigate(-1),
-      });
-    }
+  const handleDeleteRequest = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    deletePost.mutate(postId, {
+      onSuccess: () => navigate(-1),
+    });
+    setDeleteConfirmOpen(false);
   };
 
   const handleBlockConfirm = () => {
@@ -582,6 +586,20 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
         }
       >
         Are you sure you want to block <strong>{authorName}</strong>? They won't be able to find your profile, posts or story on Luvax.
+      </LxModal>
+
+      <LxModal
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        title="delete post"
+        actions={
+          <>
+            <LxBtn variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>cancel</LxBtn>
+            <LxBtn variant="danger" onClick={handleDeleteConfirm}>delete</LxBtn>
+          </>
+        }
+      >
+        are you sure you want to delete this post?
       </LxModal>
 
       {isSelf ? (
