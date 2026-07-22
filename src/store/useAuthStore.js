@@ -24,12 +24,13 @@ export const clearLegacyAuthStorage = () => {
 };
 
 /**
- * One-time migration: strips `accessToken`/`refreshToken` from the raw
+ * Legacy-blob migration: strips `accessToken`/`refreshToken` from the raw
  * `luvax-auth-session` blob in localStorage. Earlier versions of this store
  * persisted both tokens to disk; this scrubs any such leftover blob without
  * forcing a logout — by the time this runs, `persist` has already merged the
  * blob into the live in-memory state, so the current tab keeps a working
- * session while the on-disk copy is cleaned.
+ * session while the on-disk copy is cleaned. Runs on every hydration but is
+ * idempotent (no-op once nothing is left to strip).
  */
 const migrateLegacyPersistedTokens = () => {
   if (typeof window === 'undefined') {
@@ -144,11 +145,13 @@ export const useAuthStore = create(
 
       /**
        * Persist only `user` and `isAuthenticated` to localStorage so the UI
-       * can render a logged-in shell immediately on reload. `accessToken`
-       * and `refreshToken` are intentionally excluded — they live in memory
-       * only. AuthSessionBootstrap re-derives a live access token via
-       * refresh on cold load; see ProtectedRoute for why both flags
-       * (isAuthenticated + a live accessToken) are checked together.
+       * can render an optimistic "logged-in" shell immediately on reload.
+       * `accessToken` and `refreshToken` are intentionally excluded — they
+       * live in memory only. A full page reload will clear both tokens from
+       * memory, so a live session does NOT survive a reload; the user must
+       * sign in again. ProtectedRoute checks both flags (isAuthenticated + a
+       * live accessToken) together because one persisted flag is not enough
+       * to guarantee a working session.
        */
       partialize: (state) => ({
         user: state.user,
