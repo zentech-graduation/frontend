@@ -23,6 +23,39 @@ export const clearLegacyAuthStorage = () => {
   window.sessionStorage.removeItem('luvax-auth');
 };
 
+/**
+ * Legacy-blob migration: strips `accessToken`/`refreshToken` from the raw
+ * `luvax-auth-session` blob in localStorage. Earlier versions of this store
+ * persisted both tokens to disk; this scrubs any such leftover blob without
+ * forcing a logout — by the time this runs, `persist` has already merged the
+ * blob into the live in-memory state, so the current tab keeps a working
+ * session while the on-disk copy is cleaned. Runs on every hydration but is
+ * idempotent (no-op once nothing is left to strip).
+ */
+const migrateLegacyPersistedTokens = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const raw = window.localStorage.getItem('luvax-auth-session');
+  if (!raw) {
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed.state || (!('accessToken' in parsed.state) && !('refreshToken' in parsed.state))) {
+      return;
+    }
+
+    delete parsed.state.accessToken;
+    delete parsed.state.refreshToken;
+    window.localStorage.setItem('luvax-auth-session', JSON.stringify(parsed));
+  } catch {
+    // Malformed persisted blob — leave it for the persist middleware to overwrite normally.
+  }
+};
+
 const initialState = {
   // Access token is in-memory only — never persisted to localStorage.
   accessToken: null,
@@ -111,23 +144,29 @@ export const useAuthStore = create(
       storage: createJSONStorage(() => localStorage),
 
       /**
-       * Persist tokens to localStorage so the session survives page reloads (F5).
-       * Note: Eventually, refreshToken should be moved to an HttpOnly cookie.
+       * Persist only `user` and `isAuthenticated` to localStorage so the UI
+       * can render an optimistic "logged-in" shell immediately on reload.
+       * `accessToken` and `refreshToken` are intentionally excluded — they
+       * live in memory only. A full page reload will clear both tokens from
+       * memory, so a live session does NOT survive a reload; the user must
+       * sign in again. ProtectedRoute checks both flags (isAuthenticated + a
+       * live accessToken) together because one persisted flag is not enough
+       * to guarantee a working session.
        */
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
       }),
 
       /**
        * onRehydrateStorage is called by persist middleware when hydration
        * completes (or fails). This is the single authoritative place that
        * sets hasHydrated to true, replacing the previous broken pattern of
-       * initializing it to `true` before hydration ever ran.
+       * initializing it to `true` before hydration ever ran. It also runs
+       * the one-time legacy-token migration (see migrateLegacyPersistedTokens).
        */
       onRehydrateStorage: () => (state) => {
+        migrateLegacyPersistedTokens();
         if (state) {
           state.markHydrated();
         }

@@ -77,8 +77,10 @@ export const useUnfollow = () => {
       queryClient.resetQueries({ queryKey: ['userPosts'] });
     },
     onError: (err) => {
-      alert(`Unfollow error: ${err.response?.data?.message || err.message}`);
-    }
+      if (import.meta.env.DEV) {
+        console.error('[useUnfollow]', err);
+      }
+    },
   });
 };
 

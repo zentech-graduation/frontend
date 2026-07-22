@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { v } from '../constants/tokens';
-import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxTag } from './primitives';
-import { useDeletePost, useUpdatePost } from '../hooks/usePosts';
+import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
+import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRelativeTime } from '../hooks/useRelativeTime';
@@ -33,12 +33,14 @@ const sharePost = async (postId, title) => {
 
 export function PostCard({ post, navigate, density = 'cozy', showTags = true, viewport = 'desktop' }) {
   const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likeCount || post.likes || 0);
   const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [saveBurst, setSaveBurst] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const menuButtonRef = useRef(null);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -49,21 +51,53 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const follow = useFollow();
   const unfollow = useUnfollow();
   const block = useBlock();
+  const likeMutation = useLikePost();
+  const saveMutation = useSavePost();
   const { data: myFollowingData } = useFollowing(currentUser?.id);
 
   const handleLikeToggle = () => {
+    const previousLiked = liked;
+    const previousCount = likeCount;
+    const nextLiked = !liked;
+
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked((previous) => {
-      const next = !previous;
-      return next;
-    });
+    setLiked(nextLiked);
+    setLikeCount((count) => count + (nextLiked ? 1 : -1));
+
+    likeMutation.mutate(
+      { postId: post.id, liked: previousLiked },
+      {
+        onSuccess: (data) => {
+          const result = data?.data || data;
+          if (typeof result?.likeCount === 'number') {
+            setLikeCount(result.likeCount);
+          }
+        },
+        onError: () => {
+          setLiked(previousLiked);
+          setLikeCount(previousCount);
+        },
+      }
+    );
   };
 
   const handleSaveToggle = () => {
+    const previousSaved = saved;
+    const nextSaved = !saved;
+
     setSaveBurst(false);
     window.requestAnimationFrame(() => setSaveBurst(true));
-    setSaved((state) => !state);
+    setSaved(nextSaved);
+
+    saveMutation.mutate(
+      { postId: post.id, saved: previousSaved },
+      {
+        onError: () => {
+          setSaved(previousSaved);
+        },
+      }
+    );
   };
 
   const handleEditOpen = () => {
@@ -78,10 +112,13 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm('are you sure you want to delete this post?')) {
-      deletePost.mutate(post.id);
-    }
+  const handleDeleteRequest = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    deletePost.mutate(post.id);
+    setDeleteConfirmOpen(false);
   };
 
   const pad = density === 'dense' ? '10px 12px 12px' : '14px 16px 16px';
@@ -94,7 +131,6 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const media = post.media && post.media.length > 0 ? post.media[0] : null;
-  const likeCount = post.likeCount || post.likes || 0;
   const isMobile = viewport === 'mobile';
   const following = (() => {
     if (!myFollowingData || !targetUserId || isOwner) return false;
@@ -145,7 +181,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
             icon: 'close',
             label: 'delete post',
             tone: 'danger',
-            onClick: handleDelete,
+            onClick: handleDeleteRequest,
           }
         : null,
       !isOwner
@@ -342,7 +378,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
               <LxIcon name="heart" size={17} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
             </span>
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: liked ? HEART_COLOR : v.ink3 }}>
-              {liked ? likeCount + 1 : likeCount}
+              {likeCount}
             </span>
           </button>
           <button onClick={() => navigate('post', { postId: post.id })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -391,6 +427,20 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
           </LxBtn>
         </div>
       </LxBottomSheet>
+
+      <LxModal
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        title="delete post"
+        actions={
+          <>
+            <LxBtn variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>cancel</LxBtn>
+            <LxBtn variant="danger" onClick={handleDeleteConfirm}>delete</LxBtn>
+          </>
+        }
+      >
+        are you sure you want to delete this post?
+      </LxModal>
     </article>
   );
 }

@@ -1,85 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { v } from '../constants/tokens';
-import { REPLIES } from '../constants/data';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
-import { useDeletePost, usePostDetail, useUpdatePost } from '../hooks/usePosts';
+import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
+import { useCommentReplies } from '../hooks/usePosts';
+import { useUserProfile } from '../hooks/useUsers';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 
 const HEART_COLOR = 'var(--lx-error)';
-
-const buildThreadReplies = (authorName) => {
-  const baseReplies = REPLIES.map((reply) => ({ ...reply, id: `${reply.author}-${reply.time}`, children: [] }));
-  if (baseReplies[0]) {
-    baseReplies[0].children = [
-      {
-        id: `${baseReplies[0].author}-child-1`,
-        idx: 2,
-        author: 'jo.x',
-        time: '6m',
-        text: 'exactly what i was thinking',
-        likes: 2,
-        children: [
-          {
-            id: `${baseReplies[0].author}-child-1-nested-1`,
-            idx: 0,
-            author: 'mara.v',
-            time: '4m',
-            text: 'glad it resonated',
-            likes: 1,
-          },
-        ],
-      },
-    ];
-  }
-  if (baseReplies[2]) {
-    baseReplies[2].children = [
-      { id: `${baseReplies[2].author}-child-1`, idx: 0, author: authorName || 'author', time: '34m', text: 'that is the better way to say it.', likes: 2 },
-    ];
-  }
-  if (baseReplies[3] && authorName === 'mara.v') {
-    baseReplies[3] = {
-      ...baseReplies[3],
-      author: 'mara.v',
-      idx: 0,
-      time: '2h',
-      text: 'appreciate everyone reading closely',
-      likes: 6,
-      children: [],
-    };
-  }
-  return baseReplies.slice(0, authorName === 'mara.v' ? 5 : 5);
-};
-
-const buildDefaultExpandedReplyIds = () => new Set();
-
-const findReplyPath = (replies, targetId, trail = []) => {
-  for (const reply of replies) {
-    const nextTrail = [...trail, reply.id];
-    if (reply.id === targetId) return nextTrail;
-    if (reply.children?.length) {
-      const childPath = findReplyPath(reply.children, targetId, nextTrail);
-      if (childPath) return childPath;
-    }
-  }
-  return null;
-};
-
-const appendReplyToTree = (replies, targetId, nextReply) =>
-  replies.map((reply) => {
-    if (reply.id === targetId) {
-      return {
-        ...reply,
-        children: [...(reply.children || []), nextReply],
-      };
-    }
-    if (!reply.children?.length) return reply;
-    return {
-      ...reply,
-      children: appendReplyToTree(reply.children, targetId, nextReply),
-    };
-  });
 
 const buildPostLink = (postId) => {
   if (typeof window === 'undefined') return `luvax://post/${postId}`;
@@ -104,36 +33,42 @@ const sharePost = async (postId, title) => {
   await copyPostLink(postId);
 };
 
-function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleReplies, navigate, postId, authorProfile }) {
+function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
   const [liked, setLiked] = useState(false);
   const [heartBurst, setHeartBurst] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [commentMenuOpen, setCommentMenuOpen] = useState(false);
-  const childReplies = reply.children || [];
-  const hasNestedReplies = childReplies.length > 0;
-  const showReplies = expandedReplyIds.has(reply.id);
-  const isNestedReply = indent > 0;
-  const nestedDepth = isNestedReply ? Math.round(indent / 30) : 0;
-  const nestedOffset = isNestedReply ? 23 + Math.max(0, nestedDepth - 1) * 23 : 0;
-  const nestedRepliesLift = Math.min(14, 8 + nestedDepth * 2);
+  const [showReplies, setShowReplies] = useState(false);
   const commentMenuButtonRef = useRef(null);
+
+  const { data: authorProfileData } = useUserProfile(comment.userId);
+  const authorProfile = authorProfileData?.data || authorProfileData;
+  const authorName = authorProfile?.username || authorProfile?.displayName || 'unknown';
+
+  const timeStr = useRelativeTime(comment.createdAt, { seedKey: comment.id });
+
+  const { data: repliesResponse, isLoading: repliesLoading } = useCommentReplies(comment.id, showReplies);
+  const replies = repliesResponse?.data?.content || repliesResponse?.content || [];
+
+  const isNestedReply = indent > 0;
+  const nestedOffset = isNestedReply ? 23 : 0;
+  const hasReplies = comment.replyCount > 0;
+
   const handleLikeToggle = () => {
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked((value) => {
-      const next = !value;
-      return next;
-    });
+    setLiked((value) => !value);
   };
+
   const commentMenuItems = [
     { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
-    { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, reply.text) },
+    { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, comment.content) },
     { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
     {
       id: 'view-profile',
       icon: 'profile',
       label: "View author's profile",
-      onClick: () => authorProfile ? navigate?.('profile', { user: authorProfile }) : null,
+      onClick: () => (authorProfile ? navigate?.('profile', { user: authorProfile }) : null),
     },
     { id: 'report', icon: 'flag', label: 'Report', tone: 'danger', separator: true, onClick: () => {} },
   ];
@@ -144,26 +79,30 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-        position: 'relative',
-        display: 'grid',
-        gridTemplateColumns: '40px minmax(0, 1fr)',
-        gap: 12,
-        padding: isNestedReply ? '6px 28px 8px 0' : '14px 28px 13px 0',
-        borderBottom: hasNestedReplies ? 'none' : `1px solid ${v.borderSubtle}`,
-      }}
+          position: 'relative',
+          display: 'grid',
+          gridTemplateColumns: '40px minmax(0, 1fr)',
+          gap: 12,
+          padding: isNestedReply ? '6px 28px 8px 0' : '14px 28px 13px 0',
+          borderBottom: `1px solid ${v.borderSubtle}`,
+        }}
       >
         <div style={{ marginLeft: indent + nestedOffset }}>
-          <LxAvatar size={34} idx={reply.idx} />
+          <LxAvatar size={34} src={authorProfile?.avatarUrl} idx={0} />
         </div>
         <div style={{ minWidth: 0, marginLeft: indent + nestedOffset }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexWrap: 'wrap', lineHeight: 1.42 }}>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink }}>{reply.author}</span>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12.5, color: v.ink }}>{reply.text}</span>
+            <span style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink }}>{authorName}</span>
+            <span style={{ fontFamily: v.fontBody, fontSize: 12.5, color: v.ink }}>{comment.content}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6, fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>
-            <span>{reply.time}</span>
-            <span>{liked ? reply.likes + 1 : reply.likes} likes</span>
-            <button type="button" onClick={() => onReply(reply)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: v.ink3, fontFamily: v.fontBody, fontSize: 11.5, fontWeight: 500 }}>
+            <span>{timeStr}</span>
+            <span>{liked ? comment.likeCount + 1 : comment.likeCount} likes</span>
+            <button
+              type="button"
+              onClick={() => onReply({ id: comment.id, author: authorName, text: comment.content })}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: v.ink3, fontFamily: v.fontBody, fontSize: 11.5, fontWeight: 500 }}
+            >
               Reply
             </button>
             {hovered || commentMenuOpen ? (
@@ -177,15 +116,17 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
               </button>
             ) : null}
           </div>
-          {hasNestedReplies || childReplies.length > 0 ? (
-            <>
-              <button type="button" onClick={() => onToggleReplies(reply.id)} style={{ background: 'none', border: 'none', padding: 0, marginTop: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: v.ink3, fontFamily: v.fontBody, fontSize: 12, fontWeight: 500 }}>
-                <span style={{ display: 'inline-flex', transform: showReplies ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 160ms ease' }}>
-                  <LxIcon name="chevronRight" size={12} color={v.ink3} />
-                </span>
-                <span>{showReplies ? 'Hide replies' : `View replies (${childReplies.length || 1})`}</span>
-              </button>
-            </>
+          {hasReplies ? (
+            <button
+              type="button"
+              onClick={() => setShowReplies((value) => !value)}
+              style={{ background: 'none', border: 'none', padding: 0, marginTop: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: v.ink3, fontFamily: v.fontBody, fontSize: 12, fontWeight: 500 }}
+            >
+              <span style={{ display: 'inline-flex', transform: showReplies ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 160ms ease' }}>
+                <LxIcon name="chevronRight" size={12} color={v.ink3} />
+              </span>
+              <span>{showReplies ? 'Hide replies' : `View replies (${comment.replyCount})`}</span>
+            </button>
           ) : null}
         </div>
         <button
@@ -199,33 +140,17 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
           </span>
         </button>
       </div>
-      {!showReplies && hasNestedReplies ? (
-        <div
-          aria-hidden="true"
-          style={{
-            height: 1,
-            background: v.borderSubtle,
-            marginLeft: isNestedReply ? 18 : 0,
-            marginRight: 28,
-          }}
-        />
-      ) : null}
-      <div
-        style={{
-          marginTop: showReplies && childReplies.length > 0 ? -nestedRepliesLift : 0,
-          display: 'grid',
-          gridTemplateRows: showReplies && childReplies.length > 0 ? '1fr' : '0fr',
-          opacity: showReplies && childReplies.length > 0 ? 1 : 0,
-          overflow: 'hidden',
-          transition: 'grid-template-rows 220ms ease, opacity 180ms ease, margin-top 220ms ease',
-        }}
-      >
-        <div style={{ minHeight: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {childReplies.map((child) => (
-            <CommentRow key={child.id} reply={child} onReply={onReply} indent={indent + 30} expandedReplyIds={expandedReplyIds} onToggleReplies={onToggleReplies} navigate={navigate} postId={postId} authorProfile={authorProfile} />
-          ))}
+      {showReplies && hasReplies ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {repliesLoading ? (
+            <div style={{ padding: '8px 28px 8px 63px', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>loading replies...</div>
+          ) : (
+            replies.map((reply) => (
+              <CommentRow key={reply.id} comment={reply} onReply={onReply} indent={indent + 30} navigate={navigate} postId={postId} />
+            ))
+          )}
         </div>
-      </div>
+      ) : null}
       <LxDropdownMenu anchorRef={commentMenuButtonRef} open={commentMenuOpen} onClose={() => setCommentMenuOpen(false)} items={commentMenuItems} width={214} align="right" />
     </div>
   );
@@ -233,16 +158,16 @@ function CommentRow({ reply, onReply, indent = 0, expandedReplyIds, onToggleRepl
 
 export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
-  const [threadReplies, setThreadReplies] = useState([]);
-  const [expandedReplyIds, setExpandedReplyIds] = useState(() => new Set());
   const menuButtonRef = useRef(null);
   const commentsPaneRef = useRef(null);
   const commentInputRef = useRef(null);
@@ -257,6 +182,17 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const { data: myFollowingData } = useFollowing(currentUser?.id);
   const updatePost = useUpdatePost();
   const deletePost = useDeletePost();
+  const likeMutation = useLikePost();
+  const saveMutation = useSavePost();
+  const createComment = useCreateComment(postId);
+  const {
+    data: commentsResponse,
+    isLoading: commentsLoading,
+    isError: commentsError,
+    fetchNextPage: fetchNextComments,
+    hasNextPage: hasNextComments,
+    isFetchingNextPage: isFetchingNextComments,
+  } = useTopLevelComments(postId);
 
   const post = postResponse?.data || postResponse || params.post || {};
   const targetUserId = post.userId || post.authorId || post.user?.id || post.author?.id;
@@ -270,19 +206,20 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
     return list.some((user) => user.id === targetUserId);
   })();
 
-  const likeCount = post.likeCount || post.likes || 0;
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((tag) => tag.slice(1)) : []);
   const mediaList = post.media || [];
   const mainMedia = mediaList[0] || null;
   const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
+  const comments = commentsResponse?.pages?.flatMap((page) => page?.data?.content || page?.content || []) || [];
 
   useEffect(() => {
-    const nextReplies = buildThreadReplies(authorName);
-    setThreadReplies(nextReplies);
-    setExpandedReplyIds(buildDefaultExpandedReplyIds());
+    setLikeCount(post.likeCount || post.likes || 0);
+  }, [post.id, post.likeCount, post.likes]);
+
+  useEffect(() => {
     setReplyingTo(null);
     setCommentDraft('');
-  }, [authorName, postId]);
+  }, [postId]);
 
   useEffect(() => {
     if (!replyingTo) return;
@@ -301,12 +238,45 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const closePost = () => navigate(-1);
 
   const handleLikeToggle = () => {
+    const previousLiked = liked;
+    const previousCount = likeCount;
+    const nextLiked = !liked;
+
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked((previous) => {
-      const next = !previous;
-      return next;
-    });
+    setLiked(nextLiked);
+    setLikeCount((count) => count + (nextLiked ? 1 : -1));
+
+    likeMutation.mutate(
+      { postId, liked: previousLiked },
+      {
+        onSuccess: (data) => {
+          const result = data?.data || data;
+          if (typeof result?.likeCount === 'number') {
+            setLikeCount(result.likeCount);
+          }
+        },
+        onError: () => {
+          setLiked(previousLiked);
+          setLikeCount(previousCount);
+        },
+      }
+    );
+  };
+
+  const handleSaveToggle = () => {
+    const previousSaved = saved;
+    const nextSaved = !saved;
+
+    saveMutation.mutate(
+      { postId, saved: previousSaved },
+      {
+        onError: () => {
+          setSaved(previousSaved);
+        },
+      }
+    );
+    setSaved(nextSaved);
   };
 
   const handleFollowToggle = () => {
@@ -330,12 +300,15 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
     }
   };
 
-  const handleDelete = () => {
-    if (window.confirm('are you sure you want to delete this post?')) {
-      deletePost.mutate(postId, {
-        onSuccess: () => navigate(-1),
-      });
-    }
+  const handleDeleteRequest = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    deletePost.mutate(postId, {
+      onSuccess: () => navigate(-1),
+    });
+    setDeleteConfirmOpen(false);
   };
 
   const handleBlockConfirm = () => {
@@ -352,61 +325,24 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
     const value = commentDraft.trim();
     if (!value) return;
 
-    const nextId = `local-${Date.now()}`;
-    const newReply = {
-      id: nextId,
-      idx: 0,
-      author: currentUser?.username || 'you',
-      time: 'now',
-      text: value,
-      likes: 0,
-      children: [],
-    };
-
-    if (replyingTo) {
-      setThreadReplies((previous) => appendReplyToTree(previous, replyingTo.id, newReply));
-      setExpandedReplyIds((previous) => {
-        const next = new Set(previous);
-        const path = findReplyPath(threadReplies, replyingTo.id) || [replyingTo.id];
-        path.forEach((id) => next.add(id));
-        next.add(replyingTo.id);
-        return next;
-      });
-    } else {
-      setThreadReplies((previous) => [...previous, newReply]);
-    }
-
-    setCommentDraft('');
-    setReplyingTo(null);
-    window.requestAnimationFrame(() => {
-      if (commentsPaneRef.current) {
-        commentsPaneRef.current.scrollTo({ top: commentsPaneRef.current.scrollHeight, behavior: 'smooth' });
+    createComment.mutate(
+      { parentId: replyingTo?.id ?? null, content: value },
+      {
+        onSuccess: () => {
+          setCommentDraft('');
+          setReplyingTo(null);
+          window.requestAnimationFrame(() => {
+            if (commentsPaneRef.current) {
+              commentsPaneRef.current.scrollTo({ top: commentsPaneRef.current.scrollHeight, behavior: 'smooth' });
+            }
+          });
+        },
       }
-    });
+    );
   };
 
   const handleReplySelect = (reply) => {
     setReplyingTo(reply);
-    const path = findReplyPath(threadReplies, reply.id);
-    if (path) {
-      setExpandedReplyIds((previous) => {
-        const next = new Set(previous);
-        path.forEach((id) => next.add(id));
-        return next;
-      });
-    }
-  };
-
-  const handleToggleReplies = (replyId) => {
-    setExpandedReplyIds((previous) => {
-      const next = new Set(previous);
-      if (next.has(replyId)) {
-        next.delete(replyId);
-      } else {
-        next.add(replyId);
-      }
-      return next;
-    });
   };
 
   const menuItems = useMemo(
@@ -501,9 +437,27 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
           </div>
         ) : null}
 
-        {threadReplies.map((reply) => (
-          <CommentRow key={reply.id} reply={reply} onReply={handleReplySelect} expandedReplyIds={expandedReplyIds} onToggleReplies={handleToggleReplies} navigate={navigate} postId={postId} authorProfile={{ id: targetUserId, username: authorHandle, displayName: authorName, avatarUrl: authorAvatarUrl }} />
-        ))}
+        {commentsLoading ? (
+          <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>loading comments...</div>
+        ) : commentsError ? (
+          <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontBody, fontSize: 13, color: v.error }}>we couldn't load comments. try again.</div>
+        ) : comments.length === 0 ? (
+          <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>no comments yet.</div>
+        ) : (
+          comments.map((comment) => (
+            <CommentRow key={comment.id} comment={comment} onReply={handleReplySelect} navigate={navigate} postId={postId} />
+          ))
+        )}
+        {hasNextComments ? (
+          <button
+            type="button"
+            onClick={() => fetchNextComments()}
+            disabled={isFetchingNextComments}
+            style={{ width: '100%', background: 'none', border: 'none', padding: '12px 0', cursor: 'pointer', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}
+          >
+            {isFetchingNextComments ? 'loading more...' : 'load more comments'}
+          </button>
+        ) : null}
       </div>
 
       <div style={{ borderTop: `1px solid ${v.borderSubtle}` }}>
@@ -512,7 +466,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
             <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
               <LxIcon name="heart" size={22} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 12, color: liked ? HEART_COLOR : v.ink3 }}>{liked ? likeCount + 1 : likeCount}</span>
+            <span style={{ fontFamily: v.fontMono, fontSize: 12, color: liked ? HEART_COLOR : v.ink3 }}>{likeCount}</span>
           </button>
           <button type="button" onClick={() => sharePost(postId, post.caption || post.text)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <LxIcon name="share" size={20} color={v.ink3} />
@@ -582,6 +536,20 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
         }
       >
         Are you sure you want to block <strong>{authorName}</strong>? They won't be able to find your profile, posts or story on Luvax.
+      </LxModal>
+
+      <LxModal
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        title="delete post"
+        actions={
+          <>
+            <LxBtn variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>cancel</LxBtn>
+            <LxBtn variant="danger" onClick={handleDeleteConfirm}>delete</LxBtn>
+          </>
+        }
+      >
+        are you sure you want to delete this post?
       </LxModal>
 
       {isSelf ? (

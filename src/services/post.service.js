@@ -85,6 +85,83 @@ export const updatePostStatus = async (postId, status) => {
   return response.data;
 };
 
+/**
+ * Likes a post for the current user; returns the fresh like count.
+ * @param {string} postId - The ID of the post.
+ * @returns {Promise<Object>} ApiResponse<{ postId, liked, likeCount }>.
+ */
+export const likePost = async (postId) => {
+  const response = await axiosInstance.post(`${POST_API_PATH}/${postId}/like`);
+  return response.data;
+};
+
+/**
+ * Removes the current user's like from a post; returns the fresh like count.
+ * @param {string} postId - The ID of the post.
+ * @returns {Promise<Object>} ApiResponse<{ postId, liked, likeCount }>.
+ */
+export const unlikePost = async (postId) => {
+  const response = await axiosInstance.delete(`${POST_API_PATH}/${postId}/like`);
+  return response.data;
+};
+
+/**
+ * Saves (bookmarks) a post for the current user.
+ * @param {string} postId - The ID of the post.
+ * @returns {Promise<Object>} ApiResponse<Void>.
+ */
+export const savePost = async (postId) => {
+  const response = await axiosInstance.post(`${POST_API_PATH}/${postId}/save`);
+  return response.data;
+};
+
+/**
+ * Removes the current user's saved bookmark from a post.
+ * @param {string} postId - The ID of the post.
+ * @returns {Promise<Object>} No content.
+ */
+export const unsavePost = async (postId) => {
+  const response = await axiosInstance.delete(`${POST_API_PATH}/${postId}/save`);
+  return response.data;
+};
+
+/**
+ * Retrieves a paginated list of top-level comments for a post.
+ * @param {string} postId - The ID of the post.
+ * @param {Object} params - Query parameters (e.g., cursor, limit).
+ * @returns {Promise<Object>} ApiResponse<CursorPageResponse<Comment>>.
+ */
+export const getComments = async (postId, params = {}) => {
+  const response = await axiosInstance.get(`${POST_API_PATH}/${postId}/comments`, { params });
+  return response.data;
+};
+
+/**
+ * Retrieves a paginated list of direct replies to a comment.
+ * @param {string} commentId - The ID of the parent comment.
+ * @param {Object} params - Query parameters (e.g., cursor, limit).
+ * @returns {Promise<Object>} ApiResponse<CursorPageResponse<Comment>>.
+ */
+export const getCommentReplies = async (commentId, params = {}) => {
+  const response = await axiosInstance.get(`/comments/${commentId}/replies`, { params });
+  return response.data;
+};
+
+/**
+ * Creates a comment or reply on a post.
+ * @param {string} postId - The ID of the post.
+ * @param {{ parentId?: string|null, content: string }} data - Comment payload.
+ * @returns {Promise<Object>} ApiResponse<Comment>.
+ */
+export const createComment = async (postId, data) => {
+  const response = await axiosInstance.post(`${POST_API_PATH}/${postId}/comments`, {
+    postId,
+    parentId: data.parentId ?? null,
+    content: data.content,
+  });
+  return response.data;
+};
+
 export const postService = {
   createPost,
   getFeed,
@@ -94,6 +171,13 @@ export const postService = {
   deletePost,
   updatePostStatus,
   getExplorePosts,
+  likePost,
+  unlikePost,
+  savePost,
+  unsavePost,
+  getComments,
+  getCommentReplies,
+  createComment,
 };
 
 export default postService;

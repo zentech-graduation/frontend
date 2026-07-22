@@ -95,7 +95,7 @@ export const useMediaUpload = () => {
 
     } catch (err) {
       console.error('Media upload failed', err);
-      setError(err.message || 'Upload failed');
+      setError("we couldn't upload your media. try again.");
       setIsUploading(false);
       throw err;
     }
