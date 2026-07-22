@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { v } from '../constants/tokens';
 import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
-import { useDeletePost, useUpdatePost } from '../hooks/usePosts';
+import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRelativeTime } from '../hooks/useRelativeTime';
@@ -33,6 +33,7 @@ const sharePost = async (postId, title) => {
 
 export function PostCard({ post, navigate, density = 'cozy', showTags = true, viewport = 'desktop' }) {
   const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likeCount || post.likes || 0);
   const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
@@ -50,21 +51,53 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const follow = useFollow();
   const unfollow = useUnfollow();
   const block = useBlock();
+  const likeMutation = useLikePost();
+  const saveMutation = useSavePost();
   const { data: myFollowingData } = useFollowing(currentUser?.id);
 
   const handleLikeToggle = () => {
+    const previousLiked = liked;
+    const previousCount = likeCount;
+    const nextLiked = !liked;
+
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked((previous) => {
-      const next = !previous;
-      return next;
-    });
+    setLiked(nextLiked);
+    setLikeCount((count) => count + (nextLiked ? 1 : -1));
+
+    likeMutation.mutate(
+      { postId: post.id, liked: previousLiked },
+      {
+        onSuccess: (data) => {
+          const result = data?.data || data;
+          if (typeof result?.likeCount === 'number') {
+            setLikeCount(result.likeCount);
+          }
+        },
+        onError: () => {
+          setLiked(previousLiked);
+          setLikeCount(previousCount);
+        },
+      }
+    );
   };
 
   const handleSaveToggle = () => {
+    const previousSaved = saved;
+    const nextSaved = !saved;
+
     setSaveBurst(false);
     window.requestAnimationFrame(() => setSaveBurst(true));
-    setSaved((state) => !state);
+    setSaved(nextSaved);
+
+    saveMutation.mutate(
+      { postId: post.id, saved: previousSaved },
+      {
+        onError: () => {
+          setSaved(previousSaved);
+        },
+      }
+    );
   };
 
   const handleEditOpen = () => {
@@ -98,7 +131,6 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const media = post.media && post.media.length > 0 ? post.media[0] : null;
-  const likeCount = post.likeCount || post.likes || 0;
   const isMobile = viewport === 'mobile';
   const following = (() => {
     if (!myFollowingData || !targetUserId || isOwner) return false;
