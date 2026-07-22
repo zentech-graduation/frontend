@@ -1,10 +1,26 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
+
+### Security
+- Removed access token and refresh token from localStorage persistence; tokens are now in-memory only, with a one-time silent migration that scrubs any previously persisted tokens from existing sessions.
+- Added a route guard to the main application shell; unauthenticated access to the app now redirects to sign-in, and signing in while already authenticated now redirects away from the sign-in page.
+
+### Fixed
+- Edit profile now saves changes to the server; the profile screen reflects the confirmed saved values after a reload.
+- Post like, save, and comment actions now call the backend with immediate visual feedback that reverts if the request fails.
+- The comment thread on a post now loads and updates from the server instead of showing placeholder text.
+- The suggested-people list no longer shows placeholder accounts when it fails to load; it now shows nothing instead.
+- Follow-request accept and decline buttons in the notifications list are now functional everywhere they appear.
+- Removed technical error text (server/network implementation details) from user-facing messages across the app.
+- Replaced browser pop-up confirmations and alerts with the app's own in-page confirmation and error messages.
+
+### Known Limitations
+- Changing your password from account settings is temporarily disabled while the corresponding backend capability is being built.
 
 ### Changed
 - The auth entry point's brand panel now shows the luvax logo image instead of a text wordmark, matching the browser tab favicon.
