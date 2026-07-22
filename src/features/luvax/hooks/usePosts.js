@@ -161,9 +161,8 @@ export const useCreateComment = (postId) => {
     onSuccess: (_, variables) => {
       if (variables.parentId) {
         queryClient.invalidateQueries({ queryKey: ['commentReplies', variables.parentId] });
-      } else {
-        queryClient.invalidateQueries({ queryKey: ['comments', postId] });
       }
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] });
     },
   });
 };
