@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
-import PageLoader from '@/components/common/PageLoader';
 import { ROUTES } from '@/config/constants';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authPageRegisterSchema, emailSchema, loginSchema } from '../utils/authSchemas';
@@ -93,8 +92,6 @@ export default function AuthPage() {
   const location = useLocation();
   const setAuth = useAuthStore((state) => state.setAuth);
   const logout = useAuthStore((state) => state.logout);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isBootstrapping = useAuthStore((state) => state.isBootstrapping);
 
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const isReauthRequest = searchParams.get('reauth') === '1';
@@ -151,14 +148,6 @@ export default function AuthPage() {
   });
 
   const fpEmailValue = useWatch({ control: forgotForm.control, name: 'email' });
-
-  if (isBootstrapping) {
-    return <PageLoader label="Preparing authentication..." />;
-  }
-
-  if (isAuthenticated && !isReauthRequest) {
-    return <Navigate to={ROUTES.APP} replace />;
-  }
 
   const goLogin = () => setView('login');
   const goRegister = () => setView('register');
