@@ -103,7 +103,7 @@ export function SettingsScreen({ navigate, tweaks, setTweak }) {
         <SettingsRow label="change password" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate('change-password')} />
         <SettingsRow
           label="email"
-          sub="mara@example.com · verified"
+          sub={`${currentUser?.email ?? '—'}${currentUser?.isVerified ? ' · verified' : ''}`}
           control={<LxIcon name="check" size={16} color={v.success} />}
         />
 
