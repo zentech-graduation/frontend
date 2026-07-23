@@ -17,7 +17,7 @@ import { OnboardingScreen } from './components/OnboardingScreen';
 import { StoryViewScreen, StoryComposerScreen } from './components/StoryScreens';
 import { EditProfileScreen } from './components/EditProfileScreen';
 import { ChangePasswordScreen } from './components/ChangePasswordScreen';
-import '../messages/MessagesScreen';
+import { MessagesScreen } from '../messages/MessagesScreen';
 
 // ─── Luvax App Root ────────────────────────────────────────────────────────
 export function LuvaxApp() {
@@ -155,7 +155,6 @@ export function LuvaxApp() {
   }, []);
 
   const screenProps = { navigate, params, tweaks, setTweak, viewport };
-  const MessagesScreen = typeof window !== 'undefined' ? window.MessagesScreen : null;
   const screens = {
     feed:          <FeedScreen          {...screenProps} />,
     explore:       <ExploreScreen       {...screenProps} />,
@@ -204,25 +203,7 @@ export function LuvaxApp() {
               overflow: 'hidden',
             }}
           >
-            {MessagesScreen ? (
-              <MessagesScreen {...screenProps} />
-            ) : (
-              <div
-                style={{
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 24,
-                  textAlign: 'center',
-                  color: v.ink2,
-                  fontFamily: v.fontBody,
-                  fontSize: 15,
-                }}
-              >
-                messages screen is not available
-              </div>
-            )}
+            <MessagesScreen {...screenProps} />
           </div>
         </div>
         {viewport === 'mobile' ? <LxBottomNav active={screen} navigate={navigate} /> : null}
