@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
+import { copyPostLink, extractPageContent, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
 import { useCommentReplies } from '../hooks/usePosts';
@@ -9,29 +10,6 @@ import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSoci
 import { useRelativeTime } from '../hooks/useRelativeTime';
 
 const HEART_COLOR = 'var(--lx-error)';
-
-const buildPostLink = (postId) => {
-  if (typeof window === 'undefined') return `luvax://post/${postId}`;
-  return `${window.location.origin}${window.location.pathname}#post-${postId}`;
-};
-
-const copyPostLink = async (postId) => {
-  const link = buildPostLink(postId);
-  if (navigator?.clipboard?.writeText) {
-    await navigator.clipboard.writeText(link);
-    return;
-  }
-  window.prompt('copy link', link);
-};
-
-const sharePost = async (postId, title) => {
-  const link = buildPostLink(postId);
-  if (navigator?.share) {
-    await navigator.share({ title: title || 'luvax post', url: link });
-    return;
-  }
-  await copyPostLink(postId);
-};
 
 function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
   const [liked, setLiked] = useState(false);
@@ -48,7 +26,7 @@ function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
   const timeStr = useRelativeTime(comment.createdAt, { seedKey: comment.id });
 
   const { data: repliesResponse, isLoading: repliesLoading } = useCommentReplies(comment.id, showReplies);
-  const replies = repliesResponse?.data?.content || repliesResponse?.content || [];
+  const replies = extractPageContent(repliesResponse);
 
   const isNestedReply = indent > 0;
   const nestedOffset = isNestedReply ? 23 : 0;
@@ -202,7 +180,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const isSelf = currentUser?.id === targetUserId;
   const following = (() => {
     if (!myFollowingData || !targetUserId || isSelf) return false;
-    const list = myFollowingData.pages?.flatMap((page) => page?.data?.content || page?.content || []) || [];
+    const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
     return list.some((user) => user.id === targetUserId);
   })();
 
@@ -210,7 +188,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const mediaList = post.media || [];
   const mainMedia = mediaList[0] || null;
   const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
-  const comments = commentsResponse?.pages?.flatMap((page) => page?.data?.content || page?.content || []) || [];
+  const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
   useEffect(() => {
     setLikeCount(post.likeCount || post.likes || 0);

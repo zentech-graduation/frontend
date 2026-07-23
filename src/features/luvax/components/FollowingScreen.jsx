@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { LxIcon } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFollowing } from '../hooks/useSocial';
@@ -52,7 +53,7 @@ export function FollowingScreen({ navigate, params = {} }) {
     );
   }
 
-  const following = followingResponse?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const following = followingResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: v.base }}>

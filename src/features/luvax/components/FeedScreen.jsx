@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { STORIES } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxBtn } from './primitives';
 import { useFeed } from '../hooks/usePosts';
@@ -70,7 +71,7 @@ export function FeedScreen({ navigate, tweaks, viewport }) {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Flatten the infinite paginated response
-  const posts = feedResponse?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const posts = feedResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
 
   if (isLoading) {
     return (

@@ -15,7 +15,7 @@ export const socialKeys = {
 export const useFollowers = (userId) => {
   return useInfiniteQuery({
     queryKey: socialKeys.followers(userId),
-    queryFn: ({ pageParam = null }) => socialService.getFollowers(userId, pageParam),
+    queryFn: ({ pageParam = null, signal }) => socialService.getFollowers(userId, pageParam, undefined, signal),
     getNextPageParam: (lastPage) => lastPage?.data?.hasNextPage ? lastPage.data.endCursor : undefined,
     enabled: !!userId,
   });
@@ -24,7 +24,7 @@ export const useFollowers = (userId) => {
 export const useFollowing = (userId) => {
   return useInfiniteQuery({
     queryKey: socialKeys.following(userId),
-    queryFn: ({ pageParam = null }) => socialService.getFollowing(userId, pageParam),
+    queryFn: ({ pageParam = null, signal }) => socialService.getFollowing(userId, pageParam, undefined, signal),
     getNextPageParam: (lastPage) => lastPage?.data?.hasNextPage ? lastPage.data.endCursor : undefined,
     enabled: !!userId,
   });

@@ -1,4 +1,4 @@
-import { v } from '../../luvax/constants/tokens';
+import { v } from '@/config/tokens';
 import { AvatarVisual } from './AvatarVisual';
 
 export function ConvRow({ thread, isActive, onSelect }) {

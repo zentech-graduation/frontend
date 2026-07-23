@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { TOPICS } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag } from './primitives';
 import { useExplore } from '../hooks/usePosts';
@@ -166,7 +167,7 @@ export function ExploreScreen({ navigate, viewport, params = {} }) {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const posts = data?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const posts = data?.pages?.flatMap(page => extractPageContent(page)) || [];
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
   const suggestionChips = TOPICS.slice(0, 8);

@@ -28,22 +28,22 @@ export const unblockUser = async (targetUserId) => {
 };
 
 // Get followers
-export const getFollowers = async (userId, cursor, limit = 20) => {
+export const getFollowers = async (userId, cursor, limit = 20, signal) => {
   const params = new URLSearchParams();
   if (cursor) params.append('cursor', cursor);
   if (limit) params.append('limit', limit.toString());
-  
-  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/users/${userId}/followers?${params.toString()}`);
+
+  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/users/${userId}/followers?${params.toString()}`, { signal });
   return response.data;
 };
 
 // Get following
-export const getFollowing = async (userId, cursor, limit = 20) => {
+export const getFollowing = async (userId, cursor, limit = 20, signal) => {
   const params = new URLSearchParams();
   if (cursor) params.append('cursor', cursor);
   if (limit) params.append('limit', limit.toString());
-  
-  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/users/${userId}/following?${params.toString()}`);
+
+  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/users/${userId}/following?${params.toString()}`, { signal });
   return response.data;
 };
 
