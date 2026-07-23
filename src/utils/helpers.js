@@ -59,3 +59,13 @@ export function safeJsonParse(jsonString, fallback = null) {
     return fallback;
   }
 }
+
+/**
+ * Extracts the content array from a paginated API response page,
+ * falling back through the shapes callers commonly receive.
+ * @param {{data?: {content?: Array}, content?: Array}} page
+ * @returns {Array}
+ */
+export function extractPageContent(page) {
+  return page?.data?.content ?? page?.content ?? [];
+}

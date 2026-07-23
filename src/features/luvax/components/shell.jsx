@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -271,7 +272,7 @@ export function LxRightRail({ navigate, compact = false }) {
   const trending = ['light', 'analog', 'morning', 'silence', 'film', 'observation'];
   
   const { data: myFollowingData } = useFollowing(currentUser?.id);
-  const followingList = myFollowingData?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const followingList = myFollowingData?.pages?.flatMap(page => extractPageContent(page)) || [];
   const followingIds = new Set(followingList.map(u => u.id));
 
   const { data: suggestedResponse } = useSuggestedUsers();
