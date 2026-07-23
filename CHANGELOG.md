@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+- Removed a dead standalone HTML prototype and a duplicate, unused media upload service that were never referenced by the running app.
+- Removed unused email/password auth hooks (login, logout, registration, password reset, email verification, OAuth code exchange) that had no callers; the app performs these actions through the auth service directly.
+
 ### Changed
 - The messages screen and header search now load through standard module imports instead of a global window registration, with no visible change to either.
 
