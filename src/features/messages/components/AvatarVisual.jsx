@@ -1,5 +1,5 @@
-import { v } from '../../luvax/constants/tokens';
-import { LxAvatar } from '../../luvax/components/primitives';
+import { v } from '@/config/tokens';
+import { LxAvatar } from '@/components/ui/lx-avatar';
 
 export function AvatarVisual({ thread, size = 42 }) {
   if (thread.initials) {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { LxAvatar, LxBtn, LxIcon } from './primitives';
 import { useFollow, useUnfollow } from '../hooks/useSocial';
 

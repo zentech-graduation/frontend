@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { v } from '../luvax/constants/tokens';
+import { v } from '@/config/tokens';
 import { THREADS } from './data/mockThreads';
 import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';

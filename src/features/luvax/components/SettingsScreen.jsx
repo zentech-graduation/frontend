@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { LxIcon, LxBtn } from './primitives';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';

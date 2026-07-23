@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';

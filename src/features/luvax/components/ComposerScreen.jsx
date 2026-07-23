@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { SUGGESTED_TAGS } from '../constants/data';
 import { LxAvatar, LxDivider, LxIcon, LxTag } from './primitives';
 import { useCreatePost } from '../hooks/usePosts';

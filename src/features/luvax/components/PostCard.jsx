@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';

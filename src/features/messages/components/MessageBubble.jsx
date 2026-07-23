@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { v } from '../../luvax/constants/tokens';
-import { LxDropdownMenu, LxIcon } from '../../luvax/components/primitives';
+import { v } from '@/config/tokens';
+import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
+import { LxIcon } from '@/components/ui/lx-icon';
 import { MediaPlaceholder } from './MediaPlaceholder';
 
 const copyMessageText = async (value) => {

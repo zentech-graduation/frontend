@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - The messages screen and header search now load through standard module imports instead of a global window registration, with no visible change to either.
+- Moved shared design tokens and icon/avatar/dropdown-menu primitives out of the main app shell feature into shared locations so the messages feature no longer reaches into another feature's internals; no visual or behavioral change.
 
 ### Security
 - Removed access token and refresh token from localStorage persistence; tokens are now in-memory only, with a one-time silent migration that scrubs any previously persisted tokens from existing sessions.

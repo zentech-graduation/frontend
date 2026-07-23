@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { v } from '../../luvax/constants/tokens';
-import { LxIcon } from '../../luvax/components/primitives';
+import { v } from '@/config/tokens';
+import { LxIcon } from '@/components/ui/lx-icon';
 import { AvatarVisual } from './AvatarVisual';
 import { MessageBubble } from './MessageBubble';
 
