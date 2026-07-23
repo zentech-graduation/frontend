@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Follow-request accept and decline buttons in the notifications list are now functional everywhere they appear.
 - Removed technical error text (server/network implementation details) from user-facing messages across the app.
 - Replaced browser pop-up confirmations and alerts with the app's own in-page confirmation and error messages.
+- The profile screen now shows an inline error message instead of a silently blank header or post grid when the profile or posts fail to load.
 
 ### Known Limitations
 - Changing your password from account settings is temporarily disabled while the corresponding backend capability is being built.
