@@ -60,7 +60,6 @@ export function MessagesScreen({ navigate, viewport }) {
       return undefined;
     }
 
-    window.MessagesScreen = MessagesScreen;
     window.__lxMessagesCompose = () => {
       handleCompose();
       return true;
@@ -437,8 +436,4 @@ export function MessagesScreen({ navigate, viewport }) {
       ) : null}
     </div>
   );
-}
-
-if (typeof window !== 'undefined') {
-  window.MessagesScreen = MessagesScreen;
 }

@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { usePendingFollowRequests, useSuggestedUsers, useFollowing } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
 import { UserCard } from './UserCard';
-import '@/features/search/components/LxHeaderSearch';
+import { LxHeaderSearch } from '@/features/search/components/LxHeaderSearch';
 
 // ─── Top Tab Strip ─────────────────────────────────────────────────────────
 export function LxTopTabs({ active, navigate, compact = false }) {
@@ -89,7 +89,6 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
   const { data: unreadResponse } = useUnreadCount();
   const unreadCount = unreadResponse?.data?.count || 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
-  const HeaderSearch = typeof window !== 'undefined' ? window.LxHeaderSearch : null;
   const isMobile = viewport === 'mobile';
 
   return (
@@ -171,7 +170,7 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0 : isTablet ? 4 : 14, flexShrink: 0, width: isWide ? '100%' : sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 244 : undefined), justifyContent: 'flex-end', paddingRight: isDesktop ? 52 : isTablet ? 0 : 0 }}>
-          {isWide && !showBackHeader && HeaderSearch ? <HeaderSearch navigate={navigate} viewport={viewport} screen={screen} params={params} /> : null}
+          {isWide && !showBackHeader ? <LxHeaderSearch navigate={navigate} viewport={viewport} screen={screen} params={params} /> : null}
           {screen === 'messages' && isMobile ? (
             <button
               type="button"

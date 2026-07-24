@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- The messages screen and header search now load through standard module imports instead of a global window registration, with no visible change to either.
+
 ### Security
 - Removed access token and refresh token from localStorage persistence; tokens are now in-memory only, with a one-time silent migration that scrubs any previously persisted tokens from existing sessions.
 - Added a route guard to the main application shell; unauthenticated access to the app now redirects to sign-in, and signing in while already authenticated now redirects away from the sign-in page.

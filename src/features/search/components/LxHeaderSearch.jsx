@@ -77,7 +77,3 @@ export function LxHeaderSearch({ navigate, viewport, screen, params = {} }) {
     </form>
   );
 }
-
-if (typeof window !== 'undefined') {
-  window.LxHeaderSearch = LxHeaderSearch;
-}
