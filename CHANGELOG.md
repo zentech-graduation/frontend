@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added a route guard to the main application shell; unauthenticated access to the app now redirects to sign-in, and signing in while already authenticated now redirects away from the sign-in page.
 
 ### Fixed
+- Settings now shows the signed-in user's actual email address instead of a placeholder example email.
 - Edit profile now saves changes to the server; the profile screen reflects the confirmed saved values after a reload.
 - Post like, save, and comment actions now call the backend with immediate visual feedback that reverts if the request fails.
 - The comment thread on a post now loads and updates from the server instead of showing placeholder text.
