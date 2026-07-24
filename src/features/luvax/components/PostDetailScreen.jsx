@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
-import { extractPageContent } from '@/utils/helpers';
+import { copyPostLink, extractPageContent, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
 import { useCommentReplies } from '../hooks/usePosts';
@@ -10,29 +10,6 @@ import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSoci
 import { useRelativeTime } from '../hooks/useRelativeTime';
 
 const HEART_COLOR = 'var(--lx-error)';
-
-const buildPostLink = (postId) => {
-  if (typeof window === 'undefined') return `luvax://post/${postId}`;
-  return `${window.location.origin}${window.location.pathname}#post-${postId}`;
-};
-
-const copyPostLink = async (postId) => {
-  const link = buildPostLink(postId);
-  if (navigator?.clipboard?.writeText) {
-    await navigator.clipboard.writeText(link);
-    return;
-  }
-  window.prompt('copy link', link);
-};
-
-const sharePost = async (postId, title) => {
-  const link = buildPostLink(postId);
-  if (navigator?.share) {
-    await navigator.share({ title: title || 'luvax post', url: link });
-    return;
-  }
-  await copyPostLink(postId);
-};
 
 function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
   const [liked, setLiked] = useState(false);
