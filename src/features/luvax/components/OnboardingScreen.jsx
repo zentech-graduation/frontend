@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { INTEREST_CATEGORIES } from '../constants/data';
 import { LxIcon, LxTag, LxBtn } from './primitives';
 

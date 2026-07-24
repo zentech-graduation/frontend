@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { v } from '@/features/luvax/constants/tokens';
-import { LxIcon } from '@/features/luvax/components/primitives';
+import { v } from '@/config/tokens';
+import { LxIcon } from '@/components/ui/lx-icon';
 
 export function LxHeaderSearch({ navigate, viewport, screen, params = {} }) {
   const [query, setQuery] = useState(params?.q || '');

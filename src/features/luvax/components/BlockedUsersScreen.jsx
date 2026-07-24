@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { LxBtn, LxAvatar } from './primitives';
 import { useUnblock } from '../hooks/useSocial';
 import { useUserProfile } from '../hooks/useUsers';

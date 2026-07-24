@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { TWEAK_DEFAULTS, ACCENT_PALETTES, FONT_MAP } from './constants/data';
 import { useViewport } from './hooks/useViewport';
 import { LxShell, LxAppBar, LxBottomNav } from './components/shell';
-import { v } from './constants/tokens';
+import { v } from '@/config/tokens';
 import { FeedScreen } from './components/FeedScreen';
 import { ExploreScreen } from './components/ExploreScreen';
 import { ComposerScreen } from './components/ComposerScreen';

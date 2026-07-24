@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { STORIES } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxBtn } from './primitives';
 import { useFeed } from '../hooks/usePosts';
