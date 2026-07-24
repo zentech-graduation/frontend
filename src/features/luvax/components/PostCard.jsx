@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
@@ -134,7 +135,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const isMobile = viewport === 'mobile';
   const following = (() => {
     if (!myFollowingData || !targetUserId || isOwner) return false;
-    const list = myFollowingData.pages?.flatMap((page) => page?.data?.content || page?.content || []) || [];
+    const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
     return list.some((user) => user.id === targetUserId);
   })();
 

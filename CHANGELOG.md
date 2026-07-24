@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Removed unused email/password auth hooks (login, logout, registration, password reset, email verification, OAuth code exchange) that had no callers; the app performs these actions through the auth service directly.
 
 ### Changed
+- Consolidated the repeated pagination content-extraction logic used across feed, profile, explore, followers/following, notifications, and post/comment screens into one shared helper, with no visible or behavioral change.
 - The messages screen and header search now load through standard module imports instead of a global window registration, with no visible change to either.
 - Moved shared design tokens and icon/avatar/dropdown-menu primitives out of the main app shell feature into shared locations so the messages feature no longer reaches into another feature's internals; no visual or behavioral change.
 

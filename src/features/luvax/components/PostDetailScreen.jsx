@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
 import { useCommentReplies } from '../hooks/usePosts';
@@ -48,7 +49,7 @@ function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
   const timeStr = useRelativeTime(comment.createdAt, { seedKey: comment.id });
 
   const { data: repliesResponse, isLoading: repliesLoading } = useCommentReplies(comment.id, showReplies);
-  const replies = repliesResponse?.data?.content || repliesResponse?.content || [];
+  const replies = extractPageContent(repliesResponse);
 
   const isNestedReply = indent > 0;
   const nestedOffset = isNestedReply ? 23 : 0;
@@ -202,7 +203,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const isSelf = currentUser?.id === targetUserId;
   const following = (() => {
     if (!myFollowingData || !targetUserId || isSelf) return false;
-    const list = myFollowingData.pages?.flatMap((page) => page?.data?.content || page?.content || []) || [];
+    const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
     return list.some((user) => user.id === targetUserId);
   })();
 
@@ -210,7 +211,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const mediaList = post.media || [];
   const mainMedia = mediaList[0] || null;
   const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
-  const comments = commentsResponse?.pages?.flatMap((page) => page?.data?.content || page?.content || []) || [];
+  const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
   useEffect(() => {
     setLikeCount(post.likeCount || post.likes || 0);

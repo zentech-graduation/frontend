@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests, useApproveFollowRequest, useRejectFollowRequest } from '../hooks/useSocial';
 import { useNotifications, useMarkAllAsRead } from '../hooks/useNotifications';
@@ -135,7 +136,7 @@ export function NotificationsScreen({ navigate }) {
 
   const requests = requestsResponse?.data || requestsResponse || [];
   
-  let notifs = notifsData?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  let notifs = notifsData?.pages?.flatMap(page => extractPageContent(page)) || [];
 
   useEffect(() => {
     if (tab === 'all') {

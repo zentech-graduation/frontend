@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { LxBtn, LxIcon } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUserPosts } from '../hooks/usePosts';
@@ -27,7 +28,7 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
 
   useEffect(() => {
     if (myFollowingData && !isSelf) {
-      const list = myFollowingData.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+      const list = myFollowingData.pages?.flatMap(page => extractPageContent(page)) || [];
       setFollowing(list.some(u => u.id === targetUserId));
     }
   }, [myFollowingData, targetUserId, isSelf]);
@@ -58,7 +59,7 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Flatten the infinite paginated response
-  const posts = postsResponse?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const posts = postsResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
 
   const cols = viewport === 'desktop' ? 3 : viewport === 'tablet' ? 3 : 3;
   const title = user?.displayName || user?.firstName || user?.username || 'Unknown';
