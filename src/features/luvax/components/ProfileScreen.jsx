@@ -62,7 +62,9 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
   // Flatten the infinite paginated response
   const posts = postsResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
 
-  if (isProfileError && !user) {
+  const hasIdentifiableUser = Boolean(user?.displayName || user?.firstName || user?.username);
+
+  if (isProfileError && !hasIdentifiableUser) {
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, fontFamily: v.fontBody, fontSize: 14, color: v.error }}>
         we couldn't load this profile. check your connection and try again.
