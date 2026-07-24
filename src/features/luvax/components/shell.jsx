@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { usePendingFollowRequests, useSuggestedUsers, useFollowing } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
 import { UserCard } from './UserCard';
-import '@/features/search/components/LxHeaderSearch';
+import { LxHeaderSearch } from '@/features/search/components/LxHeaderSearch';
 
 // ─── Top Tab Strip ─────────────────────────────────────────────────────────
 export function LxTopTabs({ active, navigate, compact = false }) {
@@ -89,7 +90,6 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
   const { data: unreadResponse } = useUnreadCount();
   const unreadCount = unreadResponse?.data?.count || 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
-  const HeaderSearch = typeof window !== 'undefined' ? window.LxHeaderSearch : null;
   const isMobile = viewport === 'mobile';
 
   return (
@@ -171,7 +171,7 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0 : isTablet ? 4 : 14, flexShrink: 0, width: isWide ? '100%' : sideWidth, minWidth: viewport === 'mobile' ? 'auto' : (viewport === 'tablet' ? 244 : undefined), justifyContent: 'flex-end', paddingRight: isDesktop ? 52 : isTablet ? 0 : 0 }}>
-          {isWide && !showBackHeader && HeaderSearch ? <HeaderSearch navigate={navigate} viewport={viewport} screen={screen} params={params} /> : null}
+          {isWide && !showBackHeader ? <LxHeaderSearch navigate={navigate} viewport={viewport} screen={screen} params={params} /> : null}
           {screen === 'messages' && isMobile ? (
             <button
               type="button"
@@ -272,7 +272,7 @@ export function LxRightRail({ navigate, compact = false }) {
   const trending = ['light', 'analog', 'morning', 'silence', 'film', 'observation'];
   
   const { data: myFollowingData } = useFollowing(currentUser?.id);
-  const followingList = myFollowingData?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const followingList = myFollowingData?.pages?.flatMap(page => extractPageContent(page)) || [];
   const followingIds = new Set(followingList.map(u => u.id));
 
   const { data: suggestedResponse } = useSuggestedUsers();

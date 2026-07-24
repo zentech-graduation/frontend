@@ -1,16 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { v } from '../../luvax/constants/tokens';
-import { LxDropdownMenu, LxIcon } from '../../luvax/components/primitives';
+import { v } from '@/config/tokens';
+import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
+import { LxIcon } from '@/components/ui/lx-icon';
+import { copyToClipboard } from '@/utils/helpers';
 import { MediaPlaceholder } from './MediaPlaceholder';
-
-const copyMessageText = async (value) => {
-  if (!value) return;
-  if (navigator?.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-  window.prompt('copy text', value);
-};
 
 export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteToggle, onReplyMessage, canDelete, viewport }) {
   const isMine = message.from === 'me';
@@ -45,7 +38,7 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
               id: 'copy',
               icon: 'link',
               label: 'Copy text',
-              onClick: () => copyMessageText(textForCopy),
+              onClick: () => copyToClipboard(textForCopy),
             }
           : null,
         isMine && message.kind !== 'deleted'

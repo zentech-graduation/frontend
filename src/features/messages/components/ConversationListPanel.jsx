@@ -1,5 +1,5 @@
-import { v } from '../../luvax/constants/tokens';
-import { LxIcon } from '../../luvax/components/primitives';
+import { v } from '@/config/tokens';
+import { LxIcon } from '@/components/ui/lx-icon';
 import { ConvRow } from './ConvRow';
 
 export function ConversationListPanel({

@@ -6,11 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+- Removed a dead standalone HTML prototype and a duplicate, unused media upload service that were never referenced by the running app.
+- Removed unused email/password auth hooks (login, logout, registration, password reset, email verification, OAuth code exchange) that had no callers; the app performs these actions through the auth service directly.
+
+### Changed
+- Infinite-scroll feed, explore, user posts, followers, and following lists now cancel their in-flight network request when the query is aborted or refetched, instead of letting it complete unused.
+- Consolidated the repeated pagination content-extraction logic used across feed, profile, explore, followers/following, notifications, and post/comment screens into one shared helper, with no visible or behavioral change.
+- Consolidated duplicated post share/copy-link logic and message text-copy logic into shared clipboard helpers, with no visible or behavioral change.
+- The messages screen and header search now load through standard module imports instead of a global window registration, with no visible change to either.
+- Moved shared design tokens and icon/avatar/dropdown-menu primitives out of the main app shell feature into shared locations so the messages feature no longer reaches into another feature's internals; no visual or behavioral change.
+
 ### Security
 - Removed access token and refresh token from localStorage persistence; tokens are now in-memory only, with a one-time silent migration that scrubs any previously persisted tokens from existing sessions.
 - Added a route guard to the main application shell; unauthenticated access to the app now redirects to sign-in, and signing in while already authenticated now redirects away from the sign-in page.
 
 ### Fixed
+- Settings now shows the signed-in user's actual email address instead of a placeholder example email.
 - Edit profile now saves changes to the server; the profile screen reflects the confirmed saved values after a reload.
 - Post like, save, and comment actions now call the backend with immediate visual feedback that reverts if the request fails.
 - The comment thread on a post now loads and updates from the server instead of showing placeholder text.
@@ -18,9 +30,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Follow-request accept and decline buttons in the notifications list are now functional everywhere they appear.
 - Removed technical error text (server/network implementation details) from user-facing messages across the app.
 - Replaced browser pop-up confirmations and alerts with the app's own in-page confirmation and error messages.
+- The profile screen now shows an inline error message when the profile fails to load and no identifiable name is available to fall back on (previously a thin placeholder, such as when arriving from a notification, could render a blank-looking header instead), and an inline error message instead of a silently blank post grid when posts fail to load.
 
 ### Known Limitations
 - Changing your password from account settings is temporarily disabled while the corresponding backend capability is being built.
+- Privacy and notification toggles in account settings are now visibly disabled and labeled "coming soon" instead of silently resetting on navigation, while the corresponding backend capability is being built.
 
 ### Changed
 - The auth entry point's brand panel now shows the luvax logo image instead of a text wordmark, matching the browser tab favicon.

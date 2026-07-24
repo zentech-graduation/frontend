@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { LxBtn, LxIcon } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUserPosts } from '../hooks/usePosts';
@@ -16,7 +17,7 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
   const isSelf = !targetUserId || targetUserId === currentUser?.id;
   
   const queryUserId = targetUserId || currentUser?.id;
-  const { data: profileResponse } = useUserProfile(queryUserId);
+  const { data: profileResponse, isError: isProfileError } = useUserProfile(queryUserId);
   const fetchedUser = profileResponse?.data || profileResponse;
   
   const user = fetchedUser || (isSelf ? currentUser : params.user);
@@ -27,7 +28,7 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
 
   useEffect(() => {
     if (myFollowingData && !isSelf) {
-      const list = myFollowingData.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+      const list = myFollowingData.pages?.flatMap(page => extractPageContent(page)) || [];
       setFollowing(list.some(u => u.id === targetUserId));
     }
   }, [myFollowingData, targetUserId, isSelf]);
@@ -43,12 +44,13 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
   };
 
   const { ref, inView } = useInView();
-  const { 
-    data: postsResponse, 
-    isLoading, 
-    fetchNextPage, 
-    hasNextPage, 
-    isFetchingNextPage 
+  const {
+    data: postsResponse,
+    isLoading,
+    isError: isPostsError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   } = useUserPosts(user?.id);
 
   useEffect(() => {
@@ -58,7 +60,17 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Flatten the infinite paginated response
-  const posts = postsResponse?.pages?.flatMap(page => page?.data?.content || page?.content || []) || [];
+  const posts = postsResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
+
+  const hasIdentifiableUser = Boolean(user?.displayName || user?.firstName || user?.username);
+
+  if (isProfileError && !hasIdentifiableUser) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, fontFamily: v.fontBody, fontSize: 14, color: v.error }}>
+        we couldn't load this profile. check your connection and try again.
+      </div>
+    );
+  }
 
   const cols = viewport === 'desktop' ? 3 : viewport === 'tablet' ? 3 : 3;
   const title = user?.displayName || user?.firstName || user?.username || 'Unknown';
@@ -143,29 +155,35 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
         </div>
 
         {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: '2px 0 0' }}>
-          {posts.map(p => {
-            const mediaUrl = p.media && p.media.length > 0 ? p.media[0].cdnUrl : null;
-            return (
-              <div key={p.id} onClick={() => navigate('post', { postId: p.id })} style={{
-                background: mediaUrl ? `url(${mediaUrl}) center/cover no-repeat` : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
-                aspectRatio: '1/1',
-                borderRadius: 0, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 10,
-                boxSizing: 'border-box'
-              }}>
-                {!mediaUrl && p.caption && (
-                  <span style={{ fontSize: 11, fontFamily: v.fontBody, color: v.ink3, textAlign: 'center', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {p.caption}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {isPostsError ? (
+          <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontBody, fontSize: 14, color: v.error }}>
+            we couldn't load these posts. check your connection and try again.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: '2px 0 0' }}>
+            {posts.map(p => {
+              const mediaUrl = p.media && p.media.length > 0 ? p.media[0].cdnUrl : null;
+              return (
+                <div key={p.id} onClick={() => navigate('post', { postId: p.id })} style={{
+                  background: mediaUrl ? `url(${mediaUrl}) center/cover no-repeat` : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
+                  aspectRatio: '1/1',
+                  borderRadius: 0, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 10,
+                  boxSizing: 'border-box'
+                }}>
+                  {!mediaUrl && p.caption && (
+                    <span style={{ fontSize: 11, fontFamily: v.fontBody, color: v.ink3, textAlign: 'center', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {p.caption}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-        {hasNextPage && (
+        {hasNextPage && !isPostsError && (
           <div ref={ref} style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
             {isFetchingNextPage ? 'loading more...' : 'scroll for more'}
           </div>

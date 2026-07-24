@@ -1,4 +1,4 @@
-import { v } from '../constants/tokens';
+import { v } from '@/config/tokens';
 import { LxBtn } from './primitives';
 
 // [BLOCKED BY: BE auth/change-password endpoint]

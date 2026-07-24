@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation } from 'react-router-dom';
 
 import Field from '@/features/auth/components/AuthField';
 import '@/features/auth/components/AuthPage.css';
 import { ROUTES } from '@/config/constants';
-import { useResendVerification } from '@/features/auth/hooks/useAuth';
+import authService from '@/features/auth/services/authService';
 import { emailSchema } from '@/features/auth/utils/authSchemas';
 
 export default function VerifyEmailNoticePage() {
   const location = useLocation();
   const emailFromState = location.state?.email || '';
   const [successMessage, setSuccessMessage] = useState('');
-  const resendMutation = useResendVerification();
+  const resendMutation = useMutation({
+    mutationFn: (data) => authService.resendVerification(data),
+  });
 
   const {
     register,
