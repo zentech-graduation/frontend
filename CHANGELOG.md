@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Known Limitations
 - Changing your password from account settings is temporarily disabled while the corresponding backend capability is being built.
+- Privacy and notification toggles in account settings are now visibly disabled and labeled "coming soon" instead of silently resetting on navigation, while the corresponding backend capability is being built.
 
 ### Changed
 - The auth entry point's brand panel now shows the luvax logo image instead of a text wordmark, matching the browser tab favicon.
