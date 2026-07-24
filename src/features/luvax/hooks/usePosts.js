@@ -4,7 +4,7 @@ import { postService } from '@/services/post.service';
 export const useFeed = (params = {}) => {
   return useInfiniteQuery({
     queryKey: ['feed', params],
-    queryFn: ({ pageParam = null }) => postService.getFeed({ ...params, cursor: pageParam, limit: 10 }),
+    queryFn: ({ pageParam = null, signal }) => postService.getFeed({ ...params, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -22,7 +22,7 @@ export const useFeed = (params = {}) => {
 export const useExplore = (params = {}) => {
   return useInfiniteQuery({
     queryKey: ['explore', params],
-    queryFn: ({ pageParam = null }) => postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10 }),
+    queryFn: ({ pageParam = null, signal }) => postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -39,7 +39,7 @@ export const useExplore = (params = {}) => {
 export const useUserPosts = (userId, params = {}) => {
   return useInfiniteQuery({
     queryKey: ['userPosts', userId, params],
-    queryFn: ({ pageParam = null }) => postService.getUserPosts(userId, { ...params, cursor: pageParam, limit: 10 }),
+    queryFn: ({ pageParam = null, signal }) => postService.getUserPosts(userId, { ...params, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,

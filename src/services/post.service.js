@@ -14,32 +14,32 @@ export const createPost = async (data) => {
 
 /**
  * Retrieves a paginated list of feed posts.
- * @param {Object} params - Query parameters (e.g., cursor, limit).
+ * @param {Object} params - Query parameters (e.g., cursor, limit) plus an optional AbortSignal.
  * @returns {Promise<Object>} The paginated posts response.
  */
-export const getFeed = async (params = {}) => {
-  const response = await axiosInstance.get(`${POST_API_PATH}/feed`, { params });
+export const getFeed = async ({ signal, ...params } = {}) => {
+  const response = await axiosInstance.get(`${POST_API_PATH}/feed`, { params, signal });
   return response.data;
 };
 
 /**
  * Retrieves a paginated list of explore posts via search.
  */
-export const getExplorePosts = async (params = {}) => {
+export const getExplorePosts = async ({ signal, ...params } = {}) => {
   // Backend requires 'q', fallback to a space or wildcard if empty to avoid 400
-  if (!params.q) params.q = 'a'; 
-  const response = await axiosInstance.get(`${POST_API_PATH}/search`, { params });
+  if (!params.q) params.q = 'a';
+  const response = await axiosInstance.get(`${POST_API_PATH}/search`, { params, signal });
   return response.data;
 };
 
 /**
  * Retrieves a paginated list of a user's published posts.
  * @param {string|number} userId - The ID of the user.
- * @param {Object} params - Query parameters (e.g., cursor, limit).
+ * @param {Object} params - Query parameters (e.g., cursor, limit) plus an optional AbortSignal.
  * @returns {Promise<Object>} The paginated posts response.
  */
-export const getUserPosts = async (userId, params = {}) => {
-  const response = await axiosInstance.get(`${POST_API_PATH}/user/${userId}`, { params });
+export const getUserPosts = async (userId, { signal, ...params } = {}) => {
+  const response = await axiosInstance.get(`${POST_API_PATH}/user/${userId}`, { params, signal });
   return response.data;
 };
 
