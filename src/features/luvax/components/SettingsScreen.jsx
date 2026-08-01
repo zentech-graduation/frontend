@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authApi } from '@/api/authApi';
 import { clearAuthAndRedirect } from '@/api/axiosClient';
+import { extractPageContent } from '@/utils/helpers';
+import { useBlockedUsers } from '../hooks/useSocial';
 
 // ─── Toggle ─────────────────────────────────────────────────────────────────
 function Toggle({ on, onChange, disabled = false }) {
@@ -81,8 +83,9 @@ export function SettingsScreen({ navigate, tweaks, setTweak }) {
   };
   
   const currentUser = useAuthStore(state => state.user);
-  const key = currentUser ? `lx_blocks_${currentUser.id}` : 'lx_blocks';
-  const blocks = JSON.parse(localStorage.getItem(key) || '[]');
+
+  const { data: blockedResponse } = useBlockedUsers();
+  const blocks = extractPageContent(blockedResponse);
 
   const handleDarkModeToggle = (value) => {
     localStorage.setItem('lxDarkManual', '1');

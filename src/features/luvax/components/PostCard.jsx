@@ -222,6 +222,21 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
         borderBottom: isMobile ? `1px solid ${v.border}` : 'none',
       }}
     >
+      {block.isError ? (
+        <div
+          role="alert"
+          style={{
+            padding: '8px 14px',
+            fontFamily: v.fontMono,
+            fontSize: 11,
+            color: v.errorText,
+            background: v.errorDim,
+          }}
+        >
+          couldn&apos;t block @{authorHandle}. try again.
+        </div>
+      ) : null}
+
       {media && media.cdnUrl ? (
         <div
           onClick={() => navigate('post', { postId: post.id })}

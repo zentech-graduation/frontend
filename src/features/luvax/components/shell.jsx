@@ -1,12 +1,8 @@
-import { useState, useEffect } from 'react';
 import { v } from '@/config/tokens';
-import { extractPageContent } from '@/utils/helpers';
 import { useViewport } from '../hooks/useViewport';
-import { LxIcon, LxAvatar, LxBtn } from './primitives';
-import { useAuthStore } from '@/store/useAuthStore';
-import { usePendingFollowRequests, useSuggestedUsers, useFollowing } from '../hooks/useSocial';
+import { LxIcon, LxAvatar } from './primitives';
+import { usePendingFollowRequests } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
-import { UserCard } from './UserCard';
 import { LxHeaderSearch } from '@/features/search/components/LxHeaderSearch';
 
 // ─── Top Tab Strip ─────────────────────────────────────────────────────────
@@ -258,30 +254,8 @@ export function LxBottomNav({ active, navigate }) {
 }
 
 // ─── Right Rail (desktop) ──────────────────────────────────────────────────
-export function LxRightRail({ navigate, compact = false }) {
-  const currentUser = useAuthStore(state => state.user);
-  const key = currentUser ? `lx_blocks_${currentUser.id}` : 'lx_blocks';
-
-  const [blocks, setBlocks] = useState(() => JSON.parse(localStorage.getItem(key) || '[]'));
-  useEffect(() => {
-    const handleBlocksChanged = () => setBlocks(JSON.parse(localStorage.getItem(key) || '[]'));
-    window.addEventListener('lx_blocks_changed', handleBlocksChanged);
-    return () => window.removeEventListener('lx_blocks_changed', handleBlocksChanged);
-  }, [key]);
-
+export function LxRightRail({ compact = false }) {
   const trending = ['light', 'analog', 'morning', 'silence', 'film', 'observation'];
-  
-  const { data: myFollowingData } = useFollowing(currentUser?.id);
-  const followingList = myFollowingData?.pages?.flatMap(page => extractPageContent(page)) || [];
-  const followingIds = new Set(followingList.map(u => u.id));
-
-  const { data: suggestedResponse } = useSuggestedUsers();
-  const suggestedRaw = suggestedResponse?.data || suggestedResponse || [];
-  
-  // Filter out blocked users AND users we are already following
-  const suggested = suggestedRaw
-    .filter(u => !blocks.includes(u.id) && !followingIds.has(u.id))
-    .slice(0, 5);
 
   return (
     <aside style={{
@@ -303,21 +277,6 @@ export function LxRightRail({ navigate, compact = false }) {
         </div>
       </div>
 
-      {suggested.length > 0 ? (
-        <div>
-          <div style={{ fontFamily: v.fontMono, fontSize: compact ? 9 : 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: compact ? 10 : 14 }}>suggested</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 6 }}>
-            {suggested.map(u => (
-              <UserCard 
-                key={u.id} 
-                user={u} 
-                compact={true} 
-                onAvatarClick={() => navigate ? navigate('profile', { user: { id: u.id, username: u.username } }) : null}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
     </aside>
   );
 }

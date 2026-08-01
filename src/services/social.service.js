@@ -1,7 +1,6 @@
 import axiosInstance from './axiosInstance';
 
 const SOCIAL_API_PATH = '/social';
-const USERS_API_PATH = '/users'; // for suggestions
 
 // Follow a user
 export const followUser = async (targetUserId) => {
@@ -65,8 +64,12 @@ export const rejectFollowRequest = async (requesterId) => {
   return response.data;
 };
 
-// Get suggested users
-export const getSuggestedUsers = async () => {
-  const response = await axiosInstance.get(`${USERS_API_PATH}/suggestions`);
+// Get the authenticated user's blocked list (outgoing blocks only)
+export const getBlockedUsers = async (cursor, limit = 20, signal) => {
+  const params = new URLSearchParams();
+  if (cursor) params.append('cursor', cursor);
+  if (limit) params.append('limit', limit.toString());
+
+  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/blocked?${params.toString()}`, { signal });
   return response.data;
 };
