@@ -77,11 +77,13 @@ export const deletePost = async (postId) => {
 /**
  * Transitions the status of a post.
  * @param {string|number} postId - The ID of the post.
- * @param {string} status - The new status (e.g., 'PUBLISHED', 'ARCHIVED').
+ * @param {string} status - The target status: 'draft', 'published', 'archived' or 'removed'.
  * @returns {Promise<Object>} The updated post.
  */
 export const updatePostStatus = async (postId, status) => {
-  const response = await axiosInstance.patch(`${POST_API_PATH}/${postId}/status`, { status });
+  const response = await axiosInstance.patch(`${POST_API_PATH}/${postId}/status`, {
+    targetStatus: status,
+  });
   return response.data;
 };
 
