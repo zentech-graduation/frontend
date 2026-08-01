@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Added a full-stack reconnaissance audit under `docs/reconnaissance/`, recording the observed backend API contract, the data model, the frontend inventory, the design system reference, per-screen design conformance gaps, a feature gap matrix, demo readiness, defects, open decisions, and a local environment runbook.
+- Added a demo data seed script at `tools/seed/` that creates accounts, a two-way follow graph, posts with and without media, a maximum-depth comment tree, uneven likes, saved posts, and a report, entirely through the public HTTP API and safe to run repeatedly.
+
 ### Removed
 - Removed a dead standalone HTML prototype and a duplicate, unused media upload service that were never referenced by the running app.
 - Removed unused email/password auth hooks (login, logout, registration, password reset, email verification, OAuth code exchange) that had no callers; the app performs these actions through the auth service directly.
