@@ -2,17 +2,47 @@ import { z } from 'zod';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
+// Every rule below mirrors a jakarta.validation annotation on the matching
+// backend request record. The backend is the source of truth: this schema must
+// not reject a value the server accepts, nor accept one the server rejects.
+
 const emailField = z
   .string()
   .trim()
-  .min(1, 'Email is required.')
-  .email('Please enter a valid email.');
+  .min(1, 'email is required.')
+  .email('please enter a valid email.');
 
+// Backend RegisterRequest.password / ResetPasswordRequest.newPassword:
+// @NotBlank @Size(min = 8, max = 128). No complexity requirement is enforced
+// server-side, so none is enforced here.
 const passwordField = z
   .string()
-  .min(8, 'Password must be at least 8 characters.')
-  .regex(/[A-Z]/, 'Password must include at least one uppercase letter.')
-  .regex(/[0-9]/, 'Password must include at least one number.');
+  .min(8, 'password must be at least 8 characters.')
+  .max(128, 'password must be 128 characters or fewer.');
+
+// Backend RegisterRequest.username: @NotBlank @Size(min = 3, max = 30)
+// @Pattern(^[a-zA-Z0-9_.]+$). Dots are permitted.
+const usernameField = z
+  .string()
+  .trim()
+  .min(3, 'username must be at least 3 characters.')
+  .max(30, 'username must be 30 characters or fewer.')
+  .regex(
+    /^[a-zA-Z0-9_.]+$/,
+    'username may only contain letters, digits, underscores and dots.'
+  );
+
+// Backend RegisterRequest.displayName: @Size(max = 100), optional.
+const displayNameField = z
+  .string()
+  .trim()
+  .max(100, 'display name must be 100 characters or fewer.')
+  .optional()
+  .or(z.literal(''));
+
+// One-time tokens arrive from an emailed link and are opaque to the client, so
+// the only client-side rule is that one is present.
+const tokenField = z.string().trim().min(1, 'verification token is required.');
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
@@ -20,9 +50,14 @@ const passwordField = z
  * Login form validation schema.
  * Used with React Hook Form's zodResolver.
  */
+// Backend LoginRequest: { identifier, password }, both @NotBlank only. The
+// server accepts either an email address or a username in identifier and
+// resolves the account type by '@' presence, so no format rule applies here.
+// No length rule either: an existing account may predate the current password
+// policy, and blocking it client-side would lock that user out.
 export const loginSchema = z.object({
-  email: z.string().trim().min(1, 'username or email is required.'),
-  password: z.string().min(8, 'Password must be at least 8 characters.'),
+  identifier: z.string().trim().min(1, 'username or email is required.'),
+  password: z.string().min(1, 'password is required.'),
 });
 
 // ─── Register ─────────────────────────────────────────────────────────────────
@@ -32,41 +67,21 @@ export const loginSchema = z.object({
  */
 export const registerSchema = z
   .object({
-    username: z
-      .string()
-      .trim()
-      .min(3, 'Username must be at least 3 characters.')
-      .max(30, 'Username must be 30 characters or fewer.')
-      .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
-    name: z
-      .string()
-      .trim()
-      .max(100, 'Display name must be 100 characters or fewer.')
-      .optional()
-      .or(z.literal('')),
+    username: usernameField,
+    name: displayNameField,
     email: emailField,
     password: passwordField,
-    confirmPassword: z.string().min(1, 'Please confirm your password.'),
+    confirmPassword: z.string().min(1, 'please confirm your password.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match.',
+    message: 'passwords do not match.',
     path: ['confirmPassword'],
   });
 
 /** Register form schema for the unified AuthPage — single password field, no confirmation. */
 export const authPageRegisterSchema = z.object({
-  username: z
-    .string()
-    .trim()
-    .min(3, 'Username must be at least 3 characters.')
-    .max(30, 'Username must be 30 characters or fewer.')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'),
-  name: z
-    .string()
-    .trim()
-    .max(100, 'Display name must be 100 characters or fewer.')
-    .optional()
-    .or(z.literal('')),
+  username: usernameField,
+  name: displayNameField,
   email: emailField,
   password: passwordField,
 });
@@ -80,30 +95,31 @@ export const emailSchema = z.object({
 
 // ─── OTP / verification code ──────────────────────────────────────────────────
 
-/** Used on email-verification pages that accept a short code. */
+/**
+ * Used on email-verification pages.
+ *
+ * The backend issues an opaque one-time token delivered as a link, not a short
+ * numeric code, so no length rule is imposed on the value.
+ */
 export const verifySchema = z.object({
-  otp: z
-    .string()
-    .trim()
-    .min(6, 'Verification code must be 6 characters.')
-    .max(12, 'Verification code is too long.'),
+  token: tokenField,
 });
 
 // ─── Forgot-password inline reset (email + OTP + new password) ───────────────
 
+// The reset token comes from the emailed link, not from a code the user reads
+// out, so it is validated only for presence. The email address is collected for
+// the preceding forgot-password call and is never sent to /auth/reset-password,
+// which rejects unrecognised fields.
 export const forgotPasswordResetSchema = z
   .object({
     email: emailField,
-    otp: z
-      .string()
-      .trim()
-      .min(6, 'Verification code must be at least 6 characters.')
-      .max(12, 'Verification code is too long.'),
+    token: tokenField,
     password: passwordField,
-    confirmPassword: z.string().min(8, 'Please confirm your password.'),
+    confirmPassword: z.string().min(1, 'please confirm your password.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match.',
+    message: 'passwords do not match.',
     path: ['confirmPassword'],
   });
 
@@ -112,9 +128,9 @@ export const forgotPasswordResetSchema = z
 export const resetPasswordSchema = z
   .object({
     password: passwordField,
-    confirmPassword: z.string().min(1, 'Please confirm your password.'),
+    confirmPassword: z.string().min(1, 'please confirm your password.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match.',
+    message: 'passwords do not match.',
     path: ['confirmPassword'],
   });

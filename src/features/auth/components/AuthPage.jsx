@@ -134,7 +134,7 @@ export default function AuthPage() {
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { identifier: '', password: '' },
   });
 
   const registerForm = useForm({
@@ -189,11 +189,16 @@ export default function AuthPage() {
       const nextPath = location.state?.from?.pathname || ROUTES.APP;
       navigate(nextPath, { replace: true });
     } catch (error) {
-      const errorCode = error?.response?.data?.errorCode;
-      if (errorCode === 'EMAIL_NOT_VERIFIED') {
+      // The backend returns 403 with code AUTH_EMAIL_NOT_VERIFIED on the
+      // envelope's `code` field.
+      const errorCode = error?.response?.data?.code;
+      if (errorCode === 'AUTH_EMAIL_NOT_VERIFIED') {
+        // The identifier may be a username, in which case there is no address
+        // to prefill the resend form with.
+        const submittedEmail = values.identifier?.includes('@') ? values.identifier : undefined;
         navigate(ROUTES.VERIFY_EMAIL_NOTICE, {
           replace: true,
-          state: { email: values.email },
+          state: { email: submittedEmail },
         });
         return;
       }
@@ -459,9 +464,9 @@ export default function AuthPage() {
             id="lg-user"
             label="username or email"
             type="text"
-            autoComplete="email"
-            error={loginErrors.email?.message}
-            register={loginForm.register('email')}
+            autoComplete="username"
+            error={loginErrors.identifier?.message}
+            register={loginForm.register('identifier')}
           />
 
           <Field
