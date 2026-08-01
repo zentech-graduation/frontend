@@ -193,6 +193,30 @@ curl -s -X POST http://localhost:8080/api/v1/auth/login \
 
 Note the field is `identifier`, not `email`.
 
+### Update: the browser path now works too
+
+At the time this runbook was written, the manual SQL above was the only way to reach a usable
+session, because the login form posted `email` and every attempt failed with
+`400 MALFORMED_REQUEST_BODY`. That is fixed. See `docs/backend-contract-alignment/`.
+
+The verification step above is still required, because it is an environment condition rather
+than a defect: the mail provider rejects `example.com` addresses, so no verification link is ever
+delivered. Run the SQL, then log in through the browser at `http://localhost:5173/login`.
+
+Both identifier forms work in the form's "username or email" field:
+
+- `luvax_ava@example.com`
+- `luvax_ava`
+
+Registering through the browser also works, and the form now accepts exactly what the server
+accepts. Two cases that the form previously rejected on its own are valid:
+
+- usernames containing a dot, such as `luvax.ava`, which the backend pattern permits
+- passwords with no uppercase letter and no digit, which the backend does not require
+
+A freshly registered account still lands on the verification notice and still needs the SQL above
+before it can log in.
+
 ## 6. Seed the demo data
 
 ```bash
