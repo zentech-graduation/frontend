@@ -29,8 +29,6 @@ jobs:
           scopes: |
             app
             auth
-            common
-            comment
             dashboard
             routes
             layouts
