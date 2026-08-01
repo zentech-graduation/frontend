@@ -16,29 +16,6 @@ export const STORIES = [
     bg: '#D5C9BE', text: null, caption: null },
 ];
 
-export const FEED_POSTS = [
-  { id: 1, idx: 0, author: 'mara.v', time: '14m', text: 'light is the medium, not the message.',
-    tags: ['observation', 'light'], type: 'text', likes: 42 },
-  { id: 2, idx: 1, author: 'sol.r', time: '2h', text: 'morning, window, coffee.',
-    tags: ['photography'], type: 'image', media: { color: '#C4BCB2', h: 320 }, likes: 128 },
-  { id: 3, idx: 2, author: 'jo.x', time: '43m', text: 'three minutes of real quiet today',
-    tags: [], type: 'text', likes: 18 },
-  { id: 4, idx: 3, author: 'ren.ko', time: '5h', text: 'the architecture of a thought before it becomes a word',
-    tags: ['writing'], type: 'image', media: { color: '#D5C9BE', h: 380 }, likes: 89 },
-  { id: 5, idx: 4, author: 'noa.b', time: '1h', text: 'been watching the same shadow move for an hour. worth it.',
-    tags: ['present'], type: 'text', likes: 31 },
-  { id: 6, idx: 5, author: 'lea.p', time: '3h', text: 'grain on film is the texture of memory',
-    tags: ['film', 'analog'], type: 'image', media: { color: '#BDB0A0', h: 280 }, likes: 64 },
-];
-
-export const REPLIES = [
-  { idx: 1, author: 'sol.r',  time: '8m',  text: 'yes. this.', likes: 4 },
-  { idx: 2, author: 'jo.x',   time: '22m', text: 'been thinking about this all week', likes: 12 },
-  { idx: 3, author: 'ren.ko', time: '1h',  text: 'mcluhan said it loud, you said it quieter. better.', likes: 28 },
-  { idx: 4, author: 'lea.p',  time: '2h',  text: 'saving this one', likes: 3 },
-  { idx: 5, author: 'noa.b',  time: '3h',  text: 'morning thought', likes: 1 },
-];
-
 export const PROFILE_POSTS = [
   { id: 1, color: '#D5CFC6', tall: true },
   { id: 2, color: '#C4BCB2', tall: false },
