@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
-import { extractPageContent } from '@/utils/helpers';
+import { extractPageContent, getUserSummary } from '@/utils/helpers';
 import { LxIcon } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFollowing } from '../hooks/useSocial';
@@ -78,13 +78,17 @@ export function FollowingScreen({ navigate, params = {} }) {
             Not following anyone yet.
           </div>
         ) : (
-          following.map(user => (
-            <UserCard 
-              key={user.id} 
-              user={user} 
-              onAvatarClick={(u) => navigate('profile', { user: { id: u.id, username: u.username } })}
-            />
-          ))
+          following.map(item => {
+            // Rows are UserListItemResponse: the user nests under `user`.
+            const rowUser = getUserSummary(item, 'user');
+            return (
+              <UserCard
+                key={rowUser.id}
+                user={rowUser}
+                onAvatarClick={(u) => navigate('profile', { user: { id: u.id, username: u.username } })}
+              />
+            );
+          })
         )}
         
         {/* Infinite Scroll Trigger */}
