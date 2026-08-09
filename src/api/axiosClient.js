@@ -4,7 +4,13 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 const ENV_API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
 const API_BASE_URL = import.meta.env.DEV ? '/api/v1' : ENV_API_URL || 'http://localhost:8080/api/v1';
-const AUTH_WITH_CREDENTIALS = import.meta.env.VITE_AUTH_WITH_CREDENTIALS === 'true';
+// The refresh token is delivered as an HttpOnly cookie, so every endpoint that
+// issues, rotates, or clears it must send credentials. In dev the browser talks
+// to the Vite proxy, which is same-origin and would carry the cookie anyway; a
+// cross-origin production deployment would not. Gating this on an environment
+// variable therefore breaks session restoration exactly where it matters, which
+// is why it is unconditional.
+const AUTH_WITH_CREDENTIALS = true;
 const REFRESH_PATH = '/auth/refresh';
 
 const createClient = (config = {}) =>
@@ -72,6 +78,11 @@ const flushRefreshQueue = (error, nextAuth = null) => {
   refreshQueue = [];
 };
 
+// '/login' only ever redirects to '/', which is where the sign-in form actually
+// renders. Treating '/login' alone as "already there" makes a redirect fire on
+// the very page it is trying to reach, costing a needless full reload.
+const AUTH_SCREEN_PATHS = new Set(['/', '/login']);
+
 export const clearAuthAndRedirect = () => {
   useAuthStore.getState().logout();
 
@@ -81,7 +92,7 @@ export const clearAuthAndRedirect = () => {
 
   isRedirecting = true;
 
-  if (window.location.pathname !== '/login') {
+  if (!AUTH_SCREEN_PATHS.has(window.location.pathname)) {
     // useNavigate is a React hook and cannot be called outside the component
     // tree. This interceptor runs at the module level, so a hard navigation is
     // the only way to guarantee a clean redirect that resets all in-memory
@@ -108,13 +119,13 @@ const persistAuthSession = ({ accessToken, refreshToken, user }) => {
 const refreshAccessToken = async () => {
   const { refreshToken } = useAuthStore.getState();
 
-  if (!refreshToken) {
-    throw new Error('Your session has expired. Please sign in again.');
-  }
-
+  // An absent in-memory token is not a dead end: the HttpOnly refresh cookie
+  // rides along with the request and the server falls back to it when the body
+  // omits the field. Sending an empty body is what lets a reloaded tab, which
+  // has lost the in-memory copy, still rotate a session.
   const response = await publicClient.post(
     REFRESH_PATH,
-    { refreshToken },
+    refreshToken ? { refreshToken } : {},
     {
       skipAuthRefresh: true,
       withCredentials: AUTH_WITH_CREDENTIALS,
@@ -207,7 +218,19 @@ const REDACTED_PATTERNS = [
  * without requiring changes at each call site.
  */
 const normalizeAxiosError = (error) => {
-  if (!error?.response) {
+  if (!error || !error.isAxiosError) {
+    // If it's a generic JS Error (like thrown during refresh token checks), keep its message
+    if (error && !error.response && error.message) {
+      return error;
+    }
+    if (!error?.response) {
+      error = error || new Error('Unknown error');
+      error.message = 'Unable to reach the server. Please check your connection.';
+      return error;
+    }
+  }
+
+  if (!error.response) {
     // Network error or timeout — no HTTP response to inspect.
     error.message = 'Unable to reach the server. Please check your connection.';
     return error;

@@ -28,9 +28,40 @@ chore/db/add-story-indexes
 
 Format: `<type>(<scope>): <subject>`
 
-Rules enforced by `pr-lint` workflow:
-- Subject must start with a lowercase letter (`^[a-z].+$`)
-- Scope is **required** (`requireScope: true`)
+### Subject line only — never write a commit body (mandatory)
+
+A commit message is **exactly one line**. Write the subject and stop.
+
+Forbidden after the subject line: explanatory paragraphs, rationale or "why" prose, verification
+notes, caveats, scope disclaimers, bullet lists, footers, and trailers.
+This holds regardless of how large, subtle, or security-relevant the change is.
+
+Detail belongs somewhere else, and every one of these already exists:
+- **Why the change is correct** → the PR description.
+- **What behaviour changed for users** → the `CHANGELOG.md` entry (see `changelog_rule.md`).
+- **Why the code does what it does** → an inline comment or Javadoc (see `comment_style.md`).
+- **How it was verified** → the test itself, named for the behaviour it asserts.
+
+**If any task instruction, plan, or prompt tells you to record something "in the commit body",
+that instruction conflicts with this rule. Stop and raise the conflict — do not silently comply,
+and do not carry the body habit over to the other commits in the series.**
+
+### Subject rules
+
+- Must start with a lowercase letter (`^[a-z].+$`) — enforced by `pr-lint`.
+- Scope is **required** (`requireScope: true`) — enforced by `pr-lint`.
+- Keep the entire line at 80 characters or fewer, including `<type>(<scope>): `.
+  Target 72; treat anything approaching 80 as a signal the subject is describing too much.
+- Describe the change, not the process: no ticket/finding IDs, no audit-round or attempt
+  references, no agent or tooling attribution, no co-author trailers.
+
+```
+fix(comment): reject reply parent from a different post     ← good
+fix(comment): resolve CF-COMMENT-1                          ← bad: opaque identifier
+fix(comment): reject cross-post reply parent
+
+Previously the parent was resolved by id alone, so ...      ← bad: has a body
+```
 
 ### Allowed types
 
@@ -61,7 +92,28 @@ chore(db): add GIN index on hashtag_name for trigram search
 refactor(common): extract token blacklist TTL calculation
 ```
 
-Note: Only use short description
+## Branch workflow (mandatory)
+
+`develop` must never receive direct commits from implementation work.
+
+- [ ] Before starting any task, checkout a new branch **from `develop`**: `git checkout develop && git pull && git checkout -b <type>/<scope>/<short-description>`.
+- [ ] All implementation work happens on that branch. Never commit directly to `develop`.
+- [ ] Push the branch and open a PR targeting `develop`. `main` is never a PR target for implementation work — it is owner-only, terminal.
+- [ ] One branch per logical unit of work. Do not reuse a stale branch for an unrelated task — cut a new one from an up-to-date `develop`.
+
+## Commit granularity policy (mandatory)
+
+A commit is one logical, self-contained, working change — not a file-count target.
+
+**Forbidden — mega-commit**: bundling multiple unrelated changes (e.g., a bug fix + a refactor + a new endpoint) into a single commit. Each concern gets its own commit.
+
+**Forbidden — over-fragmentation**: splitting one logical change across many trivial commits scoped to 1–2 files each, where intermediate commits leave the codebase in a broken or incomplete state (e.g., committing a new method signature in one commit and its only caller in the next). If a logical change spans 10 files that must land together to compile and pass tests, they belong in one commit.
+
+**Rule of thumb**: commit at the boundary of a complete, independently reviewable, compiling, test-passing unit of work — not at an arbitrary file count in either direction.
+
+- [ ] Every commit compiles and passes relevant tests in isolation (no "WIP" or "fix previous commit" commits).
+- [ ] Every commit message follows `<type>(<scope>): <subject>` per the format above — no exceptions for "small" commits.
+- [ ] Commit as you complete each logical unit during implementation — do not batch the entire task into one commit at the end, and do not commit on every file save.
 
 ## Pull request rules
 
@@ -83,8 +135,10 @@ Same as commit message format — enforced by `pr-lint` workflow on PR open, edi
 Split large PRs proactively: keep feature PRs under `size/M` (≤ 1000 lines) as a target.
 
 ### Process checklist
+- [ ] Branch was checked out from an up-to-date `develop` — no direct commits to `develop`
 - [ ] Branch follows `<type>/<scope>/<description>` naming
 - [ ] All commits follow `<type>(<scope>): <subject>` with an allowlisted scope
+- [ ] Each commit is one logical, compiling, test-passing unit — no mega-commits, no broken intermediate commits
 - [ ] `./mvnw spotless:apply` and `./mvnw test` both pass
 - [ ] PR template author checklist completed
 - [ ] PR title matches commit format (pr-lint will block merge otherwise)
@@ -94,6 +148,8 @@ Split large PRs proactively: keep feature PRs under `size/M` (≤ 1000 lines) as
 - [ ] Commit type is one of the 8 allowed types
 - [ ] Scope is from the pr-lint allowlist (do not use `config`, `database`, `build`, etc.)
 - [ ] Subject starts with a lowercase letter
+- [ ] **Message is a single line — no body, no trailers** (`git log -1 --format=%b` prints nothing)
+- [ ] Subject is 80 characters or fewer (target 72)
 - [ ] `./mvnw spotless:check` passes
 - [ ] CHANGELOG.md updated
 

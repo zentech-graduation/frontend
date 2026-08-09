@@ -1,28 +1,52 @@
-import { Outlet, createBrowserRouter } from 'react-router-dom';
+import { Navigate, Outlet, ScrollRestoration, createBrowserRouter, useLocation } from 'react-router-dom';
 
 import AuthSessionBootstrap from '@/components/common/AuthSessionBootstrap';
 import GuestRoute from '@/components/common/GuestRoute';
 import NotFoundPage from '@/components/common/NotFoundPage';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import RouterErrorPage from '@/components/common/RouterErrorPage';
+import { ROUTES } from '@/config/constants';
 import EmailVerificationPage from '@/pages/auth/EmailVerificationPage';
-import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
-import LoginPage from '@/features/auth/components/LoginPage';
+import VerifyEmailNoticePage from '@/pages/auth/VerifyEmailNoticePage';
+import AuthPage from '@/features/auth/components/AuthPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
-import RegisterPage from '@/pages/auth/RegisterPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
-import HomePage from '@/pages/HomePage';
 import LuvaxPage from '@/pages/LuvaxPage';
+import { APP_NOT_FOUND_SCREEN, APP_OVERLAY_SCREENS, APP_SCREENS } from './appScreens';
 
 function RootLayout() {
   return (
     <>
       <AuthSessionBootstrap />
+      {/* Sends every navigation to the top of the page and returns the browser
+          to its previous offset on back, replacing the manual scroll reset the
+          screen switch used to perform. */}
+      <ScrollRestoration />
       <Outlet />
     </>
   );
 }
+
+function LoginRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/${location.search}`} state={location.state} replace />;
+}
+
+// Each screen carries its identity on the route rather than in component state.
+// The layout reads it back through useMatches to pick the chrome, so adding a
+// screen means adding one row to APP_SCREENS and nothing else.
+const toRouteObject = ({ screen, index, path, element, chrome, rightRail }) => ({
+  ...(index ? { index: true } : { path }),
+  element,
+  handle: { screen, chrome, rightRail },
+});
+
+const toOverlayRouteObject = ({ screen, path, element }) => ({
+  path,
+  element,
+  handle: { screen, chrome: 'overlay' },
+});
 
 const router = createBrowserRouter([
   {
@@ -30,51 +54,65 @@ const router = createBrowserRouter([
     errorElement: <RouterErrorPage />,
     children: [
       {
-        path: '/',
-        element: <HomePage />,
-      },
-      {
-        path: '/app',
-        element: <LuvaxPage />,
-      },
-      {
         element: <GuestRoute />,
         children: [
           {
-            path: '/login',
-            element: <LoginPage />,
-          },
-          {
-            path: '/register',
-            element: <RegisterPage />,
-          },
-          {
-            path: '/verify-email',
-            element: <EmailVerificationPage />,
-          },
-          {
-            path: '/forgot-password',
-            element: <ForgotPasswordPage />,
-          },
-          {
-            path: '/reset-password',
-            element: <ResetPasswordPage />,
+            path: ROUTES.HOME,
+            element: <AuthPage />,
           },
         ],
       },
       {
-        path: '/oauth2/callback',
+        path: ROUTES.VERIFY_EMAIL,
+        element: <EmailVerificationPage />,
+      },
+      {
+        path: ROUTES.VERIFY_EMAIL_NOTICE,
+        element: <VerifyEmailNoticePage />,
+      },
+      {
+        path: ROUTES.LOGIN,
+        element: <LoginRedirect />,
+      },
+      {
+        path: ROUTES.REGISTER,
+        element: <Navigate to={`${ROUTES.HOME}?view=register`} replace />,
+      },
+      {
+        path: ROUTES.FORGOT_PASSWORD,
+        element: <Navigate to={`${ROUTES.HOME}?view=forgot`} replace />,
+      },
+      {
+        path: ROUTES.RESET_PASSWORD,
+        element: <ResetPasswordPage />,
+      },
+      {
+        path: ROUTES.OAUTH_CALLBACK,
         element: <OAuthCallbackPage />,
       },
       {
-        path: '/oauth/callback',
-        element: <OAuthCallbackPage />,
-      },
-      {
+        // One guard for the whole authenticated area, and one shell rendered
+        // around every screen in it.
         element: <ProtectedRoute />,
         children: [
           {
-            path: '/dashboard',
+            path: ROUTES.APP,
+            element: <LuvaxPage />,
+            children: [
+              ...APP_SCREENS.map(toRouteObject),
+              ...APP_OVERLAY_SCREENS.map(toOverlayRouteObject),
+              {
+                path: '*',
+                element: APP_NOT_FOUND_SCREEN.element,
+                handle: {
+                  screen: APP_NOT_FOUND_SCREEN.screen,
+                  chrome: APP_NOT_FOUND_SCREEN.chrome,
+                },
+              },
+            ],
+          },
+          {
+            path: ROUTES.DASHBOARD,
             element: <DashboardPage />,
           },
         ],
@@ -82,7 +120,7 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: '*',
+    path: ROUTES.NOT_FOUND,
     element: <NotFoundPage />,
   },
 ]);

@@ -28,10 +28,10 @@ React 19 single-page application (SPA) for an Instagram-style social network, bu
 ```text
 src/
 ├── api/
-│   ├── axiosClient.js         # Axios instances + request/response interceptors; exports axiosClient, publicClient
-│   └── authApi.js             # Auth-specific API calls using publicClient
+│   ├── authApi.js             # Auth endpoints; uses publicClient. Login sends `identifier`
+│   ├── axiosClient.js         # Axios instances + interceptors; exports axiosClient, publicClient
+│   └── media.service.js       # Pre-signed upload URL flow
 ├── assets/                    # Static assets imported from application code
-│   └── hero.png
 ├── components/
 │   ├── common/                # App-level reusable pieces
 │   │   ├── AuthSessionBootstrap.jsx   # Bootstraps auth state on app mount
@@ -41,63 +41,70 @@ src/
 │   │   ├── PageLoader.jsx             # Full-page loading spinner
 │   │   ├── ProtectedRoute.jsx         # Redirects unauthenticated users to /login
 │   │   └── RouterErrorPage.jsx        # Error fallback for router-level errors
-│   └── ui/                    # shadcn/ui primitive components
+│   └── ui/                    # shadcn/ui primitives plus Luvax-specific shared UI
 │       ├── button.jsx
 │       ├── card.jsx
 │       ├── input.jsx
-│       └── label.jsx
+│       ├── label.jsx
+│       ├── lx-avatar.jsx
+│       ├── lx-dropdown-menu.jsx
+│       └── lx-icon.jsx
 ├── config/
-│   └── constants.js           # ROUTES, API_URL, STALE_TIME, HTTP_STATUS, APP_NAME
-├── context/                   # Reserved — empty; use for React context providers when needed
+│   ├── constants.js           # ROUTES, API_URL, STALE_TIME, HTTP_STATUS, APP_NAME
+│   └── tokens.js              # `v` design-token object consumed by the luvax screens
+├── context/                   # Reserved - empty
 ├── features/
-│   ├── auth/                  # Most complete feature slice
+│   ├── auth/
 │   │   ├── components/
-│   │   │   └── LoginPage.jsx
-│   │   ├── hooks/
-│   │   │   └── useAuth.js     # TanStack Query hooks: useLogin, useLogout, useCurrentUser
-│   │   ├── index.js           # Public exports for the auth feature
+│   │   │   ├── AuthField.jsx  # Floating-label input used by every auth form
+│   │   │   ├── AuthPage.css
+│   │   │   └── AuthPage.jsx   # Unified login / register / forgot-password page
+│   │   ├── index.js
 │   │   ├── services/
-│   │   │   └── authService.js # Auth endpoints using axiosClient / publicClient
-│   │   ├── store/             # Reserved — use if auth state outgrows global store
+│   │   │   └── authService.js
+│   │   ├── store/             # Reserved - empty
 │   │   └── utils/
-│   │       └── authSchemas.js # Zod validation schemas for auth forms
-│   ├── dashboard/
-│   │   ├── components/
-│   │   │   └── DashboardPage.jsx
-│   │   └── index.js
-│   └── luvax/                 # Main app shell feature (authenticated screens)
-│       ├── components/        # Screen-level components: Feed, Explore, Profile, Story, etc.
-│       ├── constants/         # Feature-local data and design tokens
-│       ├── hooks/
-│       │   └── useViewport.js
-│       └── LuvaxApp.jsx       # Feature root — renders the main app shell
-├── hooks/                     # Shared reusable hooks not tied to one feature
-│   ├── useCommon.js
-│   └── useCountdown.js
-├── pages/                     # Route-level pages not yet moved into a feature module
+│   │       └── authSchemas.js # Zod schemas mirroring the backend validation annotations
+│   ├── luvax/                 # Authenticated application shell and screens
+│   │   ├── components/        # 18 files: shell.jsx, primitives.jsx, and one file per screen
+│   │   ├── constants/
+│   │   │   └── data.js        # Static mock data still used by story and profile screens
+│   │   ├── hooks/             # useMediaUpload, useNotifications, usePosts, useRelativeTime,
+│   │   │                      # useSocial, useUsers, useViewport
+│   │   └── LuvaxApp.jsx       # Feature root; holds screen state for the single /app route
+│   ├── messages/
+│   │   ├── components/        # 7 files: panels, ConvRow, MessageBubble, AvatarVisual
+│   │   └── data/
+│   └── search/
+│       └── components/
+│           └── LxHeaderSearch.jsx
+├── hooks/                     # Shared hooks: useCommon, useCountdown
+├── pages/
 │   ├── auth/
 │   │   ├── EmailVerificationPage.jsx
-│   │   ├── ForgotPasswordPage.jsx
 │   │   ├── OAuthCallbackPage.jsx
-│   │   ├── RegisterPage.jsx
-│   │   └── ResetPasswordPage.jsx
+│   │   ├── ResetPasswordPage.jsx
+│   │   └── VerifyEmailNoticePage.jsx
 │   ├── dashboard/
-│   │   └── DashboardPage.jsx
 │   ├── HomePage.jsx
 │   └── LuvaxPage.jsx
 ├── routes/
-│   └── index.jsx              # createBrowserRouter — central route tree
-├── services/
-│   └── axiosInstance.js       # Re-exports axiosClient from src/api/axiosClient.js
+│   └── index.jsx              # createBrowserRouter - central route tree
+├── services/                  # Shared API modules used by the luvax feature
+│   ├── axiosInstance.js       # Re-exports axiosClient
+│   ├── notification.service.js
+│   ├── post.service.js
+│   ├── social.service.js
+│   └── user.service.js
 ├── store/
-│   └── useAuthStore.js        # Persisted Zustand store: accessToken (in-memory), user, isAuthenticated
+│   └── useAuthStore.js        # Zustand; persists user + isAuthenticated only, never tokens
 ├── utils/
-│   ├── cn.js                  # Tailwind class merge utility (clsx + tailwind-merge)
-│   └── helpers.js
+│   ├── cn.js
+│   └── helpers.js             # extractPageContent, sharePost, copyPostLink, copyToClipboard
 ├── App.jsx
 ├── App.css
-├── index.css                  # Tailwind v4 import + CSS variable design tokens
-└── main.jsx                   # App bootstrap: RouterProvider + QueryClientProvider
+├── index.css                  # Tailwind v4 import + CSS custom properties
+└── main.jsx                   # RouterProvider + QueryClientProvider + global error handling
 ```
 
 ---
@@ -126,7 +133,24 @@ src/features/<feature>/
 - Config-based routing using `createBrowserRouter` in `src/routes/index.jsx`
 - `ProtectedRoute` (in `src/components/common/`) guards authenticated routes
 - `GuestRoute` (in `src/components/common/`) redirects authenticated users away from login/register
-- Auth routes handled at the `pages/auth/` layer; not yet fully wired in the router (scaffold state)
+
+Declared routes:
+
+| Path | Guard | Notes |
+|------|-------|-------|
+| `/` | guest | Landing plus the unified auth page |
+| `/login`, `/register`, `/forgot-password` | guest | All three render `AuthPage` in a different view |
+| `/verify-email`, `/verify-email-notice`, `/reset-password` | none | Token-driven pages |
+| `/oauth2/callback`, `/oauth/callback` | none | Google OAuth return |
+| `/app` | protected | The entire authenticated application |
+| `/dashboard` | protected | Stub |
+| `*` | none | Not found |
+
+**The whole authenticated application lives at the single `/app` route.**
+`LuvaxApp` holds the current screen in component state and swaps screens internally, so moving
+between feed, explore, profile, settings, and messages does not change the URL. No authenticated
+screen can be linked to, bookmarked, or reloaded. Treat this as a known constraint rather than a
+bug to fix incidentally.
 
 ---
 
@@ -171,7 +195,7 @@ All FE environment variables must use the `VITE_` prefix (required by Vite for c
 | `VITE_APP_NAME` | Application name displayed in UI |
 | `VITE_APP_ENV` | Environment tag (development / production) |
 
-Reference: `app-fe/.env.example`
+Reference: `.env.example` at the repository root
 
 ---
 

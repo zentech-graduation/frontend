@@ -13,6 +13,17 @@ const getPayload = (response) => response?.data?.data ?? response?.data ?? {};
 
 const normalizeEmail = (email) => (typeof email === 'string' ? email.trim().toLowerCase() : email);
 
+// The backend resolves the account type by '@' presence, so only lowercase the
+// email form here and leave usernames as typed.
+const normalizeIdentifier = (identifier) => {
+  if (typeof identifier !== 'string') {
+    return identifier;
+  }
+
+  const trimmed = identifier.trim();
+  return trimmed.includes('@') ? trimmed.toLowerCase() : trimmed;
+};
+
 const normalizeUser = (payload) => {
   const rawUser = payload?.user ?? payload?.data?.user ?? payload?.profile ?? payload ?? null;
 
@@ -94,7 +105,7 @@ export const authApi = {
     const response = await publicClient.post(
       '/auth/login',
       buildRequestBody({
-        email: normalizeEmail(values?.email),
+        identifier: normalizeIdentifier(values?.identifier ?? values?.email),
         password: values?.password,
       })
     );
@@ -116,8 +127,13 @@ export const authApi = {
     return extractAuthSession(response);
   },
 
+  // The backend lists /auth/logout as an authenticated path, so it must go out
+  // on the client that attaches the bearer token. Sent unauthenticated it
+  // answers 401 without revoking the refresh token or expiring the refresh
+  // cookie, which would leave a "logged out" browser able to restore the
+  // session on the next reload.
   async logout(refreshToken = useAuthStore.getState().refreshToken) {
-    await publicClient.post(
+    await axiosClient.post(
       '/auth/logout',
       buildRequestBody({
         refreshToken: refreshToken ?? undefined,
@@ -190,11 +206,12 @@ export const authApi = {
     const verification = normalizeVerificationPayload(values);
     const nextPassword = values?.newPassword ?? values?.password ?? '';
 
+    // The backend rejects unrecognised fields on this endpoint, so the body must
+    // carry exactly token + newPassword.
     const response = await publicClient.post(
       '/auth/reset-password',
       buildRequestBody({
         token: verification.token || undefined,
-        email: verification.email || undefined,
         newPassword: nextPassword,
       })
     );
@@ -218,7 +235,7 @@ export const authApi = {
 
     if (!backendOrigin) {
       throw new Error(
-        'Missing Google OAuth start URL. Configure VITE_API_URL so the frontend can derive the backend authorization endpoint.'
+        "google sign-in isn't available right now. try signing in with your email instead."
       );
     }
 
@@ -237,13 +254,13 @@ export const authApi = {
         containsProviderPlaceholder(loginUrl.href)
       ) {
         throw new Error(
-          'Invalid VITE_GOOGLE_AUTH_URL. Replace {provider} with the real provider name, for example /api/v1/auth/oauth2/authorize/google.'
+          "google sign-in isn't available right now. try signing in with your email instead."
         );
       }
 
       if (isGoogleCallbackPath(loginUrl.pathname)) {
         throw new Error(
-          'Invalid VITE_GOOGLE_AUTH_URL. Use the backend authorization start endpoint, not /auth/oauth2/callback/google.'
+          "google sign-in isn't available right now. try signing in with your email instead."
         );
       }
 
@@ -251,7 +268,7 @@ export const authApi = {
     }
 
     throw new Error(
-      'Missing Google OAuth start URL. Configure VITE_GOOGLE_AUTH_URL or a valid VITE_API_URL so the frontend can reach the backend authorization endpoint.'
+      "google sign-in isn't available right now. try signing in with your email instead."
     );
   },
 

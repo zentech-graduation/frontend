@@ -1,7 +1,29 @@
-import { useState } from 'react';
-import { v } from '../constants/tokens';
-import { NOTIFS } from '../constants/data';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { v } from '@/config/tokens';
+import { extractPageContent, getDisplayName, getUserSummary } from '@/utils/helpers';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
+import { usePendingFollowRequests, useApproveFollowRequest, useRejectFollowRequest } from '../hooks/useSocial';
+import { useNotifications, useMarkAllAsRead } from '../hooks/useNotifications';
+import { useRelativeTime } from '../hooks/useRelativeTime';
+import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { routeTo } from '@/config/constants';
+
+// Keyed on the notification_type enum values the backend actually sends.
+// The previous mapping tested for 'like' and 'comment', which are not members
+// of that enum, so every row fell through to the generic wording.
+const NOTIFICATION_TEXT = {
+  like_post: 'liked your post',
+  like_comment: 'liked your comment',
+  comment_post: 'commented on your post',
+  reply_comment: 'replied to your comment',
+  follow: 'started following you',
+  follow_request: 'requested to follow you',
+  mention_post: 'mentioned you in a post',
+  mention_comment: 'mentioned you in a comment',
+  story_view: 'viewed your story',
+  message: 'sent you a message',
+};
 
 const TYPE_ICON = {
   like: 'heart', follow: 'profile', follow_request: 'profile',
@@ -9,57 +31,141 @@ const TYPE_ICON = {
 };
 
 const TYPE_COLOR = {
-  like: '#C47168', follow: '#7A9E7A', follow_request: '#7A9E7A',
-  comment: '#C8A97E', mention: '#9B7EA8', story: '#7A9EB8',
+  like: v.error, follow: v.success, follow_request: v.success,
+  comment: v.accent, mention: v.avatar2, story: v.avatar3,
 };
 
-function NotifRow({ n, navigate }) {
+function NotifRow({ n, onAccept, onDecline }) {
+  const navigate = useNavigate();
+  const openOverlay = useOverlayNavigate();
+  // NotificationResponse embeds the actor as a UserSummaryResponse. There is
+  // no `n.actorId`, so no per-row profile fetch is needed.
+  const actor = getUserSummary(n, 'actor');
+  const timeStr = useRelativeTime(n.createdAt);
+
+  const isFollow = n.type === 'follow' || n.type === 'follow_request';
+  const text = NOTIFICATION_TEXT[n.type] ?? 'interacted with you';
+  const icon = isFollow ? 'profile' : 'heart';
+  const color = isFollow ? v.success : v.error;
+
+  const actorName = getDisplayName(actor, 'Someone');
+  const avatarSrc = actor.avatarUrl;
+
   return (
-    <div onClick={() => n.target && navigate('post')} style={{
+    <div onClick={() => n.entityId && openOverlay(routeTo.postDetail(n.entityId))} style={{
       display: 'flex', alignItems: 'flex-start', gap: 12,
       padding: '12px 16px',
-      background: n.unread ? 'var(--lx-accent-dim)' : 'transparent',
-      cursor: n.target ? 'pointer' : 'default',
+      background: !n.isRead ? 'var(--lx-accent-dim)' : 'transparent',
+      cursor: n.entityId ? 'pointer' : 'default',
       borderBottom: `1px solid ${v.borderSubtle}`,
       position: 'relative',
     }}>
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <LxAvatar size={40} idx={n.idx} />
+        <LxAvatar size={40} src={avatarSrc} />
         <div style={{
           position: 'absolute', bottom: -2, right: -2,
           width: 20, height: 20, borderRadius: '50%',
-          background: TYPE_COLOR[n.type],
+          background: color,
           border: `2px solid var(--lx-base)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <LxIcon name={TYPE_ICON[n.type]} size={10} color="#fff" stroke={2} filled={n.type === 'like'} />
+          <LxIcon name={icon} size={10} color={v.white} stroke={2} filled={!isFollow} />
         </div>
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
-          <strong style={{ fontWeight: 600 }}>{n.actor}</strong> <span style={{ color: v.ink2 }}>{n.text}</span>
+          <strong style={{ fontWeight: 600, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); if (actor?.id) navigate(routeTo.userProfile(actor.id)); }}>{actorName}</strong> <span style={{ color: v.ink2 }}>{text}</span>
         </div>
-        {n.target && (
-          <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            "{n.target}"
-          </div>
-        )}
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{n.time}</div>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeStr}</div>
       </div>
 
       {n.type === 'follow_request' && (
         <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
-          <LxBtn variant="primary" size="sm">accept</LxBtn>
-          <LxBtn variant="ghost" size="sm">decline</LxBtn>
+          <LxBtn
+            variant="primary"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAccept?.(actor.id);
+            }}
+          >
+            accept
+          </LxBtn>
+          <LxBtn
+            variant="ghost"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDecline?.(actor.id);
+            }}
+          >
+            decline
+          </LxBtn>
         </div>
       )}
     </div>
   );
 }
 
-export function NotificationsScreen({ navigate }) {
+function RequestRow({ req, onAccept, onDecline }) {
+  const navigate = useNavigate();
+  // FollowRequestResponse names the requesting user `follower`.
+  const user = getUserSummary(req, 'follower');
+  const timeStr = useRelativeTime(req.createdAt);
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 12,
+      padding: '12px 16px',
+      borderBottom: `1px solid ${v.borderSubtle}`,
+    }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <LxAvatar size={40} src={user.avatarUrl} />
+        <div style={{
+          position: 'absolute', bottom: -2, right: -2,
+          width: 20, height: 20, borderRadius: '50%',
+          background: TYPE_COLOR['follow_request'],
+          border: `2px solid var(--lx-base)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <LxIcon name={TYPE_ICON['follow_request']} size={10} color={v.white} stroke={2} />
+        </div>
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0, alignSelf: 'center' }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
+          <strong onClick={() => user?.id && navigate(routeTo.userProfile(user.id))} style={{ fontWeight: 600, cursor: 'pointer' }}>{getDisplayName(user)}</strong> <span style={{ color: v.ink2 }}>requested to follow you</span>
+        </div>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeStr}</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
+        <LxBtn variant="primary" size="sm" onClick={() => onAccept(user.id)}>accept</LxBtn>
+        <LxBtn variant="ghost" size="sm" onClick={() => onDecline(user.id)}>decline</LxBtn>
+      </div>
+    </div>
+  );
+}
+
+export function NotificationsScreen() {
   const [tab, setTab] = useState('all');
+  
+  const { data: requestsResponse, isLoading: isLoadingRequests } = usePendingFollowRequests();
+  const approveReq = useApproveFollowRequest();
+  const rejectReq = useRejectFollowRequest();
+  
+  const { data: notifsData, isLoading: isLoadingNotifs } = useNotifications();
+  const markAllAsRead = useMarkAllAsRead();
+
+  const requests = extractPageContent(requestsResponse);
+  
+  let notifs = notifsData?.pages?.flatMap(page => extractPageContent(page)) || [];
+
+  useEffect(() => {
+    if (tab === 'all') {
+      markAllAsRead.mutate();
+    }
+  }, [tab]);
 
   return (
     <>
@@ -72,16 +178,48 @@ export function NotificationsScreen({ navigate }) {
             padding: '12px 0',
             borderBottom: tab === t ? `2px solid var(--lx-ink)` : '2px solid transparent',
             marginBottom: -1,
-          }}>{t}</button>
+            position: 'relative',
+          }}>
+            {t}
+            {t === 'requests' && requests.length > 0 && (
+              <span style={{ position: 'absolute', top: 12, right: '20%', width: 6, height: 6, borderRadius: '50%', background: v.accent }} />
+            )}
+          </button>
         ))}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '14px 16px 6px' }}>today</div>
-        {NOTIFS.slice(0, 3).map((n, i) => <NotifRow key={i} n={n} navigate={navigate} />)}
-
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px 16px 6px' }}>this week</div>
-        {NOTIFS.slice(3).map((n, i) => <NotifRow key={i + 3} n={n} navigate={navigate} />)}
+        {tab === 'requests' ? (
+          isLoadingRequests ? (
+            <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>loading requests...</div>
+          ) : requests.length > 0 ? (
+            requests.map((r, i) => (
+              <RequestRow 
+                key={i} 
+                req={r} 
+                onAccept={(id) => approveReq.mutate(id)} 
+                onDecline={(id) => rejectReq.mutate(id)} 
+              />
+            ))
+          ) : (
+            <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>No pending requests</div>
+          )
+        ) : (
+          isLoadingNotifs ? (
+            <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>loading notifications...</div>
+          ) : notifs.length > 0 ? (
+            notifs.map((n, i) => (
+              <NotifRow
+                key={n.id || i}
+                n={n}
+                onAccept={(id) => approveReq.mutate(id)}
+                onDecline={(id) => rejectReq.mutate(id)}
+              />
+            ))
+          ) : (
+            <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>No notifications yet</div>
+          )
+        )}
       </div>
     </>
   );

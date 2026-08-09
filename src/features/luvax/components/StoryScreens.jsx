@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { v } from '../constants/tokens';
+import { useNavigate, useParams } from 'react-router-dom';
+import { v } from '@/config/tokens';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar } from './primitives';
+import { STORIES } from '../constants/data';
+import { ROUTES } from '@/config/constants';
 
 const STORY_CARD_RADIUS = 18;
 const STORY_RATIO = 9 / 16;
+const STORY_TEXT_BACKGROUNDS = [v.avatar0, v.avatar1, v.base, v.surface, 'var(--lx-accent-dark)', 'var(--lx-ink-2)'];
 
 // ─── Story Stage (shared chrome) ───────────────────────────────────────────
 function StoryStage({ children, onClose, footer, viewport }) {
@@ -13,18 +17,18 @@ function StoryStage({ children, onClose, footer, viewport }) {
   if (isMobile) {
     return (
       <div style={{
-        position: 'fixed', inset: 0, background: '#000', zIndex: 1000,
+        position: 'fixed', inset: 0, background: v.black, zIndex: 1000,
         display: 'flex', flexDirection: 'column',
       }}>
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           {children}
           <button onClick={onClose} aria-label="close" style={{
             position: 'absolute', top: 14, right: 12, zIndex: 5,
-            background: 'rgba(0,0,0,0.35)', border: 'none', cursor: 'pointer',
+            background: v.black35, border: 'none', cursor: 'pointer',
             width: 34, height: 34, borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <LxIcon name="close" size={20} color="#fff" />
+            <LxIcon name="close" size={20} color={v.white} />
           </button>
         </div>
         {footer}
@@ -38,7 +42,7 @@ function StoryStage({ children, onClose, footer, viewport }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
-      background: 'rgba(15,13,11,0.78)',
+      background: v.black78,
       backdropFilter: 'blur(14px)',
       WebkitBackdropFilter: 'blur(14px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -46,11 +50,11 @@ function StoryStage({ children, onClose, footer, viewport }) {
     }}>
       <button onClick={onClose} aria-label="close" style={{
         position: 'absolute', top: 20, right: 20,
-        background: 'rgba(255,255,255,0.12)', border: 'none', cursor: 'pointer',
+        background: v.white12, border: 'none', cursor: 'pointer',
         width: 38, height: 38, borderRadius: '50%',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <LxIcon name="close" size={20} color="#fff" />
+        <LxIcon name="close" size={20} color={v.white} />
       </button>
 
       <div style={{
@@ -60,7 +64,7 @@ function StoryStage({ children, onClose, footer, viewport }) {
         <div style={{
           width: cardWidth, height: '100%',
           borderRadius: STORY_CARD_RADIUS, overflow: 'hidden', position: 'relative',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)',
+          boxShadow: `0 32px 80px ${v.black55}, 0 0 0 1px ${v.white04}`,
         }}>
           {children}
         </div>
@@ -75,23 +79,29 @@ function StoryStage({ children, onClose, footer, viewport }) {
 }
 
 // ─── Story View Screen ──────────────────────────────────────────────────────
-export function StoryViewScreen({ navigate, params, viewport: vpProp }) {
+export function StoryViewScreen({ viewport: vpProp }) {
+  const navigate = useNavigate();
+  const { storyId } = useParams();
   const vp = vpProp || useViewport();
-  const story = params?.story || { author: 'sol.r', idx: 1, type: 'photo', bg: '#C4BCB2', caption: 'morning' };
+  // Stories are still the static reel from the design export; there is no story
+  // endpoint behind them yet, so the address resolves against that list. An
+  // unknown id falls back to the same placeholder the screen always used.
+  const story = STORIES.find((entry) => entry.id === storyId)
+    || { author: 'sol.r', idx: 1, type: 'photo', bg: v.surfaceRaised, caption: 'morning' };
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const t = setInterval(() => {
       setProgress(p => {
-        if (p >= 100) { clearInterval(t); navigate('feed'); return 100; }
+        if (p >= 100) { clearInterval(t); navigate(ROUTES.FEED); return 100; }
         return p + 1.5;
       });
     }, 80);
     return () => clearInterval(t);
   }, []);
 
-  const isDark = story.bg === '#1A1816' || story.bg === '#5C574F';
-  const textInk = isDark ? '#F9F7F4' : '#1A1816';
+  const isDark = story.bg === v.ink || story.bg === v.ink2 || story.bg === 'var(--lx-ink)' || story.bg === 'var(--lx-ink-2)';
+  const textInk = isDark ? v.inkInverse : v.ink;
 
   const card = (
     <div style={{
@@ -109,19 +119,19 @@ export function StoryViewScreen({ navigate, params, viewport: vpProp }) {
       )}
       {story.type === 'video' && (
         <div style={{
-          color: 'rgba(255,255,255,0.75)', fontFamily: v.fontMono, fontSize: 12,
+          color: v.white75, fontFamily: v.fontMono, fontSize: 12,
           position: 'absolute', bottom: 24, left: 16,
           display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          <LxIcon name="video" size={14} color="rgba(255,255,255,0.75)" />
+          <LxIcon name="video" size={14} color={v.white75} />
           <span>0:24</span>
         </div>
       )}
 
       {/* Progress bar */}
       <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', gap: 4 }}>
-        <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.3)', borderRadius: 1, overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: '#fff', transition: 'width 80ms linear' }} />
+        <div style={{ flex: 1, height: 2, background: v.white30, borderRadius: 1, overflow: 'hidden' }}>
+          <div style={{ width: `${progress}%`, height: '100%', background: v.white, transition: 'width 80ms linear' }} />
         </div>
       </div>
 
@@ -131,8 +141,8 @@ export function StoryViewScreen({ navigate, params, viewport: vpProp }) {
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <LxAvatar size={30} idx={story.idx} />
-        <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: '#fff', textShadow: '0 1px 6px rgba(0,0,0,0.4)' }}>{story.author}</span>
-        <span style={{ fontFamily: v.fontMono, fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>2h</span>
+        <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.white, textShadow: `0 1px 6px ${v.black40}` }}>{story.author}</span>
+        <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.white70 }}>2h</span>
       </div>
 
       {/* Caption */}
@@ -140,16 +150,16 @@ export function StoryViewScreen({ navigate, params, viewport: vpProp }) {
         <div style={{
           position: 'absolute', bottom: 24, left: 16, right: 16,
           fontFamily: v.fontBody, fontSize: 15, fontWeight: 500,
-          color: '#fff', textShadow: '0 1px 8px rgba(0,0,0,0.55)',
+          color: v.white, textShadow: `0 1px 8px ${v.black55}`,
         }}>{story.caption}</div>
       )}
 
       {/* Tap zones */}
-      <button onClick={() => navigate('feed')} style={{
+      <button onClick={() => navigate(ROUTES.FEED)} style={{
         position: 'absolute', left: 0, top: 60, bottom: 80, width: '30%',
         background: 'transparent', border: 'none', cursor: 'pointer',
       }} aria-label="previous" />
-      <button onClick={() => navigate('feed')} style={{
+      <button onClick={() => navigate(ROUTES.FEED)} style={{
         position: 'absolute', right: 0, top: 60, bottom: 80, width: '30%',
         background: 'transparent', border: 'none', cursor: 'pointer',
       }} aria-label="next" />
@@ -160,46 +170,47 @@ export function StoryViewScreen({ navigate, params, viewport: vpProp }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
       padding: vp === 'mobile' ? '12px 16px 20px' : '4px 0',
-      background: vp === 'mobile' ? '#000' : 'transparent',
+      background: vp === 'mobile' ? v.black : 'transparent',
     }}>
       <input
         placeholder={`reply to ${story.author}…`}
         style={{
           flex: 1, fontFamily: v.fontBody, fontSize: 14,
-          background: 'rgba(255,255,255,0.08)', color: '#fff',
-          border: '1px solid rgba(255,255,255,0.18)',
+          background: v.white08, color: v.white,
+          border: `1px solid ${v.white18}`,
           borderRadius: 999, padding: '11px 16px', outline: 'none',
         }} />
-      <button aria-label="like" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', cursor: 'pointer', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LxIcon name="heart" size={18} color="#fff" />
+      <button aria-label="like" style={{ background: v.white08, border: `1px solid ${v.white18}`, cursor: 'pointer', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LxIcon name="heart" size={18} color={v.white} />
       </button>
-      <button aria-label="send" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', cursor: 'pointer', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <LxIcon name="send" size={18} color="#fff" />
+      <button aria-label="send" style={{ background: v.white08, border: `1px solid ${v.white18}`, cursor: 'pointer', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LxIcon name="send" size={18} color={v.white} />
       </button>
     </div>
   );
 
   return (
-    <StoryStage viewport={vp} onClose={() => navigate('feed')} footer={replyBar}>
+    <StoryStage viewport={vp} onClose={() => navigate(ROUTES.FEED)} footer={replyBar}>
       {card}
     </StoryStage>
   );
 }
 
 // ─── Story Composer Screen ──────────────────────────────────────────────────
-export function StoryComposerScreen({ navigate, viewport: vpProp }) {
+export function StoryComposerScreen({ viewport: vpProp }) {
+  const navigate = useNavigate();
   const vp = vpProp || useViewport();
   const [mode, setMode] = useState('photo');
   const [text, setText] = useState('');
-  const [bgColor, setBgColor] = useState('#C8A97E');
+  const [bgColor, setBgColor] = useState(v.avatar0);
 
-  const textBgs = ['#C8A97E', '#7A9E7A', '#1A1816', '#F0EDE8', '#C4847A', '#5C574F'];
-  const isDark = bgColor === '#1A1816' || bgColor === '#5C574F';
+  const textBgs = STORY_TEXT_BACKGROUNDS;
+  const isDark = bgColor === v.base || bgColor === 'var(--lx-ink-2)';
 
   const card = (
     <div style={{
       position: 'absolute', inset: 0,
-      background: mode === 'text' ? bgColor : '#2a2622',
+      background: mode === 'text' ? bgColor : v.storySurface,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       {mode === 'text' && (
@@ -209,7 +220,7 @@ export function StoryComposerScreen({ navigate, viewport: vpProp }) {
           placeholder="type something…"
           style={{
             fontFamily: v.fontDisplay, fontSize: 30, fontWeight: 600,
-            color: isDark ? '#F9F7F4' : '#1A1816',
+            color: isDark ? v.inkInverse : v.ink,
             background: 'transparent', border: 'none', outline: 'none',
             textAlign: 'center', letterSpacing: '-0.02em', lineHeight: 1.2,
             resize: 'none', width: '82%', height: 180, padding: 0,
@@ -217,14 +228,14 @@ export function StoryComposerScreen({ navigate, viewport: vpProp }) {
         />
       )}
       {mode === 'photo' && (
-        <div style={{ color: 'rgba(255,255,255,0.65)', fontFamily: v.fontBody, fontSize: 14, textAlign: 'center' }}>
-          <LxIcon name="image" size={48} color="rgba(255,255,255,0.45)" />
+        <div style={{ color: v.white65, fontFamily: v.fontBody, fontSize: 14, textAlign: 'center' }}>
+          <LxIcon name="image" size={48} color={v.white45} />
           <div style={{ marginTop: 12 }}>tap to pick a photo</div>
         </div>
       )}
       {mode === 'video' && (
-        <div style={{ color: 'rgba(255,255,255,0.65)', fontFamily: v.fontBody, fontSize: 14, textAlign: 'center' }}>
-          <LxIcon name="video" size={48} color="rgba(255,255,255,0.45)" />
+        <div style={{ color: v.white65, fontFamily: v.fontBody, fontSize: 14, textAlign: 'center' }}>
+          <LxIcon name="video" size={48} color={v.white45} />
           <div style={{ marginTop: 12 }}>tap to record · max 60s</div>
         </div>
       )}
@@ -234,7 +245,7 @@ export function StoryComposerScreen({ navigate, viewport: vpProp }) {
           {textBgs.map(c => (
             <button key={c} onClick={() => setBgColor(c)} aria-label={`background ${c}`} style={{
               width: 26, height: 26, borderRadius: '50%', background: c,
-              border: bgColor === c ? '2px solid #fff' : '2px solid rgba(255,255,255,0.35)',
+              border: bgColor === c ? `2px solid ${v.white}` : `2px solid ${v.white35}`,
               cursor: 'pointer',
             }} />
           ))}
@@ -249,30 +260,30 @@ export function StoryComposerScreen({ navigate, viewport: vpProp }) {
     <div style={{
       display: 'flex', flexDirection: 'column', gap: 12,
       padding: vp === 'mobile' ? '14px 16px 20px' : '4px 0',
-      background: vp === 'mobile' ? '#000' : 'transparent',
+      background: vp === 'mobile' ? v.black : 'transparent',
     }}>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 18 }}>
         {[['photo', 'image'], ['video', 'video'], ['text', 'type']].map(([m, ic]) => (
           <button key={m} onClick={() => setMode(m)} style={{
-            background: mode === m ? 'rgba(255,255,255,0.12)' : 'transparent',
-            border: '1px solid ' + (mode === m ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)'),
+            background: mode === m ? v.white12 : 'transparent',
+            border: `1px solid ${mode === m ? v.white25 : v.white12}`,
             cursor: 'pointer', padding: '6px 12px', borderRadius: 999,
             display: 'flex', alignItems: 'center', gap: 6,
-            color: mode === m ? '#fff' : 'rgba(255,255,255,0.65)',
+            color: mode === m ? v.white : v.white65,
             fontFamily: v.fontBody, fontSize: 12, fontWeight: 500,
           }}>
-            <LxIcon name={ic} size={15} color={mode === m ? '#fff' : 'rgba(255,255,255,0.65)'} />
+            <LxIcon name={ic} size={15} color={mode === m ? v.white : v.white65} />
             {m}
           </button>
         ))}
       </div>
       <button
-        onClick={() => navigate('feed')}
+        onClick={() => navigate(ROUTES.FEED)}
         disabled={!canShare}
         style={{
           width: '100%', fontFamily: v.fontBody, fontSize: 14, fontWeight: 600,
-          background: canShare ? v.accent : 'rgba(255,255,255,0.12)',
-          color: canShare ? '#1A1816' : 'rgba(255,255,255,0.4)',
+          background: canShare ? v.accent : v.white12,
+          color: canShare ? v.ink : v.white40,
           border: 'none', borderRadius: 999, padding: '12px 20px',
           cursor: canShare ? 'pointer' : 'default',
         }}>
@@ -282,7 +293,7 @@ export function StoryComposerScreen({ navigate, viewport: vpProp }) {
   );
 
   return (
-    <StoryStage viewport={vp} onClose={() => navigate('feed')} footer={controls}>
+    <StoryStage viewport={vp} onClose={() => navigate(ROUTES.FEED)} footer={controls}>
       {card}
     </StoryStage>
   );
