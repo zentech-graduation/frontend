@@ -13,6 +13,17 @@ const getPayload = (response) => response?.data?.data ?? response?.data ?? {};
 
 const normalizeEmail = (email) => (typeof email === 'string' ? email.trim().toLowerCase() : email);
 
+// The backend resolves the account type by '@' presence, so only lowercase the
+// email form here and leave usernames as typed.
+const normalizeIdentifier = (identifier) => {
+  if (typeof identifier !== 'string') {
+    return identifier;
+  }
+
+  const trimmed = identifier.trim();
+  return trimmed.includes('@') ? trimmed.toLowerCase() : trimmed;
+};
+
 const normalizeUser = (payload) => {
   const rawUser = payload?.user ?? payload?.data?.user ?? payload?.profile ?? payload ?? null;
 
@@ -94,7 +105,7 @@ export const authApi = {
     const response = await publicClient.post(
       '/auth/login',
       buildRequestBody({
-        email: normalizeEmail(values?.email),
+        identifier: normalizeIdentifier(values?.identifier ?? values?.email),
         password: values?.password,
       })
     );
@@ -190,11 +201,12 @@ export const authApi = {
     const verification = normalizeVerificationPayload(values);
     const nextPassword = values?.newPassword ?? values?.password ?? '';
 
+    // The backend rejects unrecognised fields on this endpoint, so the body must
+    // carry exactly token + newPassword.
     const response = await publicClient.post(
       '/auth/reset-password',
       buildRequestBody({
         token: verification.token || undefined,
-        email: verification.email || undefined,
         newPassword: nextPassword,
       })
     );

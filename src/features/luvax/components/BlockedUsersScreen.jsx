@@ -1,18 +1,10 @@
-import { useState, useEffect } from 'react';
 import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { LxBtn, LxAvatar } from './primitives';
-import { useUnblock } from '../hooks/useSocial';
-import { useUserProfile } from '../hooks/useUsers';
-import { useAuthStore } from '@/store/useAuthStore';
+import { useBlockedUsers, useUnblock } from '../hooks/useSocial';
 
-function BlockedUserRow({ userId }) {
-  const { data: profileResponse, isLoading } = useUserProfile(userId);
+function BlockedUserRow({ user }) {
   const unblock = useUnblock();
-  
-  if (isLoading) return <div style={{ padding: '12px 16px', color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>Loading...</div>;
-  if (!profileResponse) return null;
-
-  const user = profileResponse.data || profileResponse;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: `1px solid ${v.border}` }}>
@@ -21,34 +13,38 @@ function BlockedUserRow({ userId }) {
         <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>{user?.displayName || user?.username || 'Unknown'}</div>
         <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>@{user?.username || 'unknown'}</div>
       </div>
-      <LxBtn variant="secondary" size="sm" onClick={() => unblock.mutate(userId)} disabled={unblock.isPending}>
-        unblock
-      </LxBtn>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+        <LxBtn variant="secondary" size="sm" onClick={() => unblock.mutate(user.id)} disabled={unblock.isPending}>
+          unblock
+        </LxBtn>
+        {unblock.isError ? (
+          <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.errorText }}>couldn&apos;t unblock. try again.</span>
+        ) : null}
+      </div>
     </div>
   );
 }
 
 export function BlockedUsersScreen() {
-  const currentUser = useAuthStore(state => state.user);
-  const key = currentUser ? `lx_blocks_${currentUser.id}` : 'lx_blocks';
+  const { data, isLoading, isError } = useBlockedUsers();
+  const blocked = extractPageContent(data);
 
-  const [blocks, setBlocks] = useState(() => JSON.parse(localStorage.getItem(key) || '[]'));
-
-  useEffect(() => {
-    const handleBlocksChanged = () => setBlocks(JSON.parse(localStorage.getItem(key) || '[]'));
-    window.addEventListener('lx_blocks_changed', handleBlocksChanged);
-    return () => window.removeEventListener('lx_blocks_changed', handleBlocksChanged);
-  }, [key]);
+  const heading = () => {
+    if (isLoading) return 'Loading blocked users';
+    if (isError) return "Couldn't load blocked users";
+    if (blocked.length === 0) return 'No blocked users';
+    return `${blocked.length} blocked user${blocked.length !== 1 ? 's' : ''}`;
+  };
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: v.base }}>
       <div style={{ padding: '24px 16px 8px', fontFamily: v.fontMono, fontSize: 11, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-        {blocks.length === 0 ? 'No blocked users' : `${blocks.length} blocked user${blocks.length !== 1 ? 's' : ''}`}
+        {heading()}
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {blocks.map(id => (
-          <BlockedUserRow key={id} userId={id} />
+        {blocked.map(row => (
+          <BlockedUserRow key={row.user.id} user={row.user} />
         ))}
       </div>
     </div>

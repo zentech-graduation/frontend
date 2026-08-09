@@ -509,11 +509,16 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
         actions={
           <>
             <LxBtn variant="ghost" onClick={() => setBlockModalOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={handleBlockConfirm}>block</LxBtn>
+            <LxBtn variant="danger" onClick={handleBlockConfirm} disabled={block.isPending}>block</LxBtn>
           </>
         }
       >
         Are you sure you want to block <strong>{authorName}</strong>? They won't be able to find your profile, posts or story on Luvax.
+        {block.isError ? (
+          <div role="alert" style={{ marginTop: 12, fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}>
+            couldn&apos;t block this account. try again.
+          </div>
+        ) : null}
       </LxModal>
 
       <LxModal

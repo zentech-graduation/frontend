@@ -6,11 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Signing in works again; the login request previously used a field name the server does not accept and failed for every account, and the form now accepts either an email address or a username.
+- Accounts whose email address is not yet verified are now shown the "check your inbox" screen with their address prefilled and a working resend button, instead of a generic sign-in failure.
+- Password reset now sends only the fields the server accepts; the extra field it previously included made the request unprocessable, so a reset could never complete.
+- Registration no longer rejects usernames containing a dot or passwords without an uppercase letter and a digit, all of which the server accepts, and now enforces the 128-character password maximum it previously ignored.
+- The blocked users list is now read from the server, so it is the same in every browser, survives clearing site data, and shows each blocked account's name and handle.
+- Blocking someone now reports failure when the server rejects it, instead of appearing to succeed.
+- The post status transition request now uses the field name the server expects.
+
 ### Added
+- Added the Claude Design export at `docs/design/Luvax.html` as the committed pixel-perfect interface reference, with a README covering its structure and how to extract its bundled chunks.
+- Added `docs/backend-contract-alignment/` recording the verified field-level contract for every authentication endpoint, the changes applied, the browser and `curl` verification evidence, and the findings deliberately deferred.
 - Added a full-stack reconnaissance audit under `docs/reconnaissance/`, recording the observed backend API contract, the data model, the frontend inventory, the design system reference, per-screen design conformance gaps, a feature gap matrix, demo readiness, defects, open decisions, and a local environment runbook.
 - Added a demo data seed script at `tools/seed/` that creates accounts, a two-way follow graph, posts with and without media, a maximum-depth comment tree, uneven likes, saved posts, and a report, entirely through the public HTTP API and safe to run repeatedly.
 
 ### Removed
+- Removed the suggested-accounts panel from the right rail; it called an endpoint that does not exist and failed on every feed and explore render, and the feature backing it is not built.
+- Removed the `lucide-react` dependency and a pair of unused mock data exports, none of which were referenced anywhere.
 - Removed a dead standalone HTML prototype and a duplicate, unused media upload service that were never referenced by the running app.
 - Removed unused email/password auth hooks (login, logout, registration, password reset, email verification, OAuth code exchange) that had no callers; the app performs these actions through the auth service directly.
 

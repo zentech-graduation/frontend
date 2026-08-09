@@ -1,13 +1,12 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import * as socialService from '../../../services/social.service';
-import { useAuthStore } from '@/store/useAuthStore';
 
 export const socialKeys = {
   all: ['social'],
   followers: (userId) => userId ? [...socialKeys.all, 'followers', userId] : [...socialKeys.all, 'followers'],
   following: (userId) => userId ? [...socialKeys.all, 'following', userId] : [...socialKeys.all, 'following'],
   requests: () => [...socialKeys.all, 'follow-requests'],
-  suggestions: () => [...socialKeys.all, 'suggestions'],
+  blocked: () => [...socialKeys.all, 'blocked'],
 };
 
 // --- Queries ---
@@ -37,10 +36,12 @@ export const usePendingFollowRequests = () => {
   });
 };
 
-export const useSuggestedUsers = () => {
+export const useBlockedUsers = () => {
   return useQuery({
-    queryKey: socialKeys.suggestions(),
-    queryFn: socialService.getSuggestedUsers,
+    queryKey: socialKeys.blocked(),
+    // Wrapped rather than passed by reference: TanStack calls queryFn with a
+    // context object, which would otherwise be received as the cursor.
+    queryFn: ({ signal }) => socialService.getBlockedUsers(undefined, undefined, signal),
   });
 };
 
@@ -84,27 +85,15 @@ export const useUnfollow = () => {
   });
 };
 
+// The blocked list is server state. It is read back from GET /social/blocked
+// rather than mirrored into client storage, so a rejected mutation must reach
+// the caller instead of being reported as a success.
 export const useBlock = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (targetUserId) => {
-      try {
-        const res = await socialService.blockUser(targetUserId);
-        return res;
-      } catch (err) {
-        // Ignore error if already blocked (e.g. 409, 400)
-        console.warn('Block user API error, ignoring:', err);
-      }
-    },
-    onSuccess: (data, targetUserId) => {
-      const userId = useAuthStore.getState().user?.id;
-      if (!userId) return;
-      const key = `lx_blocks_${userId}`;
-      const blocks = JSON.parse(localStorage.getItem(key) || '[]');
-      if (!blocks.includes(targetUserId)) {
-        blocks.push(targetUserId);
-        localStorage.setItem(key, JSON.stringify(blocks));
-      }
+    mutationFn: (targetUserId) => socialService.blockUser(targetUserId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: socialKeys.blocked() });
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: socialKeys.following() });
       queryClient.invalidateQueries({ queryKey: socialKeys.followers() });
@@ -112,7 +101,6 @@ export const useBlock = () => {
       queryClient.resetQueries({ queryKey: ['feed'] });
       queryClient.resetQueries({ queryKey: ['explore'] });
       queryClient.resetQueries({ queryKey: ['userPosts'] });
-      window.dispatchEvent(new Event('lx_blocks_changed'));
     },
   });
 };
@@ -120,23 +108,10 @@ export const useBlock = () => {
 export const useUnblock = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (targetUserId) => {
-      try {
-        const res = await socialService.unblockUser(targetUserId);
-        return res;
-      } catch (err) {
-        console.warn('Unblock user API error, ignoring:', err);
-      }
-    },
-    onSuccess: (data, targetUserId) => {
-      const userId = useAuthStore.getState().user?.id;
-      if (!userId) return;
-      const key = `lx_blocks_${userId}`;
-      let blocks = JSON.parse(localStorage.getItem(key) || '[]');
-      blocks = blocks.filter(id => id !== targetUserId);
-      localStorage.setItem(key, JSON.stringify(blocks));
+    mutationFn: (targetUserId) => socialService.unblockUser(targetUserId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: socialKeys.blocked() });
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      window.dispatchEvent(new Event('lx_blocks_changed'));
     },
   });
 };
