@@ -85,6 +85,7 @@ export function FollowingScreen({ navigate, params = {} }) {
               <UserCard
                 key={rowUser.id}
                 user={rowUser}
+                initiallyFollowing={item.viewerState?.isFollowing ?? false}
                 onAvatarClick={(u) => navigate('profile', { user: { id: u.id, username: u.username } })}
               />
             );
