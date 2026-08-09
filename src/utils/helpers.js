@@ -91,7 +91,42 @@ export function extractPageInfo(page) {
  */
 export function getNextCursor(page) {
   const pageInfo = extractPageInfo(page);
+
+  // A page that carries content but no pageInfo means pagination silently
+  // stops after the first page, which is invisible without this warning.
+  if (!('hasNextPage' in pageInfo)) {
+    warnOnShapeDrift(page?.data ?? page, 'pageInfo', 'pagination cursor block');
+  }
+
   return pageInfo.hasNextPage ? pageInfo.endCursor : undefined;
+}
+
+/**
+ * Reports a response that does not carry the field an accessor expected.
+ *
+ * This is the guard against the defect class these accessors exist to prevent:
+ * the frontend reading a path the backend does not serve. Without it the read
+ * yields undefined, the interface renders a placeholder, and nothing indicates
+ * the contract drifted.
+ *
+ * Development only. It never throws and never runs in a production build,
+ * because a shape the client did not expect is still a shape the user should
+ * be shown whatever we can render of.
+ *
+ * An empty or absent source is not drift: lists render before their first
+ * response arrives, and an absent object legitimately has no fields.
+ * @param {object} source the response object that was read
+ * @param {string} key the field expected on it
+ * @param {string} label what the field was expected to contain
+ */
+function warnOnShapeDrift(source, key, label) {
+  if (!import.meta.env.DEV) return;
+  if (!source || typeof source !== 'object' || Object.keys(source).length === 0) return;
+
+  console.error(
+    `[response shape] expected a ${label} at "${key}" but the response did not carry one. ` +
+      `Keys present: ${Object.keys(source).join(', ')}.`
+  );
 }
 
 /**
@@ -121,7 +156,13 @@ const ABSENT_USER_SUMMARY = Object.freeze({
  */
 export function getUserSummary(source, key = 'author') {
   const summary = source?.[key];
-  return summary && typeof summary === 'object' ? summary : ABSENT_USER_SUMMARY;
+
+  if (summary && typeof summary === 'object') {
+    return summary;
+  }
+
+  warnOnShapeDrift(source, key, 'user summary');
+  return ABSENT_USER_SUMMARY;
 }
 
 /**
