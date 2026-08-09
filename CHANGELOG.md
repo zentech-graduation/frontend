@@ -7,6 +7,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- The feed and explore screens no longer fail with "Something went wrong" as soon as a post exists; posts now show the author's real name, avatar, and handle.
+- Following, blocking, and opening the author's profile from a post now act on the intended account instead of failing silently, and the edit and delete options appear on your own posts again.
+- Likes and saves you have already made now show as such when a post loads, instead of always appearing untouched.
+- A post with no comments no longer displays an invented comment count.
+- Comments and notifications now show who they are from, instead of "unknown" and "Someone", and no longer make a redundant request for each row.
+- Notifications describe what happened, such as "liked your comment" or "replied to your comment", instead of "interacted with you".
+- The unread notification badge now appears when there are unread notifications.
+- Pending follow requests now appear in the requests tab and count towards the notification badge.
+- Follower and following lists now show each person's name, handle, and avatar, are clickable, and show whether you already follow them.
+- Followers, following, and notifications now continue loading past the first page as you scroll.
+- A private account you do not follow now shows a dash for its hidden post and follower counts, instead of claiming they are zero.
+- Videos attached to posts now play instead of being rendered as still images.
 - Signing in works again; the login request previously used a field name the server does not accept and failed for every account, and the form now accepts either an email address or a username.
 - Accounts whose email address is not yet verified are now shown the "check your inbox" screen with their address prefilled and a working resend button, instead of a generic sign-in failure.
 - Password reset now sends only the fields the server accepts; the extra field it previously included made the request unprocessable, so a reset could never complete.
@@ -16,6 +28,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The post status transition request now uses the field name the server expects.
 
 ### Added
+- Added a development-only warning that reports when an API response does not carry a field the interface expects, so a contract change is visible immediately rather than surfacing as a blank name or a stalled list.
+- Added `docs/response-shape-and-session/` recording the field-by-field response audit, the verified token lifecycle, the lint baseline, and the findings deliberately deferred.
 - Added the Claude Design export at `docs/design/Luvax.html` as the committed pixel-perfect interface reference, with a README covering its structure and how to extract its bundled chunks.
 - Added `docs/backend-contract-alignment/` recording the verified field-level contract for every authentication endpoint, the changes applied, the browser and `curl` verification evidence, and the findings deliberately deferred.
 - Added a full-stack reconnaissance audit under `docs/reconnaissance/`, recording the observed backend API contract, the data model, the frontend inventory, the design system reference, per-screen design conformance gaps, a feature gap matrix, demo readiness, defects, open decisions, and a local environment runbook.
@@ -28,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Removed unused email/password auth hooks (login, logout, registration, password reset, email verification, OAuth code exchange) that had no callers; the app performs these actions through the auth service directly.
 
 ### Changed
+- Line endings are now declared by the repository itself, so a fresh checkout no longer reports thousands of spurious formatting errors on Windows.
 - Infinite-scroll feed, explore, user posts, followers, and following lists now cancel their in-flight network request when the query is aborted or refetched, instead of letting it complete unused.
 - Consolidated the repeated pagination content-extraction logic used across feed, profile, explore, followers/following, notifications, and post/comment screens into one shared helper, with no visible or behavioral change.
 - Consolidated duplicated post share/copy-link logic and message text-copy logic into shared clipboard helpers, with no visible or behavioral change.
