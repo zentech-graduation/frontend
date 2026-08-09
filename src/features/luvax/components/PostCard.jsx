@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
@@ -6,10 +7,14 @@ import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRelativeTime } from '../hooks/useRelativeTime';
+import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { routeTo } from '@/config/constants';
 
 const HEART_COLOR = 'var(--lx-error)';
 
-export function PostCard({ post, navigate, density = 'cozy', showTags = true, viewport = 'desktop' }) {
+export function PostCard({ post, density = 'cozy', showTags = true, viewport = 'desktop' }) {
+  const navigate = useNavigate();
+  const openOverlay = useOverlayNavigate();
   const [liked, setLiked] = useState(post.isLiked ?? false);
   const [likeCount, setLikeCount] = useState(post.likeCount ?? 0);
   const [saved, setSaved] = useState(post.isSaved ?? false);
@@ -169,15 +174,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
             id: 'view-profile',
             icon: 'profile',
             label: "View author's profile",
-            onClick: () =>
-              navigate('profile', {
-                user: {
-                  id: targetUserId,
-                  username: authorHandle,
-                  displayName: authorName,
-                  avatarUrl,
-                },
-              }),
+            onClick: () => targetUserId && navigate(routeTo.userProfile(targetUserId)),
           }
         : null,
       !isOwner
@@ -241,7 +238,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
 
       {media && media.cdnUrl ? (
         <div
-          onClick={() => navigate('post', { postId: post.id })}
+          onClick={() => openOverlay(routeTo.postDetail(post.id))}
           style={{
             cursor: 'pointer',
             position: 'relative',
@@ -270,7 +267,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
 
       {!media && post.type === 'image' && post.media ? (
         <div
-          onClick={() => navigate('post', { postId: post.id })}
+          onClick={() => openOverlay(routeTo.postDetail(post.id))}
           style={{
             height: post.media.h,
             background: post.media.color,
@@ -284,16 +281,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
       <div style={{ padding: isMobile ? '14px 14px 10px' : pad }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
           <div
-            onClick={() =>
-              navigate('profile', {
-                user: {
-                  id: targetUserId,
-                  username: author.username,
-                  displayName: authorName,
-                  avatarUrl,
-                },
-              })
-            }
+            onClick={() => targetUserId && navigate(routeTo.userProfile(targetUserId))}
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
           >
             <LxAvatar size={28} src={avatarUrl} />
@@ -327,7 +315,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
         </div>
 
         <p
-          onClick={() => navigate('post', { postId: post.id })}
+          onClick={() => openOverlay(routeTo.postDetail(post.id))}
           style={{
             fontFamily: v.fontBody,
             fontSize: post.postType === 'TEXT' || post.type === 'text' ? 18 : 14,
@@ -375,7 +363,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
               {likeCount}
             </span>
           </button>
-          <button onClick={() => navigate('post', { postId: post.id })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <button onClick={() => openOverlay(routeTo.postDetail(post.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
             <LxIcon name="reply" size={17} color={v.ink3} />
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
               {post.commentCount ?? 0}

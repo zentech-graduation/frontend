@@ -1,16 +1,30 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
+import { ROUTES } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 
-export function LxHeaderSearch({ navigate, viewport, screen, params = {} }) {
-  const [query, setQuery] = useState(params?.q || '');
+export function LxHeaderSearch({ navigate, viewport }) {
+  // The field mirrors the query in the address bar, so a shared or reloaded
+  // search URL shows the terms it searched for.
+  const [searchParams] = useSearchParams();
+  const activeQuery = searchParams.get('q') || '';
+  const [query, setQuery] = useState(activeQuery);
 
   useEffect(() => {
-    setQuery(params?.q || '');
-  }, [params?.q]);
+    setQuery(activeQuery);
+  }, [activeQuery]);
 
   const openSearch = (nextQuery = query, focusSearch = true) => {
-    navigate('explore', { q: nextQuery, focusSearch });
+    const next = new URLSearchParams();
+    if (nextQuery) {
+      next.set('q', nextQuery);
+    }
+    if (focusSearch) {
+      next.set('focusSearch', '1');
+    }
+    const search = next.toString();
+    navigate(search ? `${ROUTES.EXPLORE}?${search}` : ROUTES.EXPLORE);
   };
 
   const submitSearch = () => {

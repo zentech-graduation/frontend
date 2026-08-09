@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent, formatCount, getUserSummary } from '@/utils/helpers';
@@ -7,20 +8,29 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useUserPosts } from '../hooks/usePosts';
 import { useUserProfile } from '../hooks/useUsers';
 import { useFollow, useUnfollow, useFollowing } from '../hooks/useSocial';
+import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { useLuvaxTweaks } from '../LuvaxTweaksContext';
+import { ROUTES, routeTo } from '@/config/constants';
 
-export function ProfileScreen({ navigate, params = {}, viewport }) {
+export function ProfileScreen() {
+  const navigate = useNavigate();
+  const openOverlay = useOverlayNavigate();
+  const { viewport } = useLuvaxTweaks();
   const [tab, setTab] = useState('posts');
   const [following, setFollowing] = useState(false);
   const currentUser = useAuthStore(state => state.user);
-  
-  const targetUserId = params.user?.id;
+
+  // Absent on the viewer's own profile address, which is what makes that
+  // address constructible before the user object has loaded.
+  const { userId: targetUserId } = useParams();
   const isSelf = !targetUserId || targetUserId === currentUser?.id;
   
   const queryUserId = targetUserId || currentUser?.id;
-  const { data: profileResponse, isError: isProfileError } = useUserProfile(queryUserId);
+  const { data: profileResponse, isError: isProfileError, isLoading: isProfileLoading } =
+    useUserProfile(queryUserId);
   const fetchedUser = profileResponse?.data || profileResponse;
-  
-  const user = fetchedUser || (isSelf ? currentUser : params.user);
+
+  const user = fetchedUser || (isSelf ? currentUser : null);
 
   const follow = useFollow();
   const unfollow = useUnfollow();
@@ -64,6 +74,17 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
   const posts = postsResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
 
   const hasIdentifiableUser = Boolean(user?.displayName || user?.firstName || user?.username);
+
+  // The address carries only an id, so nothing can be shown until the profile
+  // arrives. Rendering the frame with empty fields would flash a placeholder
+  // name before replacing it.
+  if (isProfileLoading && !hasIdentifiableUser) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, fontFamily: v.fontBody, fontSize: 14, color: v.ink3 }}>
+        loading profile...
+      </div>
+    );
+  }
 
   if (isProfileError && !hasIdentifiableUser) {
     return (
@@ -111,7 +132,7 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
             </div>
           )}
           {isSelf && (
-            <LxBtn variant="secondary" size="sm" style={{ marginBottom: 2, transform: 'translateY(6px)' }} onClick={() => navigate('settings')}>
+            <LxBtn variant="secondary" size="sm" style={{ marginBottom: 2, transform: 'translateY(6px)' }} onClick={() => navigate(ROUTES.SETTINGS)}>
               edit profile
             </LxBtn>
           )}
@@ -132,8 +153,9 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
           {[['posts', formatCount(user?.postCount)], ['following', formatCount(user?.followingCount)], ['followers', formatCount(user?.followerCount)]].map(([label, val]) => (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 1, cursor: label !== 'posts' ? 'pointer' : 'default' }}
                  onClick={() => {
-                   if (label === 'followers') navigate('followers', { userId: user?.id, username: user?.username });
-                   if (label === 'following') navigate('following', { userId: user?.id, username: user?.username });
+                   if (!user?.id) return;
+                   if (label === 'followers') navigate(routeTo.userFollowers(user.id));
+                   if (label === 'following') navigate(routeTo.userFollowing(user.id));
                  }}>
               <span style={{ fontFamily: v.fontMono, fontSize: 14, fontWeight: 500, color: v.ink }}>{val}</span>
               <span style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, textTransform: 'uppercase', letterSpacing: '0.14em' }}>{label}</span>
@@ -165,7 +187,7 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
             {posts.map(p => {
               const mediaUrl = p.media && p.media.length > 0 ? p.media[0].cdnUrl : null;
               return (
-                <div key={p.id} onClick={() => navigate('post', { postId: p.id })} style={{
+                <div key={p.id} onClick={() => openOverlay(routeTo.postDetail(p.id))} style={{
                   background: mediaUrl ? `url(${mediaUrl}) center/cover no-repeat` : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
                   aspectRatio: '1/1',
                   borderRadius: 0, cursor: 'pointer',

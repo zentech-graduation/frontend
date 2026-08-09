@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent } from '@/utils/helpers';
 import { STORIES } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxBtn } from './primitives';
 import { useFeed } from '../hooks/usePosts';
+import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { useLuvaxTweaks } from '../LuvaxTweaksContext';
+import { ROUTES, routeTo } from '@/config/constants';
 
 // ─── Stories Carousel ──────────────────────────────────────────────────────
-export function StoriesCarousel({ navigate, viewport }) {
+export function StoriesCarousel({ viewport }) {
+  const openOverlay = useOverlayNavigate();
   const isTablet = viewport === 'tablet';
   return (
     <div style={{
@@ -18,7 +23,7 @@ export function StoriesCarousel({ navigate, viewport }) {
     }}>
       {STORIES.map(s => (
         <button key={s.id}
-          onClick={() => s.isOwn ? navigate('story-compose') : navigate('story-view', { story: s })}
+          onClick={() => s.isOwn ? openOverlay(ROUTES.STORY_COMPOSE) : openOverlay(routeTo.storyView(s.id))}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isTablet ? 5 : 6,
@@ -50,7 +55,8 @@ export function StoriesCarousel({ navigate, viewport }) {
 import { PostCard } from './PostCard';
 
 // ─── Feed Screen ───────────────────────────────────────────────────────────
-export function FeedScreen({ navigate, tweaks, viewport }) {
+export function FeedScreen() {
+  const { tweaks, viewport } = useLuvaxTweaks();
   const isMulti = viewport === 'tablet' || viewport === 'desktop';
   const isMobile = viewport === 'mobile';
   const gap = tweaks.density === 'dense' ? 8 : 12;
@@ -91,7 +97,7 @@ export function FeedScreen({ navigate, tweaks, viewport }) {
 
   return (
     <>
-      <StoriesCarousel navigate={navigate} viewport={viewport} />
+      <StoriesCarousel viewport={viewport} />
 
       <div style={{
         flex: 1, padding: isMobile ? '10px 0 24px' : '14px 16px',
@@ -106,14 +112,14 @@ export function FeedScreen({ navigate, tweaks, viewport }) {
           }}>
             {posts.map(p => (
               <div key={p.id} style={{ breakInside: 'avoid', marginBottom: gap, display: 'inline-block', width: '100%' }}>
-                <PostCard post={p} navigate={navigate} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
+                <PostCard post={p} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
               </div>
             ))}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap }}>
             {posts.map(p => (
-              <PostCard key={p.id} post={p} navigate={navigate} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
+              <PostCard key={p.id} post={p} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
             ))}
           </div>
         )}

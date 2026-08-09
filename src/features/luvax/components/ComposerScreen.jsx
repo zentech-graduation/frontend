@@ -1,15 +1,20 @@
 import { useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/config/constants';
 import { v } from '@/config/tokens';
 import { SUGGESTED_TAGS } from '../constants/data';
 import { LxAvatar, LxDivider, LxIcon, LxTag } from './primitives';
 import { useCreatePost } from '../hooks/usePosts';
 import { useMediaUpload } from '../hooks/useMediaUpload';
+import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 
 const MAX_CHARS = 280;
 
 const clampCaption = (value) => value.slice(0, MAX_CHARS);
 
-export function ComposerScreen({ navigate, viewport }) {
+export function ComposerScreen() {
+  const navigate = useNavigate();
+  const { viewport } = useLuvaxTweaks();
   const [type, setType] = useState('text');
   const [caption, setCaption] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
@@ -85,7 +90,7 @@ export function ComposerScreen({ navigate, viewport }) {
           setFile(null);
           setPreviewUrl(null);
           setFormError('');
-          navigate('feed');
+          navigate(ROUTES.FEED);
         },
         onError: (error) => {
           setFormError(error.message || "we couldn't publish your post. try again.");

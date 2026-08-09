@@ -10,7 +10,6 @@ const GUEST_PATHS = new Set([
   '/reset-password',
   '/verify-email',
   '/oauth2/callback',
-  '/oauth/callback',
 ]);
 
 export default function AuthSessionBootstrap() {
@@ -44,17 +43,19 @@ export default function AuthSessionBootstrap() {
         const pathname = window.location.pathname;
         const isGuestPath = GUEST_PATHS.has(pathname);
 
-        if (!accessToken && !refreshToken) {
-          if (isGuestPath) {
+        if (!accessToken) {
+          // Holding no refresh token is no longer the end of the road. The
+          // backend issues the refresh token as an HttpOnly cookie, which the
+          // browser replays automatically and application code cannot read, so
+          // the same call restores a session whether the token survives in
+          // memory or only in the cookie. Guest paths are token-driven pages
+          // that never need a session, so the round trip is skipped there.
+          if (!refreshToken && isGuestPath) {
             logout();
             return;
           }
 
-          throw new Error('No session available.');
-        }
-
-        if (!accessToken && refreshToken) {
-          const refreshedSession = await authApi.refreshSession(refreshToken);
+          const refreshedSession = await authApi.refreshSession(refreshToken ?? undefined);
 
           if (!refreshedSession.accessToken) {
             throw new Error('Unable to restore your session.');
@@ -83,8 +84,21 @@ export default function AuthSessionBootstrap() {
           refreshToken: currentState.refreshToken,
           user: nextUser,
         });
-      } catch {
-        logout();
+      } catch (error) {
+        if (error?.response?.status === 401) {
+          logout();
+          return;
+        }
+
+        // A network failure or a server fault is not evidence that the session
+        // ended. Clearing the store here would sign out someone whose
+        // connection dropped for a second and whose refresh cookie is still
+        // perfectly valid, so the persisted marker is left alone and the next
+        // load retries. Nothing is treated as signed in meanwhile: ProtectedRoute
+        // gates on a live in-memory access token, which this path never sets.
+        if (import.meta.env.DEV) {
+          console.error('[AuthSessionBootstrap] session restore failed', error?.message ?? error);
+        }
       } finally {
         setBootstrapping(false);
       }

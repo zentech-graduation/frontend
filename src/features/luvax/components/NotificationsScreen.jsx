@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { extractPageContent, getDisplayName, getUserSummary } from '@/utils/helpers';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests, useApproveFollowRequest, useRejectFollowRequest } from '../hooks/useSocial';
 import { useNotifications, useMarkAllAsRead } from '../hooks/useNotifications';
 import { useRelativeTime } from '../hooks/useRelativeTime';
+import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { routeTo } from '@/config/constants';
 
 // Keyed on the notification_type enum values the backend actually sends.
 // The previous mapping tested for 'like' and 'comment', which are not members
@@ -32,7 +35,9 @@ const TYPE_COLOR = {
   comment: v.accent, mention: v.avatar2, story: v.avatar3,
 };
 
-function NotifRow({ n, navigate, onAccept, onDecline }) {
+function NotifRow({ n, onAccept, onDecline }) {
+  const navigate = useNavigate();
+  const openOverlay = useOverlayNavigate();
   // NotificationResponse embeds the actor as a UserSummaryResponse. There is
   // no `n.actorId`, so no per-row profile fetch is needed.
   const actor = getUserSummary(n, 'actor');
@@ -47,7 +52,7 @@ function NotifRow({ n, navigate, onAccept, onDecline }) {
   const avatarSrc = actor.avatarUrl;
 
   return (
-    <div onClick={() => n.entityId && navigate('post', { post: { id: n.entityId } })} style={{
+    <div onClick={() => n.entityId && openOverlay(routeTo.postDetail(n.entityId))} style={{
       display: 'flex', alignItems: 'flex-start', gap: 12,
       padding: '12px 16px',
       background: !n.isRead ? 'var(--lx-accent-dim)' : 'transparent',
@@ -70,7 +75,7 @@ function NotifRow({ n, navigate, onAccept, onDecline }) {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
-          <strong style={{ fontWeight: 600, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); navigate('profile', { user: actor }); }}>{actorName}</strong> <span style={{ color: v.ink2 }}>{text}</span>
+          <strong style={{ fontWeight: 600, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); if (actor?.id) navigate(routeTo.userProfile(actor.id)); }}>{actorName}</strong> <span style={{ color: v.ink2 }}>{text}</span>
         </div>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeStr}</div>
       </div>
@@ -103,7 +108,8 @@ function NotifRow({ n, navigate, onAccept, onDecline }) {
   );
 }
 
-function RequestRow({ req, navigate, onAccept, onDecline }) {
+function RequestRow({ req, onAccept, onDecline }) {
+  const navigate = useNavigate();
   // FollowRequestResponse names the requesting user `follower`.
   const user = getUserSummary(req, 'follower');
   const timeStr = useRelativeTime(req.createdAt);
@@ -128,7 +134,7 @@ function RequestRow({ req, navigate, onAccept, onDecline }) {
 
       <div style={{ flex: 1, minWidth: 0, alignSelf: 'center' }}>
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
-          <strong onClick={() => navigate('profile', { user })} style={{ fontWeight: 600, cursor: 'pointer' }}>{getDisplayName(user)}</strong> <span style={{ color: v.ink2 }}>requested to follow you</span>
+          <strong onClick={() => user?.id && navigate(routeTo.userProfile(user.id))} style={{ fontWeight: 600, cursor: 'pointer' }}>{getDisplayName(user)}</strong> <span style={{ color: v.ink2 }}>requested to follow you</span>
         </div>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeStr}</div>
       </div>
@@ -141,7 +147,7 @@ function RequestRow({ req, navigate, onAccept, onDecline }) {
   );
 }
 
-export function NotificationsScreen({ navigate }) {
+export function NotificationsScreen() {
   const [tab, setTab] = useState('all');
   
   const { data: requestsResponse, isLoading: isLoadingRequests } = usePendingFollowRequests();
@@ -191,7 +197,6 @@ export function NotificationsScreen({ navigate }) {
               <RequestRow 
                 key={i} 
                 req={r} 
-                navigate={navigate} 
                 onAccept={(id) => approveReq.mutate(id)} 
                 onDecline={(id) => rejectReq.mutate(id)} 
               />
@@ -207,7 +212,6 @@ export function NotificationsScreen({ navigate }) {
               <NotifRow
                 key={n.id || i}
                 n={n}
-                navigate={navigate}
                 onAccept={(id) => approveReq.mutate(id)}
                 onDecline={(id) => rejectReq.mutate(id)}
               />

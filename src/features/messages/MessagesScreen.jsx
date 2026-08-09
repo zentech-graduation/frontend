@@ -5,8 +5,10 @@ import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
 import { MediaPlaceholder } from './components/MediaPlaceholder';
+import { useLuvaxTweaks } from '@/features/luvax/LuvaxTweaksContext';
 
-export function MessagesScreen({ navigate, viewport }) {
+export function MessagesScreen() {
+  const { viewport } = useLuvaxTweaks();
   const [threads, setThreads] = useState(THREADS);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
@@ -268,7 +270,6 @@ export function MessagesScreen({ navigate, viewport }) {
       {showRightRail ? (
         <ConversationInfoPanel
           activeThread={activeThread}
-          navigate={navigate}
           setPreviewItem={setPreviewItem}
           compact={isTablet}
         />
@@ -301,8 +302,7 @@ export function MessagesScreen({ navigate, viewport }) {
           >
             <ConversationInfoPanel
               activeThread={activeThread}
-              navigate={navigate}
-              setPreviewItem={setPreviewItem}
+                  setPreviewItem={setPreviewItem}
               mobileOverlay
               onClose={() => setMobileInfoOpen(false)}
             />

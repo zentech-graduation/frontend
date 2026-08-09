@@ -1,10 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent, getDisplayName, getUserSummary, isVideoMedia } from '@/utils/helpers';
 import { TOPICS } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag } from './primitives';
 import { useExplore } from '../hooks/usePosts';
+import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { useLuvaxTweaks } from '../LuvaxTweaksContext';
+import { routeTo } from '@/config/constants';
 
 const SEARCH_BIOS = {
   'mara.v': 'light, shadow, and the space between',
@@ -15,14 +19,16 @@ const SEARCH_BIOS = {
   'lea.p': 'film grain, city silence',
 };
 
-function MiniCard({ p, navigate }) {
+function MiniCard({ p }) {
+  const navigate = useNavigate();
+  const openOverlay = useOverlayNavigate();
   const author = getUserSummary(p);
   const authorName = getDisplayName(author, 'Unknown');
   const avatarUrl = author.avatarUrl;
   const mediaUrl = p.media && p.media.length > 0 ? p.media[0].cdnUrl : null;
 
   return (
-    <div onClick={() => navigate('post', { post: p })} style={{
+    <div onClick={() => openOverlay(routeTo.postDetail(p.id))} style={{
       background: v.surface, borderRadius: 10, overflow: 'hidden',
       cursor: 'pointer', breakInside: 'avoid', marginBottom: 8,
       display: 'inline-block', width: '100%',
@@ -36,7 +42,7 @@ function MiniCard({ p, navigate }) {
       )}
       <div style={{ padding: '10px 12px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }} 
-             onClick={(e) => { e.stopPropagation(); navigate('profile', { user: { id: author.id, username: author.username, displayName: authorName, avatarUrl } }); }}>
+             onClick={(e) => { e.stopPropagation(); if (author.id) navigate(routeTo.userProfile(author.id)); }}>
           <LxAvatar size={18} src={avatarUrl} />
           <span style={{ fontFamily: v.fontBody, fontSize: 11, fontWeight: 500, color: v.ink2, cursor: 'pointer' }}>{authorName}</span>
         </div>
@@ -46,11 +52,12 @@ function MiniCard({ p, navigate }) {
   );
 }
 
-function SearchResultPerson({ user, navigate }) {
+function SearchResultPerson({ user }) {
+  const navigate = useNavigate();
   return (
     <button
       type="button"
-      onClick={() => navigate('profile', { user })}
+      onClick={() => user?.id && navigate(routeTo.userProfile(user.id))}
       style={{
         width: '100%',
         background: 'none',
@@ -92,14 +99,15 @@ function SearchResultPerson({ user, navigate }) {
   );
 }
 
-function SearchResultPost({ post, navigate }) {
+function SearchResultPost({ post }) {
+  const openOverlay = useOverlayNavigate();
   const authorName = getDisplayName(getUserSummary(post), 'Unknown');
   const firstTag = Array.isArray(post.tags) && post.tags.length > 0 ? post.tags[0] : null;
 
   return (
     <button
       type="button"
-      onClick={() => navigate('post', { postId: post.id })}
+      onClick={() => openOverlay(routeTo.postDetail(post.id))}
       style={{
         width: 210,
         background: v.surface,
@@ -143,8 +151,14 @@ function SearchResultPost({ post, navigate }) {
   );
 }
 
-export function ExploreScreen({ navigate, viewport, params = {} }) {
-  const [query, setQuery] = useState(params?.q || '');
+export function ExploreScreen() {
+  // The search terms live in the address, so an explore search can be shared
+  // and survives a reload.
+  const [searchParams] = useSearchParams();
+  const activeQuery = searchParams.get('q') || '';
+  const shouldFocusSearch = searchParams.get('focusSearch') === '1';
+  const { viewport } = useLuvaxTweaks();
+  const [query, setQuery] = useState(activeQuery);
   const [activeTopic, setActiveTopic] = useState(null);
   const searchInputRef = useRef(null);
 
@@ -152,15 +166,15 @@ export function ExploreScreen({ navigate, viewport, params = {} }) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExplore({ q: query });
 
   useEffect(() => {
-    setQuery(params?.q || '');
-  }, [params?.q]);
+    setQuery(activeQuery);
+  }, [activeQuery]);
 
   useEffect(() => {
-    if (params?.focusSearch) {
+    if (shouldFocusSearch) {
       searchInputRef.current?.focus();
       searchInputRef.current?.select();
     }
-  }, [params?.focusSearch, params?.q]);
+  }, [shouldFocusSearch, activeQuery]);
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -270,7 +284,7 @@ export function ExploreScreen({ navigate, viewport, params = {} }) {
                 <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 14, marginBottom: 14 }}>
                   people
                 </div>
-                <SearchResultPerson user={people[0]} navigate={navigate} />
+                <SearchResultPerson user={people[0]} />
               </>
             ) : null}
 
@@ -278,7 +292,7 @@ export function ExploreScreen({ navigate, viewport, params = {} }) {
               posts
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {posts.map((p, i) => <SearchResultPost key={p.id || i} post={p} navigate={navigate} />)}
+              {posts.map((p, i) => <SearchResultPost key={p.id || i} post={p} />)}
             </div>
           </div>
         ) : (
@@ -288,7 +302,7 @@ export function ExploreScreen({ navigate, viewport, params = {} }) {
             </div>
 
             <div style={{ padding: '0 16px 24px', columnCount: cols, columnGap: 8 }}>
-              {posts.map((p, i) => <MiniCard key={p.id || i} p={p} navigate={navigate} />)}
+              {posts.map((p, i) => <MiniCard key={p.id || i} p={p} />)}
             </div>
           </>
         )}

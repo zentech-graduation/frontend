@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent, getUserSummary } from '@/utils/helpers';
@@ -6,11 +7,20 @@ import { LxIcon } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useFollowers } from '../hooks/useSocial';
 import { UserCard } from './UserCard';
+import { useUserProfile } from '../hooks/useUsers';
+import { routeTo } from '@/config/constants';
 
-export function FollowersScreen({ navigate, params = {} }) {
+export function FollowersScreen() {
+  const navigate = useNavigate();
+  const params = useParams();
   const currentUser = useAuthStore(state => state.user);
   const userId = params.userId || currentUser?.id;
-  const username = params.username || currentUser?.username || 'user';
+  // The address carries an id, not a handle, so the name in the heading is read
+  // from the profile itself. It is normally already cached from the profile
+  // screen this was opened from, and a cold load fetches it.
+  const { data: ownerResponse } = useUserProfile(userId);
+  const owner = ownerResponse?.data || ownerResponse;
+  const username = owner?.username || currentUser?.username || 'user';
   const isSelf = userId === currentUser?.id;
 
   const { ref, inView } = useInView();
@@ -86,7 +96,7 @@ export function FollowersScreen({ navigate, params = {} }) {
                 key={rowUser.id}
                 user={rowUser}
                 initiallyFollowing={item.viewerState?.isFollowing ?? false}
-                onAvatarClick={(u) => navigate('profile', { user: { id: u.id, username: u.username } })}
+                onAvatarClick={(u) => navigate(routeTo.userProfile(u.id))}
               />
             );
           })
