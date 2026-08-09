@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { postService } from '@/services/post.service';
+import { getNextCursor } from '@/utils/helpers';
 
 export const useFeed = (params = {}) => {
   return useInfiniteQuery({
@@ -10,11 +11,7 @@ export const useFeed = (params = {}) => {
     refetchOnReconnect: true,
     refetchInterval: 60000,
     refetchIntervalInBackground: false,
-    getNextPageParam: (lastPage) => {
-      // Extract from ApiResponse -> CursorPageResponse
-      const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
-      return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
-    },
+    getNextPageParam: getNextCursor,
     initialPageParam: null,
   });
 };
@@ -28,10 +25,7 @@ export const useExplore = (params = {}) => {
     refetchOnReconnect: true,
     refetchInterval: 60000,
     refetchIntervalInBackground: false,
-    getNextPageParam: (lastPage) => {
-      const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
-      return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
-    },
+    getNextPageParam: getNextCursor,
     initialPageParam: null,
   });
 };
@@ -45,10 +39,7 @@ export const useUserPosts = (userId, params = {}) => {
     refetchOnReconnect: true,
     refetchInterval: 60000,
     refetchIntervalInBackground: false,
-    getNextPageParam: (lastPage) => {
-      const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
-      return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
-    },
+    getNextPageParam: getNextCursor,
     initialPageParam: null,
     enabled: !!userId,
   });
@@ -136,10 +127,7 @@ export const useTopLevelComments = (postId) => {
   return useInfiniteQuery({
     queryKey: ['comments', postId],
     queryFn: ({ pageParam = null }) => postService.getComments(postId, { cursor: pageParam, limit: 20 }),
-    getNextPageParam: (lastPage) => {
-      const pageInfo = lastPage?.data?.pageInfo || lastPage?.pageInfo;
-      return pageInfo?.hasNextPage ? pageInfo?.endCursor : undefined;
-    },
+    getNextPageParam: getNextCursor,
     initialPageParam: null,
     enabled: !!postId,
   });

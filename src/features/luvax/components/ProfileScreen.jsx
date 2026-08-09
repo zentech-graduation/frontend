@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
-import { extractPageContent } from '@/utils/helpers';
+import { extractPageContent, formatCount, getUserSummary } from '@/utils/helpers';
 import { LxBtn, LxIcon } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUserPosts } from '../hooks/usePosts';
@@ -29,7 +29,8 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
   useEffect(() => {
     if (myFollowingData && !isSelf) {
       const list = myFollowingData.pages?.flatMap(page => extractPageContent(page)) || [];
-      setFollowing(list.some(u => u.id === targetUserId));
+      // Follower lists return UserListItemResponse, which nests the user.
+      setFollowing(list.some(item => getUserSummary(item, 'user').id === targetUserId));
     }
   }, [myFollowingData, targetUserId, isSelf]);
 
@@ -128,7 +129,7 @@ export function ProfileScreen({ navigate, params = {}, viewport }) {
 
         {/* Stats */}
         <div style={{ display: 'flex', gap: 30, padding: '20px 16px 14px', borderBottom: `1px solid ${v.border}` }}>
-          {[['posts', user?.postCount || user?.postsCount || 0], ['following', user?.followingCount || 0], ['followers', user?.followerCount || user?.followersCount || 0]].map(([label, val]) => (
+          {[['posts', formatCount(user?.postCount)], ['following', formatCount(user?.followingCount)], ['followers', formatCount(user?.followerCount)]].map(([label, val]) => (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 1, cursor: label !== 'posts' ? 'pointer' : 'default' }}
                  onClick={() => {
                    if (label === 'followers') navigate('followers', { userId: user?.id, username: user?.username });

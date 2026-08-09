@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
-import { copyPostLink, extractPageContent, sharePost } from '@/utils/helpers';
+import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
 import { useCommentReplies } from '../hooks/usePosts';
-import { useUserProfile } from '../hooks/useUsers';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
@@ -19,9 +18,10 @@ function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
   const [showReplies, setShowReplies] = useState(false);
   const commentMenuButtonRef = useRef(null);
 
-  const { data: authorProfileData } = useUserProfile(comment.userId);
-  const authorProfile = authorProfileData?.data || authorProfileData;
-  const authorName = authorProfile?.username || authorProfile?.displayName || 'unknown';
+  // CommentResponse embeds the author as a UserSummaryResponse, so no
+  // per-row profile fetch is needed. There is no `comment.userId`.
+  const author = getUserSummary(comment);
+  const authorName = getDisplayName(author);
 
   const timeStr = useRelativeTime(comment.createdAt, { seedKey: comment.id });
 
@@ -46,7 +46,7 @@ function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
       id: 'view-profile',
       icon: 'profile',
       label: "View author's profile",
-      onClick: () => (authorProfile ? navigate?.('profile', { user: authorProfile }) : null),
+      onClick: () => (author.id ? navigate?.('profile', { user: author }) : null),
     },
     { id: 'report', icon: 'flag', label: 'Report', tone: 'danger', separator: true, onClick: () => {} },
   ];
@@ -66,7 +66,7 @@ function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
         }}
       >
         <div style={{ marginLeft: indent + nestedOffset }}>
-          <LxAvatar size={34} src={authorProfile?.avatarUrl} idx={0} />
+          <LxAvatar size={34} src={author.avatarUrl} />
         </div>
         <div style={{ minWidth: 0, marginLeft: indent + nestedOffset }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexWrap: 'wrap', lineHeight: 1.42 }}>
@@ -173,26 +173,28 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   } = useTopLevelComments(postId);
 
   const post = postResponse?.data || postResponse || params.post || {};
-  const targetUserId = post.userId || post.authorId || post.user?.id || post.author?.id;
-  const authorName = post.username || post.author || 'unknown';
-  const authorHandle = post.username || post.author || 'unknown';
-  const authorAvatarUrl = post.userAvatarUrl || post.user?.avatarUrl || null;
+  const author = getUserSummary(post);
+  const targetUserId = author.id;
+  const authorName = getDisplayName(author);
+  const authorHandle = author.username || 'unknown';
+  const authorAvatarUrl = author.avatarUrl;
   const isSelf = currentUser?.id === targetUserId;
   const following = (() => {
     if (!myFollowingData || !targetUserId || isSelf) return false;
     const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
-    return list.some((user) => user.id === targetUserId);
+    // Follower lists return UserListItemResponse, which nests the user.
+    return list.some((item) => getUserSummary(item, 'user').id === targetUserId);
   })();
 
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((tag) => tag.slice(1)) : []);
   const mediaList = post.media || [];
   const mainMedia = mediaList[0] || null;
-  const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
+  const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
   useEffect(() => {
-    setLikeCount(post.likeCount || post.likes || 0);
-  }, [post.id, post.likeCount, post.likes]);
+    setLikeCount(post.likeCount ?? 0);
+  }, [post.id, post.likeCount]);
 
   useEffect(() => {
     setReplyingTo(null);
@@ -326,10 +328,10 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const menuItems = useMemo(
     () => [
       { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
-      { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, post.caption || post.text) },
+      { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, post.caption) },
       { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
     ],
-    [liked, post.caption, post.text, postId]
+    [liked, post.caption, postId]
   );
 
   if (isLoading) {
@@ -364,7 +366,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '16px 16px 12px', borderBottom: `1px solid ${v.borderSubtle}` }}>
-        <LxAvatar size={40} idx={post.idx || 0} src={authorAvatarUrl} />
+        <LxAvatar size={40} src={authorAvatarUrl} />
         <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
           <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 600, color: v.ink, lineHeight: 1.15 }}>{authorName}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontFamily: v.fontMono, fontSize: 10, color: v.ink3, lineHeight: 1 }}>
@@ -393,7 +395,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
 
       <div style={{ padding: '16px 16px 14px', borderBottom: `1px solid ${v.borderSubtle}` }}>
         <div style={{ fontFamily: v.fontBody, fontSize: mainMedia ? 18 : 17, fontWeight: 600, lineHeight: 1.52, color: v.ink, letterSpacing: '-0.025em' }}>
-          {post.caption || post.text}
+          {post.caption}
         </div>
         {tags.length > 0 ? (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
@@ -407,7 +409,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
       <div ref={commentsPaneRef} style={{ minHeight: 0, overflowY: 'auto', padding: '0 16px', scrollBehavior: 'smooth' }}>
         {mainMedia ? (
           <div style={{ padding: '16px 0', borderBottom: `1px solid ${v.borderSubtle}` }}>
-            {mainMedia.mediaType === 'VIDEO' ? (
+            {isVideoMedia(mainMedia) ? (
               <video src={mainMedia.cdnUrl} controls style={{ width: '100%', borderRadius: 14, display: 'block' }} />
             ) : (
               <img src={mainMedia.cdnUrl} alt={mainMedia.altText || 'post media'} style={{ width: '100%', borderRadius: 14, display: 'block' }} />
@@ -446,7 +448,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
             </span>
             <span style={{ fontFamily: v.fontMono, fontSize: 12, color: liked ? HEART_COLOR : v.ink3 }}>{likeCount}</span>
           </button>
-          <button type="button" onClick={() => sharePost(postId, post.caption || post.text)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <button type="button" onClick={() => sharePost(postId, post.caption)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <LxIcon name="share" size={20} color={v.ink3} />
           </button>
         </div>

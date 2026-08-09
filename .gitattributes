@@ -1,0 +1,34 @@
+# Normalise line endings in the repository to LF.
+#
+# Without this file, `core.autocrlf=true` checks every file out with CRLF on
+# Windows while the Prettier configuration requires LF, so every line of every
+# file reports a lint error. Declaring the repository's own convention here
+# takes the decision away from each developer's local git configuration.
+#
+# `text=auto` lets git detect text files and store them with LF, converting on
+# checkout only where a platform needs it.
+* text=auto eol=lf
+
+# Files that must never be line-ending converted.
+#
+# Luvax.html is a Claude Design export whose payload is base64 and gzip data
+# embedded in the markup. Rewriting its line endings would corrupt the bundle.
+docs/design/Luvax.html binary
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.mp4 binary
+*.webm binary

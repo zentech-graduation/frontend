@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
-import { copyPostLink, extractPageContent, sharePost } from '@/utils/helpers';
+import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
@@ -10,9 +10,9 @@ import { useRelativeTime } from '../hooks/useRelativeTime';
 const HEART_COLOR = 'var(--lx-error)';
 
 export function PostCard({ post, navigate, density = 'cozy', showTags = true, viewport = 'desktop' }) {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likeCount || post.likes || 0);
-  const [saved, setSaved] = useState(false);
+  const [liked, setLiked] = useState(post.isLiked ?? false);
+  const [likeCount, setLikeCount] = useState(post.likeCount ?? 0);
+  const [saved, setSaved] = useState(post.isSaved ?? false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
@@ -22,7 +22,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const menuButtonRef = useRef(null);
 
   const currentUser = useAuthStore((state) => state.user);
-  const isOwner = currentUser?.id === (post.userId || post.authorId);
+  const isOwner = currentUser?.id === post.author?.id;
 
   const updatePost = useUpdatePost();
   const deletePost = useDeletePost();
@@ -79,7 +79,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   };
 
   const handleEditOpen = () => {
-    setEditCaption(post.caption || post.text || '');
+    setEditCaption(post.caption ?? '');
     setEditSheetOpen(true);
   };
 
@@ -102,18 +102,20 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
   const pad = density === 'dense' ? '10px 12px 12px' : '14px 16px 16px';
   const gap = density === 'dense' ? 8 : 10;
 
-  const authorName = post.username || post.author || 'unknown';
-  const authorHandle = post.username || post.author || 'unknown';
-  const targetUserId = post.userId || post.authorId;
-  const avatarUrl = post.userAvatarUrl;
-  const timeStr = useRelativeTime(post.createdAt || post.time, { seedKey: post.username || post.author || '' });
+  const author = getUserSummary(post);
+  const authorName = getDisplayName(author);
+  const authorHandle = author.username || 'unknown';
+  const targetUserId = author.id;
+  const avatarUrl = author.avatarUrl;
+  const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const media = post.media && post.media.length > 0 ? post.media[0] : null;
   const isMobile = viewport === 'mobile';
   const following = (() => {
     if (!myFollowingData || !targetUserId || isOwner) return false;
     const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
-    return list.some((user) => user.id === targetUserId);
+    // Follower lists return UserListItemResponse, which nests the user.
+    return list.some((item) => getUserSummary(item, 'user').id === targetUserId);
   })();
 
   const handleFollowToggle = () => {
@@ -137,7 +139,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
         id: 'share',
         icon: 'share',
         label: 'Share',
-        onClick: () => sharePost(post.id, post.caption || post.text),
+        onClick: () => sharePost(post.id, post.caption),
       },
       {
         id: 'copy',
@@ -208,7 +210,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
           }
         : null,
     ],
-    [authorHandle, authorName, avatarUrl, block, follow.isPending, following, isOwner, liked, myFollowingData, navigate, post.caption, post.id, post.text, targetUserId, unfollow.isPending]
+    [authorHandle, authorName, avatarUrl, block, follow.isPending, following, isOwner, liked, myFollowingData, navigate, post.caption, post.id, targetUserId, unfollow.isPending]
   );
 
   return (
@@ -249,7 +251,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
             borderTopRightRadius: isMobile ? 0 : 14,
           }}
         >
-          {media.mediaType === 'VIDEO' ? (
+          {isVideoMedia(media) ? (
             <video
               src={media.cdnUrl}
               style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: isMobile ? 360 : 500 }}
@@ -285,17 +287,16 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
             onClick={() =>
               navigate('profile', {
                 user: {
-                  id: post.userId || post.authorId,
-                  username: post.username,
+                  id: targetUserId,
+                  username: author.username,
                   displayName: authorName,
-                  avatarUrl: post.userAvatarUrl,
-                  idx: post.idx || 0,
+                  avatarUrl,
                 },
               })
             }
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
           >
-            <LxAvatar size={28} idx={post.idx || 0} src={avatarUrl} />
+            <LxAvatar size={28} src={avatarUrl} />
             <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>
               {authorName}
             </span>
@@ -338,7 +339,7 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
             whiteSpace: 'pre-wrap',
           }}
         >
-          {post.caption || post.text}
+          {post.caption}
         </p>
 
         {showTags && tags.length > 0 ? (
@@ -377,10 +378,10 @@ export function PostCard({ post, navigate, density = 'cozy', showTags = true, vi
           <button onClick={() => navigate('post', { postId: post.id })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
             <LxIcon name="reply" size={17} color={v.ink3} />
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
-              {post.commentCount || Math.floor((post.likes || 0) / 8) + 2}
+              {post.commentCount ?? 0}
             </span>
           </button>
-          <button type="button" onClick={() => sharePost(post.id, post.caption || post.text)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          <button type="button" onClick={() => sharePost(post.id, post.caption)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             <LxIcon name="share" size={17} color={v.ink3} />
           </button>
           <button onClick={handleSaveToggle} className={saveBurst ? 'lx-bookmark-button is-saved' : 'lx-bookmark-button'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>

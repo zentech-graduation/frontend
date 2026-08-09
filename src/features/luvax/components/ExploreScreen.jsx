@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
-import { extractPageContent } from '@/utils/helpers';
+import { extractPageContent, getDisplayName, getUserSummary, isVideoMedia } from '@/utils/helpers';
 import { TOPICS } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag } from './primitives';
 import { useExplore } from '../hooks/usePosts';
@@ -16,8 +16,9 @@ const SEARCH_BIOS = {
 };
 
 function MiniCard({ p, navigate }) {
-  const authorName = p.username || p.author || 'Unknown';
-  const avatarUrl = p.userAvatarUrl;
+  const author = getUserSummary(p);
+  const authorName = getDisplayName(author, 'Unknown');
+  const avatarUrl = author.avatarUrl;
   const mediaUrl = p.media && p.media.length > 0 ? p.media[0].cdnUrl : null;
 
   return (
@@ -27,7 +28,7 @@ function MiniCard({ p, navigate }) {
       display: 'inline-block', width: '100%',
     }}>
       {mediaUrl && (
-        p.media[0].mediaType === 'VIDEO' ? (
+        isVideoMedia(p.media[0]) ? (
           <video src={mediaUrl} style={{ width: '100%', display: 'block' }} muted />
         ) : (
           <img src={mediaUrl} style={{ width: '100%', display: 'block' }} alt="post" />
@@ -35,11 +36,11 @@ function MiniCard({ p, navigate }) {
       )}
       <div style={{ padding: '10px 12px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }} 
-             onClick={(e) => { e.stopPropagation(); navigate('profile', { user: { id: p.userId, username: p.username, displayName: authorName, avatarUrl } }); }}>
-          <LxAvatar size={18} src={avatarUrl} idx={p.idx || 0} />
+             onClick={(e) => { e.stopPropagation(); navigate('profile', { user: { id: author.id, username: author.username, displayName: authorName, avatarUrl } }); }}>
+          <LxAvatar size={18} src={avatarUrl} />
           <span style={{ fontFamily: v.fontBody, fontSize: 11, fontWeight: 500, color: v.ink2, cursor: 'pointer' }}>{authorName}</span>
         </div>
-        <p style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink, lineHeight: 1.5, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.caption || p.text}</p>
+        <p style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink, lineHeight: 1.5, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.caption}</p>
       </div>
     </div>
   );
@@ -63,7 +64,7 @@ function SearchResultPerson({ user, navigate }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-        <LxAvatar size={40} src={user.avatarUrl || null} idx={user.idx || 0} />
+        <LxAvatar size={40} src={user.avatarUrl} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink, lineHeight: 1.2 }}>
             {user.displayName || user.username}
@@ -92,7 +93,7 @@ function SearchResultPerson({ user, navigate }) {
 }
 
 function SearchResultPost({ post, navigate }) {
-  const authorName = post.username || post.author || 'Unknown';
+  const authorName = getDisplayName(getUserSummary(post), 'Unknown');
   const firstTag = Array.isArray(post.tags) && post.tags.length > 0 ? post.tags[0] : null;
 
   return (
@@ -113,7 +114,7 @@ function SearchResultPost({ post, navigate }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <LxAvatar size={20} src={post.userAvatarUrl || null} idx={post.idx || 0} />
+        <LxAvatar size={20} src={getUserSummary(post).avatarUrl} />
         <span style={{ fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2 }}>
           {authorName}
         </span>
@@ -131,7 +132,7 @@ function SearchResultPost({ post, navigate }) {
           minHeight: 60,
         }}
       >
-        {post.caption || post.text}
+        {post.caption}
       </div>
       {firstTag ? (
         <div style={{ fontFamily: v.fontBody, fontSize: 12, fontWeight: 600, color: v.accent }}>
@@ -173,14 +174,13 @@ export function ExploreScreen({ navigate, viewport, params = {} }) {
   const suggestionChips = TOPICS.slice(0, 8);
   const people = posts
     .reduce((acc, post) => {
-      const username = post.username || post.author;
-      if (!username || acc.some(user => user.username === username)) return acc;
+      const author = getUserSummary(post);
+      if (!author.id || acc.some(user => user.id === author.id)) return acc;
       acc.push({
-        id: post.userId || username,
-        username,
-        displayName: username,
-        avatarUrl: post.userAvatarUrl || null,
-        idx: post.idx || 0,
+        id: author.id,
+        username: author.username,
+        displayName: getDisplayName(author),
+        avatarUrl: author.avatarUrl,
       });
       return acc;
     }, [])

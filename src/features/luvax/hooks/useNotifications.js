@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as notifService from '../../../services/notification.service';
+import { getNextCursor } from '@/utils/helpers';
 
 export const notifKeys = {
   all: ['notifications'],
@@ -10,7 +11,7 @@ export const useNotifications = (params = {}) => {
   return useInfiniteQuery({
     queryKey: [...notifKeys.all, params],
     queryFn: ({ pageParam = null }) => notifService.getNotifications({ ...params, cursor: pageParam, limit: 20 }),
-    getNextPageParam: (lastPage) => lastPage?.data?.hasNextPage ? lastPage.data.endCursor : undefined,
+    getNextPageParam: getNextCursor,
   });
 };
 

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import * as socialService from '../../../services/social.service';
+import { getNextCursor } from '@/utils/helpers';
 
 export const socialKeys = {
   all: ['social'],
@@ -15,7 +16,7 @@ export const useFollowers = (userId) => {
   return useInfiniteQuery({
     queryKey: socialKeys.followers(userId),
     queryFn: ({ pageParam = null, signal }) => socialService.getFollowers(userId, pageParam, undefined, signal),
-    getNextPageParam: (lastPage) => lastPage?.data?.hasNextPage ? lastPage.data.endCursor : undefined,
+    getNextPageParam: getNextCursor,
     enabled: !!userId,
   });
 };
@@ -24,7 +25,7 @@ export const useFollowing = (userId) => {
   return useInfiniteQuery({
     queryKey: socialKeys.following(userId),
     queryFn: ({ pageParam = null, signal }) => socialService.getFollowing(userId, pageParam, undefined, signal),
-    getNextPageParam: (lastPage) => lastPage?.data?.hasNextPage ? lastPage.data.endCursor : undefined,
+    getNextPageParam: getNextCursor,
     enabled: !!userId,
   });
 };

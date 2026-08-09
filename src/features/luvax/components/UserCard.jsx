@@ -49,7 +49,7 @@ export function UserCard({ user, onAvatarClick, onFollowToggle, initiallyFollowi
           {user.isVerified && <LxIcon name="check" size={14} color={v.accent} />}
         </div>
         <div style={{ fontFamily: v.fontBody, fontSize: compact ? 10 : 12, color: v.ink3, marginTop: 2, whiteSpace: compact ? 'nowrap' : 'normal', overflow: compact ? 'hidden' : 'visible', textOverflow: compact ? 'ellipsis' : 'clip' }}>
-          {user.bio || user.headline || `@${user.username || 'unknown'}`}
+          {user.bio || `@${user.username || 'unknown'}`}
         </div>
       </div>
 

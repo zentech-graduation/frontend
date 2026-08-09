@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
 import { v } from '@/config/tokens';
-import { extractPageContent } from '@/utils/helpers';
+import { extractPageContent, getDisplayName, getUserSummary } from '@/utils/helpers';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests, useApproveFollowRequest, useRejectFollowRequest } from '../hooks/useSocial';
 import { useNotifications, useMarkAllAsRead } from '../hooks/useNotifications';
-import { useUserProfile } from '../hooks/useUsers';
 import { useRelativeTime } from '../hooks/useRelativeTime';
+
+// Keyed on the notification_type enum values the backend actually sends.
+// The previous mapping tested for 'like' and 'comment', which are not members
+// of that enum, so every row fell through to the generic wording.
+const NOTIFICATION_TEXT = {
+  like_post: 'liked your post',
+  like_comment: 'liked your comment',
+  comment_post: 'commented on your post',
+  reply_comment: 'replied to your comment',
+  follow: 'started following you',
+  follow_request: 'requested to follow you',
+  mention_post: 'mentioned you in a post',
+  mention_comment: 'mentioned you in a comment',
+  story_view: 'viewed your story',
+  message: 'sent you a message',
+};
 
 const TYPE_ICON = {
   like: 'heart', follow: 'profile', follow_request: 'profile',
@@ -18,17 +33,18 @@ const TYPE_COLOR = {
 };
 
 function NotifRow({ n, navigate, onAccept, onDecline }) {
-  const { data: userProfileData } = useUserProfile(n.actorId);
-  const actorProfile = userProfileData?.data || userProfileData;
+  // NotificationResponse embeds the actor as a UserSummaryResponse. There is
+  // no `n.actorId`, so no per-row profile fetch is needed.
+  const actor = getUserSummary(n, 'actor');
   const timeStr = useRelativeTime(n.createdAt);
 
   const isFollow = n.type === 'follow' || n.type === 'follow_request';
-  const text = isFollow ? 'started following you' : n.type === 'like' ? 'liked your post' : 'interacted with you';
+  const text = NOTIFICATION_TEXT[n.type] ?? 'interacted with you';
   const icon = isFollow ? 'profile' : 'heart';
   const color = isFollow ? v.success : v.error;
 
-  const actorName = actorProfile?.username || actorProfile?.displayName || 'Someone';
-  const avatarSrc = actorProfile?.avatarUrl;
+  const actorName = getDisplayName(actor, 'Someone');
+  const avatarSrc = actor.avatarUrl;
 
   return (
     <div onClick={() => n.entityId && navigate('post', { post: { id: n.entityId } })} style={{
@@ -40,7 +56,7 @@ function NotifRow({ n, navigate, onAccept, onDecline }) {
       position: 'relative',
     }}>
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <LxAvatar size={40} idx={n.actorProfile?.idx || 0} src={avatarSrc} />
+        <LxAvatar size={40} src={avatarSrc} />
         <div style={{
           position: 'absolute', bottom: -2, right: -2,
           width: 20, height: 20, borderRadius: '50%',
@@ -54,7 +70,7 @@ function NotifRow({ n, navigate, onAccept, onDecline }) {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
-          <strong style={{ fontWeight: 600, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); navigate('profile', { user: { id: n.actorId } }); }}>{actorName}</strong> <span style={{ color: v.ink2 }}>{text}</span>
+          <strong style={{ fontWeight: 600, cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); navigate('profile', { user: actor }); }}>{actorName}</strong> <span style={{ color: v.ink2 }}>{text}</span>
         </div>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeStr}</div>
       </div>
@@ -66,7 +82,7 @@ function NotifRow({ n, navigate, onAccept, onDecline }) {
             size="sm"
             onClick={(event) => {
               event.stopPropagation();
-              onAccept?.(n.actorId);
+              onAccept?.(actor.id);
             }}
           >
             accept
@@ -76,7 +92,7 @@ function NotifRow({ n, navigate, onAccept, onDecline }) {
             size="sm"
             onClick={(event) => {
               event.stopPropagation();
-              onDecline?.(n.actorId);
+              onDecline?.(actor.id);
             }}
           >
             decline
@@ -88,7 +104,8 @@ function NotifRow({ n, navigate, onAccept, onDecline }) {
 }
 
 function RequestRow({ req, navigate, onAccept, onDecline }) {
-  const user = req.requester || {};
+  // FollowRequestResponse names the requesting user `follower`.
+  const user = getUserSummary(req, 'follower');
   const timeStr = useRelativeTime(req.createdAt);
   return (
     <div style={{
@@ -111,14 +128,14 @@ function RequestRow({ req, navigate, onAccept, onDecline }) {
 
       <div style={{ flex: 1, minWidth: 0, alignSelf: 'center' }}>
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, lineHeight: 1.4 }}>
-          <strong onClick={() => navigate('profile', { user: { id: user.id } })} style={{ fontWeight: 600, cursor: 'pointer' }}>{user.username}</strong> <span style={{ color: v.ink2 }}>requested to follow you</span>
+          <strong onClick={() => navigate('profile', { user })} style={{ fontWeight: 600, cursor: 'pointer' }}>{getDisplayName(user)}</strong> <span style={{ color: v.ink2 }}>requested to follow you</span>
         </div>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>{timeStr}</div>
       </div>
 
       <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
-        <LxBtn variant="primary" size="sm" onClick={() => onAccept(req.requesterId || user.id)}>accept</LxBtn>
-        <LxBtn variant="ghost" size="sm" onClick={() => onDecline(req.requesterId || user.id)}>decline</LxBtn>
+        <LxBtn variant="primary" size="sm" onClick={() => onAccept(user.id)}>accept</LxBtn>
+        <LxBtn variant="ghost" size="sm" onClick={() => onDecline(user.id)}>decline</LxBtn>
       </div>
     </div>
   );
@@ -134,7 +151,7 @@ export function NotificationsScreen({ navigate }) {
   const { data: notifsData, isLoading: isLoadingNotifs } = useNotifications();
   const markAllAsRead = useMarkAllAsRead();
 
-  const requests = requestsResponse?.data || requestsResponse || [];
+  const requests = extractPageContent(requestsResponse);
   
   let notifs = notifsData?.pages?.flatMap(page => extractPageContent(page)) || [];
 

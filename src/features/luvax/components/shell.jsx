@@ -1,4 +1,5 @@
 import { v } from '@/config/tokens';
+import { extractPageContent } from '@/utils/helpers';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar } from './primitives';
 import { usePendingFollowRequests } from '../hooks/useSocial';
@@ -16,9 +17,9 @@ export function LxTopTabs({ active, navigate, compact = false }) {
   ];
   
   const { data: requestsResponse } = usePendingFollowRequests();
-  const requests = requestsResponse?.data || requestsResponse || [];
+  const requests = extractPageContent(requestsResponse);
   const { data: unreadResponse } = useUnreadCount();
-  const unreadCount = unreadResponse?.data?.count || 0;
+  const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
   return (
     <div style={{ display: 'flex', alignItems: 'stretch', height: compact ? 52 : 56, gap: compact ? 38 : 74, flex: '0 0 auto', justifyContent: 'center', width: '100%', maxWidth: compact ? 300 : 596, margin: compact ? '0 0 0 130px' : '0 auto' }}>
@@ -82,9 +83,9 @@ export function LxAppBar({ screen, navigate, params, viewport }) {
   const sideWidth = isDesktop ? 280 : isTablet ? 244 : 'auto';
 
   const { data: requestsResponse } = usePendingFollowRequests();
-  const requests = requestsResponse?.data || requestsResponse || [];
+  const requests = extractPageContent(requestsResponse);
   const { data: unreadResponse } = useUnreadCount();
-  const unreadCount = unreadResponse?.data?.count || 0;
+  const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
   const isMobile = viewport === 'mobile';
 
@@ -211,9 +212,9 @@ export function LxBottomNav({ active, navigate }) {
   ];
   
   const { data: requestsResponse } = usePendingFollowRequests();
-  const requests = requestsResponse?.data || requestsResponse || [];
+  const requests = extractPageContent(requestsResponse);
   const { data: unreadResponse } = useUnreadCount();
-  const unreadCount = unreadResponse?.data?.count || 0;
+  const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
   return (
     <nav style={{
