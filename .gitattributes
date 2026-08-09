@@ -13,7 +13,7 @@
 #
 # Luvax.html is a Claude Design export whose payload is base64 and gzip data
 # embedded in the markup. Rewriting its line endings would corrupt the bundle.
-docs/design/Luvax.html -text
+docs/design/Luvax.html binary
 
 *.png binary
 *.jpg binary
