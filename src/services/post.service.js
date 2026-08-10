@@ -151,16 +151,68 @@ export const getCommentReplies = async (commentId, params = {}) => {
 
 /**
  * Creates a comment or reply on a post.
+ *
+ * When an idempotency key is supplied it travels as the `Idempotency-Key`
+ * header, which the backend honours by returning the original comment on a
+ * replay instead of creating a second one.
  * @param {string} postId - The ID of the post.
- * @param {{ parentId?: string|null, content: string }} data - Comment payload.
+ * @param {{ parentId?: string|null, content: string, idempotencyKey?: string }} data - Comment payload.
  * @returns {Promise<Object>} ApiResponse<Comment>.
  */
 export const createComment = async (postId, data) => {
-  const response = await axiosInstance.post(`${POST_API_PATH}/${postId}/comments`, {
-    postId,
-    parentId: data.parentId ?? null,
-    content: data.content,
-  });
+  const response = await axiosInstance.post(
+    `${POST_API_PATH}/${postId}/comments`,
+    {
+      postId,
+      parentId: data.parentId ?? null,
+      content: data.content,
+    },
+    data.idempotencyKey ? { headers: { 'Idempotency-Key': data.idempotencyKey } } : undefined
+  );
+  return response.data;
+};
+
+/**
+ * Likes a comment.
+ *
+ * The response carries no body beyond the envelope, so the caller is
+ * responsible for reflecting the new count.
+ * @param {string} commentId - The ID of the comment.
+ * @returns {Promise<Object>} ApiResponse<void>.
+ */
+export const likeComment = async (commentId) => {
+  const response = await axiosInstance.post(`/comments/${commentId}/like`);
+  return response.data;
+};
+
+/**
+ * Removes the viewer's like from a comment.
+ * @param {string} commentId - The ID of the comment.
+ * @returns {Promise<Object>} ApiResponse<void>.
+ */
+export const unlikeComment = async (commentId) => {
+  const response = await axiosInstance.delete(`/comments/${commentId}/like`);
+  return response.data;
+};
+
+/**
+ * Replaces the body of a comment the viewer authored.
+ * @param {string} commentId - The ID of the comment.
+ * @param {string} content - The new body; the backend requires it non-blank and at most 2200 characters.
+ * @returns {Promise<Object>} ApiResponse<Comment>.
+ */
+export const editComment = async (commentId, content) => {
+  const response = await axiosInstance.patch(`/comments/${commentId}`, { content });
+  return response.data;
+};
+
+/**
+ * Soft-deletes a comment the viewer authored, together with every descendant.
+ * @param {string} commentId - The ID of the comment.
+ * @returns {Promise<Object>} ApiResponse<void>.
+ */
+export const deleteComment = async (commentId) => {
+  const response = await axiosInstance.delete(`/comments/${commentId}`);
   return response.data;
 };
 
@@ -180,6 +232,10 @@ export const postService = {
   getComments,
   getCommentReplies,
   createComment,
+  likeComment,
+  unlikeComment,
+  editComment,
+  deleteComment,
 };
 
 export default postService;

@@ -4,52 +4,139 @@ import { v } from '@/config/tokens';
 import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
-import { useCommentReplies } from '../hooks/usePosts';
+import { useCommentReplies, useDeleteComment, useEditComment, useToggleCommentLike } from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
+import { routeTo } from '@/config/constants';
 
 const HEART_COLOR = 'var(--lx-error)';
+// Mirrors the backend's @Size(max = 2200) on the comment body. The client stops
+// at the same number rather than inventing a limit of its own.
+const COMMENT_MAX_LENGTH = 2200;
 
 function CommentRow({ comment, onReply, indent = 0, postId }) {
-  const [liked, setLiked] = useState(false);
   const [heartBurst, setHeartBurst] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [commentMenuOpen, setCommentMenuOpen] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(comment.content);
+  const [actionError, setActionError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const commentMenuButtonRef = useRef(null);
+  const navigate = useNavigate();
 
   // CommentResponse embeds the author as a UserSummaryResponse, so no
   // per-row profile fetch is needed. There is no `comment.userId`.
   const author = getUserSummary(comment);
   const authorName = getDisplayName(author);
+  const currentUser = useAuthStore((state) => state.user);
+  // Ownership comes from the response rather than from anything the client
+  // remembers about who wrote what.
+  const isOwn = Boolean(author.id && currentUser?.id && author.id === currentUser.id);
 
   const timeStr = useRelativeTime(comment.createdAt, { seedKey: comment.id });
 
   const { data: repliesResponse, isLoading: repliesLoading } = useCommentReplies(comment.id, showReplies);
   const replies = extractPageContent(repliesResponse);
 
+  const toggleLike = useToggleCommentLike(postId);
+  const editComment = useEditComment(postId);
+  const deleteComment = useDeleteComment(postId);
+
   const isNestedReply = indent > 0;
   const nestedOffset = isNestedReply ? 23 : 0;
   const hasReplies = comment.replyCount > 0;
 
+  // The like state and the count both come from the query cache, so the same
+  // comment rendered in two places cannot disagree with itself.
+  const liked = Boolean(comment.isLiked);
+  const likeCount = comment.likeCount ?? 0;
+
+  const trimmedDraft = draft.trim();
+  const draftTooLong = draft.length > COMMENT_MAX_LENGTH;
+  const canSaveEdit = trimmedDraft.length > 0 && !draftTooLong && !editComment.isPending;
+
   const handleLikeToggle = () => {
+    // The backend rejects a like on your own comment, so the control is absent
+    // rather than present and failing. This guard covers the menu path too.
+    if (isOwn) {
+      return;
+    }
+
+    setActionError('');
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked((value) => !value);
+    toggleLike.mutate(
+      { commentId: comment.id, isLiked: liked, parentId: comment.parentId },
+      { onError: (error) => setActionError(error?.message || 'that did not work. try again.') }
+    );
+  };
+
+  const startEditing = () => {
+    setDraft(comment.content);
+    setActionError('');
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setDraft(comment.content);
+    setActionError('');
+  };
+
+  const submitEdit = () => {
+    if (!canSaveEdit) {
+      return;
+    }
+
+    editComment.mutate(
+      { commentId: comment.id, content: trimmedDraft, parentId: comment.parentId },
+      {
+        onSuccess: () => {
+          setEditing(false);
+          setActionError('');
+        },
+        // The editor stays open holding the draft. The comment above it still
+        // shows the saved body, so a rejected edit never reads as though it went
+        // through.
+        onError: (error) => setActionError(error?.message || 'that edit could not be saved.'),
+      }
+    );
+  };
+
+  const confirmDelete = () => {
+    deleteComment.mutate(
+      { commentId: comment.id, parentId: comment.parentId },
+      {
+        onSuccess: () => setDeleteOpen(false),
+        onError: (error) => {
+          setDeleteOpen(false);
+          setActionError(error?.message || 'that comment could not be deleted.');
+        },
+      }
+    );
   };
 
   const commentMenuItems = [
-    { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
+    ...(isOwn
+      ? []
+      : [{ id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle }]),
     { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, comment.content) },
     { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
     {
       id: 'view-profile',
       icon: 'profile',
       label: "View author's profile",
-      onClick: () => (author.id ? navigate?.('profile', { user: author }) : null),
+      onClick: () => (author.id ? navigate(routeTo.userProfile(author.id)) : null),
     },
-    { id: 'report', icon: 'flag', label: 'Report', tone: 'danger', separator: true, onClick: () => {} },
+    ...(isOwn
+      ? [
+          { id: 'edit', icon: 'edit', label: 'Edit', separator: true, onClick: startEditing },
+          { id: 'delete', icon: 'trash', label: 'Delete', tone: 'danger', onClick: () => setDeleteOpen(true) },
+        ]
+      : [{ id: 'report', icon: 'flag', label: 'Report', tone: 'danger', separator: true, onClick: () => {} }]),
   ];
 
   return (
@@ -70,13 +157,67 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
           <LxAvatar size={34} src={author.avatarUrl} />
         </div>
         <div style={{ minWidth: 0, marginLeft: indent + nestedOffset }}>
+          {comment.pinned ? (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                marginBottom: 5,
+                fontFamily: v.fontMono,
+                fontSize: 9,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: v.accent,
+              }}
+            >
+              <LxIcon name="heart" size={9} color={v.accent} filled />
+              <span>top comment</span>
+            </div>
+          ) : null}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexWrap: 'wrap', lineHeight: 1.42 }}>
             <span style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink }}>{authorName}</span>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12.5, color: v.ink }}>{comment.content}</span>
+            {editing ? null : (
+              <span style={{ fontFamily: v.fontBody, fontSize: 12.5, color: v.ink }}>{comment.content}</span>
+            )}
           </div>
+          {editing ? (
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                rows={2}
+                aria-label="edit comment"
+                style={{
+                  width: '100%',
+                  resize: 'vertical',
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: `1px solid ${draftTooLong ? v.error : v.border}`,
+                  background: v.surface,
+                  color: v.ink,
+                  fontFamily: v.fontBody,
+                  fontSize: 12.5,
+                  outline: 'none',
+                }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <LxBtn variant="primary" size="sm" onClick={submitEdit} disabled={!canSaveEdit}>
+                  {editComment.isPending ? 'saving...' : 'save'}
+                </LxBtn>
+                <LxBtn variant="ghost" size="sm" onClick={cancelEditing}>cancel</LxBtn>
+                <span style={{ marginLeft: 'auto', fontFamily: v.fontMono, fontSize: 10, color: draftTooLong ? v.error : v.ink3 }}>
+                  {draft.length}/{COMMENT_MAX_LENGTH}
+                </span>
+              </div>
+            </div>
+          ) : null}
+          {actionError ? (
+            <div style={{ marginTop: 6, fontFamily: v.fontBody, fontSize: 11.5, color: v.error }}>{actionError}</div>
+          ) : null}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6, fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>
             <span>{timeStr}</span>
-            <span>{liked ? comment.likeCount + 1 : comment.likeCount} likes</span>
+            <span>{likeCount} likes</span>
             <button
               type="button"
               onClick={() => onReply({ id: comment.id, author: authorName, text: comment.content })}
@@ -108,16 +249,23 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
             </button>
           ) : null}
         </div>
-        <button
-          type="button"
-          onClick={handleLikeToggle}
-          className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
-          style={{ position: 'absolute', top: 16, right: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-        >
-          <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
-            <LxIcon name="heart" size={16} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
-          </span>
-        </button>
+        {/* The backend refuses a like on your own comment, so the affordance is
+            absent there rather than present and always failing. The count stays
+            visible as text either way, so nothing is hidden from the author. */}
+        {isOwn ? null : (
+          <button
+            type="button"
+            onClick={handleLikeToggle}
+            aria-label={liked ? 'unlike comment' : 'like comment'}
+            aria-pressed={liked}
+            className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
+            style={{ position: 'absolute', top: 16, right: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          >
+            <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
+              <LxIcon name="heart" size={16} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
+            </span>
+          </button>
+        )}
       </div>
       {showReplies && hasReplies ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -131,6 +279,27 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
         </div>
       ) : null}
       <LxDropdownMenu anchorRef={commentMenuButtonRef} open={commentMenuOpen} onClose={() => setCommentMenuOpen(false)} items={commentMenuItems} width={214} align="right" />
+
+      <LxModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="delete comment"
+        actions={
+          <>
+            <LxBtn variant="ghost" onClick={() => setDeleteOpen(false)}>cancel</LxBtn>
+            <LxBtn variant="danger" onClick={confirmDelete}>
+              {deleteComment.isPending ? 'deleting...' : 'delete'}
+            </LxBtn>
+          </>
+        }
+      >
+        {/* Deletion cascades to the whole subtree and leaves no tombstone, so
+            the consequence is spelled out when there is one, and left unsaid
+            when the comment is a leaf. */}
+        {hasReplies
+          ? `deleting this comment also deletes its ${comment.replyCount === 1 ? 'reply' : `${comment.replyCount} replies`} and any replies to those. this cannot be undone.`
+          : 'are you sure you want to delete this comment? this cannot be undone.'}
+      </LxModal>
     </div>
   );
 }
