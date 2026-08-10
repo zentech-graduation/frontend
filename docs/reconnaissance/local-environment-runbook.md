@@ -217,6 +217,38 @@ accepts. Two cases that the form previously rejected on its own are valid:
 A freshly registered account still lands on the verification notice and still needs the SQL above
 before it can log in.
 
+### Update: a session now survives a reload, and screens have addresses
+
+Two later changes affect the startup and login path described above. See `docs/url-routing/`.
+
+Signing in sets an `HttpOnly` cookie named `luvax_refresh`, scoped to `/api/v1/auth`. A reload now
+restores the session from it instead of returning you to the sign-in page, so the log-in step no
+longer has to be repeated after every refresh. Nothing else about signing in changed, and the
+verification SQL in step 5 is still required.
+
+The whole signed-in application no longer lives at `/app`. Every screen has its own address, so you
+can go straight to the one you want instead of clicking through:
+
+```
+http://localhost:5173/app                     feed
+http://localhost:5173/app/explore             explore
+http://localhost:5173/app/settings            settings
+http://localhost:5173/app/profile             your own profile
+http://localhost:5173/app/u/<userId>          someone else's profile
+http://localhost:5173/app/p/<postId>          a post
+```
+
+The full table is in `docs/url-routing/route-table.md`.
+
+Two consequences worth knowing when testing:
+
+- Signing out now genuinely revokes the session server-side. It previously failed silently, so a
+  "signed out" browser stayed usable. If you need a clean slate, sign out and reload; you will land
+  on the sign-in page.
+- To reach an empty session without signing out, clear the `luvax_refresh` cookie for
+  `localhost`. Clearing `localStorage` alone is no longer enough, because the cookie is what
+  restores the session.
+
 ## 6. Seed the demo data
 
 ```bash

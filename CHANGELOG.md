@@ -6,7 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Every screen in the signed-in application now has its own address, so any of them can be linked, bookmarked, shared, and reloaded.
+- The browser back and forward buttons now move between screens instead of leaving the application.
+- An unrecognised address inside the application now shows a "this page doesn't exist" panel with a way back to the feed, keeping the navigation in place.
+
+### Changed
+- Reloading the page no longer signs you out; the session is restored from the refresh cookie, and no token is ever written to browser storage.
+- A screen now reads what it needs from the address, so opening a link to a profile, a post, a follower list, or a search shows the same thing it showed the person who sent it.
+- Moving to a new screen starts at the top of the page, and going back returns to where you were.
+
+### Security
+- Credentials are now always sent on the authentication requests that carry the refresh cookie, rather than depending on an environment variable that was never set; without this a cross-origin deployment would drop the cookie and sign users out on every reload.
+
 ### Fixed
+- Signing out now actually ends the session; the request was being sent unauthenticated, so the server rejected it and the session stayed valid.
+- Sessions no longer end on a brief network failure during startup, which previously cleared a perfectly valid session.
+- Removed a duplicate second address for the Google sign-in callback page.
 - The feed and explore screens no longer fail with "Something went wrong" as soon as a post exists; posts now show the author's real name, avatar, and handle.
 - Following, blocking, and opening the author's profile from a post now act on the intended account instead of failing silently, and the edit and delete options appear on your own posts again.
 - Likes and saves you have already made now show as such when a post loads, instead of always appearing untouched.
