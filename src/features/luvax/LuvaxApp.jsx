@@ -1,25 +1,30 @@
 import { useState, useEffect } from 'react';
-import { TWEAK_DEFAULTS, ACCENT_PALETTES, FONT_MAP } from './constants/data';
+import { Outlet, matchPath, useLocation, useMatches, useNavigate } from 'react-router-dom';
+import { TWEAK_DEFAULTS, FONT_MAP } from './constants/data';
 import { useViewport } from './hooks/useViewport';
 import { LxShell, LxAppBar, LxBottomNav } from './components/shell';
 import { v } from '@/config/tokens';
-import { FeedScreen } from './components/FeedScreen';
-import { ExploreScreen } from './components/ExploreScreen';
-import { ComposerScreen } from './components/ComposerScreen';
-import { PostDetailScreen } from './components/PostDetailScreen';
-import { ProfileScreen } from './components/ProfileScreen';
-import { NotificationsScreen } from './components/NotificationsScreen';
-import { SettingsScreen } from './components/SettingsScreen';
-import { BlockedUsersScreen } from './components/BlockedUsersScreen';
-import { FollowersScreen } from './components/FollowersScreen';
-import { FollowingScreen } from './components/FollowingScreen';
-import { OnboardingScreen } from './components/OnboardingScreen';
-import { StoryViewScreen, StoryComposerScreen } from './components/StoryScreens';
-import { EditProfileScreen } from './components/EditProfileScreen';
-import { ChangePasswordScreen } from './components/ChangePasswordScreen';
-import { MessagesScreen } from '../messages/MessagesScreen';
+import { APP_SCREENS, DEFAULT_BASE_SCREEN } from '@/routes/appScreens';
+import { LuvaxTweaksProvider } from './LuvaxTweaksContext';
 
-// ─── Luvax App Root ────────────────────────────────────────────────────────
+/**
+ * Resolves the screen an overlay was opened from.
+ *
+ * Overlays record the address underneath them in history state, so going back,
+ * forward, or reloading all reproduce the same backdrop. Opening an overlay
+ * address cold carries no such state, and the feed stands in, which is what the
+ * screen-state implementation did whenever its history stack was empty.
+ */
+function resolveBaseScreen(backgroundPath) {
+  if (!backgroundPath) {
+    return DEFAULT_BASE_SCREEN;
+  }
+
+  const match = APP_SCREENS.find((entry) => matchPath({ path: entry.path, end: true }, backgroundPath));
+  return match ?? DEFAULT_BASE_SCREEN;
+}
+
+// ─── Luvax App Layout ──────────────────────────────────────────────────────
 export function LuvaxApp() {
   const [tweaks, setTweakState] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -35,21 +40,16 @@ export function LuvaxApp() {
       dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
     };
   });
-  const [screen, setScreen] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('lx_screen');
-      return saved ? JSON.parse(saved) : 'feed';
-    } catch { return 'feed'; }
-  });
-  const [params, setParams] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('lx_params');
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
-  });
-  const [history, setHistory] = useState([]);
   const [messagesThreadOpen, setMessagesThreadOpen] = useState(false);
   const viewport = useViewport();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const matches = useMatches();
+
+  const handle = matches[matches.length - 1]?.handle ?? {};
+  const screen = handle.screen ?? DEFAULT_BASE_SCREEN.screen;
+  const chrome = handle.chrome ?? 'shell';
+  const isOverlay = chrome === 'overlay';
 
   const setTweak = (keyOrEdits, val) => {
     const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
@@ -82,49 +82,6 @@ export function LuvaxApp() {
     return () => media.removeListener(handleChange);
   }, []);
 
-  const navigate = (to, p = {}) => {
-    if (typeof to === 'number') {
-      if (
-        to === -1 &&
-        screen === 'messages' &&
-        typeof window !== 'undefined' &&
-        typeof window.__lxMessagesBack === 'function' &&
-        window.__lxMessagesBack()
-      ) {
-        return;
-      }
-
-      if (to !== -1) {
-        return;
-      }
-
-      setHistory(prevHistory => {
-        const nextHistory = [...prevHistory];
-        const previousScreen = nextHistory.pop() || 'feed';
-        setScreen(previousScreen);
-        setParams({});
-
-        try {
-          sessionStorage.setItem('lx_screen', JSON.stringify(previousScreen));
-          sessionStorage.setItem('lx_params', JSON.stringify({}));
-        } catch (e) { /* ignore */ }
-
-        window.scrollTo(0, 0);
-        return nextHistory;
-      });
-      return;
-    }
-
-    setHistory(h => screen !== to ? [...h, screen] : h);
-    setScreen(to);
-    setParams(p);
-    try {
-      sessionStorage.setItem('lx_screen', JSON.stringify(to));
-      sessionStorage.setItem('lx_params', JSON.stringify(p));
-    } catch (e) { /* ignore */ }
-    window.scrollTo(0, 0);
-  };
-
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-theme', tweaks.dark ? 'dark' : 'light');
@@ -142,6 +99,17 @@ export function LuvaxApp() {
   }, [tweaks.dark, tweaks.accent, tweaks.font, tweaks.density]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // The visible screen and its parameters used to be mirrored here so a reload
+    // could restore them. The address bar holds that now, and a browser carrying
+    // the old keys would otherwise keep a second, stale copy of navigation state
+    // forever.
+    window.sessionStorage.removeItem('lx_screen');
+    window.sessionStorage.removeItem('lx_params');
+  }, []);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
     const handleMessagesThreadOpen = (event) => {
@@ -154,107 +122,77 @@ export function LuvaxApp() {
     };
   }, []);
 
-  const screenProps = { navigate, params, tweaks, setTweak, viewport };
-  const screens = {
-    feed:          <FeedScreen          {...screenProps} />,
-    explore:       <ExploreScreen       {...screenProps} />,
-    compose:       <ComposerScreen      {...screenProps} />,
-    profile:       <ProfileScreen       {...screenProps} />,
-    notifications: <NotificationsScreen {...screenProps} />,
-    settings:      <SettingsScreen      {...screenProps} />,
-    'edit-profile': <EditProfileScreen  {...screenProps} />,
-    'change-password': <ChangePasswordScreen {...screenProps} />,
-    blocked:       <BlockedUsersScreen  {...screenProps} />,
-    followers:     <FollowersScreen     {...screenProps} />,
-    following:     <FollowingScreen     {...screenProps} />,
-  };
+  const tweakContext = { tweaks, setTweak, viewport };
 
-  if (screen === 'onboarding') {
-    return <OnboardingScreen {...screenProps} />;
+  if (chrome === 'bare') {
+    return (
+      <LuvaxTweaksProvider value={tweakContext}>
+        <Outlet />
+      </LuvaxTweaksProvider>
+    );
   }
 
-  if (screen === 'messages') {
+  if (chrome === 'messages') {
     const msgTop = viewport === 'mobile' ? 0 : 56;
     const msgBottom = viewport === 'mobile' ? 56 : 0;
 
     return (
-      <div style={{ minHeight: '100vh', background: v.base }}>
-        {viewport !== 'mobile' || (screen === 'messages' && !messagesThreadOpen) ? (
-          <LxAppBar screen={screen} navigate={navigate} params={params} viewport={viewport} />
-        ) : null}
-        <div
-          style={{
-            position: 'fixed',
-            top: msgTop,
-            bottom: msgBottom,
-            left: 0,
-            right: 0,
-            background: v.base,
-            zIndex: 10,
-          }}
-        >
+      <LuvaxTweaksProvider value={tweakContext}>
+        <div style={{ minHeight: '100vh', background: v.base }}>
+          {viewport !== 'mobile' || !messagesThreadOpen ? (
+            <LxAppBar screen={screen} navigate={navigate} viewport={viewport} />
+          ) : null}
           <div
             style={{
-              width: '100%',
-              maxWidth: '100%',
-              height: '100%',
-              margin: '0 auto',
+              position: 'fixed',
+              top: msgTop,
+              bottom: msgBottom,
+              left: 0,
+              right: 0,
               background: v.base,
-              overflow: 'hidden',
+              zIndex: 10,
             }}
           >
-            <MessagesScreen {...screenProps} />
+            <div
+              style={{
+                width: '100%',
+                maxWidth: '100%',
+                height: '100%',
+                margin: '0 auto',
+                background: v.base,
+                overflow: 'hidden',
+              }}
+            >
+              <Outlet />
+            </div>
           </div>
+          {viewport === 'mobile' ? <LxBottomNav active={screen} navigate={navigate} /> : null}
         </div>
-        {viewport === 'mobile' ? <LxBottomNav active={screen} navigate={navigate} /> : null}
-      </div>
+      </LuvaxTweaksProvider>
     );
   }
 
-  if (screen === 'post') {
-    const baseScreen = [...history].reverse().find(
-      (s) => s !== 'post' && s !== 'story-view' && s !== 'story-compose' && s !== 'onboarding'
-    ) || 'feed';
-    const baseShowRail = (baseScreen === 'feed' || baseScreen === 'explore') && (viewport === 'desktop' || viewport === 'tablet');
-
-    const baseScreenParams = baseScreen === 'profile' && params?.user
-      ? { user: params.user }
-      : {};
+  if (isOverlay) {
+    const base = resolveBaseScreen(location.state?.background);
+    const baseShowRail = Boolean(base.rightRail) && (viewport === 'desktop' || viewport === 'tablet');
 
     return (
-      <>
-        <LxShell screen={baseScreen} navigate={navigate} params={baseScreenParams} showRightRail={baseShowRail}>
-          {baseScreen === 'profile'
-            ? <ProfileScreen {...screenProps} params={baseScreenParams} />
-            : screens[baseScreen] || screens.feed}
+      <LuvaxTweaksProvider value={tweakContext}>
+        <LxShell screen={base.screen} navigate={navigate} showRightRail={baseShowRail}>
+          {base.element}
         </LxShell>
-        <PostDetailScreen {...screenProps} overlay />
-      </>
+        <Outlet />
+      </LuvaxTweaksProvider>
     );
   }
 
-  const isStory = screen === 'story-view' || screen === 'story-compose';
-  if (isStory) {
-    const baseScreen = [...history].reverse().find(
-      s => s !== 'story-view' && s !== 'story-compose' && s !== 'onboarding'
-    ) || 'feed';
-    const baseShowRail = (baseScreen === 'feed' || baseScreen === 'explore') && (viewport === 'desktop' || viewport === 'tablet');
-    const Overlay = screen === 'story-view' ? StoryViewScreen : StoryComposerScreen;
-    return (
-      <>
-        <LxShell screen={baseScreen} navigate={navigate} params={{}} showRightRail={baseShowRail}>
-          {screens[baseScreen] || screens.feed}
-        </LxShell>
-        <Overlay {...screenProps} />
-      </>
-    );
-  }
-
-  const showRail = (screen === 'feed' || screen === 'explore') && (viewport === 'desktop' || viewport === 'tablet');
+  const showRail = Boolean(handle.rightRail) && (viewport === 'desktop' || viewport === 'tablet');
 
   return (
-    <LxShell screen={screen} navigate={navigate} params={params} showRightRail={showRail}>
-      {screens[screen] || screens.feed}
-    </LxShell>
+    <LuvaxTweaksProvider value={tweakContext}>
+      <LxShell screen={screen} navigate={navigate} showRightRail={showRail}>
+        <Outlet />
+      </LxShell>
+    </LuvaxTweaksProvider>
   );
 }

@@ -1,4 +1,6 @@
+import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
+import { ROUTES } from '@/config/constants';
 import { LxBtn } from './primitives';
 
 // [BLOCKED BY: BE auth/change-password endpoint]
@@ -8,7 +10,8 @@ import { LxBtn } from './primitives';
 // @PostMapping binds to it anywhere in AuthController/AuthApi as of this
 // fix). This form stays disabled until that endpoint ships — it must not
 // call a route that does not exist.
-export function ChangePasswordScreen({ navigate }) {
+export function ChangePasswordScreen() {
+  const navigate = useNavigate();
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 32px', background: v.base }}>
       <div style={{ maxWidth: 520, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -17,7 +20,7 @@ export function ChangePasswordScreen({ navigate }) {
         </div>
 
         <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
-          <LxBtn variant="ghost" onClick={() => navigate('settings')} style={{ flex: 1 }}>
+          <LxBtn variant="ghost" onClick={() => navigate(ROUTES.SETTINGS)} style={{ flex: 1 }}>
             back to settings
           </LxBtn>
           <LxBtn variant="primary" disabled style={{ flex: 1 }}>

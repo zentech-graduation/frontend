@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/config/constants';
 import { v } from '@/config/tokens';
 import { LxAvatar, LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -19,7 +21,8 @@ function fieldStyle() {
   };
 }
 
-export function EditProfileScreen({ navigate }) {
+export function EditProfileScreen() {
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const updateProfile = useUpdateMyProfile();
@@ -48,7 +51,7 @@ export function EditProfileScreen({ navigate }) {
         onSuccess: (data) => {
           const updatedUser = data?.data || data;
           setUser({ ...user, ...updatedUser });
-          navigate('profile');
+          navigate(ROUTES.PROFILE);
         },
         onError: (error) => {
           setFormError(error.message || "we couldn't save your profile. try again.");
@@ -110,7 +113,7 @@ export function EditProfileScreen({ navigate }) {
         ) : null}
 
         <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
-          <LxBtn variant="ghost" onClick={() => navigate('profile')} style={{ flex: 1 }} disabled={updateProfile.isPending}>
+          <LxBtn variant="ghost" onClick={() => navigate(ROUTES.PROFILE)} style={{ flex: 1 }} disabled={updateProfile.isPending}>
             cancel
           </LxBtn>
           <LxBtn variant="primary" onClick={handleSave} style={{ flex: 1 }} disabled={updateProfile.isPending}>

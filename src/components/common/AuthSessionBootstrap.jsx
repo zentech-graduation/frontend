@@ -10,7 +10,6 @@ const GUEST_PATHS = new Set([
   '/reset-password',
   '/verify-email',
   '/oauth2/callback',
-  '/oauth/callback',
 ]);
 
 export default function AuthSessionBootstrap() {

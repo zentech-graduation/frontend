@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
@@ -10,7 +11,7 @@ import { useRelativeTime } from '../hooks/useRelativeTime';
 
 const HEART_COLOR = 'var(--lx-error)';
 
-function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
+function CommentRow({ comment, onReply, indent = 0, postId }) {
   const [liked, setLiked] = useState(false);
   const [heartBurst, setHeartBurst] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -124,7 +125,7 @@ function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
             <div style={{ padding: '8px 28px 8px 63px', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>loading replies...</div>
           ) : (
             replies.map((reply) => (
-              <CommentRow key={reply.id} comment={reply} onReply={onReply} indent={indent + 30} navigate={navigate} postId={postId} />
+              <CommentRow key={reply.id} comment={reply} onReply={onReply} indent={indent + 30} postId={postId} />
             ))
           )}
         </div>
@@ -134,7 +135,8 @@ function CommentRow({ comment, onReply, indent = 0, navigate, postId }) {
   );
 }
 
-export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
+export function PostDetailScreen({ overlay = false }) {
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [saved, setSaved] = useState(false);
@@ -150,7 +152,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
   const commentsPaneRef = useRef(null);
   const commentInputRef = useRef(null);
 
-  const postId = params.postId || params.post?.id;
+  const { postId } = useParams();
   const { data: postResponse, isLoading, isError } = usePostDetail(postId);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -172,7 +174,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
     isFetchingNextPage: isFetchingNextComments,
   } = useTopLevelComments(postId);
 
-  const post = postResponse?.data || postResponse || params.post || {};
+  const post = postResponse?.data || postResponse || {};
   const author = getUserSummary(post);
   const targetUserId = author.id;
   const authorName = getDisplayName(author);
@@ -425,7 +427,7 @@ export function PostDetailScreen({ navigate, params = {}, overlay = false }) {
           <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>no comments yet.</div>
         ) : (
           comments.map((comment) => (
-            <CommentRow key={comment.id} comment={comment} onReply={handleReplySelect} navigate={navigate} postId={postId} />
+            <CommentRow key={comment.id} comment={comment} onReply={handleReplySelect} postId={postId} />
           ))
         )}
         {hasNextComments ? (

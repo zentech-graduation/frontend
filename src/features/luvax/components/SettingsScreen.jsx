@@ -1,4 +1,6 @@
+import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
+import { ROUTES } from '@/config/constants';
 import { LxIcon, LxBtn } from './primitives';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -6,6 +8,7 @@ import { authApi } from '@/api/authApi';
 import { clearAuthAndRedirect } from '@/api/axiosClient';
 import { extractPageContent } from '@/utils/helpers';
 import { useBlockedUsers } from '../hooks/useSocial';
+import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 
 // ─── Toggle ─────────────────────────────────────────────────────────────────
 function Toggle({ on, onChange, disabled = false }) {
@@ -68,7 +71,9 @@ function SettingsRow({ label, sub, control, onClick }) {
 }
 
 // ─── Settings Screen ─────────────────────────────────────────────────────────
-export function SettingsScreen({ navigate, tweaks, setTweak }) {
+export function SettingsScreen() {
+  const navigate = useNavigate();
+  const { tweaks, setTweak } = useLuvaxTweaks();
   const queryClient = useQueryClient();
   const logout = useAuthStore(state => state.logout);
 
@@ -99,8 +104,8 @@ export function SettingsScreen({ navigate, tweaks, setTweak }) {
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
         {/* Account */}
         <SectionHeader>account</SectionHeader>
-        <SettingsRow label="edit profile" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate('edit-profile')} />
-        <SettingsRow label="change password" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate('change-password')} />
+        <SettingsRow label="edit profile" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate(ROUTES.EDIT_PROFILE)} />
+        <SettingsRow label="change password" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate(ROUTES.CHANGE_PASSWORD)} />
         <SettingsRow
           label="email"
           sub={`${currentUser?.email ?? '—'}${currentUser?.isVerified ? ' · verified' : ''}`}
@@ -142,7 +147,7 @@ export function SettingsScreen({ navigate, tweaks, setTweak }) {
           sub="people you don't follow can dm you"
           control={<Toggle on={true} onChange={() => {}} disabled />}
         />
-        <SettingsRow label="blocked users" sub={`${blocks.length} blocked`} control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate('blocked')} />
+        <SettingsRow label="blocked users" sub={`${blocks.length} blocked`} control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate(ROUTES.BLOCKED_USERS)} />
 
         {/* Notifications */}
         <SectionHeader note="coming soon">notifications</SectionHeader>

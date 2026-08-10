@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar } from './primitives';
+import { STORIES } from '../constants/data';
+import { ROUTES } from '@/config/constants';
 
 const STORY_CARD_RADIUS = 18;
 const STORY_RATIO = 9 / 16;
@@ -76,15 +79,21 @@ function StoryStage({ children, onClose, footer, viewport }) {
 }
 
 // ─── Story View Screen ──────────────────────────────────────────────────────
-export function StoryViewScreen({ navigate, params, viewport: vpProp }) {
+export function StoryViewScreen({ viewport: vpProp }) {
+  const navigate = useNavigate();
+  const { storyId } = useParams();
   const vp = vpProp || useViewport();
-  const story = params?.story || { author: 'sol.r', idx: 1, type: 'photo', bg: v.surfaceRaised, caption: 'morning' };
+  // Stories are still the static reel from the design export; there is no story
+  // endpoint behind them yet, so the address resolves against that list. An
+  // unknown id falls back to the same placeholder the screen always used.
+  const story = STORIES.find((entry) => entry.id === storyId)
+    || { author: 'sol.r', idx: 1, type: 'photo', bg: v.surfaceRaised, caption: 'morning' };
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const t = setInterval(() => {
       setProgress(p => {
-        if (p >= 100) { clearInterval(t); navigate('feed'); return 100; }
+        if (p >= 100) { clearInterval(t); navigate(ROUTES.FEED); return 100; }
         return p + 1.5;
       });
     }, 80);
@@ -146,11 +155,11 @@ export function StoryViewScreen({ navigate, params, viewport: vpProp }) {
       )}
 
       {/* Tap zones */}
-      <button onClick={() => navigate('feed')} style={{
+      <button onClick={() => navigate(ROUTES.FEED)} style={{
         position: 'absolute', left: 0, top: 60, bottom: 80, width: '30%',
         background: 'transparent', border: 'none', cursor: 'pointer',
       }} aria-label="previous" />
-      <button onClick={() => navigate('feed')} style={{
+      <button onClick={() => navigate(ROUTES.FEED)} style={{
         position: 'absolute', right: 0, top: 60, bottom: 80, width: '30%',
         background: 'transparent', border: 'none', cursor: 'pointer',
       }} aria-label="next" />
@@ -181,14 +190,15 @@ export function StoryViewScreen({ navigate, params, viewport: vpProp }) {
   );
 
   return (
-    <StoryStage viewport={vp} onClose={() => navigate('feed')} footer={replyBar}>
+    <StoryStage viewport={vp} onClose={() => navigate(ROUTES.FEED)} footer={replyBar}>
       {card}
     </StoryStage>
   );
 }
 
 // ─── Story Composer Screen ──────────────────────────────────────────────────
-export function StoryComposerScreen({ navigate, viewport: vpProp }) {
+export function StoryComposerScreen({ viewport: vpProp }) {
+  const navigate = useNavigate();
   const vp = vpProp || useViewport();
   const [mode, setMode] = useState('photo');
   const [text, setText] = useState('');
@@ -268,7 +278,7 @@ export function StoryComposerScreen({ navigate, viewport: vpProp }) {
         ))}
       </div>
       <button
-        onClick={() => navigate('feed')}
+        onClick={() => navigate(ROUTES.FEED)}
         disabled={!canShare}
         style={{
           width: '100%', fontFamily: v.fontBody, fontSize: 14, fontWeight: 600,
@@ -283,7 +293,7 @@ export function StoryComposerScreen({ navigate, viewport: vpProp }) {
   );
 
   return (
-    <StoryStage viewport={vp} onClose={() => navigate('feed')} footer={controls}>
+    <StoryStage viewport={vp} onClose={() => navigate(ROUTES.FEED)} footer={controls}>
       {card}
     </StoryStage>
   );

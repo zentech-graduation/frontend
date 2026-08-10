@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/config/constants';
 import { v } from '@/config/tokens';
 import { INTEREST_CATEGORIES } from '../constants/data';
 import { LxIcon, LxTag, LxBtn } from './primitives';
@@ -12,7 +14,8 @@ function inputStyle() {
   };
 }
 
-export function OnboardingScreen({ navigate }) {
+export function OnboardingScreen() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [data, setData] = useState({
     email: '', password: '', username: '', displayName: '', bio: '', interests: [],
@@ -38,7 +41,7 @@ export function OnboardingScreen({ navigate }) {
           </p>
           <LxBtn variant="primary" size="lg" onClick={next} style={{ minWidth: 200 }}>get started</LxBtn>
           <div style={{ marginTop: 16, fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
-            already have an account? <span style={{ color: v.ink, cursor: 'pointer', fontWeight: 500 }} onClick={() => navigate('feed')}>sign in</span>
+            already have an account? <span style={{ color: v.ink, cursor: 'pointer', fontWeight: 500 }} onClick={() => navigate(ROUTES.FEED)}>sign in</span>
           </div>
         </div>
       ),
@@ -133,7 +136,7 @@ export function OnboardingScreen({ navigate }) {
           <p style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink2, lineHeight: 1.5, maxWidth: 300, margin: '0 auto 40px' }}>
             we sent a verification link to <strong style={{ color: v.ink }}>{data.email || 'your email'}</strong>. you can keep going while you wait.
           </p>
-          <LxBtn variant="primary" size="lg" onClick={() => navigate('feed')} style={{ minWidth: 200 }}>open feed</LxBtn>
+          <LxBtn variant="primary" size="lg" onClick={() => navigate(ROUTES.FEED)} style={{ minWidth: 200 }}>open feed</LxBtn>
         </div>
       ),
     },

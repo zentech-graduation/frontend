@@ -1,9 +1,12 @@
+import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
+import { routeTo } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
 
-export function ConversationInfoPanel({ activeThread, navigate, setPreviewItem, compact = false, mobileOverlay = false, onClose }) {
+export function ConversationInfoPanel({ activeThread, setPreviewItem, compact = false, mobileOverlay = false, onClose }) {
+  const navigate = useNavigate();
   if (!activeThread) return null;
 
   const panel = (
@@ -69,7 +72,7 @@ export function ConversationInfoPanel({ activeThread, navigate, setPreviewItem, 
         </div>
         <button
           type="button"
-          onClick={() => navigate('profile', { user: { id: activeThread.id, username: activeThread.username, displayName: activeThread.name } })}
+          onClick={() => activeThread?.id && navigate(routeTo.userProfile(activeThread.id))}
           style={{
             height: mobileOverlay ? 34 : compact ? 30 : 32,
             padding: mobileOverlay ? '0 20px' : compact ? '0 16px' : '0 18px',
