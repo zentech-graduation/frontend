@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Comments can be liked and unliked, and a comment you have already liked now shows as liked instead of appearing untouched.
+- You can edit your own comment in place, with the same length limit the server enforces.
+- You can delete your own comment after a confirmation that warns you when replies will go with it, which they always do.
+- Comments promoted for having the most likes are now labelled, so the order of the first few comments is explicable rather than arbitrary.
 - Every screen in the signed-in application now has its own address, so any of them can be linked, bookmarked, shared, and reloaded.
 - The browser back and forward buttons now move between screens instead of leaving the application.
 - An unrecognised address inside the application now shows a "this page doesn't exist" panel with a way back to the feed, keeping the navigation in place.
@@ -20,6 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Credentials are now always sent on the authentication requests that carry the refresh cookie, rather than depending on an environment variable that was never set; without this a cross-origin deployment would drop the cookie and sign users out on every reload.
 
 ### Fixed
+- The like count on a comment is no longer raised locally without anything being recorded; it now reflects what the server holds and is restored if a like fails.
+- The like control no longer appears on your own comments, where the server refuses it and the action could never succeed.
+- Submitting a comment twice in quick succession now creates one comment rather than two.
+- Opening a comment author's profile from the comment menu no longer throws.
 - Signing out now actually ends the session; the request was being sent unauthenticated, so the server rejected it and the session stayed valid.
 - Sessions no longer end on a brief network failure during startup, which previously cleared a perfectly valid session.
 - Removed a duplicate second address for the Google sign-in callback page.
