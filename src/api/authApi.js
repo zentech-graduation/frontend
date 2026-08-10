@@ -127,8 +127,13 @@ export const authApi = {
     return extractAuthSession(response);
   },
 
+  // The backend lists /auth/logout as an authenticated path, so it must go out
+  // on the client that attaches the bearer token. Sent unauthenticated it
+  // answers 401 without revoking the refresh token or expiring the refresh
+  // cookie, which would leave a "logged out" browser able to restore the
+  // session on the next reload.
   async logout(refreshToken = useAuthStore.getState().refreshToken) {
-    await publicClient.post(
+    await axiosClient.post(
       '/auth/logout',
       buildRequestBody({
         refreshToken: refreshToken ?? undefined,
