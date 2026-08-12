@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/config/constants';
 import { v } from '@/config/tokens';
-import { SUGGESTED_TAGS } from '../constants/data';
 import { LxAvatar, LxDivider, LxIcon, LxTag } from './primitives';
 import { useCreatePost } from '../hooks/usePosts';
 import { useMediaUpload } from '../hooks/useMediaUpload';
@@ -317,13 +316,10 @@ export function ComposerScreen() {
             <LxIcon name="hash" size={12} color={v.ink3} />
             hashtags {allTags.length > 0 ? <span style={{ color: v.accentText, marginLeft: 4 }}>({allTags.length})</span> : null}
           </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {SUGGESTED_TAGS.map((tag) => (
-              <LxTag key={tag} active={allTags.includes(tag)} onClick={() => insertTag(tag)}>
-                #{tag}
-              </LxTag>
-            ))}
-          </div>
+          {/* The suggested tag chips were a hardcoded list presented as though
+              the server had suggested them. Nothing suggests tags, so there is
+              nothing to offer here. Tags typed into the caption still count,
+              which is what the counter above reports. */}
         </div>
 
         <LxDivider mx={isTablet ? tabletLeftLineInset : 0} />

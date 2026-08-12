@@ -3,21 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent, getDisplayName, getUserSummary, isVideoMedia } from '@/utils/helpers';
-import { TOPICS } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag } from './primitives';
 import { useExplore } from '../hooks/usePosts';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { routeTo } from '@/config/constants';
-
-const SEARCH_BIOS = {
-  'mara.v': 'light, shadow, and the space between',
-  'sol.r': 'morning, window, coffee',
-  'jo.x': 'reading slowly in 2026',
-  'ren.ko': 'design, restraint',
-  'noa.b': 'before sunrise, always watching',
-  'lea.p': 'film grain, city silence',
-};
 
 function MiniCard({ p }) {
   const navigate = useNavigate();
@@ -88,7 +78,7 @@ function SearchResultPerson({ user }) {
               textOverflow: 'ellipsis',
             }}
           >
-            {SEARCH_BIOS[user.username] || 'quiet notes, passing thoughts'}
+            {user.bio || ''}
           </div>
         </div>
       </div>
@@ -185,7 +175,6 @@ export function ExploreScreen() {
   const posts = data?.pages?.flatMap(page => extractPageContent(page)) || [];
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
-  const suggestionChips = TOPICS.slice(0, 8);
   const people = posts
     .reduce((acc, post) => {
       const author = getUserSummary(post);
@@ -256,11 +245,10 @@ export function ExploreScreen() {
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ display: 'flex', gap: 6, padding: isSearching ? '12px 16px 0' : '12px 16px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {suggestionChips.map(t => (
-            <LxTag key={t} active={activeTopic === t} onClick={() => setActiveTopic(activeTopic === t ? null : t)}>
-              #{t}
-            </LxTag>
-          ))}
+          {/* The topic chips were a hardcoded list of invented topics. There is
+              no endpoint behind them, and a chip that filters nothing is a
+              control that lies about what it does. Hashtag search is the real
+              way to reach a tag. */}
         </div>
 
         {isSearching ? (

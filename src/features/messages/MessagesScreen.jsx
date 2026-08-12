@@ -1,439 +1,57 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
-import { THREADS } from './data/mockThreads';
-import { ConversationListPanel } from './components/ConversationListPanel';
-import { ChatCenterPanel } from './components/ChatCenterPanel';
-import { ConversationInfoPanel } from './components/ConversationInfoPanel';
-import { MediaPlaceholder } from './components/MediaPlaceholder';
-import { useLuvaxTweaks } from '@/features/luvax/LuvaxTweaksContext';
+import { LxIcon } from '@/features/luvax/components/primitives';
 
+/**
+ * Messages is not part of this build.
+ *
+ * This screen previously rendered a set of invented conversations from invented
+ * people, complete with photographs of real strangers taken from an image host
+ * and presented as their avatars. It was reachable from the navigation, and the
+ * conversation info panel offered "view profile" on those invented people,
+ * which navigated to a profile id that does not exist and landed the viewer on
+ * an error.
+ *
+ * The data has been deleted rather than hidden behind a flag. Hidden mock data
+ * comes back: someone re-enables the panel and the strangers return. Deleting
+ * it means the only way to put a conversation on this screen is to read one
+ * from the server, which is what building the feature would involve anyway.
+ *
+ * The backend implements messaging in full. Nothing here is blocked on it. The
+ * feature is out of scope for this build, and this screen says exactly that
+ * rather than showing a plausible substitute.
+ *
+ * The panel components under ./components are left in place and unimported.
+ * They are real UI with no data source, and removing them is a restructuring
+ * this phase does not take on. See
+ * docs/social-states-and-tabs/deferred-findings.md.
+ *
+ * This treatment is derived. The design export defines no state for a feature
+ * that is deliberately absent, so it reuses the centred-notice spacing, icon
+ * sizing and muted foreground the empty states elsewhere already use.
+ */
 export function MessagesScreen() {
-  const { viewport } = useLuvaxTweaks();
-  const [threads, setThreads] = useState(THREADS);
-  const [search, setSearch] = useState('');
-  const [draft, setDraft] = useState('');
-  const [replyingTo, setReplyingTo] = useState(null);
-  const [activeThreadId, setActiveThreadId] = useState('priya');
-  const [threadOpen, setThreadOpen] = useState(viewport !== 'mobile');
-  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
-  const [previewItem, setPreviewItem] = useState(null);
-  const [composerSeed, setComposerSeed] = useState(0);
-  const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
-  const listOnlyMobile = viewport === 'mobile' && !threadOpen;
-  const scrollerRef = useRef(null);
-
-  const filteredThreads = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return threads;
-    return threads.filter(
-      (thread) =>
-        thread.name.toLowerCase().includes(query) ||
-        thread.username.toLowerCase().includes(query) ||
-        thread.preview.toLowerCase().includes(query)
-    );
-  }, [search, threads]);
-
-  const activeThread = threads.find((thread) => thread.id === activeThreadId) || filteredThreads[0] || threads[0];
-
-  useEffect(() => {
-    if (!activeThreadId && filteredThreads[0]) {
-      if (viewport !== 'mobile') {
-        setActiveThreadId(filteredThreads[0].id);
-      }
-    } else if (activeThreadId && !threads.some((thread) => thread.id === activeThreadId)) {
-      setActiveThreadId(threads[0]?.id || null);
-    }
-  }, [activeThreadId, filteredThreads, threads, viewport]);
-
-  useEffect(() => {
-    if (viewport !== 'mobile' && !activeThreadId && threads[0]) {
-      setActiveThreadId(threads[0].id);
-    }
-  }, [viewport, activeThreadId, threads]);
-
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
-    scroller.scrollTop = scroller.scrollHeight;
-  }, [activeThreadId, threads]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    window.__lxMessagesCompose = () => {
-      handleCompose();
-      return true;
-    };
-    window.__lxMessagesBack = () => {
-      if (viewport === 'mobile' && threadOpen) {
-        setThreadOpen(false);
-        return true;
-      }
-      return false;
-    };
-
-    return () => {
-      if (window.__lxMessagesCompose) {
-        delete window.__lxMessagesCompose;
-      }
-      if (window.__lxMessagesBack) {
-        delete window.__lxMessagesBack;
-      }
-    };
-  }, [composerSeed, threadOpen, viewport]);
-
-  useEffect(() => {
-    if (viewport !== 'mobile') {
-      setThreadOpen(true);
-      setMobileInfoOpen(false);
-    }
-  }, [viewport]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(
-      new CustomEvent('lx_messages_thread_open', {
-        detail: { open: viewport === 'mobile' && threadOpen },
-      })
-    );
-  }, [threadOpen, viewport]);
-
-  const selectThread = (threadId) => {
-    setActiveThreadId(threadId);
-    if (viewport === 'mobile') {
-      setThreadOpen(true);
-      setMobileInfoOpen(false);
-    }
-    setThreads((current) =>
-      current.map((thread) =>
-        thread.id === threadId
-          ? { ...thread, unread: 0 }
-          : thread
-      )
-    );
-  };
-
-  const handleCompose = () => {
-    const newThreadId = `new-${composerSeed + 1}`;
-    const newThread = {
-      id: newThreadId,
-      idx: 6,
-      initials: 'N',
-      name: 'new conversation',
-      username: 'draft',
-      preview: 'start writing...',
-      time: 'now',
-      unread: 0,
-      accent: 'rgba(200, 169, 126, 0.16)',
-      mediaLabel: 'shared files',
-      media: [],
-      messages: [],
-    };
-
-    setComposerSeed((seed) => seed + 1);
-    setThreads((current) => [newThread, ...current]);
-    setActiveThreadId(newThreadId);
-    setDraft('');
-    setReplyingTo(null);
-  };
-
-  const handleSend = () => {
-    const value = draft.trim();
-    if (!value || !activeThread) return;
-
-    setThreads((current) =>
-      current.map((thread) => {
-        if (thread.id !== activeThread.id) return thread;
-        return {
-          ...thread,
-          preview: value,
-          time: 'now',
-          messages: [
-            ...thread.messages,
-            replyingTo
-              ? {
-                  id: `${thread.id}-${Date.now()}`,
-                  from: 'me',
-                  kind: 'reply',
-                  replyTo: replyingTo.from === 'me' ? 'you' : activeThread.name,
-                  replyText: replyingTo.text,
-                  text: value,
-                  time: 'now',
-                }
-              : {
-                  id: `${thread.id}-${Date.now()}`,
-                  from: 'me',
-                  kind: 'text',
-                  text: value,
-                  time: 'now',
-                },
-          ],
-        };
-      })
-    );
-    setDraft('');
-    setReplyingTo(null);
-  };
-
-  const handleDeleteToggle = (messageId) => {
-    setPendingDeleteMessageId(messageId);
-  };
-
-  const handleDeleteConfirm = () => {
-    if (!activeThread || !pendingDeleteMessageId) return;
-    if (!activeThread) return;
-    setThreads((current) =>
-      current.map((thread) => {
-        if (thread.id !== activeThread.id) return thread;
-        return {
-          ...thread,
-          preview: 'message was deleted',
-          messages: thread.messages.map((message) =>
-            message.id === pendingDeleteMessageId
-              ? { ...message, kind: 'deleted', text: 'this message was deleted' }
-              : message
-          ),
-        };
-      })
-    );
-    setPendingDeleteMessageId(null);
-  };
-
-  const showDetail = viewport !== 'mobile' || threadOpen;
-  const showSidebar = viewport !== 'mobile' || listOnlyMobile;
-  const showRightRail = (viewport === 'desktop' || viewport === 'tablet') && Boolean(activeThread);
-  const isDesktop = viewport === 'desktop';
-  const isTablet = viewport === 'tablet';
-  const desktopSidebar = 320;
-  const desktopRail = 300;
-  const tabletSidebar = 316;
-  const tabletRail = 304;
-
   return (
     <div
       style={{
-        height: '100%',
-        minHeight: 0,
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        padding: '48px 32px',
+        textAlign: 'center',
         background: v.base,
-        color: v.ink,
-        display: 'grid',
-        gridTemplateColumns: isDesktop
-          ? `${desktopSidebar}px minmax(520px, 1fr) ${desktopRail}px`
-          : isTablet
-            ? `${tabletSidebar}px minmax(40px, 1fr) ${tabletRail}px`
-            : '1fr',
-        paddingTop: viewport === 'mobile' ? (threadOpen ? 0 : 56) : 0,
-        width: '100%',
-        maxWidth: '100%',
-        margin: '0 auto',
-        overflow: 'hidden',
-        alignItems: 'stretch',
-        borderLeft: viewport !== 'mobile' ? `1px solid ${v.border}` : 'none',
-        borderRight: viewport !== 'mobile' ? `1px solid ${v.border}` : 'none',
       }}
     >
-      {showSidebar ? (
-        <ConversationListPanel
-          search={search}
-          setSearch={setSearch}
-          filteredThreads={filteredThreads}
-          activeThreadId={activeThreadId}
-          selectThread={selectThread}
-          handleCompose={handleCompose}
-          viewport={viewport}
-        />
-      ) : null}
-
-      {showDetail ? (
-        <ChatCenterPanel
-          viewport={viewport}
-          activeThread={activeThread}
-          setActiveThreadId={setActiveThreadId}
-          closeThread={() => setThreadOpen(false)}
-          openInfo={() => setMobileInfoOpen(true)}
-          isDesktop={isDesktop}
-          isTablet={isTablet}
-          showRightRail={showRightRail}
-          scrollerRef={scrollerRef}
-          setPreviewItem={setPreviewItem}
-          handleDeleteToggle={handleDeleteToggle}
-          replyingTo={replyingTo}
-          setReplyingTo={setReplyingTo}
-          draft={draft}
-          setDraft={setDraft}
-          handleSend={handleSend}
-        />
-      ) : null}
-
-      {showRightRail ? (
-        <ConversationInfoPanel
-          activeThread={activeThread}
-          setPreviewItem={setPreviewItem}
-          compact={isTablet}
-        />
-      ) : null}
-
-      {viewport === 'mobile' && mobileInfoOpen && activeThread ? (
-        <div
-          onClick={() => setMobileInfoOpen(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: v.scrim,
-            display: 'flex',
-            alignItems: 'stretch',
-            justifyContent: 'flex-end',
-            zIndex: 130,
-            padding: '0 0 0 38px',
-          }}
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              width: 'min(78vw, 340px)',
-              background: v.base,
-              border: `1px solid ${v.border}`,
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            <ConversationInfoPanel
-              activeThread={activeThread}
-                  setPreviewItem={setPreviewItem}
-              mobileOverlay
-              onClose={() => setMobileInfoOpen(false)}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {previewItem ? (
-        <div
-          onClick={() => setPreviewItem(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: v.scrim,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 120,
-            padding: 24,
-          }}
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              width: 'min(520px, 100%)',
-              borderRadius: 18,
-              background: v.base,
-              border: `1px solid ${v.border}`,
-              padding: 18,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-            }}
-          >
-            <MediaPlaceholder item={previewItem} large />
-            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>{previewItem.title || previewItem.label}</div>
-            <button
-              type="button"
-              onClick={() => setPreviewItem(null)}
-              style={{
-                alignSelf: 'flex-end',
-                height: 34,
-                padding: '0 16px',
-                borderRadius: 999,
-                border: 'none',
-                background: v.accent,
-                color: v.ink,
-                fontFamily: v.fontBody,
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
-            >
-              close
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {pendingDeleteMessageId ? (
-        <>
-          <div
-            onClick={() => setPendingDeleteMessageId(null)}
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: v.scrim,
-              zIndex: 1000,
-            }}
-          />
-          <div
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 'calc(100% - 56px)',
-              maxWidth: 348,
-              background: v.base,
-              borderRadius: 18,
-              boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`,
-              zIndex: 1001,
-              padding: '22px 24px 20px',
-            }}
-          >
-            <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, color: v.ink, letterSpacing: '-0.03em' }}>
-              delete message?
-            </div>
-            <div style={{ marginTop: 10, fontFamily: v.fontBody, fontSize: 14, lineHeight: 1.45, color: v.ink3 }}>
-              this can't be undone.
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-              <button
-                type="button"
-                onClick={() => setPendingDeleteMessageId(null)}
-                style={{
-                  flex: 1,
-                  height: 42,
-                  borderRadius: 999,
-                  border: 'none',
-                  background: '#2c2621',
-                  color: '#c4b9a8',
-                  fontFamily: v.fontBody,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteConfirm}
-                style={{
-                  flex: 1,
-                  height: 42,
-                  borderRadius: 999,
-                  border: 'none',
-                  background: 'var(--lx-error)',
-                  color: '#fff5f2',
-                  fontFamily: v.fontBody,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                delete
-              </button>
-            </div>
-          </div>
-        </>
-      ) : null}
+      <LxIcon name="chat" size={36} color={v.ink3} />
+      <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, maxWidth: 340, lineHeight: 1.5 }}>
+        messages are not part of this build.
+      </div>
+      <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, maxWidth: 340, lineHeight: 1.5 }}>
+        nothing has been sent to you and nothing is hidden. this screen will stay empty until
+        the feature is built.
+      </div>
     </div>
   );
 }

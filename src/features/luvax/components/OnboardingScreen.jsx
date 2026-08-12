@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/config/constants';
 import { v } from '@/config/tokens';
-import { INTEREST_CATEGORIES } from '../constants/data';
 import { LxIcon, LxTag, LxBtn } from './primitives';
 
 function inputStyle() {
@@ -100,21 +99,17 @@ export function OnboardingScreen() {
         </div>
       ),
     },
-    // 3 — bio + interests
+    // 3 — bio
+    // The interest picker was removed with the rest of the invented data. The
+    // categories were a hardcoded list, nothing stored a selection, and the
+    // copy promised the choices would shape the feed. The feed is built from
+    // who the viewer follows, so that promise could not be kept.
     {
-      validate: () => data.interests.length >= 3,
+      validate: () => true,
       render: () => (
         <div>
-          <h1 style={{ fontFamily: v.fontDisplay, fontSize: 30, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em', marginBottom: 4 }}>what's your scene?</h1>
-          <p style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, marginBottom: 24 }}>pick at least 3. we'll use these to shape your feed.</p>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
-            {INTEREST_CATEGORIES.map(i => (
-              <LxTag key={i} active={data.interests.includes(i)} onClick={() => toggleInterest(i)}>
-                {i}
-              </LxTag>
-            ))}
-          </div>
+          <h1 style={{ fontFamily: v.fontDisplay, fontSize: 30, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em', marginBottom: 4 }}>tell people who you are</h1>
+          <p style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, marginBottom: 24 }}>a short bio, if you want one.</p>
 
           <div>
             <label style={{ display: 'block', fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2, marginBottom: 6 }}>bio <span style={{ color: v.ink3, fontWeight: 400 }}>(optional)</span></label>
