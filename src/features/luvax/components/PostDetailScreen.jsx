@@ -4,7 +4,7 @@ import { v } from '@/config/tokens';
 import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
-import { useCommentReplies, useDeleteComment, useEditComment, useToggleCommentLike } from '../hooks/usePosts';
+import { useCommentDeletionScope, useCommentReplies, useDeleteComment, useEditComment, useToggleCommentLike } from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
@@ -26,6 +26,7 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
   const [draft, setDraft] = useState(comment.content);
   const [actionError, setActionError] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [estimateLate, setEstimateLate] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const commentMenuButtonRef = useRef(null);
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
   const toggleLike = useToggleCommentLike(postId);
   const editComment = useEditComment(postId);
   const deleteComment = useDeleteComment(postId);
+  const deletionScope = useCommentDeletionScope(comment.id, deleteOpen);
 
   const isNestedReply = indent > 0;
   const nestedOffset = isNestedReply ? 23 : 0;
@@ -62,12 +64,6 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
   const canSaveEdit = trimmedDraft.length > 0 && !draftTooLong && !editComment.isPending;
 
   const handleLikeToggle = () => {
-    // The backend rejects a like on your own comment, so the control is absent
-    // rather than present and failing. This guard covers the menu path too.
-    if (isOwn) {
-      return;
-    }
-
     setActionError('');
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
@@ -109,6 +105,37 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
     );
   };
 
+  // The dialogue is usable without the estimate, so it waits only briefly for
+  // one. Past that the unnumbered wording stands for the life of the dialogue,
+  // rather than the text changing under a user who is already reading it.
+  useEffect(() => {
+    if (!deleteOpen) {
+      setEstimateLate(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => setEstimateLate(true), 1500);
+    return () => clearTimeout(timer);
+  }, [deleteOpen]);
+
+  const scopeCount = deletionScope.data?.data?.deletedCommentCount;
+  const scopeUsable = !estimateLate && typeof scopeCount === 'number';
+
+  const deleteMessage = () => {
+    if (scopeUsable) {
+      return scopeCount > 1
+        ? `deleting this comment removes ${scopeCount} comments in total, including every reply beneath it. this cannot be undone.`
+        : 'are you sure you want to delete this comment? this cannot be undone.';
+    }
+
+    // Fallback when the estimate failed or was slow. replyCount counts direct
+    // replies only, so this understates a deep thread; it says less rather than
+    // saying something wrong.
+    return hasReplies
+      ? `deleting this comment also deletes its ${comment.replyCount === 1 ? 'reply' : `${comment.replyCount} replies`} and any replies to those. this cannot be undone.`
+      : 'are you sure you want to delete this comment? this cannot be undone.';
+  };
+
   const confirmDelete = () => {
     deleteComment.mutate(
       { commentId: comment.id, parentId: comment.parentId },
@@ -123,9 +150,7 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
   };
 
   const commentMenuItems = [
-    ...(isOwn
-      ? []
-      : [{ id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle }]),
+    { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
     { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, comment.content) },
     { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
     {
@@ -241,6 +266,9 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
           ) : null}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6, fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>
             <span>{timeStr}</span>
+            {/* editedAt is set only by a content change. updatedAt also moves when
+                the comment is liked or replied to, so it cannot carry this marker. */}
+            {comment.editedAt ? <span title="this comment was edited">edited</span> : null}
             <span>{likeCount} likes</span>
             <button
               type="button"
@@ -273,23 +301,18 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
             </button>
           ) : null}
         </div>
-        {/* The backend refuses a like on your own comment, so the affordance is
-            absent there rather than present and always failing. The count stays
-            visible as text either way, so nothing is hidden from the author. */}
-        {isOwn ? null : (
-          <button
-            type="button"
-            onClick={handleLikeToggle}
-            aria-label={liked ? 'unlike comment' : 'like comment'}
-            aria-pressed={liked}
-            className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
-            style={{ position: 'absolute', top: 16, right: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-          >
-            <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
-              <LxIcon name="heart" size={16} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
-            </span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleLikeToggle}
+          aria-label={liked ? 'unlike comment' : 'like comment'}
+          aria-pressed={liked}
+          className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
+          style={{ position: 'absolute', top: 16, right: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        >
+          <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
+            <LxIcon name="heart" size={16} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
+          </span>
+        </button>
       </div>
       {showReplies && hasReplies ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -320,9 +343,7 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
         {/* Deletion cascades to the whole subtree and leaves no tombstone, so
             the consequence is spelled out when there is one, and left unsaid
             when the comment is a leaf. */}
-        {hasReplies
-          ? `deleting this comment also deletes its ${comment.replyCount === 1 ? 'reply' : `${comment.replyCount} replies`} and any replies to those. this cannot be undone.`
-          : 'are you sure you want to delete this comment? this cannot be undone.'}
+        {deleteMessage()}
       </LxModal>
 
       <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />

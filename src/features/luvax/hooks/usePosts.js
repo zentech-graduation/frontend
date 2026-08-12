@@ -143,6 +143,24 @@ export const useCommentReplies = (commentId, enabled) => {
 };
 
 /**
+ * How many comments deleting this one would remove, for the confirmation copy.
+ *
+ * Fetched only while the dialogue is open. It is not retried: the dialogue has
+ * wording that works without a number, so a second attempt would keep the user
+ * waiting for something the screen does not need.
+ */
+export const useCommentDeletionScope = (commentId, enabled) => {
+  return useQuery({
+    queryKey: ['commentDeletionScope', commentId],
+    queryFn: () => postService.getCommentDeletionScope(commentId),
+    enabled: !!commentId && enabled,
+    retry: false,
+    gcTime: 0,
+    staleTime: 0,
+  });
+};
+
+/**
  * The cache entry that holds a given comment.
  *
  * Top-level comments live in the post's infinite list; a reply lives in its
@@ -288,16 +306,29 @@ export const useEditComment = (postId) => {
 /**
  * Soft-deletes a comment and every descendant.
  *
- * The number of descendants removed is not known to the client, so the affected
- * lists are refetched rather than patched. The post is refetched too because its
- * comment count drops by the size of the whole subtree.
+ * The response now reports how many comments were removed, but the affected
+ * lists are still refetched rather than patched. The count says how many rows
+ * went, not which ones, and the descendants are spread across nested replies
+ * entries the client never enumerated. Patching the post's comment count from
+ * the number would also mean computing a denormalised counter client-side,
+ * which the workspace counter policy reserves to the database.
+ *
+ * The count is used to drop the deleted subtree's own replies entry, which can
+ * no longer be fetched and would otherwise sit in the cache until collected.
  */
 export const useDeleteComment = (postId) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ commentId }) => postService.deleteComment(commentId),
-    onSuccess: (_response, { parentId }) => {
+    onSuccess: (response, { commentId, parentId }) => {
+      const removedCount = response?.data?.deletedCommentCount ?? 0;
+
+      if (removedCount > 1) {
+        queryClient.removeQueries({ queryKey: ['commentReplies', commentId] });
+      }
+      queryClient.removeQueries({ queryKey: ['commentDeletionScope', commentId] });
+
       if (parentId) {
         queryClient.invalidateQueries({ queryKey: ['commentReplies', parentId] });
       }
