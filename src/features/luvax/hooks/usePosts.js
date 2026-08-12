@@ -275,10 +275,14 @@ export const useToggleCommentLike = (postId) => {
 /**
  * Replaces the body of a comment the viewer authored.
  *
- * Only the body and its timestamp are copied out of the response. A
+ * Only the body and its timestamps are copied out of the response. A
  * single-comment response always reports `pinned` as false, so spreading the
  * whole object would silently strip the pinned marker from a comment that is in
  * the pinned block.
+ *
+ * `editedAt` is among them because it is what the edited marker reads. Copying
+ * only the body would leave the marker absent until the list happened to be
+ * refetched.
  */
 export const useEditComment = (postId) => {
   const queryClient = useQueryClient();
@@ -295,7 +299,12 @@ export const useEditComment = (postId) => {
         commentListKey(postId, parentId),
         mapCachedComments((comment) =>
           comment.id === updated.id
-            ? { ...comment, content: updated.content, updatedAt: updated.updatedAt }
+            ? {
+                ...comment,
+                content: updated.content,
+                updatedAt: updated.updatedAt,
+                editedAt: updated.editedAt,
+              }
             : comment
         )
       );
