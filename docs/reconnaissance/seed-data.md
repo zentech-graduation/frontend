@@ -172,9 +172,13 @@ demo needs in order to show the behaviour.
 Post likes are similarly uneven: 2, 1, and 0 across Ben's three posts.
 
 Note the script does **not** have Dan like his own comments.
-`POST /comments/{id}/like` returns `403 COMMENT_FORBIDDEN` when the actor is the author.
-Posts have no such restriction.
+`POST /comments/{id}/like` used to return `403 COMMENT_FORBIDDEN` when the actor is the author,
+while posts had no such restriction.
 This was discovered by the script failing, which is the script working as intended.
+
+**That restriction has since been removed.** The endpoint now succeeds for the comment's author,
+verified against the running server. The script still avoids the case, so its behaviour is
+unchanged; the constraint it was avoiding simply no longer exists.
 
 ### Saved posts
 
@@ -189,7 +193,15 @@ A regular account cannot read it back: `GET /reports` returns 403.
 
 ### Email-verified accounts
 
-**This is the one hard blocker.**
+**This blocker is resolved.** The section below is kept because the script's behaviour is unchanged:
+it still stops and reports rather than verifying accounts itself.
+
+Mail is now delivered locally by Mailpit, which accepts every address including the seed domain, so
+verification links do arrive. The manual database write this section used to require is no longer
+needed: open `http://localhost:8025`, open each account's "Verify your email address" mail, and
+click the link.
+
+What follows describes the original blocker.
 
 The script registers all four accounts successfully, then cannot log in:
 
@@ -198,7 +210,7 @@ The script registers all four accounts successfully, then cannot log in:
 ```
 
 Verification requires a token that is only ever delivered by email.
-The local mail provider rejects the seed domain:
+The mail provider at the time, Resend, rejected the seed domain:
 
 ```
 Failed to send email: 422 {"statusCode":422,"name":"validation_error",
@@ -230,19 +242,22 @@ BLOCKED: not every seeded account could log in.
 
 Exit code 1.
 
-**The manual step**, run once between the first and second invocation:
+**The step between the first and second invocation**, as it works now:
+
+Open `http://localhost:8025`, and for each of the four accounts open the "Verify your email address"
+mail and click **Verify Email Address**.
+
+Then rerun the script; it completes and exits 0.
+
+The database write this step used to require is no longer needed:
 
 ```bash
+# No longer necessary. Kept only for environments predating the local mail catcher.
 docker exec backend-postgres-1 psql -U luvax -d luvax -c \
   "UPDATE user_credentials SET email_verified = true, email_verified_at = NOW()
    WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'luvax\_%')
      AND email_verified = false;"
 ```
-
-Then rerun the script; it completes and exits 0.
-
-Alternatively set `LUVAX_SEED_DOMAIN` to a domain the mail provider accepts and verify each account
-through a real inbox. Correct, and impractical for four accounts on every fresh environment.
 
 Why the script does not just run the SQL itself: the whole value of an API-only seed is that it
 fails when the documented contract is wrong. A script that reaches around a gap in the contract no
@@ -254,11 +269,21 @@ The script registers one media asset and attaches it to a post, so the media rel
 exercised end to end.
 
 It does **not** upload any bytes.
-`POST /media/upload-complete` performs no server-side object inspection, verified: the asset row is
-created and a `cdnUrl` is returned for an object that was never transferred.
+
+**This step no longer works.** `POST /media/upload-complete` now verifies that the object exists in
+storage and that its size matches the submitted metadata, and answers
+`422 MEDIA_OBJECT_NOT_UPLOADED` when it does not. Verified against the running server.
+
+The script registers an asset without transferring anything, so it will fail at that step on a
+fresh environment. Fixing it means either uploading real bytes to the pre-signed URL or dropping
+the media asset from the seed set. Neither has been done.
+
+When this previously succeeded, the server performed no object inspection: the asset row was
+created and a `cdnUrl` returned for an object that was never transferred.
 
 The consequence is that the image in that post **404s in the browser**.
 The post is structurally correct and visually broken.
+Asset rows created before the check existed are not repaired by it.
 Uploading real bytes would write real objects into the project's Cloudflare R2 bucket, which is an
 outward-facing side effect the audit did not take on its own initiative.
 

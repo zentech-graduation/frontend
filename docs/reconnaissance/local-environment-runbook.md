@@ -8,7 +8,7 @@ Verified on Windows 11 with Git Bash, Docker Desktop, JDK 23, and Node with npm.
 
 | Tool | Version used | Note |
 |------|-------------|------|
-| Docker Desktop | running | Four containers are started |
+| Docker Desktop | running | Five containers are started |
 | JDK | 23.0.1 | The project targets Java 21. JDK 23 compiles and runs it without changes |
 | Node | whatever satisfies Vite 8 | Vite 8 requires Node 20 or newer |
 | Python | 3.x | Only for the seed script, standard library only |
@@ -40,7 +40,7 @@ The values that must be real for a full local run:
 | `JWT_SECRET`, `APP_COOKIE_SIGNING_SECRET` | Token signing | Backend fails to start |
 | `ELASTICSEARCH_URIS` | Search | Post search silently returns empty results |
 | `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `MEDIA_CDN_BASE_URL` | Media pre-signed URLs | `POST /media/upload` fails; posts with media cannot be created |
-| `RESEND_API_KEY`, `MAIL_FROM_ADDRESS` | Outbound email | Verification and reset emails are never delivered. See the known error below |
+| `MAIL_FROM_ADDRESS`, and the SMTP settings pointing at Mailpit on `localhost:1025` | Outbound email | Verification and reset emails are never delivered |
 | `CORS_ALLOWED_ORIGINS` | Must include `http://localhost:5173` | Browser requests and the WebSocket handshake are rejected |
 
 `frontend/.env`:
@@ -64,7 +64,7 @@ cd backend
 docker compose up -d
 ```
 
-Four services start:
+Five services start:
 
 | Service | Port | Image |
 |---------|------|-------|
@@ -72,6 +72,7 @@ Four services start:
 | rabbitmq | 5672 | `rabbitmq:latest` |
 | redis | 6379 | `redis:7-alpine`, password-protected |
 | elasticsearch | 9200 | `docker.elastic.co/elasticsearch/elasticsearch:9.0.3`, single-node, security disabled |
+| mailpit | 1025 SMTP, 8025 web | `axllent/mailpit`, catches every outbound mail |
 
 The postgres image is built locally on first run, which takes a minute or so.
 Elasticsearch is capped at `-Xms512m -Xmx512m`.
@@ -141,7 +142,10 @@ On the first run after a config change Vite re-optimises dependencies, which add
 
 ## 5. Create usable accounts
 
-**This step cannot be completed through the API alone.** See `defects.md` D7.
+This step is completed entirely through the API and the browser.
+
+Mail is delivered locally by Mailpit, which accepts every address, so verification links now arrive
+and the manual database write this section used to require is no longer needed.
 
 Registration works:
 
@@ -152,36 +156,32 @@ curl -s -X POST http://localhost:8080/api/v1/auth/register \
        "password":"ReconPass123!","displayName":"Luvax Ava"}'
 ```
 
-Login is then refused:
+Login is refused until the address is verified:
 
 ```
 403 {"success":false,"code":"AUTH_EMAIL_NOT_VERIFIED",
      "message":"This account's email address has not been verified"}
 ```
 
-The verification token is emailed, and the mail send fails because the provider rejects the
-domain:
+Two mails are delivered per registration, "Verify your email address" and "Welcome to Social".
+Open the Mailpit interface at `http://localhost:8025`, open the verification mail, and click
+**Verify Email Address**. The link points at the frontend:
 
 ```
-ERROR c.a.m.m.s.impl.ResendMailSender | Failed to send email | subject: Welcome to Social |
-error: Failed to send email: 422 {"statusCode":422,"name":"validation_error",
-"message":"Invalid `to` field. Please use our testing email address instead of domains like
-`example.com`."}
+http://localhost:5173/verify-email?token=<token>
 ```
 
-The token is stored in Redis under `auth:token:email-verification:{sha256}`, so it cannot be read
-back out of the store either.
+Following it verifies the address and signs you in.
 
-The one manual step, run after registering:
+To pull the link without leaving the terminal:
 
 ```bash
-docker exec backend-postgres-1 psql -U luvax -d luvax -c \
-  "UPDATE user_credentials SET email_verified = true, email_verified_at = NOW()
-   WHERE user_id IN (SELECT id FROM users WHERE username LIKE 'luvax\_%')
-     AND email_verified = false;"
-```
+curl -s "http://localhost:8025/api/v1/search?query=to%3Aluvax_ava%40example.com" \
+  | python -c "import sys,json; print(json.load(sys.stdin)['messages'][0]['ID'])"
 
-Substitute your own postgres user and database name if they differ from `backend/.env`.
+curl -s "http://localhost:8025/api/v1/message/<messageId>" \
+  | python -c "import sys,json,re; print(re.findall(r'http://localhost:5173/verify-email\?token=\S+', json.load(sys.stdin)['Text'])[0])"
+```
 
 Login then succeeds:
 
@@ -199,9 +199,9 @@ At the time this runbook was written, the manual SQL above was the only way to r
 session, because the login form posted `email` and every attempt failed with
 `400 MALFORMED_REQUEST_BODY`. That is fixed. See `docs/backend-contract-alignment/`.
 
-The verification step above is still required, because it is an environment condition rather
-than a defect: the mail provider rejects `example.com` addresses, so no verification link is ever
-delivered. Run the SQL, then log in through the browser at `http://localhost:5173/login`.
+The verification step above is still required, but it is now done by clicking the link in Mailpit
+rather than by writing to the database. Verify, then log in through the browser at
+`http://localhost:5173/login`.
 
 Both identifier forms work in the form's "username or email" field:
 
@@ -214,8 +214,8 @@ accepts. Two cases that the form previously rejected on its own are valid:
 - usernames containing a dot, such as `luvax.ava`, which the backend pattern permits
 - passwords with no uppercase letter and no digit, which the backend does not require
 
-A freshly registered account still lands on the verification notice and still needs the SQL above
-before it can log in.
+A freshly registered account still lands on the verification notice, and is verified by clicking
+the link in Mailpit as described in step 5.
 
 ### Update: a session now survives a reload, and screens have addresses
 
@@ -224,7 +224,7 @@ Two later changes affect the startup and login path described above. See `docs/u
 Signing in sets an `HttpOnly` cookie named `luvax_refresh`, scoped to `/api/v1/auth`. A reload now
 restores the session from it instead of returning you to the sign-in page, so the log-in step no
 longer has to be repeated after every refresh. Nothing else about signing in changed, and the
-verification SQL in step 5 is still required.
+verification step described in step 5 is still required.
 
 The whole signed-in application no longer lives at `/app`. Every screen has its own address, so you
 can go straight to the one you want instead of clicking through:
@@ -257,7 +257,7 @@ python tools/seed/seed.py
 ```
 
 The script registers the four accounts, so the usual order is: run it once (it stops and reports
-the verification blocker), run the SQL above, then run it again.
+that the accounts are unverified), verify each one through Mailpit, then run it again.
 
 Full detail in `seed-data.md`.
 
@@ -312,17 +312,18 @@ There is currently no way to obtain a session through the user interface.
 
 ### `403 AUTH_EMAIL_NOT_VERIFIED` on every fresh account
 
-**Cause:** email verification is mandatory and the verification email cannot be delivered locally.
+**Cause:** email verification is mandatory and the account has not been verified yet.
 
-**Resolution:** the SQL in step 5. There is no API-only path.
+**Resolution:** open `http://localhost:8025` and click the link in the verification mail. See step 5.
 
-### `Failed to send email: 422 ... domains like example.com`
+### Historical: `Failed to send email: 422 ... domains like example.com`
 
-**Cause:** Resend rejects `example.com` as a destination domain.
+**No longer occurs.** Mail was previously sent through Resend, which rejected `example.com` as a
+destination domain, so no verification link was ever delivered locally and a manual database write
+was the only way to reach a usable session.
 
-**Resolution:** none needed for the audit. Registration itself still returns 201; only the async
-mail delivery fails, on a RabbitMQ consumer thread. Set `LUVAX_SEED_DOMAIN` to a domain Resend
-accepts if working email is required.
+Mail is now delivered to Mailpit, which accepts every address. Kept here only so the error is
+recognisable if an older environment is encountered.
 
 ### `HTTP method not supported: POST` on approving a follow request
 
@@ -338,12 +339,14 @@ returns 400, not 405.
 **Resolution:** send `{"targetStatus":"archived"}`. `defects.md` D2 covers the frontend service
 that gets this wrong.
 
-### `403 COMMENT_FORBIDDEN` when liking a comment
+### Historical: `403 COMMENT_FORBIDDEN` when liking a comment
 
-**Cause:** the author cannot like their own comment. The message says "you do not have permission",
-which does not point at the real reason.
+**No longer occurs.** The author could not previously like their own comment, and the message did
+not say so.
 
-**Resolution:** like it as a different account. `defects.md` D12.
+The prohibition has been removed, and `POST /comments/{id}/like` now succeeds for the comment's
+author. Verified against the running server. Kept here only so the error is recognisable if an
+older environment is encountered.
 
 ### `400 BAD_REQUEST` on `GET /users/suggestions`
 
