@@ -117,10 +117,36 @@ export const useLikePost = () => {
   });
 };
 
+export const savedPostsKey = ['savedPosts'];
+
+/**
+ * The viewer's saved posts.
+ *
+ * Rows are SavedPostResponse, so consumers unwrap `row.post` rather than
+ * reading the post fields off the row.
+ */
+export const useSavedPosts = () => {
+  return useInfiniteQuery({
+    queryKey: savedPostsKey,
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getSavedPosts({ cursor: pageParam ?? undefined, limit: 12, signal }),
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+  });
+};
+
 export const useSavePost = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ postId, saved }) =>
       saved ? postService.unsavePost(postId) : postService.savePost(postId),
+    // The saved list is server state, so it is re-read rather than patched.
+    // This is what makes saving from anywhere in the application show up on the
+    // saved screen, and unsaving from the saved screen drop the row without a
+    // reload.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: savedPostsKey });
+    },
   });
 };
 

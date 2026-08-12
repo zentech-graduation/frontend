@@ -11,6 +11,7 @@ import { NotificationsScreen } from '@/features/luvax/components/NotificationsSc
 import { OnboardingScreen } from '@/features/luvax/components/OnboardingScreen';
 import { PostDetailScreen } from '@/features/luvax/components/PostDetailScreen';
 import { ProfileScreen } from '@/features/luvax/components/ProfileScreen';
+import { SavedPostsScreen } from '@/features/luvax/components/SavedPostsScreen';
 import { SearchScreen } from '@/features/search/components/SearchScreen';
 import { ScreenNotFound } from '@/features/luvax/components/ScreenNotFound';
 import { SettingsScreen } from '@/features/luvax/components/SettingsScreen';
@@ -48,6 +49,7 @@ export const APP_SCREENS = [
   { screen: 'edit-profile', path: ROUTES.EDIT_PROFILE, element: <EditProfileScreen />, chrome: 'shell' },
   { screen: 'change-password', path: ROUTES.CHANGE_PASSWORD, element: <ChangePasswordScreen />, chrome: 'shell' },
   { screen: 'blocked', path: ROUTES.BLOCKED_USERS, element: <BlockedUsersScreen />, chrome: 'shell' },
+  { screen: 'saved', path: ROUTES.SAVED, element: <SavedPostsScreen />, chrome: 'shell' },
   { screen: 'profile', path: ROUTES.PROFILE, element: <ProfileScreen />, chrome: 'shell' },
   { screen: 'profile', path: ROUTES.USER_PROFILE, element: <ProfileScreen />, chrome: 'shell' },
   { screen: 'followers', path: ROUTES.USER_FOLLOWERS, element: <FollowersScreen />, chrome: 'shell' },

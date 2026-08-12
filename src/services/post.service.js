@@ -128,6 +128,19 @@ export const unsavePost = async (postId) => {
 };
 
 /**
+ * Retrieves the viewer's saved posts, most recently saved first.
+ *
+ * Rows are not bare posts. Each one nests the post under `post` and adds
+ * `savedAt`, so a caller reusing a post grid must unwrap it.
+ * @param {Object} params - Query parameters (e.g., cursor, limit) plus an optional AbortSignal.
+ * @returns {Promise<Object>} ApiResponse<CursorPageResponse<SavedPostResponse>>.
+ */
+export const getSavedPosts = async ({ signal, ...params } = {}) => {
+  const response = await axiosInstance.get(`${POST_API_PATH}/saved`, { params, signal });
+  return response.data;
+};
+
+/**
  * Retrieves a paginated list of top-level comments for a post.
  * @param {string} postId - The ID of the post.
  * @param {Object} params - Query parameters (e.g., cursor, limit).
@@ -236,6 +249,7 @@ export const postService = {
   unlikeComment,
   editComment,
   deleteComment,
+  getSavedPosts,
 };
 
 export default postService;

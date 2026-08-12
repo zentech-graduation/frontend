@@ -30,6 +30,9 @@ export const ROUTES = {
   EDIT_PROFILE: '/app/settings/profile',
   CHANGE_PASSWORD: '/app/settings/password',
   BLOCKED_USERS: '/app/settings/blocked',
+  // The viewer's saved posts. Filed under settings because the list belongs to
+  // the viewer rather than to a profile being looked at, and is private to them.
+  SAVED: '/app/settings/saved',
   ONBOARDING: '/app/onboarding',
   STORY_COMPOSE: '/app/stories/new',
 
@@ -46,10 +49,8 @@ export const ROUTES = {
   POST_DETAIL: '/app/p/:postId',
   STORY_VIEW: '/app/stories/:storyId',
 
-  // Reserved for the search results screen. The screen does not exist yet, so no
-  // route is registered and this address currently falls to the in-shell
-  // not-found. Declared here so building the screen is a one-line router change
-  // rather than another pass over the route table.
+  // The search results screen. Carries the term as `q` and the selected result
+  // type as `type`, so a search can be shared and survives a reload.
   SEARCH: '/app/search',
 
   NOT_FOUND: '*',
