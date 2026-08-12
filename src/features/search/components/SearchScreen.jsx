@@ -4,14 +4,14 @@ import { useInView } from 'react-intersection-observer';
 
 import { v } from '@/config/tokens';
 import { routeTo } from '@/config/constants';
-import { extractPageContent, getUserSummary } from '@/utils/helpers';
+import { extractPageContent, getUserSummary, isPageDegraded } from '@/utils/helpers';
 import { LxIcon } from '@/features/luvax/components/primitives';
 import { UserCard } from '@/features/luvax/components/UserCard';
 import { useOverlayNavigate } from '@/features/luvax/hooks/useOverlayNavigate';
 import { useViewport } from '@/features/luvax/hooks/useViewport';
 
 import { useHashtagSearch, usePostSearch, useUserSearch } from '../hooks/useSearch';
-import { SearchEmpty, SearchFailed, SearchLoading, SearchPrompt } from './SearchResultsEmpty';
+import { SearchDegraded, SearchEmpty, SearchFailed, SearchLoading, SearchPrompt } from './SearchResultsEmpty';
 
 const TABS = [
   { id: 'posts', label: 'posts' },
@@ -33,7 +33,7 @@ const DEBOUNCE_MS = 300;
  * Renders one half of the results, choosing between the four states every
  * surface in this phase is required to have.
  */
-function ResultsSection({ query, label, result, ambiguousEmpty = false, renderRows }) {
+function ResultsSection({ query, label, result, renderRows }) {
   const { ref, inView } = useInView();
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = result;
 
@@ -49,7 +49,11 @@ function ResultsSection({ query, label, result, ambiguousEmpty = false, renderRo
 
   const rows = data?.pages?.flatMap((page) => extractPageContent(page)) || [];
   if (rows.length === 0) {
-    return <SearchEmpty label={label} query={query} ambiguous={ambiguousEmpty} />;
+    // The server distinguishes "nothing matched" from "the search backend is
+    // down and this page is not an answer". Reading the flag off any page is
+    // enough, because a degraded search returns no rows at all.
+    const degraded = (data?.pages || []).some((page) => isPageDegraded(page));
+    return degraded ? <SearchDegraded label={label} /> : <SearchEmpty label={label} query={query} />;
   }
 
   return (
@@ -184,7 +188,6 @@ export function SearchScreen() {
             query={query}
             label="posts"
             result={postResult}
-            ambiguousEmpty
             renderRows={(rows) => (
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: '2px 0 0' }}>
                 {rows.map((post) => {

@@ -70,22 +70,32 @@ export function SearchFailed({ label }) {
 }
 
 /**
- * Shown when a half returned zero rows.
+ * Shown when a half returned zero rows and said so honestly.
  *
- * The post half cannot state this plainly. Post search is backed by
- * Elasticsearch and returns an empty page rather than an error when that
- * backend is unavailable, verified by stopping the container and observing an
- * identical response. "No matches" and "search is down" are indistinguishable
- * on the wire, so the post copy covers both readings rather than asserting a
- * fact the response does not support. The people and tags halves do not
- * degrade this way and state the empty case plainly.
+ * This used to hedge with "or search is temporarily unavailable" on the post
+ * half, because an outage and a genuine empty result were indistinguishable on
+ * the wire. The response now carries a flag for exactly that, so the two cases
+ * are told apart and each is worded as what it is. The hedge is gone.
  */
-export function SearchEmpty({ label, query, ambiguous = false }) {
+export function SearchEmpty({ label, query }) {
+  return <Notice icon="explore" title={`no ${label} match "${query}"`} />;
+}
+
+/**
+ * Shown when the server reported that results may be incomplete.
+ *
+ * Only post search sets this, and only when its search backend is unavailable.
+ * The distinction matters to the viewer: an empty result is an answer about
+ * their query, and this is not an answer at all. Retrying is worth something
+ * here and worth nothing on a genuine empty result, so only this state
+ * suggests it.
+ */
+export function SearchDegraded({ label }) {
   return (
     <Notice
-      icon="explore"
-      title={`no ${label} match "${query}"`}
-      detail={ambiguous ? 'or search is temporarily unavailable.' : undefined}
+      icon="alert"
+      title={`${label} search is temporarily unavailable.`}
+      detail="this is not an empty result. try again in a moment."
     />
   );
 }
