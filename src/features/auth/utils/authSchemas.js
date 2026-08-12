@@ -31,7 +31,10 @@ const PASSWORD_MAX_UTF8_BYTES = 72;
 // which together already cover the zero-width and joining characters the
 // validator lists explicitly.
 const BLANK_OR_INVISIBLE = /[\s\p{Zs}\p{Zl}\p{Zp}\p{Cc}\p{Cf}]/u;
-const HAS_UPPERCASE = /\p{Lu}/u;
+// \p{Uppercase} rather than \p{Lu}, to match Character.isUpperCase: it is also
+// true for characters carrying Other_Uppercase, such as U+2160 ROMAN NUMERAL
+// ONE, which the server accepts as the uppercase character.
+const HAS_UPPERCASE = /\p{Uppercase}/u;
 // Whitespace and invisible characters are rejected before this runs, so
 // anything that is not a letter is a digit or a special character.
 const HAS_DIGIT_OR_SPECIAL = /\P{L}/u;
