@@ -34,12 +34,35 @@ export const getExplorePosts = async ({ signal, ...params } = {}) => {
 
 /**
  * Retrieves a paginated list of a user's published posts.
+ *
+ * This endpoint rejects any query parameter it does not declare with 400
+ * BAD_REQUEST. It accepts `cursor`, `limit` and `type` and nothing else, so a
+ * caller must not pass incidental keys through.
+ *
+ * `type` is optional and multi-valued, taking `image`, `video`, `carousel` or
+ * `text`. Axios serialises an array as repeated keys, which the backend
+ * accepts alongside the comma-separated form.
+ *
+ * A cursor is bound to the filter that produced it. Replaying one under a
+ * different filter, including under no filter and under a superset, fails with
+ * 400 INVALID_CURSOR. Reordering the same values is safe. Callers must
+ * therefore drop the cursor whenever the filter changes.
  * @param {string|number} userId - The ID of the user.
- * @param {Object} params - Query parameters (e.g., cursor, limit) plus an optional AbortSignal.
+ * @param {Object} params - Query parameters (cursor, limit, type) plus an optional AbortSignal.
  * @returns {Promise<Object>} The paginated posts response.
  */
-export const getUserPosts = async (userId, { signal, ...params } = {}) => {
-  const response = await axiosInstance.get(`${POST_API_PATH}/user/${userId}`, { params, signal });
+export const getUserPosts = async (userId, { signal, type, ...params } = {}) => {
+  // Axios serialises an array as `type[]=image`, and the backend rejects
+  // `type[]` as an unrecognised parameter with 400. Verified against the
+  // running server. Joining here means an array can never reach the wire in
+  // the bracket form, whatever a caller passes.
+  const typeValues = Array.isArray(type) ? type : type ? [type] : [];
+  const query = typeValues.length > 0 ? { ...params, type: typeValues.join(',') } : params;
+
+  const response = await axiosInstance.get(`${POST_API_PATH}/user/${userId}`, {
+    params: query,
+    signal,
+  });
   return response.data;
 };
 
@@ -137,6 +160,29 @@ export const unsavePost = async (postId) => {
  */
 export const getSavedPosts = async ({ signal, ...params } = {}) => {
   const response = await axiosInstance.get(`${POST_API_PATH}/saved`, { params, signal });
+  return response.data;
+};
+
+/**
+ * Retrieves the viewer's liked posts, most recently liked first.
+ *
+ * There is no path parameter for another account. The endpoint always answers
+ * for the authenticated caller, which is why the liked tab is offered on the
+ * viewer's own profile only.
+ *
+ * Rows mirror the saved-posts shape but do not match it exactly: the post
+ * nests under `post` in both, while the timestamp is `likedAt` here and
+ * `savedAt` there. Verified against the running server; see
+ * docs/social-states-and-tabs/endpoint-verification.md.
+ *
+ * A page can arrive shorter than `limit`, including empty, while further pages
+ * still exist. Callers must page until `pageInfo.hasNextPage` is false rather
+ * than stopping on a short page.
+ * @param {Object} params - Query parameters (e.g., cursor, limit) plus an optional AbortSignal.
+ * @returns {Promise<Object>} ApiResponse<CursorPageResponse<LikedPostResponse>>.
+ */
+export const getLikedPosts = async ({ signal, ...params } = {}) => {
+  const response = await axiosInstance.get(`${POST_API_PATH}/liked`, { params, signal });
   return response.data;
 };
 
@@ -250,6 +296,7 @@ export const postService = {
   editComment,
   deleteComment,
   getSavedPosts,
+  getLikedPosts,
 };
 
 export default postService;

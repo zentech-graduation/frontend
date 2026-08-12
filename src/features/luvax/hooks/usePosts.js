@@ -31,10 +31,23 @@ export const useExplore = (params = {}) => {
   });
 };
 
-export const useUserPosts = (userId, params = {}) => {
+/**
+ * A user's posts, optionally narrowed to a set of post types.
+ *
+ * `types` is part of the query key on purpose. A cursor issued under one type
+ * filter is rejected under any other, so the filter and the cursor sequence
+ * have to live and die together. Keying on the filter makes React Query treat
+ * a filter change as a different query, which starts it at a null cursor and
+ * makes replaying a foreign cursor impossible by construction.
+ * @param {string} userId - The profile being read.
+ * @param {string[]} [types] - Post types to include; omit or pass an empty array for all.
+ */
+export const useUserPosts = (userId, types = [], params = {}) => {
+  const type = types.length > 0 ? types : undefined;
   return useInfiniteQuery({
-    queryKey: ['userPosts', userId, params],
-    queryFn: ({ pageParam = null, signal }) => postService.getUserPosts(userId, { ...params, cursor: pageParam, limit: 10, signal }),
+    queryKey: ['userPosts', userId, type ?? 'all', params],
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getUserPosts(userId, { ...params, type, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -132,6 +145,29 @@ export const useSavedPosts = () => {
       postService.getSavedPosts({ cursor: pageParam ?? undefined, limit: 12, signal }),
     getNextPageParam: getNextCursor,
     initialPageParam: null,
+  });
+};
+
+export const likedPostsKey = ['likedPosts'];
+
+/**
+ * The viewer's liked posts.
+ *
+ * Always the authenticated account's own likes. The endpoint takes no path
+ * parameter for another user, so this cannot be pointed at a profile the
+ * viewer is looking at.
+ *
+ * Rows are LikedPostResponse, so consumers unwrap `row.post`. The row
+ * timestamp is `likedAt`, not `savedAt`.
+ */
+export const useLikedPosts = (enabled = true) => {
+  return useInfiniteQuery({
+    queryKey: likedPostsKey,
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getLikedPosts({ cursor: pageParam ?? undefined, limit: 12, signal }),
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+    enabled,
   });
 };
 
