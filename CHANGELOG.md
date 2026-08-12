@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- A search results screen reachable from the search field, covering posts, people, and hashtags, each paging on its own and each with its own empty and failure state.
+- A search now lives in the address, so it can be shared, bookmarked, and reloaded, and typing waits for a pause before searching rather than searching on every keystroke.
+- A follow control on a person in the search results shows whether you already follow them instead of always offering to follow.
+- A saved posts screen, reachable from the account section of settings, listing the posts you have bookmarked.
+- Removing a post from the saved list no longer needs a reload, and a post saved anywhere else in the application appears there straight away.
 - Comments can be liked and unliked, and a comment you have already liked now shows as liked instead of appearing untouched.
 - You can edit your own comment in place, with the same length limit the server enforces.
 - You can delete your own comment after a confirmation that warns you when replies will go with it, which they always do.
@@ -16,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - An unrecognised address inside the application now shows a "this page doesn't exist" panel with a way back to the feed, keeping the navigation in place.
 
 ### Changed
+- The profile tabs now show different things: "posts" lists the account's posts, while "photos" and "liked" say they are not available yet rather than silently repeating the posts grid.
 - Reloading the page no longer signs you out; the session is restored from the refresh cookie, and no token is ever written to browser storage.
 - A screen now reads what it needs from the address, so opening a link to a profile, a post, a follower list, or a search shows the same thing it showed the person who sent it.
 - Moving to a new screen starts at the top of the page, and going back returns to where you were.
@@ -24,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Credentials are now always sent on the authentication requests that carry the refresh cookie, rather than depending on an environment variable that was never set; without this a cross-origin deployment would drop the cookie and sign users out on every reload.
 
 ### Fixed
+- Selecting "photos" on a profile no longer shows text-only posts; the tab selection now reaches the grid instead of only moving the underline.
 - The like count on a comment is no longer raised locally without anything being recorded; it now reflects what the server holds and is restored if a like fails.
 - The like control no longer appears on your own comments, where the server refuses it and the action could never succeed.
 - Submitting a comment twice in quick succession now creates one comment rather than two.
