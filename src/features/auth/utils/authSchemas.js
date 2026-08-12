@@ -12,13 +12,58 @@ const emailField = z
   .min(1, 'email is required.')
   .email('please enter a valid email.');
 
-// Backend RegisterRequest.password / ResetPasswordRequest.newPassword:
-// @NotBlank @Size(min = 8, max = 128). No complexity requirement is enforced
-// server-side, so none is enforced here.
-const passwordField = z
-  .string()
-  .min(8, 'password must be at least 8 characters.')
-  .max(128, 'password must be 128 characters or fewer.');
+// Backend RegisterRequest.password / ResetPasswordRequest.newPassword, both
+// annotated @ValidPassword and enforced by PasswordPolicyValidator.
+//
+// The server reports at most one violation per value and returns the first rule
+// that failed, in the order below. This mirrors that order so the client names
+// the same rule the server would have named.
+//
+// Lengths are counted in code points rather than UTF-16 units, matching
+// String.codePointCount, so an astral character counts once here as it does
+// there. The byte ceiling is separate and lower than the character ceiling
+// because BCrypt truncates above 72 bytes.
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 64;
+const PASSWORD_MAX_UTF8_BYTES = 72;
+
+// Character.isWhitespace, isSpaceChar, isISOControl and the FORMAT category,
+// which together already cover the zero-width and joining characters the
+// validator lists explicitly.
+const BLANK_OR_INVISIBLE = /[\s\p{Zs}\p{Zl}\p{Zp}\p{Cc}\p{Cf}]/u;
+const HAS_UPPERCASE = /\p{Lu}/u;
+// Whitespace and invisible characters are rejected before this runs, so
+// anything that is not a letter is a digit or a special character.
+const HAS_DIGIT_OR_SPECIAL = /\P{L}/u;
+
+const passwordField = z.string().superRefine((value, ctx) => {
+  const addIssue = (message) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+  const length = [...value].length;
+
+  if (length < PASSWORD_MIN_LENGTH) {
+    addIssue(`password must be at least ${PASSWORD_MIN_LENGTH} characters.`);
+    return;
+  }
+  if (length > PASSWORD_MAX_LENGTH) {
+    addIssue(`password must be ${PASSWORD_MAX_LENGTH} characters or fewer.`);
+    return;
+  }
+  if (new TextEncoder().encode(value).length > PASSWORD_MAX_UTF8_BYTES) {
+    addIssue(`password must be ${PASSWORD_MAX_UTF8_BYTES} bytes or fewer once encoded.`);
+    return;
+  }
+  if (BLANK_OR_INVISIBLE.test(value)) {
+    addIssue('password must not contain spaces or invisible characters.');
+    return;
+  }
+  if (!HAS_UPPERCASE.test(value)) {
+    addIssue('password must contain at least one uppercase letter.');
+    return;
+  }
+  if (!HAS_DIGIT_OR_SPECIAL.test(value)) {
+    addIssue('password must contain at least one digit or special character.');
+  }
+});
 
 // Backend RegisterRequest.username: @NotBlank @Size(min = 3, max = 30)
 // @Pattern(^[a-zA-Z0-9_.]+$). Dots are permitted.
