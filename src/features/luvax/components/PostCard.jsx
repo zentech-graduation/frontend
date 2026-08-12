@@ -200,7 +200,13 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             onClick: () => block.mutate(targetUserId),
           }
         : null,
-      !isOwner
+      // hasReported is true exactly when a new report would be refused as a
+      // duplicate, and a report never reverses, so the row states what happened
+      // instead of offering an action that cannot succeed.
+      !isOwner && post.hasReported
+        ? { id: 'report', icon: 'flag', label: 'Reported', readOnly: true }
+        : null,
+      !isOwner && !post.hasReported
         ? {
             id: 'report',
             icon: 'flag',
@@ -217,7 +223,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
           }
         : null,
     ],
-    [authorHandle, authorName, avatarUrl, block, follow.isPending, following, isOwner, liked, myFollowingData, navigate, post.caption, post.id, targetUserId, unfollow.isPending]
+    [authorHandle, authorName, avatarUrl, block, follow.isPending, following, isOwner, liked, myFollowingData, navigate, post.caption, post.hasReported, post.id, targetUserId, unfollow.isPending]
   );
 
   return (

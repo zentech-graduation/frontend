@@ -140,21 +140,26 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
           { id: 'delete', icon: 'trash', label: 'Delete', tone: 'danger', onClick: () => setDeleteOpen(true) },
         ]
       : [
-          {
-            id: 'report',
-            icon: 'flag',
-            label: 'Report',
-            tone: 'danger',
-            separator: true,
-            onClick: () =>
-              setReportTarget({
-                entityType: REPORT_TYPES.COMMENT,
-                entityId: comment.id,
-                author: authorName,
-                text: comment.content,
-                avatarUrl: author.avatarUrl,
-              }),
-          },
+          // hasReported is true exactly when a new report would be refused as a
+          // duplicate, and a report never reverses, so the row states what
+          // happened instead of offering an action that cannot succeed.
+          comment.hasReported
+            ? { id: 'report', icon: 'flag', label: 'Reported', separator: true, readOnly: true }
+            : {
+                id: 'report',
+                icon: 'flag',
+                label: 'Report',
+                tone: 'danger',
+                separator: true,
+                onClick: () =>
+                  setReportTarget({
+                    entityType: REPORT_TYPES.COMMENT,
+                    entityId: comment.id,
+                    author: authorName,
+                    text: comment.content,
+                    avatarUrl: author.avatarUrl,
+                  }),
+              },
         ]),
   ];
 
@@ -528,24 +533,29 @@ export function PostDetailScreen({ overlay = false }) {
       ...(isSelf
         ? []
         : [
-            {
-              id: 'report',
-              icon: 'flag',
-              label: 'Report',
-              tone: 'danger',
-              separator: true,
-              onClick: () =>
-                setPostReportTarget({
-                  entityType: REPORT_TYPES.POST,
-                  entityId: postId,
-                  author: authorName,
-                  text: post.caption,
-                  avatarUrl: authorAvatarUrl,
-                }),
-            },
+            // hasReported is true exactly when a new report would be refused as
+            // a duplicate, and a report never reverses, so the row states what
+            // happened instead of offering an action that cannot succeed.
+            post.hasReported
+              ? { id: 'report', icon: 'flag', label: 'Reported', separator: true, readOnly: true }
+              : {
+                  id: 'report',
+                  icon: 'flag',
+                  label: 'Report',
+                  tone: 'danger',
+                  separator: true,
+                  onClick: () =>
+                    setPostReportTarget({
+                      entityType: REPORT_TYPES.POST,
+                      entityId: postId,
+                      author: authorName,
+                      text: post.caption,
+                      avatarUrl: authorAvatarUrl,
+                    }),
+                },
           ]),
     ],
-    [authorAvatarUrl, authorName, isSelf, liked, post.caption, postId]
+    [authorAvatarUrl, authorName, isSelf, liked, post.caption, post.hasReported, postId]
   );
 
   if (isLoading) {

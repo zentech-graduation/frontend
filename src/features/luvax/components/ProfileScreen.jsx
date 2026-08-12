@@ -105,20 +105,26 @@ export function ProfileScreen() {
 
   // Only ever rendered behind the !isSelf guard on the button that opens it, so the
   // report action cannot appear on the viewer's own profile.
+  // On a user the flag is nested under viewerState, unlike posts and comments
+  // which carry hasReported at the top level. It is true exactly when a new
+  // report would be refused as a duplicate, and a report never reverses, so the
+  // row states what happened instead of offering an action that cannot succeed.
   const profileMenuItems = [
-    {
-      id: 'report',
-      icon: 'flag',
-      label: 'Report',
-      tone: 'danger',
-      onClick: () =>
-        setReportTarget({
-          entityType: REPORT_TYPES.USER,
-          entityId: user?.id,
-          author: title,
-          avatarUrl: user?.avatarUrl,
-        }),
-    },
+    user?.viewerState?.hasReported
+      ? { id: 'report', icon: 'flag', label: 'Reported', readOnly: true }
+      : {
+          id: 'report',
+          icon: 'flag',
+          label: 'Report',
+          tone: 'danger',
+          onClick: () =>
+            setReportTarget({
+              entityType: REPORT_TYPES.USER,
+              entityId: user?.id,
+              author: title,
+              avatarUrl: user?.avatarUrl,
+            }),
+        },
   ];
   const showHandle = Boolean(user?.username) && user?.displayName && user.displayName.toLowerCase() !== handle.toLowerCase();
   return (
