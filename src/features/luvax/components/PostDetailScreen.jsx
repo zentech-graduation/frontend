@@ -106,17 +106,23 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
   };
 
   // The dialogue is usable without the estimate, so it waits only briefly for
-  // one. Past that the unnumbered wording stands for the life of the dialogue,
-  // rather than the text changing under a user who is already reading it.
+  // one. The deadline is latched only while the request is still outstanding:
+  // once an answer is in, it stays on screen. Past the deadline the unnumbered
+  // wording stands for the life of the dialogue, rather than the text changing
+  // under a user who is already reading it.
   useEffect(() => {
     if (!deleteOpen) {
       setEstimateLate(false);
       return undefined;
     }
 
+    if (!deletionScope.isPending) {
+      return undefined;
+    }
+
     const timer = setTimeout(() => setEstimateLate(true), 1500);
     return () => clearTimeout(timer);
-  }, [deleteOpen]);
+  }, [deleteOpen, deletionScope.isPending]);
 
   const scopeCount = deletionScope.data?.data?.deletedCommentCount;
   const scopeUsable = !estimateLate && typeof scopeCount === 'number';
