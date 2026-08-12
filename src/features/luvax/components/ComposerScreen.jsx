@@ -96,8 +96,11 @@ export function ComposerScreen() {
           setFormError(error.message || "we couldn't publish your post. try again.");
         },
       });
-    } catch {
-      setFormError("we couldn't upload your media. try again.");
+    } catch (err) {
+      // The chosen file is deliberately left in place: every upload failure the
+      // server reports can be retried with the same file, so clearing it would
+      // make the user find it again.
+      setFormError(err?.uploadMessage || "we couldn't upload your media. try again.");
     }
   };
 

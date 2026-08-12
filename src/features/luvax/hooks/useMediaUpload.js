@@ -2,6 +2,31 @@ import { useState, useCallback } from 'react';
 import axios from 'axios';
 import { mediaService } from '@/api/media.service';
 
+/**
+ * Turns a failed upload into copy that says what to do next.
+ *
+ * Registration now verifies the object against storage, so it can refuse an
+ * upload that did not arrive intact. None of these outcomes is permanent: the
+ * same file can be sent again, so every one of them keeps the composer's
+ * selection and invites a retry rather than reading as a dead end.
+ */
+const describeMediaUploadError = (err) => {
+  switch (err?.response?.data?.code) {
+    case 'MEDIA_OBJECT_NOT_UPLOADED':
+      return "your file didn't finish uploading. try again.";
+    case 'MEDIA_OBJECT_METADATA_MISMATCH':
+      return 'your file changed while it was uploading. try again.';
+    case 'MEDIA_STORAGE_UNAVAILABLE':
+    case 'MEDIA_STORAGE_NOT_CONFIGURED':
+    case 'MEDIA_CDN_NOT_CONFIGURED':
+      return "media storage can't be reached right now. try again in a moment.";
+    case 'MEDIA_INVALID_METADATA':
+      return "we couldn't read that file. try a different one.";
+    default:
+      return "we couldn't upload your media. try again.";
+  }
+};
+
 export const useMediaUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -94,9 +119,13 @@ export const useMediaUpload = () => {
       return response; // Contains the mediaAssetId and other details
 
     } catch (err) {
-      console.error('Media upload failed', err);
-      setError("we couldn't upload your media. try again.");
+      const message = describeMediaUploadError(err);
+      setError(message);
       setIsUploading(false);
+      setProgress(0);
+      // Re-thrown carrying the resolved copy so the composer can show the
+      // specific reason without repeating the mapping.
+      err.uploadMessage = message;
       throw err;
     }
   }, []);
