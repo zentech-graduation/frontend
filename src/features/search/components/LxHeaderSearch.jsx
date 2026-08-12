@@ -24,7 +24,9 @@ export function LxHeaderSearch({ navigate, viewport }) {
       next.set('focusSearch', '1');
     }
     const search = next.toString();
-    navigate(search ? `${ROUTES.EXPLORE}?${search}` : ROUTES.EXPLORE);
+    // Submitting goes to the results screen. The explore screen keeps its own
+    // `q` handling for addresses that already point at it.
+    navigate(search ? `${ROUTES.SEARCH}?${search}` : ROUTES.SEARCH);
   };
 
   const submitSearch = () => {

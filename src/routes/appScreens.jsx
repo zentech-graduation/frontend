@@ -11,6 +11,7 @@ import { NotificationsScreen } from '@/features/luvax/components/NotificationsSc
 import { OnboardingScreen } from '@/features/luvax/components/OnboardingScreen';
 import { PostDetailScreen } from '@/features/luvax/components/PostDetailScreen';
 import { ProfileScreen } from '@/features/luvax/components/ProfileScreen';
+import { SearchScreen } from '@/features/search/components/SearchScreen';
 import { ScreenNotFound } from '@/features/luvax/components/ScreenNotFound';
 import { SettingsScreen } from '@/features/luvax/components/SettingsScreen';
 import { StoryComposerScreen, StoryViewScreen } from '@/features/luvax/components/StoryScreens';
@@ -39,6 +40,7 @@ import { MessagesScreen } from '@/features/messages/MessagesScreen';
 export const APP_SCREENS = [
   { screen: 'feed', index: true, path: ROUTES.FEED, element: <FeedScreen />, chrome: 'shell', rightRail: true },
   { screen: 'explore', path: ROUTES.EXPLORE, element: <ExploreScreen />, chrome: 'shell', rightRail: true },
+  { screen: 'search', path: ROUTES.SEARCH, element: <SearchScreen />, chrome: 'shell' },
   { screen: 'compose', path: ROUTES.COMPOSE, element: <ComposerScreen />, chrome: 'shell' },
   { screen: 'notifications', path: ROUTES.NOTIFICATIONS, element: <NotificationsScreen />, chrome: 'shell' },
   { screen: 'messages', path: ROUTES.MESSAGES, element: <MessagesScreen />, chrome: 'messages' },
