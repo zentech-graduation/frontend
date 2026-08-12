@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- The photos tab on a profile now works, showing the account's photo and carousel posts, filtered by the server rather than approximated.
+- The liked tab now works on your own profile, listing the posts you have liked, most recent first.
+- A private account now looks private to someone who does not follow it, and following one shows that your request is waiting rather than pretending it was accepted.
+- Blocking and unblocking someone can now be done from their profile, without having to find one of their posts first.
+- Blocking now asks first and says what it will do, including that unblocking will not restore the follows it removes.
+- Looking at the profile of someone you have blocked now says so, instead of reporting a connection error.
+
 - A search results screen reachable from the search field, covering posts, people, and hashtags, each paging on its own and each with its own empty and failure state.
 - A search now lives in the address, so it can be shared, bookmarked, and reloaded, and typing waits for a pause before searching rather than searching on every keystroke.
 - A follow control on a person in the search results shows whether you already follow them instead of always offering to follow.
@@ -19,6 +26,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Every screen in the signed-in application now has its own address, so any of them can be linked, bookmarked, shared, and reloaded.
 - The browser back and forward buttons now move between screens instead of leaving the application.
 - An unrecognised address inside the application now shows a "this page doesn't exist" panel with a way back to the feed, keeping the navigation in place.
+
+### Changed
+- The post half of search now says whether there were genuinely no matches or whether search itself was unavailable, instead of one message covering both.
+- The tabs on someone else's profile no longer offer a liked list, because only your own likes can be read.
+
+### Fixed
+- A saved or liked list no longer stops loading when a page comes back empty, and no longer claims you have saved nothing while there are still pages to fetch.
+
+### Removed
+- The invented conversations, people, stories, trending tags, topic chips, tag suggestions and onboarding interests that were shown as though they were real, along with the links that led from them to profiles and stories that do not exist.
+- The story rail on the feed, which was built entirely from invented people.
+- Messages remains in the navigation but is now disabled, making clear it is not part of this build.
 
 ### Changed
 - The profile tabs now show different things: "posts" lists the account's posts, while "photos" and "liked" say they are not available yet rather than silently repeating the posts grid.
