@@ -7,6 +7,7 @@ import { extractPageContent } from '@/utils/helpers';
 import { LxIcon } from './primitives';
 import { useSavePost, useSavedPosts } from '../hooks/usePosts';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { useDrainEmptyPages } from '../hooks/useDrainEmptyPages';
 import { useViewport } from '../hooks/useViewport';
 
 /**
@@ -37,6 +38,18 @@ export function SavedPostsScreen() {
   const posts = (data?.pages?.flatMap((page) => extractPageContent(page)) || [])
     .map((row) => row?.post ?? row)
     .filter(Boolean);
+
+  // A save record outlives the post behind it, so a page can arrive empty
+  // while later pages still hold rows. Without this the screen claimed the
+  // viewer had saved nothing and stopped paging for good, because the
+  // sentinel below renders only once there is at least one row to show.
+  const { isDraining } = useDrainEmptyPages({
+    rowCount: posts.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    enabled: !isError,
+  });
 
   const header = (
     <div
@@ -75,7 +88,7 @@ export function SavedPostsScreen() {
   );
 
   let body;
-  if (isLoading) {
+  if (isLoading || isDraining) {
     body = notice('bookmark', 'loading your saved posts...');
   } else if (isError) {
     body = notice('alert', "we couldn't load your saved posts.", 'check your connection and try again.', 'error');
