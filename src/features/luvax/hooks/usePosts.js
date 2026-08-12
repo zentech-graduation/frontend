@@ -39,15 +39,19 @@ export const useExplore = (params = {}) => {
  * have to live and die together. Keying on the filter makes React Query treat
  * a filter change as a different query, which starts it at a null cursor and
  * makes replaying a foreign cursor impossible by construction.
+ * This hook deliberately takes no open parameter bag. The endpoint rejects any
+ * parameter it does not declare, so forwarding arbitrary caller keys into the
+ * query string would turn a harmless call site mistake into a 400.
  * @param {string} userId - The profile being read.
  * @param {string[]} [types] - Post types to include; omit or pass an empty array for all.
+ * @param {{enabled?: boolean}} [options] - Set enabled false when the profile is unreadable.
  */
-export const useUserPosts = (userId, types = [], params = {}) => {
+export const useUserPosts = (userId, types = [], { enabled = true } = {}) => {
   const type = types.length > 0 ? types : undefined;
   return useInfiniteQuery({
-    queryKey: ['userPosts', userId, type ?? 'all', params],
+    queryKey: ['userPosts', userId, type ?? 'all'],
     queryFn: ({ pageParam = null, signal }) =>
-      postService.getUserPosts(userId, { ...params, type, cursor: pageParam, limit: 10, signal }),
+      postService.getUserPosts(userId, { type, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -55,7 +59,7 @@ export const useUserPosts = (userId, types = [], params = {}) => {
     refetchIntervalInBackground: false,
     getNextPageParam: getNextCursor,
     initialPageParam: null,
-    enabled: !!userId,
+    enabled: enabled && !!userId,
   });
 };
 
