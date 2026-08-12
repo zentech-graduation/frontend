@@ -9,6 +9,7 @@ import { useUserPosts } from '../hooks/usePosts';
 import { useUserProfile } from '../hooks/useUsers';
 import { useFollow, useUnfollow, useFollowing } from '../hooks/useSocial';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { UnsupportedTabNotice } from './UnsupportedTabNotice';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { ROUTES, routeTo } from '@/config/constants';
 
@@ -177,8 +178,14 @@ export function ProfileScreen() {
           ))}
         </div>
 
-        {/* Grid */}
-        {isPostsError ? (
+        {/* Grid.
+            Only `posts` is backed by an endpoint. The other two tabs render a
+            notice instead, because no server-side media filter and no liked
+            posts collection exist. See UnsupportedTabNotice for why they are
+            not approximated here. */}
+        {tab !== 'posts' ? (
+          <UnsupportedTabNotice tab={tab} />
+        ) : isPostsError ? (
           <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontBody, fontSize: 14, color: v.error }}>
             we couldn't load these posts. check your connection and try again.
           </div>
@@ -206,7 +213,7 @@ export function ProfileScreen() {
           </div>
         )}
 
-        {hasNextPage && !isPostsError && (
+        {tab === 'posts' && hasNextPage && !isPostsError && (
           <div ref={ref} style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
             {isFetchingNextPage ? 'loading more...' : 'scroll for more'}
           </div>
