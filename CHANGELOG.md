@@ -7,7 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- Comments can be liked and unliked, and a comment you have already liked now shows as liked instead of appearing untouched.
+- You can report someone else's post, comment, or account from the overflow menu, choosing from the same eight reasons the server accepts and optionally adding your own description.
+- The report action does not appear on your own post, comment, or profile, where the server refuses it and the action could never succeed.
+- Reporting something you have already reported now says so calmly instead of failing, and states that a different reason will not make a second report possible.
+- A profile you are viewing now has an overflow menu, which previously did not exist.
+- Opening a post now offers the same report action the feed does, which it previously did not.
+
+### Fixed
+- The "Report" item in the post menu and the comment menu now does something; both were previously inert.
 - You can edit your own comment in place, with the same length limit the server enforces.
 - You can delete your own comment after a confirmation that warns you when replies will go with it, which they always do.
 - Comments promoted for having the most likes are now labelled, so the order of the first few comments is explicable rather than arbitrary.
