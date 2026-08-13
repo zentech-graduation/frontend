@@ -43,6 +43,7 @@ All four are muted at mount and all four now carry `playsInline`.
 | `5c960db` | `fix(common): align the icon and button primitives with the design` |
 | `3403cac` | `fix(common): align the app shell with the design` |
 | the commit carrying this file | `docs(common): record the stage 1 conformance work` |
+| `ab264ad` | `fix(common): keep the tablet tab underline` |
 
 Code and documentation are in separate commits.
 

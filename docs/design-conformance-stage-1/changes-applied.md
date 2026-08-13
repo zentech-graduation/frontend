@@ -144,9 +144,14 @@ Those are layout widths rather than the chrome values this item lists, and the d
 | Button width | not set, capped by `maxWidth: 110` | fixed `44`, `minWidth: 44` | `maxWidth: 110`, no fixed width |
 | Button vertical alignment | `justifyContent: 'center'`, `gap: 2` | `justifyContent: 'flex-start'`, `paddingTop: 16` | `justifyContent: 'center'`, `gap: 2` |
 | Icon size | `22` | `23` | `22` |
-| Active underline | absent | a 12 x 1.5 span pinned to the bottom | removed |
+| Active underline | absent | a 12 x 1.5 span pinned to the bottom | removed at desktop, retained at tablet |
 
 The design renders no label in the tab, only the icon, which the frontend already matched.
+
+The underline span was shared by the desktop and tablet branches, so removing it outright also removed
+it from tablet, which is out of scope.
+It was restored behind the tablet conditional in a follow-up commit, so desktop has no underline and
+tablet keeps the one it had.
 
 The hit target grew.
 Measured in the browser at 1440px wide: 109 x 56, against a previous 44 x 56.

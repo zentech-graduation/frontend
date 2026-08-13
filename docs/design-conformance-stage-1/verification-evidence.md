@@ -201,8 +201,13 @@ The test account had nothing unread during verification.
 
 **Before screenshots do not exist**, for the reason given at the top.
 
-**Tablet was not verified**, because it is out of scope.
+**Tablet was not verified in a browser**, because it is out of scope.
 It was protected structurally instead: every value this stage changed sits behind a conditional whose tablet arm keeps its previous literal value.
+
+One tablet regression was introduced and then corrected.
+Removing the active tab underline removed it from tablet too, because the span was shared by both branches.
+It was restored behind the tablet conditional, and desktop was re-measured afterwards at zero underline spans and 109 x 56 tabs.
+The tablet arm itself was confirmed by reading the diff, not by rendering at a tablet width.
 
 **The auth and landing pages were not verified beyond loading.**
 They are frozen.
