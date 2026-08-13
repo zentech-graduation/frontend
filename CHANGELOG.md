@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Comments on a post you have open now arrive as they are written, without a reload, along with edits, deletions, and changes to comment and post like counts.
+- A new comment arrives below what you are already reading, so nothing moves under you, and the top comments stay where the server put them.
+
+### Fixed
+- The explore screen no longer leaves a band of empty space where its topic shortcuts used to be, and the composer no longer reserves room for tag suggestions that are no longer offered.
+
 - The photos tab on a profile now works, showing the account's photo and carousel posts, filtered by the server rather than approximated.
 - The liked tab now works on your own profile, listing the posts you have liked, most recent first.
 - A private account now looks private to someone who does not follow it, and following one shows that your request is waiting rather than pretending it was accepted.
