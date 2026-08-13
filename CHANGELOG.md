@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Something you have already reported now says "Reported" in its menu, so a prior report is visible without having to submit another one to find out.
+- An edited comment is now marked as edited, and a comment that was only liked or replied to is not.
+- The delete confirmation for a comment now states how many comments will be removed in total, including every reply beneath it, instead of only counting direct replies.
 - You can report someone else's post, comment, or account from the overflow menu, choosing from the same eight reasons the server accepts and optionally adding your own description.
 - The report action does not appear on your own post, comment, or profile, where the server refuses it and the action could never succeed.
 - Reporting something you have already reported now says so calmly instead of failing, and states that a different reason will not make a second report possible.
@@ -14,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Opening a post now offers the same report action the feed does, which it previously did not.
 
 ### Fixed
+- You can like your own comment again. The control was removed because the server refused it, and the server no longer does.
+- The sign-up form now enforces exactly the password rules the server enforces, so a password it accepts is not rejected on submit, and a rejected password says which rule it broke instead of only that something was wrong.
+- A failed media upload now says what went wrong and keeps your chosen file, so it can be retried without picking the file again.
 - The "Report" item in the post menu and the comment menu now does something; both were previously inert.
 - You can edit your own comment in place, with the same length limit the server enforces.
 - You can delete your own comment after a confirmation that warns you when replies will go with it, which they always do.

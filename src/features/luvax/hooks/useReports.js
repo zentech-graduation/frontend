@@ -1,5 +1,6 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as reportService from '../../../services/report.service';
+import { userKeys } from './useUsers';
 
 /**
  * Backend error codes this application handles by name.
@@ -60,11 +61,43 @@ export const describeReportError = (error) => {
 /**
  * Submits a report.
  *
- * There is no cache to update afterwards. A regular user cannot read their own reports
- * back: GET /reports is restricted to moderators and administrators and answers 403 for
- * everyone else, so nothing on any screen reflects that a report exists.
+ * The reported item carries the viewer's own report state, so the item is refetched
+ * afterwards and its report control settles into the reported state. This runs on a
+ * duplicate rejection too: that answer means the flag is already true on the server and
+ * the cached copy is the stale one, which is what makes the up-front state and the
+ * duplicate error agree rather than contradict each other.
+ *
+ * A regular user still cannot list their own reports; GET /reports remains restricted to
+ * moderators and administrators.
  */
-export const useSubmitReport = () =>
-  useMutation({
+export const useSubmitReport = () => {
+  const queryClient = useQueryClient();
+
+  const refreshReportedItem = (reportType) => {
+    if (reportType === reportService.REPORT_TYPES.USER) {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      return;
+    }
+
+    if (reportType === reportService.REPORT_TYPES.COMMENT) {
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
+      queryClient.invalidateQueries({ queryKey: ['commentReplies'] });
+      return;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['post'] });
+    queryClient.invalidateQueries({ queryKey: ['feed'] });
+    queryClient.invalidateQueries({ queryKey: ['explore'] });
+    queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+  };
+
+  return useMutation({
     mutationFn: (input) => reportService.submitReport(input),
+    onSuccess: (_response, variables) => refreshReportedItem(variables?.reportType),
+    onError: (error, variables) => {
+      if (getReportErrorCode(error) === REPORT_ERROR_CODES.DUPLICATE) {
+        refreshReportedItem(variables?.reportType);
+      }
+    },
   });
+};

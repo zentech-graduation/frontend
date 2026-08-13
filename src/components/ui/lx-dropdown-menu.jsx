@@ -88,21 +88,35 @@ export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196, a
         zIndex,
       }}
     >
-      {items.filter(Boolean).map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          className={`lx-popover-item ${item.tone === 'danger' ? 'is-danger' : ''} ${item.separator ? 'has-separator' : ''}`}
-          onClick={() => {
-            item.onClick?.();
-            onClose?.();
-          }}
-          disabled={item.disabled}
-        >
-          {item.icon ? <LxIcon name={item.icon} size={16} color={item.tone === 'danger' ? v.error : v.ink2} /> : null}
-          <span>{item.label}</span>
-        </button>
-      ))}
+      {items.filter(Boolean).map((item) =>
+        // A readOnly row states a fact the viewer cannot act on. It is not a
+        // disabled control: disabling implies the action becomes available
+        // later, and these states do not reverse.
+        item.readOnly ? (
+          <div
+            key={item.id}
+            className={`lx-popover-item is-readonly ${item.separator ? 'has-separator' : ''}`}
+            style={{ cursor: 'default', color: v.ink3 }}
+          >
+            {item.icon ? <LxIcon name={item.icon} size={16} color={v.ink3} /> : null}
+            <span>{item.label}</span>
+          </div>
+        ) : (
+          <button
+            key={item.id}
+            type="button"
+            className={`lx-popover-item ${item.tone === 'danger' ? 'is-danger' : ''} ${item.separator ? 'has-separator' : ''}`}
+            onClick={() => {
+              item.onClick?.();
+              onClose?.();
+            }}
+            disabled={item.disabled}
+          >
+            {item.icon ? <LxIcon name={item.icon} size={16} color={item.tone === 'danger' ? v.error : v.ink2} /> : null}
+            <span>{item.label}</span>
+          </button>
+        )
+      )}
     </div>
   );
 }

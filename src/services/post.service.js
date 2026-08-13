@@ -207,9 +207,26 @@ export const editComment = async (commentId, content) => {
 };
 
 /**
+ * Reports how many comments deleting this one would remove.
+ *
+ * The count covers the comment itself plus every descendant at any depth, so it
+ * is not replyCount, which counts direct replies only. This is an estimate: a
+ * reply arriving between this call and the delete makes the delete remove more.
+ * Owner-only; the backend answers 404 for anyone else.
+ *
+ * @param {string} commentId - The ID of the comment.
+ * @returns {Promise<Object>} ApiResponse<CommentDeletionScopeResponse>.
+ */
+export const getCommentDeletionScope = async (commentId) => {
+  const response = await axiosInstance.get(`/comments/${commentId}/deletion-scope`);
+  return response.data;
+};
+
+/**
  * Soft-deletes a comment the viewer authored, together with every descendant.
  * @param {string} commentId - The ID of the comment.
- * @returns {Promise<Object>} ApiResponse<void>.
+ * @returns {Promise<Object>} ApiResponse<CommentDeletionScopeResponse>, carrying
+ *   the authoritative number of comments removed.
  */
 export const deleteComment = async (commentId) => {
   const response = await axiosInstance.delete(`/comments/${commentId}`);
@@ -235,6 +252,7 @@ export const postService = {
   likeComment,
   unlikeComment,
   editComment,
+  getCommentDeletionScope,
   deleteComment,
 };
 
