@@ -87,6 +87,13 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
     );
   };
 
+  // The design puts the click on the article and skips it when the event started
+  // inside an interactive child, which it marks with data-lxtap.
+  const handleCardClick = (event) => {
+    if (event.target.closest('[data-lxtap]')) return;
+    openOverlay(routeTo.postDetail(post.id));
+  };
+
   const handleEditOpen = () => {
     setEditCaption(post.caption ?? '');
     setEditSheetOpen(true);
@@ -119,6 +126,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const isMobile = viewport === 'mobile';
+  const isTextPost = String(post.postType || post.type || '').toLowerCase() === 'text';
   const following = (() => {
     if (!myFollowingData || !targetUserId || isOwner) return false;
     const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
@@ -230,11 +238,13 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
 
   return (
     <article
+      onClick={handleCardClick}
       style={{
-        background: isMobile ? 'transparent' : v.surface,
-        borderRadius: isMobile ? 0 : 14,
-        border: isMobile ? 'none' : `1px solid ${v.borderSubtle}`,
+        background: isMobile ? v.base : v.surface,
+        borderRadius: isMobile ? 0 : 12,
+        overflow: 'hidden',
         boxShadow: isMobile ? 'none' : '0 2px 8px rgba(26,24,22,0.06)',
+        cursor: 'pointer',
         paddingBottom: isMobile ? 12 : 0,
         borderBottom: isMobile ? `1px solid ${v.border}` : 'none',
       }}
@@ -242,6 +252,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       {block.isError ? (
         <div
           role="alert"
+          data-lxtap="1"
           style={{
             padding: '8px 14px',
             fontFamily: v.fontMono,
@@ -254,19 +265,17 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       ) : null}
 
-      <PostMedia
-        post={post}
-        radius={isMobile ? 0 : 12}
-        onOpen={() => openOverlay(routeTo.postDetail(post.id))}
-      />
+      {/* The article clips its own corners, so the frame needs no radius. */}
+      <PostMedia post={post} radius={0} />
 
       <div style={{ padding: isMobile ? '14px 14px 10px' : pad }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
           <div
+            data-lxtap="1"
             onClick={() => targetUserId && navigate(routeTo.userProfile(targetUserId))}
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
           >
-            <LxAvatar size={28} src={avatarUrl} />
+            <LxAvatar size={26} src={avatarUrl} />
             <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>
               {authorName}
             </span>
@@ -277,6 +286,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
           <button
             ref={menuButtonRef}
             type="button"
+            data-lxtap="1"
             onClick={() => setMenuOpen((open) => !open)}
             style={{
               background: 'transparent',
@@ -297,12 +307,13 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
 
         <p
-          onClick={() => openOverlay(routeTo.postDetail(post.id))}
           style={{
             fontFamily: v.fontBody,
-            fontSize: post.postType === 'TEXT' || post.type === 'text' ? 18 : 14,
+            // postType serialises lower case, like mediaType. Comparing against
+            // "TEXT" never matched, so every text post rendered at the image size.
+            fontSize: isTextPost ? 16 : 14,
             color: v.ink,
-            lineHeight: 1.45,
+            lineHeight: 1.5,
             margin: 0,
             letterSpacing: '-0.01em',
             cursor: 'pointer',
@@ -325,6 +336,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         <div style={{ display: 'flex', gap: 18, marginTop: gap + 2, alignItems: 'center' }}>
           <button
             type="button"
+            data-lxtap="1"
             onClick={handleLikeToggle}
             className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
             style={{
@@ -341,20 +353,22 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
               <LxIcon name="heart" size={17} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: liked ? HEART_COLOR : v.ink3 }}>
+            {/* The design keeps the count in v.ink3 whether or not the post is liked;
+                only the glyph takes the like colour. */}
+            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
               {likeCount}
             </span>
           </button>
-          <button onClick={() => openOverlay(routeTo.postDetail(post.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <button type="button" data-lxtap="1" onClick={() => openOverlay(routeTo.postDetail(post.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
             <LxIcon name="reply" size={17} color={v.ink3} />
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
               {post.commentCount ?? 0}
             </span>
           </button>
-          <button type="button" onClick={() => sharePost(post.id, post.caption)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          <button type="button" data-lxtap="1" onClick={() => sharePost(post.id, post.caption)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             <LxIcon name="share" size={17} color={v.ink3} />
           </button>
-          <button onClick={handleSaveToggle} className={saveBurst ? 'lx-bookmark-button is-saved' : 'lx-bookmark-button'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
+          <button type="button" data-lxtap="1" onClick={handleSaveToggle} className={saveBurst ? 'lx-bookmark-button is-saved' : 'lx-bookmark-button'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
             <span className="lx-bookmark-icon" style={{ display: 'inline-flex' }}>
               <LxIcon name="bookmark" size={17} color={saved ? v.ink : v.ink3} filled={saved} />
             </span>
@@ -362,6 +376,9 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       </div>
 
+      {/* These overlays are children of the article, so without the opt-out every
+          click inside them would also open the post. */}
+      <div data-lxtap="1">
       <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={248} />
 
       <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
@@ -407,6 +424,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       >
         are you sure you want to delete this post?
       </LxModal>
+      </div>
     </article>
   );
 }
