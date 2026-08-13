@@ -95,13 +95,32 @@ export function FeedScreen() {
     );
   }
 
+  if (posts.length === 0) {
+    return (
+      <>
+        <StoriesCarousel viewport={viewport} />
+        {/* Geometry is the design's own empty state, taken from Explore: padding
+            48px 24px, title body 15 weight 500 in v.ink2, subtitle body 13 in
+            v.ink3. Only the copy is new, because the design defines no empty feed. */}
+        <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 500, color: v.ink2, marginBottom: 4 }}>
+            your feed is quiet
+          </div>
+          <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+            follow a few people and their posts will appear here
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <StoriesCarousel viewport={viewport} />
 
       <div style={{
-        flex: 1, padding: isMobile ? '10px 0 24px' : '14px 16px',
-        paddingBottom: 24,
+        flex: 1,
+        padding: isMobile ? '10px 0 24px' : '14px 16px 24px',
       }}>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: isMobile ? '0 14px 12px' : '2px 2px 12px' }}>today</div>
 
