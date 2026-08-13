@@ -7,6 +7,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- You can now create a post carrying several pictures or videos. Attach as many as ten in one post, mix pictures and video freely, remove any one of them, and change their order, which is the order a viewer will swipe through.
+- Each attached file uploads on its own and shows its own progress, so one failure among several is identifiable. The others and your caption are kept, and the failed file can be retried or removed without starting the post again.
+- A file that is the wrong format or too large is now refused before any of it is sent, and the refusal names the actual limit rather than leaving you to guess.
+- Animated GIF images and QuickTime video are now accepted, matching what the server accepts.
+
+### Changed
+- The composer no longer asks you to choose a kind of post before making one. The three type tabs are gone. Write first or attach first, in either order, and the kind of post is worked out from what you attached. The post button says which kind it is about to create.
+- Removing the last attachment turns the post back into a text post on its own, with nothing to switch.
+- The composer's guidance on accepted formats, maximum size and maximum video length is now read from the server instead of being written into the application. It previously claimed only mp4 was accepted, with a sixty second and fifty megabyte limit, and all three were wrong.
+
+### Added
 - A post carrying more than one image or video now shows every one of them, a single item at a time, with a count and a marker for which item you are on. Previously only the first was shown and nothing indicated the rest existed, so a video sitting behind an image could not be reached from anywhere in the application.
 - You can move through a multi-item post by swiping on a touch screen, by the arrows on a pointer device, and by the left and right arrow keys once the media has focus.
 - The profile grid, the photos tab, the explore grid and search results each mark a post that carries more than one item with the number of items it holds.
