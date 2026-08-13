@@ -4,6 +4,7 @@ import { v } from '@/config/tokens';
 import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
+import { useLivePostUpdates } from '../hooks/useLivePostUpdates';
 import { useCommentReplies, useDeleteComment, useEditComment, useToggleCommentLike } from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
@@ -342,6 +343,11 @@ export function PostDetailScreen({ overlay = false }) {
     hasNextPage: hasNextComments,
     isFetchingNextPage: isFetchingNextComments,
   } = useTopLevelComments(postId);
+
+  // Live updates are scoped to the post the viewer has open, and to this screen
+  // alone. They are additive: if the socket never connects, everything below
+  // behaves exactly as it did before.
+  useLivePostUpdates(postId);
 
   const post = postResponse?.data || postResponse || {};
   const author = getUserSummary(post);

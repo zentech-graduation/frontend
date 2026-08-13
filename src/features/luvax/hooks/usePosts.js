@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { postService } from '@/services/post.service';
 import { getNextCursor } from '@/utils/helpers';
+import { beginSelfPostLike, endSelfPostLike, noteSelfCommentLike } from './useLivePostUpdates';
 
 export const useFeed = (params = {}) => {
   return useInfiniteQuery({
@@ -131,6 +132,13 @@ export const useLikePost = () => {
   return useMutation({
     mutationFn: ({ postId, liked }) =>
       liked ? postService.unlikePost(postId) : postService.likePost(postId),
+    // The post like broadcast carries an absolute count, which is safe to apply
+    // blind except while this viewer's own tap is still in flight: the server's
+    // count may not include it yet, and applying the frame would visibly undo
+    // the tap before the mutation settles. The live handler skips frames for a
+    // post that is marked in flight here.
+    onMutate: ({ postId }) => beginSelfPostLike(postId),
+    onSettled: (_data, _error, { postId }) => endSelfPostLike(postId),
   });
 };
 
@@ -293,6 +301,13 @@ export const useToggleCommentLike = (postId) => {
     mutationFn: ({ commentId, isLiked }) =>
       isLiked ? postService.unlikeComment(commentId) : postService.likeComment(commentId),
     onMutate: async ({ commentId, isLiked, parentId }) => {
+      // The like broadcast carries no count and does not say who liked, so the
+      // live handler moves the count by one for every frame it sees. This
+      // viewer's own like comes back as such a frame, and the optimistic change
+      // below has already accounted for it. Recording it here lets the live
+      // handler skip that one echo instead of counting the like twice.
+      noteSelfCommentLike(commentId, !isLiked);
+
       const queryKey = commentListKey(postId, parentId);
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData(queryKey);
