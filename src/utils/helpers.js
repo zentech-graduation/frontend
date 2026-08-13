@@ -255,3 +255,44 @@ export async function sharePost(postId, title) {
 export function isVideoMedia(media) {
   return media?.mediaType === 'video';
 }
+
+// Frame ratio bounds, as width divided by height. Derived rather than taken from
+// the design: the design authors a pixel height per mock post and carries no real
+// assets. 0.5 is 1:2 and 3.0 is 3:1, both chosen to sit outside every format the
+// application accepts, so real media always renders at its true ratio and the
+// clamp only catches a pathological asset.
+export const FRAME_RATIO_MIN = 0.5;
+export const FRAME_RATIO_MAX = 3.0;
+
+// Used when an asset carries no usable dimensions. Square is the neutral choice
+// and matches the profile grid tile.
+export const MEDIA_FALLBACK_RATIO = 1;
+
+/**
+ * The post's ordered media array, always an array.
+ *
+ * The backend orders by post_media.position and the Post entity carries an
+ * @OrderBy, so index order is carousel order.
+ * @param {{media?: unknown}} post
+ * @returns {Array<object>}
+ */
+export function getMediaList(post) {
+  return Array.isArray(post?.media) ? post.media : [];
+}
+
+/**
+ * Aspect ratio to reserve for a media frame, as width divided by height.
+ *
+ * Reads the dimensions the backend already returns so the box exists before the
+ * file arrives and nothing below it shifts when the media decodes.
+ * @param {{width?: number, height?: number}} media
+ * @returns {number}
+ */
+export function getFrameRatio(media) {
+  const width = Number(media?.width);
+  const height = Number(media?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return MEDIA_FALLBACK_RATIO;
+  }
+  return Math.min(Math.max(width / height, FRAME_RATIO_MIN), FRAME_RATIO_MAX);
+}
