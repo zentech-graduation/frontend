@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- A post carrying more than one image or video now shows every one of them, a single item at a time, with a count and a marker for which item you are on. Previously only the first was shown and nothing indicated the rest existed, so a video sitting behind an image could not be reached from anywhere in the application.
+- You can move through a multi-item post by swiping on a touch screen, by the arrows on a pointer device, and by the left and right arrow keys once the media has focus.
+- The profile grid, the photos tab, the explore grid and search results each mark a post that carries more than one item with the number of items it holds.
+- Search results now show the picture or video a post carries. They previously showed none at all, so a photograph was indistinguishable from a note.
+- An account that follows nobody now sees a short message on its feed instead of an empty column.
+- A picture or video that fails to load now says so in the space it was going to occupy, rather than leaving a gap or a blank tile.
 - A design conformance audit measuring the implemented interface against the committed design export, covering the screen inventory, per-screen differences, the token layer, every primitive, the icon set, and the derived loading, empty, error and disabled treatments. It records findings only and changes no behaviour.
 - A second measurement pass covering the report modal, post detail and the composer, and the first record of how posts carrying images, video and carousels actually behave on every screen that renders them. It records findings only and changes no behaviour.
 - Something you have already reported now says "Reported" in its menu, so a prior report is visible without having to submit another one to find out.
@@ -19,6 +25,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Opening a post now offers the same report action the feed does, which it previously did not.
 
 ### Fixed
+- A portrait photograph is no longer cut off in the feed. About a tenth of a tall image was being trimmed away to fit a fixed height limit, which has been replaced by a rule based on the picture's own shape.
+- Pictures and video now hold their space before they arrive, so a post no longer grows and pushes everything below it down the moment an image finishes loading.
+- A video on someone's profile grid is now visibly a video showing its opening frame. It was previously a blank square with nothing in it.
+- The follow button on a profile now reads "following" when you already follow that account, and changes appearance to match. It always read "follow", whoever you were looking at.
+- The caption on a text post is now the larger size the design specifies. The check that chose the size never matched, so every text post was rendered at the smaller size meant for posts with pictures.
+- The whole of a post in the feed is now a link to open it, while the like, save, share, menu and author controls inside it continue to do their own job.
+- The feed post card and the profile screen now match the design's measurements, including the card's corner, border and avatar, and the profile's avatar, heading, statistics and grid tiles.
 - The icons for the active navigation tab are the right shape. Every filled icon was previously the outline drawing with a fill poured in and the outline still switched on, which made each one about a stroke wider than intended, and the bell's open clapper became a solid wedge. All seven now use the artwork the design draws for them.
 - Unfollow and block in a post's menu show icons that mean what the rows do. Unfollow showed a plain person and block showed a close cross.
 - Primary buttons use light text on the accent fill rather than dark. This covers follow, continue, submit and the composer's post button, which had its own copy of the colours.
