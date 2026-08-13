@@ -173,8 +173,7 @@ export function PostMedia({ post, radius = 0, onOpen = null }) {
         aspectRatio: String(ratio),
         overflow: 'hidden',
         background: v.surfaceSunken,
-        borderTopLeftRadius: radius,
-        borderTopRightRadius: radius,
+        borderRadius: radius,
         cursor: onOpen ? 'pointer' : 'default',
         // v.ink is the design's own tab underline colour, reused as the focus ring.
         outline: focused && isCarousel ? `2px solid ${v.ink}` : 'none',

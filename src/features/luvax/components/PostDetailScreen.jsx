@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
+import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
+import { PostMedia } from './PostMedia';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
 import { useCommentDeletionScope, useCommentReplies, useDeleteComment, useEditComment, useToggleCommentLike } from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -658,13 +659,9 @@ export function PostDetailScreen({ overlay = false }) {
       </div>
 
       <div ref={commentsPaneRef} style={{ minHeight: 0, overflowY: 'auto', padding: '0 16px', scrollBehavior: 'smooth' }}>
-        {mainMedia ? (
+        {mediaList.length > 0 ? (
           <div style={{ padding: '16px 0', borderBottom: `1px solid ${v.borderSubtle}` }}>
-            {isVideoMedia(mainMedia) ? (
-              <video src={mainMedia.cdnUrl} controls muted playsInline style={{ width: '100%', borderRadius: 14, display: 'block' }} />
-            ) : (
-              <img src={mainMedia.cdnUrl} alt={mainMedia.altText || 'post media'} style={{ width: '100%', borderRadius: 14, display: 'block' }} />
-            )}
+            <PostMedia post={post} radius={14} />
           </div>
         ) : null}
 
