@@ -312,14 +312,17 @@ export function ComposerScreen() {
             marginLeft: isTablet ? 0 : contentLeftInset,
           }}
         >
-          <div style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* The suggested tag chips that used to follow this label were a
+              hardcoded list presented as though the server had suggested them.
+              Nothing suggests tags, so there is nothing to offer here. Tags
+              typed into the caption still count, which is what this label
+              reports. The label keeps no bottom margin: it is now the last
+              thing in the row, and the margin reserved space for chips that can
+              no longer appear. */}
+          <div style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
             <LxIcon name="hash" size={12} color={v.ink3} />
             hashtags {allTags.length > 0 ? <span style={{ color: v.accentText, marginLeft: 4 }}>({allTags.length})</span> : null}
           </div>
-          {/* The suggested tag chips were a hardcoded list presented as though
-              the server had suggested them. Nothing suggests tags, so there is
-              nothing to offer here. Tags typed into the caption still count,
-              which is what the counter above reports. */}
         </div>
 
         <LxDivider mx={isTablet ? tabletLeftLineInset : 0} />

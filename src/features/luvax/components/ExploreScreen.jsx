@@ -243,14 +243,13 @@ export function ExploreScreen() {
         </div>
       </div>
 
+      {/* The topic chips that used to sit here were a hardcoded list of invented
+          topics. There is no endpoint behind them, and a chip that filters
+          nothing is a control that lies about what it does. Hashtag search is
+          the real way to reach a tag. The row that held them is gone too: an
+          empty flex container still reserved its vertical padding, leaving a
+          strip of blank space where the chips had been. */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ display: 'flex', gap: 6, padding: isSearching ? '12px 16px 0' : '12px 16px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {/* The topic chips were a hardcoded list of invented topics. There is
-              no endpoint behind them, and a chip that filters nothing is a
-              control that lies about what it does. Hashtag search is the real
-              way to reach a tag. */}
-        </div>
-
         {isSearching ? (
           <div style={{ padding: '18px 16px 28px' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
