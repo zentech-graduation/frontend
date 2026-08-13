@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { ReportModal } from './ReportModal';
+import { ConfirmModal } from './ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo } from '@/config/constants';
 
@@ -334,24 +335,23 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
       ) : null}
       <LxDropdownMenu anchorRef={commentMenuButtonRef} open={commentMenuOpen} onClose={() => setCommentMenuOpen(false)} items={commentMenuItems} width={214} align="right" />
 
-      <LxModal
-        open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        title="delete comment"
-        actions={
-          <>
-            <LxBtn variant="ghost" onClick={() => setDeleteOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={confirmDelete}>
-              {deleteComment.isPending ? 'deleting...' : 'delete'}
-            </LxBtn>
-          </>
+      <ConfirmModal
+        config={
+          deleteOpen
+            ? {
+                title: 'delete comment',
+                // Deletion cascades to the whole subtree and leaves no
+                // tombstone, so the consequence is spelled out when there is
+                // one, and left unsaid when the comment is a leaf.
+                message: deleteMessage(),
+                confirmLabel: deleteComment.isPending ? 'deleting...' : 'delete',
+                confirmDisabled: deleteComment.isPending,
+                onConfirm: confirmDelete,
+              }
+            : null
         }
-      >
-        {/* Deletion cascades to the whole subtree and leaves no tombstone, so
-            the consequence is spelled out when there is one, and left unsaid
-            when the comment is a leaf. */}
-        {deleteMessage()}
-      </LxModal>
+        onClose={() => setDeleteOpen(false)}
+      />
 
       <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
     </div>
@@ -721,38 +721,46 @@ export function PostDetailScreen({ overlay = false }) {
 
       <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={182} zIndex={1605} />
 
-      <LxModal
-        open={blockModalOpen}
+      <ConfirmModal
+        config={
+          blockModalOpen
+            ? {
+                title: 'block user',
+                // Wording carried over unchanged from the modal this replaces.
+                // It was written against the backend's actual behaviour in an
+                // earlier phase, so the migration must not reword it.
+                message: (
+                  <>
+                    Are you sure you want to block <strong>{authorName}</strong>? They won&apos;t be able to find your profile, posts or story on Luvax.
+                    {block.isError ? (
+                      <div role="alert" style={{ marginTop: 12, fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}>
+                        couldn&apos;t block this account. try again.
+                      </div>
+                    ) : null}
+                  </>
+                ),
+                confirmLabel: 'block',
+                confirmDisabled: block.isPending,
+                onConfirm: handleBlockConfirm,
+              }
+            : null
+        }
         onClose={() => setBlockModalOpen(false)}
-        title="block user"
-        actions={
-          <>
-            <LxBtn variant="ghost" onClick={() => setBlockModalOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={handleBlockConfirm} disabled={block.isPending}>block</LxBtn>
-          </>
-        }
-      >
-        Are you sure you want to block <strong>{authorName}</strong>? They won't be able to find your profile, posts or story on Luvax.
-        {block.isError ? (
-          <div role="alert" style={{ marginTop: 12, fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}>
-            couldn&apos;t block this account. try again.
-          </div>
-        ) : null}
-      </LxModal>
+      />
 
-      <LxModal
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        title="delete post"
-        actions={
-          <>
-            <LxBtn variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={handleDeleteConfirm}>delete</LxBtn>
-          </>
+      <ConfirmModal
+        config={
+          deleteConfirmOpen
+            ? {
+                title: 'delete post',
+                message: 'are you sure you want to delete this post?',
+                confirmLabel: 'delete',
+                onConfirm: handleDeleteConfirm,
+              }
+            : null
         }
-      >
-        are you sure you want to delete this post?
-      </LxModal>
+        onClose={() => setDeleteConfirmOpen(false)}
+      />
 
       {isSelf ? (
         <LxModal

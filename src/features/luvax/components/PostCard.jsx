@@ -4,6 +4,7 @@ import { v } from '@/config/tokens';
 import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { PostMedia } from './PostMedia';
+import { ConfirmModal } from './ConfirmModal';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -30,6 +31,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const [heartBurst, setHeartBurst] = useState(false);
   const [saveBurst, setSaveBurst] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const menuButtonRef = useRef(null);
 
@@ -179,7 +181,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             icon: 'ban',
             label: `Block @${authorHandle}`,
             tone: 'danger',
-            onClick: () => block.mutate(targetUserId),
+            onClick: () => setBlockConfirmOpen(true),
           }
         : null,
       // hasReported is true exactly when a new report would be refused as a
@@ -383,19 +385,42 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       </LxBottomSheet>
 
-      <LxModal
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        title="delete post"
-        actions={
-          <>
-            <LxBtn variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={handleDeleteConfirm}>delete</LxBtn>
-          </>
+      <ConfirmModal
+        config={
+          deleteConfirmOpen
+            ? {
+                title: 'delete post',
+                message: 'are you sure you want to delete this post?',
+                confirmLabel: 'delete',
+                onConfirm: handleDeleteConfirm,
+              }
+            : null
         }
-      >
-        are you sure you want to delete this post?
-      </LxModal>
+        onClose={() => setDeleteConfirmOpen(false)}
+      />
+
+      <ConfirmModal
+        config={
+          blockConfirmOpen
+            ? {
+                title: 'block user',
+                // The same wording the profile and post detail already use, so
+                // one irreversible action reads the same way everywhere.
+                message: (
+                  <>
+                    Are you sure you want to block <strong>{authorName}</strong>? They won&apos;t be able to find your profile, posts or story on Luvax.
+                  </>
+                ),
+                confirmLabel: 'block',
+                confirmDisabled: block.isPending,
+                onConfirm: () => {
+                  if (targetUserId) block.mutate(targetUserId);
+                },
+              }
+            : null
+        }
+        onClose={() => setBlockConfirmOpen(false)}
+      />
       </div>
     </article>
   );
