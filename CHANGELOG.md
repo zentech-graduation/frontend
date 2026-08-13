@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- A design conformance audit measuring the implemented interface against the committed design export, covering the screen inventory, per-screen differences, the token layer, every primitive, the icon set, and the derived loading, empty, error and disabled treatments. It records findings only and changes no behaviour.
 - Something you have already reported now says "Reported" in its menu, so a prior report is visible without having to submit another one to find out.
 - An edited comment is now marked as edited, and a comment that was only liked or replied to is not.
 - The delete confirmation for a comment now states how many comments will be removed in total, including every reply beneath it, instead of only counting direct replies.
