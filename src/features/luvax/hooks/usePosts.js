@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { postService } from '@/services/post.service';
 import { getNextCursor } from '@/utils/helpers';
+import { patchCachedPost } from './usePostLikeState';
 
 export const useFeed = (params = {}) => {
   return useInfiniteQuery({
@@ -110,17 +111,66 @@ export const useDeletePost = () => {
   });
 };
 
+/**
+ * Likes or unlikes a post.
+ *
+ * The optimistic update is applied to every cache entry holding the post rather
+ * than to the component that fired it, because the feed card and post detail can
+ * be on screen at the same time and must agree. A failure restores every entry
+ * to the value it held before.
+ */
 export const useLikePost = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({ postId, liked }) =>
       liked ? postService.unlikePost(postId) : postService.likePost(postId),
+    onMutate: async ({ postId, liked }) => {
+      await queryClient.cancelQueries({ queryKey: ['post', postId] });
+      const nextLiked = !liked;
+
+      const restore = patchCachedPost(queryClient, postId, (post) => ({
+        isLiked: nextLiked,
+        likeCount: Math.max(0, (post.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+      }));
+
+      return { restore };
+    },
+    onSuccess: (data, { postId }) => {
+      // The endpoint may answer with the authoritative count. Applying it
+      // through the same patch reaches both renderings, which is what the
+      // per-component reconciliation could not do.
+      const result = data?.data || data;
+      if (typeof result?.likeCount === 'number') {
+        patchCachedPost(queryClient, postId, { likeCount: result.likeCount });
+      }
+    },
+    onError: (_error, _variables, context) => {
+      context?.restore?.();
+    },
   });
 };
 
+/**
+ * Saves or unsaves a post.
+ *
+ * Carries no counter of its own, so the patch is a single flag, but it spans the
+ * same set of cache entries for the same reason.
+ */
 export const useSavePost = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({ postId, saved }) =>
       saved ? postService.unsavePost(postId) : postService.savePost(postId),
+    onMutate: async ({ postId, saved }) => {
+      await queryClient.cancelQueries({ queryKey: ['post', postId] });
+      const restore = patchCachedPost(queryClient, postId, { isSaved: !saved });
+      return { restore };
+    },
+    onError: (_error, _variables, context) => {
+      context?.restore?.();
+    },
   });
 };
 

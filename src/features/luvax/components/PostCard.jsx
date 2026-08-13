@@ -18,9 +18,12 @@ const HEART_COLOR = 'var(--lx-error)';
 export function PostCard({ post, density = 'cozy', showTags = true, viewport = 'desktop' }) {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
-  const [liked, setLiked] = useState(post.isLiked ?? false);
-  const [likeCount, setLikeCount] = useState(post.likeCount ?? 0);
-  const [saved, setSaved] = useState(post.isSaved ?? false);
+  // Read straight from the post the query cache supplies. Holding these in
+  // component state is what let two renderings of one post disagree, since the
+  // instance that fired the mutation was the only one that moved.
+  const liked = post.isLiked ?? false;
+  const likeCount = post.likeCount ?? 0;
+  const saved = post.isSaved ?? false;
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
@@ -42,49 +45,18 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const saveMutation = useSavePost();
   const { data: myFollowingData } = useFollowing(currentUser?.id);
 
+  // The burst is presentation rather than server state, so it stays local. The
+  // like itself, and its rollback, now belong to the mutation.
   const handleLikeToggle = () => {
-    const previousLiked = liked;
-    const previousCount = likeCount;
-    const nextLiked = !liked;
-
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked(nextLiked);
-    setLikeCount((count) => count + (nextLiked ? 1 : -1));
-
-    likeMutation.mutate(
-      { postId: post.id, liked: previousLiked },
-      {
-        onSuccess: (data) => {
-          const result = data?.data || data;
-          if (typeof result?.likeCount === 'number') {
-            setLikeCount(result.likeCount);
-          }
-        },
-        onError: () => {
-          setLiked(previousLiked);
-          setLikeCount(previousCount);
-        },
-      }
-    );
+    likeMutation.mutate({ postId: post.id, liked });
   };
 
   const handleSaveToggle = () => {
-    const previousSaved = saved;
-    const nextSaved = !saved;
-
     setSaveBurst(false);
     window.requestAnimationFrame(() => setSaveBurst(true));
-    setSaved(nextSaved);
-
-    saveMutation.mutate(
-      { postId: post.id, saved: previousSaved },
-      {
-        onError: () => {
-          setSaved(previousSaved);
-        },
-      }
-    );
+    saveMutation.mutate({ postId: post.id, saved });
   };
 
   // The design puts the click on the article and skips it when the event started

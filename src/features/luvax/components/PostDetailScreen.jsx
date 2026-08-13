@@ -360,9 +360,6 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
 
 export function PostDetailScreen({ overlay = false }) {
   const navigate = useNavigate();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
@@ -418,9 +415,13 @@ export function PostDetailScreen({ overlay = false }) {
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
-  useEffect(() => {
-    setLikeCount(post.likeCount ?? 0);
-  }, [post.id, post.likeCount]);
+  // Read from the query data, exactly as this file already does for comment
+  // like state a few hundred lines above. The previous local copies started at
+  // false and only the count was ever synced, so a post the viewer had already
+  // liked opened showing an empty heart.
+  const liked = Boolean(post.isLiked);
+  const likeCount = post.likeCount ?? 0;
+  const saved = Boolean(post.isSaved);
 
   useEffect(() => {
     setReplyingTo(null);
@@ -444,45 +445,13 @@ export function PostDetailScreen({ overlay = false }) {
   const closePost = () => navigate(-1);
 
   const handleLikeToggle = () => {
-    const previousLiked = liked;
-    const previousCount = likeCount;
-    const nextLiked = !liked;
-
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked(nextLiked);
-    setLikeCount((count) => count + (nextLiked ? 1 : -1));
-
-    likeMutation.mutate(
-      { postId, liked: previousLiked },
-      {
-        onSuccess: (data) => {
-          const result = data?.data || data;
-          if (typeof result?.likeCount === 'number') {
-            setLikeCount(result.likeCount);
-          }
-        },
-        onError: () => {
-          setLiked(previousLiked);
-          setLikeCount(previousCount);
-        },
-      }
-    );
+    likeMutation.mutate({ postId, liked });
   };
 
   const handleSaveToggle = () => {
-    const previousSaved = saved;
-    const nextSaved = !saved;
-
-    saveMutation.mutate(
-      { postId, saved: previousSaved },
-      {
-        onError: () => {
-          setSaved(previousSaved);
-        },
-      }
-    );
-    setSaved(nextSaved);
+    saveMutation.mutate({ postId, saved });
   };
 
   const handleFollowToggle = () => {
