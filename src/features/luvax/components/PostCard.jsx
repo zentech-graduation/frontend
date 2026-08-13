@@ -272,6 +272,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
               style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: isMobile ? 360 : 500 }}
               controls
               muted
+              playsInline
             />
           ) : (
             <img
