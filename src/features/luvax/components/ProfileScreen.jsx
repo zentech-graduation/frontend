@@ -8,7 +8,7 @@ import { MediaThumb } from './MediaThumb';
 import { ReportModal } from './ReportModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useUserPosts } from '../hooks/usePosts';
+import { useLikedPosts, useUserPosts } from '../hooks/usePosts';
 import { useUserProfile } from '../hooks/useUsers';
 import { useFollow, useUnfollow, useFollowing } from '../hooks/useSocial';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
@@ -61,14 +61,37 @@ export function ProfileScreen() {
   };
 
   const { ref, inView } = useInView();
+
+  // The photos tab asks the server for the types that carry pictures rather
+  // than filtering a page of mixed posts on the client, which would leave the
+  // tab showing fewer items than a page holds. A carousel is included because
+  // a carousel of photographs is what most people mean by photos.
+  const typeFilter = tab === 'photos' ? { type: 'image,carousel' } : {};
+  const ownPostsEnabled = tab !== 'liked';
+
   const {
     data: postsResponse,
-    isLoading,
-    isError: isPostsError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useUserPosts(user?.id);
+    isLoading: ownLoading,
+    isError: ownError,
+    fetchNextPage: fetchNextOwn,
+    hasNextPage: hasNextOwn,
+    isFetchingNextPage: isFetchingNextOwn
+  } = useUserPosts(user?.id, typeFilter);
+
+  const {
+    data: likedResponse,
+    isLoading: likedLoading,
+    isError: likedError,
+    fetchNextPage: fetchNextLiked,
+    hasNextPage: hasNextLiked,
+    isFetchingNextPage: isFetchingNextLiked
+  } = useLikedPosts(tab === 'liked');
+
+  const isLoading = ownPostsEnabled ? ownLoading : likedLoading;
+  const isPostsError = ownPostsEnabled ? ownError : likedError;
+  const fetchNextPage = ownPostsEnabled ? fetchNextOwn : fetchNextLiked;
+  const hasNextPage = ownPostsEnabled ? hasNextOwn : hasNextLiked;
+  const isFetchingNextPage = ownPostsEnabled ? isFetchingNextOwn : isFetchingNextLiked;
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -76,8 +99,12 @@ export function ProfileScreen() {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Flatten the infinite paginated response
-  const posts = postsResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
+  // Flatten the infinite paginated response. The liked list answers with
+  // { likedAt, post } rows rather than bare posts, so the post is lifted out
+  // and the grid below sees one shape either way.
+  const activeResponse = ownPostsEnabled ? postsResponse : likedResponse;
+  const posts = (activeResponse?.pages?.flatMap(page => extractPageContent(page)) || [])
+    .map(row => (row && row.post ? row.post : row));
 
   const hasIdentifiableUser = Boolean(user?.displayName || user?.firstName || user?.username);
 

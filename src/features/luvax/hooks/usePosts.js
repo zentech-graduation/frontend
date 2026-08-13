@@ -32,6 +32,23 @@ export const useExplore = (params = {}) => {
   });
 };
 
+/**
+ * The posts the authenticated user has liked.
+ *
+ * Backs the profile's `liked` tab, which previously moved an underline and left
+ * the same list of the profile owner's own posts underneath it.
+ */
+export const useLikedPosts = (enabled = true) => {
+  return useInfiniteQuery({
+    queryKey: ['likedPosts'],
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getLikedPosts({ cursor: pageParam, limit: 10, signal }),
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+    enabled,
+  });
+};
+
 export const useUserPosts = (userId, params = {}) => {
   return useInfiniteQuery({
     queryKey: ['userPosts', userId, params],

@@ -38,6 +38,16 @@ export const getExplorePosts = async ({ signal, ...params } = {}) => {
  * @param {Object} params - Query parameters (e.g., cursor, limit) plus an optional AbortSignal.
  * @returns {Promise<Object>} The paginated posts response.
  */
+/**
+ * Retrieves the posts the authenticated user has liked.
+ * @param {Object} params - Query parameters (cursor, limit) plus an optional AbortSignal.
+ * @returns {Promise<Object>} The paginated posts response.
+ */
+export const getLikedPosts = async ({ signal, ...params } = {}) => {
+  const response = await axiosInstance.get(`${POST_API_PATH}/liked`, { params, signal });
+  return response.data;
+};
+
 export const getUserPosts = async (userId, { signal, ...params } = {}) => {
   const response = await axiosInstance.get(`${POST_API_PATH}/user/${userId}`, { params, signal });
   return response.data;
@@ -237,6 +247,7 @@ export const postService = {
   createPost,
   getFeed,
   getUserPosts,
+  getLikedPosts,
   getPostById,
   updatePost,
   deletePost,
