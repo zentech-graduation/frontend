@@ -92,6 +92,11 @@ export function LxTopTabs({ active, navigate, compact = false }) {
                 stroke={isActive ? 1.8 : 1.5}
               />
             </span>
+            {/* The design draws no active underline, so desktop no longer has one. Tablet keeps it:
+                the tablet layout is the frontend's own and is deliberately left as it was. */}
+            {compact ? (
+              <span style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 10, height: 1.5, borderRadius: 999, background: isActive ? 'rgba(200, 169, 126, 0.78)' : 'transparent', opacity: isActive ? 0.45 : 0 }} />
+            ) : null}
             {t.id === 'notifications' && hasNotifications && (
               <span style={{ position: 'absolute', top: compact ? 12 : 11, right: compact ? 5 : 9, width: 6, height: 6, borderRadius: '50%', background: v.accent }} />
             )}
