@@ -65,7 +65,16 @@ function MediaItem({ media, active, registerVideo }) {
   }
 
   return (
-    <img src={media.cdnUrl} alt={media.altText || ''} style={fit} onError={() => setFailed(true)} />
+    // The frame around this already reserves the media's aspect ratio, so
+    // deferring the fetch cannot reintroduce the layout shift that box removed.
+    <img
+      src={media.cdnUrl}
+      alt={media.altText || ''}
+      style={fit}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+    />
   );
 }
 
@@ -95,6 +104,29 @@ export function PostMedia({ post, radius = 0, onOpen = null }) {
       node.currentTime = 0;
     });
   }, [safeIndex]);
+
+  // A video scrolled out of view keeps playing, and its audio goes with it, so
+  // sound continues from a card the reader can no longer see. Playback is not
+  // resumed on the way back: the reader stopped watching, and starting again
+  // unasked would be its own surprise.
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting && !entry.target.paused) {
+            entry.target.pause();
+          }
+        });
+      },
+      { threshold: 0.25 },
+    );
+
+    const nodes = videoRefs.current.filter(Boolean);
+    nodes.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, [count]);
 
   if (count === 0) return null;
 

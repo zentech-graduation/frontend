@@ -3,6 +3,7 @@ import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { LxAvatar } from '@/components/ui/lx-avatar';
 import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 export { LxIcon, LxAvatar, LxDropdownMenu };
 
@@ -78,6 +79,8 @@ export function LxDivider({ mx = 0 }) {
 }
 
 export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
+  useEscapeKey(open, onClose);
+
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden';
     return () => {
@@ -129,6 +132,8 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
 }
 
 export function LxModal({ open, onClose, title, children, actions }) {
+  useEscapeKey(open, onClose);
+
   if (!open) return null;
   return (
     <>
