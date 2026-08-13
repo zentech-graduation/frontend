@@ -35,7 +35,7 @@ function MiniCard({ p }) {
     }}>
       {mediaUrl && (
         isVideoMedia(p.media[0]) ? (
-          <video src={mediaUrl} style={{ width: '100%', display: 'block' }} muted />
+          <video src={mediaUrl} style={{ width: '100%', display: 'block' }} muted playsInline />
         ) : (
           <img src={mediaUrl} style={{ width: '100%', display: 'block' }} alt="post" />
         )

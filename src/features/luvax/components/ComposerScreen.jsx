@@ -152,7 +152,7 @@ export function ComposerScreen() {
             fontSize: 14,
             fontWeight: 600,
             background: isActionDisabled ? v.surfaceRaised : v.accent,
-            color: isActionDisabled ? v.ink3 : v.ink,
+            color: isActionDisabled ? v.ink3 : v.inkInverse,
             border: 'none',
             borderRadius: 999,
             padding: '7px 16px',
@@ -272,7 +272,7 @@ export function ComposerScreen() {
                     {type === 'photo' ? (
                       <img src={previewUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <video src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
+                      <video src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls muted playsInline />
                     )}
                     <button onClick={removeFile} style={{ position: 'absolute', top: 8, right: 8, background: v.black50, border: 'none', borderRadius: '50%', padding: 4, cursor: 'pointer', zIndex: 10 }}>
                       <LxIcon name="close" size={16} color={v.white} />

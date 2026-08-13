@@ -525,3 +525,16 @@ select:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+/* Persistent app bar hide-on-scroll.
+   The transition, the transform and the opacity are the design's values verbatim. The design
+   defines these rules and gives the header the lx-bar hook, but never adds lx-bar-hidden itself,
+   so the trigger below is a derivation rather than a port. */
+header.lx-bar {
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+header.lx-bar.lx-bar-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+}

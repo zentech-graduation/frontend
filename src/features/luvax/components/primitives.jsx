@@ -24,7 +24,7 @@ export function LxTag({ children, active = false, onClick, size = 'md' }) {
         borderRadius: 999,
         background: active ? v.accentDim : v.surface,
         color: active ? v.accentText : v.ink2,
-        border: `1px solid ${active ? v.accentDim : v.border}`,
+        border: `1px solid ${active ? 'transparent' : v.border}`,
         cursor: onClick ? 'pointer' : 'default',
         whiteSpace: 'nowrap',
         transition: 'background 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out',
@@ -43,7 +43,7 @@ export function LxBtn({ children, variant = 'primary', size = 'md', onClick, dis
     lg: { fontSize: 16, padding: '12px 28px' },
   };
   const variants = {
-    primary: { background: v.accent, color: v.ink, border: 'none' },
+    primary: { background: v.accent, color: v.inkInverse, border: 'none' },
     secondary: { background: v.surface, color: v.ink, border: `1px solid ${v.border}` },
     ghost: { background: 'transparent', color: v.ink, border: `1px solid ${v.border}` },
     danger: { background: 'transparent', color: v.error, border: `1px solid ${v.error}` },

@@ -19,6 +19,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Opening a post now offers the same report action the feed does, which it previously did not.
 
 ### Fixed
+- The icons for the active navigation tab are the right shape. Every filled icon was previously the outline drawing with a fill poured in and the outline still switched on, which made each one about a stroke wider than intended, and the bell's open clapper became a solid wedge. All seven now use the artwork the design draws for them.
+- Unfollow and block in a post's menu show icons that mean what the rows do. Unfollow showed a plain person and block showed a close cross.
+- Primary buttons use light text on the accent fill rather than dark. This covers follow, continue, submit and the composer's post button, which had its own copy of the colours.
+- The app bar, the top tabs and the bottom navigation match the design's measurements, and three decorations that were never in the design are gone: the underline beneath the active top tab, and the bar above the active bottom tab.
+- The top navigation tabs are easier to hit. They were a fixed 44 pixels wide and now expand to roughly 109.
+- The app bar hides when you scroll down and returns when you scroll up.
+- Video no longer plays with sound by default. Two of the four places video appears were unmuted, and because opening a post over the feed loads the same video twice, one copy could play audio while the other ran silently. All four start muted and audio is one click away where controls are shown.
+- Video no longer takes over the whole screen on iOS when it starts playing. Untested, since it needs an iOS device.
 - You can like your own comment again. The control was removed because the server refused it, and the server no longer does.
 - The sign-up form now enforces exactly the password rules the server enforces, so a password it accepts is not rejected on submit, and a rejected password says which rule it broke instead of only that something was wrong.
 - A failed media upload now says what went wrong and keeps your chosen file, so it can be retried without picking the file again.

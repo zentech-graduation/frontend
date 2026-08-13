@@ -661,7 +661,7 @@ export function PostDetailScreen({ overlay = false }) {
         {mainMedia ? (
           <div style={{ padding: '16px 0', borderBottom: `1px solid ${v.borderSubtle}` }}>
             {isVideoMedia(mainMedia) ? (
-              <video src={mainMedia.cdnUrl} controls style={{ width: '100%', borderRadius: 14, display: 'block' }} />
+              <video src={mainMedia.cdnUrl} controls muted playsInline style={{ width: '100%', borderRadius: 14, display: 'block' }} />
             ) : (
               <img src={mainMedia.cdnUrl} alt={mainMedia.altText || 'post media'} style={{ width: '100%', borderRadius: 14, display: 'block' }} />
             )}
