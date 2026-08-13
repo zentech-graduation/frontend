@@ -71,7 +71,7 @@ export const useMediaUpload = () => {
   /**
    * Main upload function
    */
-  const uploadMedia = useCallback(async (file) => {
+  const uploadMedia = useCallback(async (file, { onProgress } = {}) => {
     setIsUploading(true);
     setProgress(0);
     setError(null);
@@ -99,6 +99,10 @@ export const useMediaUpload = () => {
           if (progressEvent.total) {
             const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             setProgress(percentCompleted);
+            // Several files can be in flight at once, and a single piece of
+            // hook state cannot describe more than one of them. The caller
+            // tracks each file's own progress through this callback.
+            if (onProgress) onProgress(percentCompleted);
           }
         }
       });
@@ -132,6 +136,10 @@ export const useMediaUpload = () => {
 
   return {
     uploadMedia,
+    // Exposed because the composer must know a video's duration before it
+    // uploads: the server bounds only the number the client declares, so an
+    // unmeasured file is an unchecked file.
+    getMediaMetadata,
     isUploading,
     progress,
     error
