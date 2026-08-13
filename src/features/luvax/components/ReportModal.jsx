@@ -6,6 +6,7 @@ import {
   REPORT_REASONS,
   REPORT_DESCRIPTION_MAX_LENGTH,
 } from '@/services/report.service';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import {
   useSubmitReport,
   describeReportError,
@@ -53,6 +54,8 @@ export function ReportModal({ target, onClose }) {
   const [outcome, setOutcome] = useState(null);
 
   const submitReport = useSubmitReport();
+
+  useEscapeKey(Boolean(target), onClose);
 
   // Each newly opened target starts a fresh report. Without this the previous target's
   // reason and text would still be selected when the modal reopens.

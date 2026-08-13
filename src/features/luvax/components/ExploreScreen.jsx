@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
-import { extractPageContent, getDisplayName, getUserSummary, isVideoMedia } from '@/utils/helpers';
+import { extractPageContent, getDisplayName, getMediaList, getUserSummary } from '@/utils/helpers';
 import { TOPICS } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag } from './primitives';
+import { MediaThumb } from './MediaThumb';
 import { useExplore } from '../hooks/usePosts';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
@@ -25,21 +26,14 @@ function MiniCard({ p }) {
   const author = getUserSummary(p);
   const authorName = getDisplayName(author, 'Unknown');
   const avatarUrl = author.avatarUrl;
-  const mediaUrl = p.media && p.media.length > 0 ? p.media[0].cdnUrl : null;
-
   return (
     <div onClick={() => openOverlay(routeTo.postDetail(p.id))} style={{
       background: v.surface, borderRadius: 10, overflow: 'hidden',
       cursor: 'pointer', breakInside: 'avoid', marginBottom: 8,
       display: 'inline-block', width: '100%',
     }}>
-      {mediaUrl && (
-        isVideoMedia(p.media[0]) ? (
-          <video src={mediaUrl} style={{ width: '100%', display: 'block' }} muted playsInline />
-        ) : (
-          <img src={mediaUrl} style={{ width: '100%', display: 'block' }} alt="post" />
-        )
-      )}
+      {/* The card clips its own corners, so the tile needs no radius of its own. */}
+      {getMediaList(p).length > 0 ? <MediaThumb post={p} radius={0} /> : null}
       <div style={{ padding: '10px 12px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }} 
              onClick={(e) => { e.stopPropagation(); if (author.id) navigate(routeTo.userProfile(author.id)); }}>
@@ -121,6 +115,10 @@ function SearchResultPost({ post }) {
         gap: 8,
       }}
     >
+      {/* Radius 8 is derived: one step in from the card's own 12, since the tile
+          sits inside the card's 12px padding rather than against its edge. */}
+      {getMediaList(post).length > 0 ? <MediaThumb post={post} radius={8} /> : null}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <LxAvatar size={20} src={getUserSummary(post).avatarUrl} />
         <span style={{ fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2 }}>

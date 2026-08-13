@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
+import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
+import { PostMedia } from './PostMedia';
 import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
 import { useCommentDeletionScope, useCommentReplies, useDeleteComment, useEditComment, useToggleCommentLike } from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { ReportModal } from './ReportModal';
+import { ConfirmModal } from './ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo } from '@/config/constants';
 
@@ -333,24 +335,23 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
       ) : null}
       <LxDropdownMenu anchorRef={commentMenuButtonRef} open={commentMenuOpen} onClose={() => setCommentMenuOpen(false)} items={commentMenuItems} width={214} align="right" />
 
-      <LxModal
-        open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        title="delete comment"
-        actions={
-          <>
-            <LxBtn variant="ghost" onClick={() => setDeleteOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={confirmDelete}>
-              {deleteComment.isPending ? 'deleting...' : 'delete'}
-            </LxBtn>
-          </>
+      <ConfirmModal
+        config={
+          deleteOpen
+            ? {
+                title: 'delete comment',
+                // Deletion cascades to the whole subtree and leaves no
+                // tombstone, so the consequence is spelled out when there is
+                // one, and left unsaid when the comment is a leaf.
+                message: deleteMessage(),
+                confirmLabel: deleteComment.isPending ? 'deleting...' : 'delete',
+                confirmDisabled: deleteComment.isPending,
+                onConfirm: confirmDelete,
+              }
+            : null
         }
-      >
-        {/* Deletion cascades to the whole subtree and leaves no tombstone, so
-            the consequence is spelled out when there is one, and left unsaid
-            when the comment is a leaf. */}
-        {deleteMessage()}
-      </LxModal>
+        onClose={() => setDeleteOpen(false)}
+      />
 
       <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
     </div>
@@ -359,9 +360,6 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
 
 export function PostDetailScreen({ overlay = false }) {
   const navigate = useNavigate();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [saved, setSaved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
@@ -417,9 +415,13 @@ export function PostDetailScreen({ overlay = false }) {
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
-  useEffect(() => {
-    setLikeCount(post.likeCount ?? 0);
-  }, [post.id, post.likeCount]);
+  // Read from the query data, exactly as this file already does for comment
+  // like state a few hundred lines above. The previous local copies started at
+  // false and only the count was ever synced, so a post the viewer had already
+  // liked opened showing an empty heart.
+  const liked = Boolean(post.isLiked);
+  const likeCount = post.likeCount ?? 0;
+  const saved = Boolean(post.isSaved);
 
   useEffect(() => {
     setReplyingTo(null);
@@ -443,45 +445,13 @@ export function PostDetailScreen({ overlay = false }) {
   const closePost = () => navigate(-1);
 
   const handleLikeToggle = () => {
-    const previousLiked = liked;
-    const previousCount = likeCount;
-    const nextLiked = !liked;
-
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked(nextLiked);
-    setLikeCount((count) => count + (nextLiked ? 1 : -1));
-
-    likeMutation.mutate(
-      { postId, liked: previousLiked },
-      {
-        onSuccess: (data) => {
-          const result = data?.data || data;
-          if (typeof result?.likeCount === 'number') {
-            setLikeCount(result.likeCount);
-          }
-        },
-        onError: () => {
-          setLiked(previousLiked);
-          setLikeCount(previousCount);
-        },
-      }
-    );
+    likeMutation.mutate({ postId, liked });
   };
 
   const handleSaveToggle = () => {
-    const previousSaved = saved;
-    const nextSaved = !saved;
-
-    saveMutation.mutate(
-      { postId, saved: previousSaved },
-      {
-        onError: () => {
-          setSaved(previousSaved);
-        },
-      }
-    );
-    setSaved(nextSaved);
+    saveMutation.mutate({ postId, saved });
   };
 
   const handleFollowToggle = () => {
@@ -658,13 +628,9 @@ export function PostDetailScreen({ overlay = false }) {
       </div>
 
       <div ref={commentsPaneRef} style={{ minHeight: 0, overflowY: 'auto', padding: '0 16px', scrollBehavior: 'smooth' }}>
-        {mainMedia ? (
+        {mediaList.length > 0 ? (
           <div style={{ padding: '16px 0', borderBottom: `1px solid ${v.borderSubtle}` }}>
-            {isVideoMedia(mainMedia) ? (
-              <video src={mainMedia.cdnUrl} controls muted playsInline style={{ width: '100%', borderRadius: 14, display: 'block' }} />
-            ) : (
-              <img src={mainMedia.cdnUrl} alt={mainMedia.altText || 'post media'} style={{ width: '100%', borderRadius: 14, display: 'block' }} />
-            )}
+            <PostMedia post={post} radius={14} />
           </div>
         ) : null}
 
@@ -755,38 +721,46 @@ export function PostDetailScreen({ overlay = false }) {
 
       <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={182} zIndex={1605} />
 
-      <LxModal
-        open={blockModalOpen}
+      <ConfirmModal
+        config={
+          blockModalOpen
+            ? {
+                title: 'block user',
+                // Wording carried over unchanged from the modal this replaces.
+                // It was written against the backend's actual behaviour in an
+                // earlier phase, so the migration must not reword it.
+                message: (
+                  <>
+                    Are you sure you want to block <strong>{authorName}</strong>? They won&apos;t be able to find your profile, posts or story on Luvax.
+                    {block.isError ? (
+                      <div role="alert" style={{ marginTop: 12, fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}>
+                        couldn&apos;t block this account. try again.
+                      </div>
+                    ) : null}
+                  </>
+                ),
+                confirmLabel: 'block',
+                confirmDisabled: block.isPending,
+                onConfirm: handleBlockConfirm,
+              }
+            : null
+        }
         onClose={() => setBlockModalOpen(false)}
-        title="block user"
-        actions={
-          <>
-            <LxBtn variant="ghost" onClick={() => setBlockModalOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={handleBlockConfirm} disabled={block.isPending}>block</LxBtn>
-          </>
-        }
-      >
-        Are you sure you want to block <strong>{authorName}</strong>? They won't be able to find your profile, posts or story on Luvax.
-        {block.isError ? (
-          <div role="alert" style={{ marginTop: 12, fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}>
-            couldn&apos;t block this account. try again.
-          </div>
-        ) : null}
-      </LxModal>
+      />
 
-      <LxModal
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        title="delete post"
-        actions={
-          <>
-            <LxBtn variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={handleDeleteConfirm}>delete</LxBtn>
-          </>
+      <ConfirmModal
+        config={
+          deleteConfirmOpen
+            ? {
+                title: 'delete post',
+                message: 'are you sure you want to delete this post?',
+                confirmLabel: 'delete',
+                onConfirm: handleDeleteConfirm,
+              }
+            : null
         }
-      >
-        are you sure you want to delete this post?
-      </LxModal>
+        onClose={() => setDeleteConfirmOpen(false)}
+      />
 
       {isSelf ? (
         <LxModal

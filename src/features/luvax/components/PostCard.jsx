@@ -1,8 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
+import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
+import { PostMedia } from './PostMedia';
+import { ConfirmModal } from './ConfirmModal';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -17,15 +19,19 @@ const HEART_COLOR = 'var(--lx-error)';
 export function PostCard({ post, density = 'cozy', showTags = true, viewport = 'desktop' }) {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
-  const [liked, setLiked] = useState(post.isLiked ?? false);
-  const [likeCount, setLikeCount] = useState(post.likeCount ?? 0);
-  const [saved, setSaved] = useState(post.isSaved ?? false);
+  // Read straight from the post the query cache supplies. Holding these in
+  // component state is what let two renderings of one post disagree, since the
+  // instance that fired the mutation was the only one that moved.
+  const liked = post.isLiked ?? false;
+  const likeCount = post.likeCount ?? 0;
+  const saved = post.isSaved ?? false;
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [saveBurst, setSaveBurst] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const menuButtonRef = useRef(null);
 
@@ -41,49 +47,25 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const saveMutation = useSavePost();
   const { data: myFollowingData } = useFollowing(currentUser?.id);
 
+  // The burst is presentation rather than server state, so it stays local. The
+  // like itself, and its rollback, now belong to the mutation.
   const handleLikeToggle = () => {
-    const previousLiked = liked;
-    const previousCount = likeCount;
-    const nextLiked = !liked;
-
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
-    setLiked(nextLiked);
-    setLikeCount((count) => count + (nextLiked ? 1 : -1));
-
-    likeMutation.mutate(
-      { postId: post.id, liked: previousLiked },
-      {
-        onSuccess: (data) => {
-          const result = data?.data || data;
-          if (typeof result?.likeCount === 'number') {
-            setLikeCount(result.likeCount);
-          }
-        },
-        onError: () => {
-          setLiked(previousLiked);
-          setLikeCount(previousCount);
-        },
-      }
-    );
+    likeMutation.mutate({ postId: post.id, liked });
   };
 
   const handleSaveToggle = () => {
-    const previousSaved = saved;
-    const nextSaved = !saved;
-
     setSaveBurst(false);
     window.requestAnimationFrame(() => setSaveBurst(true));
-    setSaved(nextSaved);
+    saveMutation.mutate({ postId: post.id, saved });
+  };
 
-    saveMutation.mutate(
-      { postId: post.id, saved: previousSaved },
-      {
-        onError: () => {
-          setSaved(previousSaved);
-        },
-      }
-    );
+  // The design puts the click on the article and skips it when the event started
+  // inside an interactive child, which it marks with data-lxtap.
+  const handleCardClick = (event) => {
+    if (event.target.closest('[data-lxtap]')) return;
+    openOverlay(routeTo.postDetail(post.id));
   };
 
   const handleEditOpen = () => {
@@ -117,8 +99,8 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const avatarUrl = author.avatarUrl;
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
-  const media = post.media && post.media.length > 0 ? post.media[0] : null;
   const isMobile = viewport === 'mobile';
+  const isTextPost = String(post.postType || post.type || '').toLowerCase() === 'text';
   const following = (() => {
     if (!myFollowingData || !targetUserId || isOwner) return false;
     const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
@@ -199,7 +181,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             icon: 'ban',
             label: `Block @${authorHandle}`,
             tone: 'danger',
-            onClick: () => block.mutate(targetUserId),
+            onClick: () => setBlockConfirmOpen(true),
           }
         : null,
       // hasReported is true exactly when a new report would be refused as a
@@ -230,11 +212,13 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
 
   return (
     <article
+      onClick={handleCardClick}
       style={{
-        background: isMobile ? 'transparent' : v.surface,
-        borderRadius: isMobile ? 0 : 14,
-        border: isMobile ? 'none' : `1px solid ${v.borderSubtle}`,
+        background: isMobile ? v.base : v.surface,
+        borderRadius: isMobile ? 0 : 12,
+        overflow: 'hidden',
         boxShadow: isMobile ? 'none' : '0 2px 8px rgba(26,24,22,0.06)',
+        cursor: 'pointer',
         paddingBottom: isMobile ? 12 : 0,
         borderBottom: isMobile ? `1px solid ${v.border}` : 'none',
       }}
@@ -242,6 +226,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       {block.isError ? (
         <div
           role="alert"
+          data-lxtap="1"
           style={{
             padding: '8px 14px',
             fontFamily: v.fontMono,
@@ -254,56 +239,17 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       ) : null}
 
-      {media && media.cdnUrl ? (
-        <div
-          onClick={() => openOverlay(routeTo.postDetail(post.id))}
-          style={{
-            cursor: 'pointer',
-            position: 'relative',
-            width: '100%',
-            overflow: 'hidden',
-            borderTopLeftRadius: isMobile ? 0 : 14,
-            borderTopRightRadius: isMobile ? 0 : 14,
-          }}
-        >
-          {isVideoMedia(media) ? (
-            <video
-              src={media.cdnUrl}
-              style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: isMobile ? 360 : 500 }}
-              controls
-              muted
-              playsInline
-            />
-          ) : (
-            <img
-              src={media.cdnUrl}
-              alt={media.altText || 'post image'}
-              style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: isMobile ? 360 : 500 }}
-            />
-          )}
-        </div>
-      ) : null}
-
-      {!media && post.type === 'image' && post.media ? (
-        <div
-          onClick={() => openOverlay(routeTo.postDetail(post.id))}
-          style={{
-            height: post.media.h,
-            background: post.media.color,
-            cursor: 'pointer',
-            borderTopLeftRadius: isMobile ? 0 : 14,
-            borderTopRightRadius: isMobile ? 0 : 14,
-          }}
-        />
-      ) : null}
+      {/* The article clips its own corners, so the frame needs no radius. */}
+      <PostMedia post={post} radius={0} />
 
       <div style={{ padding: isMobile ? '14px 14px 10px' : pad }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
           <div
+            data-lxtap="1"
             onClick={() => targetUserId && navigate(routeTo.userProfile(targetUserId))}
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
           >
-            <LxAvatar size={28} src={avatarUrl} />
+            <LxAvatar size={26} src={avatarUrl} />
             <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>
               {authorName}
             </span>
@@ -314,6 +260,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
           <button
             ref={menuButtonRef}
             type="button"
+            data-lxtap="1"
             onClick={() => setMenuOpen((open) => !open)}
             style={{
               background: 'transparent',
@@ -334,12 +281,13 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
 
         <p
-          onClick={() => openOverlay(routeTo.postDetail(post.id))}
           style={{
             fontFamily: v.fontBody,
-            fontSize: post.postType === 'TEXT' || post.type === 'text' ? 18 : 14,
+            // postType serialises lower case, like mediaType. Comparing against
+            // "TEXT" never matched, so every text post rendered at the image size.
+            fontSize: isTextPost ? 16 : 14,
             color: v.ink,
-            lineHeight: 1.45,
+            lineHeight: 1.5,
             margin: 0,
             letterSpacing: '-0.01em',
             cursor: 'pointer',
@@ -362,6 +310,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         <div style={{ display: 'flex', gap: 18, marginTop: gap + 2, alignItems: 'center' }}>
           <button
             type="button"
+            data-lxtap="1"
             onClick={handleLikeToggle}
             className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
             style={{
@@ -378,20 +327,22 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
               <LxIcon name="heart" size={17} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: liked ? HEART_COLOR : v.ink3 }}>
+            {/* The design keeps the count in v.ink3 whether or not the post is liked;
+                only the glyph takes the like colour. */}
+            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
               {likeCount}
             </span>
           </button>
-          <button onClick={() => openOverlay(routeTo.postDetail(post.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <button type="button" data-lxtap="1" onClick={() => openOverlay(routeTo.postDetail(post.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
             <LxIcon name="reply" size={17} color={v.ink3} />
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
               {post.commentCount ?? 0}
             </span>
           </button>
-          <button type="button" onClick={() => sharePost(post.id, post.caption)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          <button type="button" data-lxtap="1" onClick={() => sharePost(post.id, post.caption)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             <LxIcon name="share" size={17} color={v.ink3} />
           </button>
-          <button onClick={handleSaveToggle} className={saveBurst ? 'lx-bookmark-button is-saved' : 'lx-bookmark-button'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
+          <button type="button" data-lxtap="1" onClick={handleSaveToggle} className={saveBurst ? 'lx-bookmark-button is-saved' : 'lx-bookmark-button'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
             <span className="lx-bookmark-icon" style={{ display: 'inline-flex' }}>
               <LxIcon name="bookmark" size={17} color={saved ? v.ink : v.ink3} filled={saved} />
             </span>
@@ -399,6 +350,9 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       </div>
 
+      {/* These overlays are children of the article, so without the opt-out every
+          click inside them would also open the post. */}
+      <div data-lxtap="1">
       <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={248} />
 
       <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
@@ -431,19 +385,43 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       </LxBottomSheet>
 
-      <LxModal
-        open={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        title="delete post"
-        actions={
-          <>
-            <LxBtn variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>cancel</LxBtn>
-            <LxBtn variant="danger" onClick={handleDeleteConfirm}>delete</LxBtn>
-          </>
+      <ConfirmModal
+        config={
+          deleteConfirmOpen
+            ? {
+                title: 'delete post',
+                message: 'are you sure you want to delete this post?',
+                confirmLabel: 'delete',
+                onConfirm: handleDeleteConfirm,
+              }
+            : null
         }
-      >
-        are you sure you want to delete this post?
-      </LxModal>
+        onClose={() => setDeleteConfirmOpen(false)}
+      />
+
+      <ConfirmModal
+        config={
+          blockConfirmOpen
+            ? {
+                title: 'block user',
+                // The same wording the profile and post detail already use, so
+                // one irreversible action reads the same way everywhere.
+                message: (
+                  <>
+                    Are you sure you want to block <strong>{authorName}</strong>? They won&apos;t be able to find your profile, posts or story on Luvax.
+                  </>
+                ),
+                confirmLabel: 'block',
+                confirmDisabled: block.isPending,
+                onConfirm: () => {
+                  if (targetUserId) block.mutate(targetUserId);
+                },
+              }
+            : null
+        }
+        onClose={() => setBlockConfirmOpen(false)}
+      />
+      </div>
     </article>
   );
 }

@@ -4,10 +4,11 @@ import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent, formatCount, getUserSummary } from '@/utils/helpers';
 import { LxBtn, LxDropdownMenu, LxIcon } from './primitives';
+import { MediaThumb } from './MediaThumb';
 import { ReportModal } from './ReportModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useUserPosts } from '../hooks/usePosts';
+import { useLikedPosts, useUserPosts } from '../hooks/usePosts';
 import { useUserProfile } from '../hooks/useUsers';
 import { useFollow, useUnfollow, useFollowing } from '../hooks/useSocial';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
@@ -60,14 +61,37 @@ export function ProfileScreen() {
   };
 
   const { ref, inView } = useInView();
+
+  // The photos tab asks the server for the types that carry pictures rather
+  // than filtering a page of mixed posts on the client, which would leave the
+  // tab showing fewer items than a page holds. A carousel is included because
+  // a carousel of photographs is what most people mean by photos.
+  const typeFilter = tab === 'photos' ? { type: 'image,carousel' } : {};
+  const ownPostsEnabled = tab !== 'liked';
+
   const {
     data: postsResponse,
-    isLoading,
-    isError: isPostsError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useUserPosts(user?.id);
+    isLoading: ownLoading,
+    isError: ownError,
+    fetchNextPage: fetchNextOwn,
+    hasNextPage: hasNextOwn,
+    isFetchingNextPage: isFetchingNextOwn
+  } = useUserPosts(user?.id, typeFilter);
+
+  const {
+    data: likedResponse,
+    isLoading: likedLoading,
+    isError: likedError,
+    fetchNextPage: fetchNextLiked,
+    hasNextPage: hasNextLiked,
+    isFetchingNextPage: isFetchingNextLiked
+  } = useLikedPosts(tab === 'liked');
+
+  const isLoading = ownPostsEnabled ? ownLoading : likedLoading;
+  const isPostsError = ownPostsEnabled ? ownError : likedError;
+  const fetchNextPage = ownPostsEnabled ? fetchNextOwn : fetchNextLiked;
+  const hasNextPage = ownPostsEnabled ? hasNextOwn : hasNextLiked;
+  const isFetchingNextPage = ownPostsEnabled ? isFetchingNextOwn : isFetchingNextLiked;
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -75,8 +99,12 @@ export function ProfileScreen() {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Flatten the infinite paginated response
-  const posts = postsResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
+  // Flatten the infinite paginated response. The liked list answers with
+  // { likedAt, post } rows rather than bare posts, so the post is lifted out
+  // and the grid below sees one shape either way.
+  const activeResponse = ownPostsEnabled ? postsResponse : likedResponse;
+  const posts = (activeResponse?.pages?.flatMap(page => extractPageContent(page)) || [])
+    .map(row => (row && row.post ? row.post : row));
 
   const hasIdentifiableUser = Boolean(user?.displayName || user?.firstName || user?.username);
 
@@ -131,32 +159,25 @@ export function ProfileScreen() {
     <>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {/* Cover band */}
-        <div style={{ height: 88, background: 'color-mix(in srgb, var(--lx-surface-raised) 82%, var(--lx-base))' }} />
+        <div style={{ height: 88, background: v.surfaceRaised }} />
 
         {/* Avatar + follow */}
-        <div style={{ padding: '0 16px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -38 }}>
+        <div style={{ padding: '0 16px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -40 }}>
           <div style={{
-            width: 76, height: 76, borderRadius: '50%',
+            width: 80, height: 80, borderRadius: '50%',
             background: user?.avatarUrl ? `url(${user.avatarUrl}) center/cover no-repeat` : v.avatar0,
-            border: `4px solid var(--lx-base)`,
-            boxShadow: `0 0 0 1px ${v.base}`,
+            border: `3px solid var(--lx-base)`,
             flexShrink: 0,
           }} />
           {!isSelf && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2, transform: 'translateY(6px)' }}>
               <LxBtn
-                variant="primary"
+                variant={following ? 'secondary' : 'primary'}
                 size="sm"
-                style={{
-                  minWidth: 62,
-                  height: 30,
-                  padding: '0 14px',
-                  fontSize: 13,
-                  borderRadius: 999,
-                }}
+                style={{ marginBottom: 0 }}
                 onClick={handleFollowToggle}
                 disabled={follow.isPending || unfollow.isPending}>
-                follow
+                {following ? 'following' : 'follow'}
               </LxBtn>
               <button
                 ref={menuButtonRef}
@@ -189,9 +210,9 @@ export function ProfileScreen() {
         </div>
 
         {/* Name + bio */}
-        <div style={{ padding: '14px 16px 0' }}>
+        <div style={{ padding: '12px 16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontFamily: v.fontDisplay, fontSize: 24, fontWeight: 700, color: v.ink, letterSpacing: '-0.03em' }}>{title}</div>
+            <div style={{ fontFamily: v.fontDisplay, fontSize: 22, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em' }}>{title}</div>
             {user?.isVerified && <LxIcon name="check" size={18} color={v.accent} />}
           </div>
           {showHandle ? <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 4 }}>@{handle}</div> : null}
@@ -199,7 +220,7 @@ export function ProfileScreen() {
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'flex', gap: 30, padding: '20px 16px 14px', borderBottom: `1px solid ${v.border}` }}>
+        <div style={{ display: 'flex', gap: 28, padding: '16px 16px 16px', borderBottom: `1px solid ${v.border}` }}>
           {[['posts', formatCount(user?.postCount)], ['following', formatCount(user?.followingCount)], ['followers', formatCount(user?.followerCount)]].map(([label, val]) => (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 1, cursor: label !== 'posts' ? 'pointer' : 'default' }}
                  onClick={() => {
@@ -207,8 +228,8 @@ export function ProfileScreen() {
                    if (label === 'followers') navigate(routeTo.userFollowers(user.id));
                    if (label === 'following') navigate(routeTo.userFollowing(user.id));
                  }}>
-              <span style={{ fontFamily: v.fontMono, fontSize: 14, fontWeight: 500, color: v.ink }}>{val}</span>
-              <span style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, textTransform: 'uppercase', letterSpacing: '0.14em' }}>{label}</span>
+              <span style={{ fontFamily: v.fontMono, fontSize: 16, fontWeight: 500, color: v.ink }}>{val}</span>
+              <span style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
             </div>
           ))}
         </div>
@@ -220,7 +241,7 @@ export function ProfileScreen() {
               flex: 1, fontFamily: v.fontBody, fontSize: 13, fontWeight: 500,
               color: tab === t ? v.ink : v.ink3,
               background: 'none', border: 'none', cursor: 'pointer',
-              padding: '13px 0 14px',
+              padding: '12px 0',
               borderBottom: tab === t ? `2px solid var(--lx-ink)` : '2px solid transparent',
               marginBottom: -1, letterSpacing: '0.01em',
             }}>{t}</button>
@@ -233,22 +254,30 @@ export function ProfileScreen() {
             we couldn't load these posts. check your connection and try again.
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: '2px 0 0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: 2 }}>
             {posts.map(p => {
-              const mediaUrl = p.media && p.media.length > 0 ? p.media[0].cdnUrl : null;
+              const hasMedia = (p.media || []).length > 0;
               return (
-                <div key={p.id} onClick={() => openOverlay(routeTo.postDetail(p.id))} style={{
-                  background: mediaUrl ? `url(${mediaUrl}) center/cover no-repeat` : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
-                  aspectRatio: '1/1',
-                  borderRadius: 0, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: 10,
-                  boxSizing: 'border-box'
-                }}>
-                  {!mediaUrl && p.caption && (
-                    <span style={{ fontSize: 11, fontFamily: v.fontBody, color: v.ink3, textAlign: 'center', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {p.caption}
-                    </span>
+                <div key={p.id} onClick={() => openOverlay(routeTo.postDetail(p.id))} style={{ cursor: 'pointer' }}>
+                  {hasMedia ? (
+                    <MediaThumb post={p} radius={4} />
+                  ) : (
+                    // Only text posts reach this branch, and a caption tile is the
+                    // correct treatment for a post that genuinely carries no media.
+                    <div style={{
+                      aspectRatio: '1/1',
+                      borderRadius: 4,
+                      background: 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: 10,
+                      boxSizing: 'border-box'
+                    }}>
+                      {p.caption ? (
+                        <span style={{ fontSize: 11, fontFamily: v.fontBody, color: v.ink3, textAlign: 'center', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {p.caption}
+                        </span>
+                      ) : null}
+                    </div>
                   )}
                 </div>
               );
