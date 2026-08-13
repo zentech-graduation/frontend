@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Liking or saving a post now updates every place that post is showing. Opening a post from the feed leaves the feed card behind it, and liking in one of them used to leave the other showing the old count until something refetched.
+- Post detail now shows whether you have already liked or saved a post. It previously started both as "no" every time the screen opened and only changed if you clicked, so the heart could contradict the count printed beside it.
+- Blocking someone from a post's menu now asks for confirmation first. It used to take effect the moment you clicked, while the same action from a profile asked first.
+- A video now stops when you scroll past it, instead of continuing to play and make noise from a card you can no longer see.
+- The profile tabs now show different things. Posts, photos and liked all showed the same list and only moved an underline; photos now shows the posts carrying pictures, and liked shows the posts you have liked.
+
+### Added
+- Destructive confirmations now share one dialogue whose confirm button stays inert for a moment after it appears, so a second click aimed at the control you just pressed cannot land on the irreversible action.
+- Modals, sheets and overlays now close when you press Escape.
+- Images further down a long feed are no longer all fetched at once, while the space they will occupy is still reserved so nothing jumps.
+
 ### Added
 - You can now create a post carrying several pictures or videos. Attach as many as ten in one post, mix pictures and video freely, remove any one of them, and change their order, which is the order a viewer will swipe through.
 - Each attached file uploads on its own and shows its own progress, so one failure among several is identifiable. The others and your caption are kept, and the failed file can be retried or removed without starting the post again.
