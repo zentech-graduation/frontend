@@ -152,7 +152,7 @@ export function ComposerScreen() {
             fontSize: 14,
             fontWeight: 600,
             background: isActionDisabled ? v.surfaceRaised : v.accent,
-            color: isActionDisabled ? v.ink3 : v.ink,
+            color: isActionDisabled ? v.ink3 : v.inkInverse,
             border: 'none',
             borderRadius: 999,
             padding: '7px 16px',

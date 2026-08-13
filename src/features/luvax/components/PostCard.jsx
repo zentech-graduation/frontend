@@ -183,7 +183,9 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       !isOwner
         ? {
             id: 'follow-toggle',
-            icon: 'profile',
+            // userMinus only in the destructive direction. The design ships the glyph but never
+            // uses it, and has no userPlus counterpart, so the follow direction keeps profile.
+            icon: following ? 'userMinus' : 'profile',
             label: `${following ? 'Unfollow' : 'Follow'} @${authorHandle}`,
             tone: 'danger',
             separator: true,
@@ -194,7 +196,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       !isOwner
         ? {
             id: 'block',
-            icon: 'close',
+            icon: 'ban',
             label: `Block @${authorHandle}`,
             tone: 'danger',
             onClick: () => block.mutate(targetUserId),

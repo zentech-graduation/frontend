@@ -1,7 +1,7 @@
 import { v } from '@/config/tokens';
 
 const ICONS = {
-  home: <><path d="M3 10.25 12 3l9 7.25V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M10 22v-6h4v6" /></>,
+  home: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></>,
   explore: <><circle cx="11" cy="11" r="7" /><path d="m21 21-4.35-4.35" /></>,
   plus: <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>,
   message: <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></>,
@@ -30,34 +30,41 @@ const ICONS = {
   trash: <><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></>,
   alert: <><circle cx="12" cy="12" r="8.5" /><line x1="12" y1="7.4" x2="12" y2="13.2" /><circle cx="12" cy="16.4" r="1.1" fill="currentColor" stroke="none" /></>,
   chevronLeft: <polyline points="14 18 8 12 14 6" />,
+  mail: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 5L2 7" /></>,
+  userMinus: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="22" y1="11" x2="16" y2="11" /></>,
+  ban: <><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></>,
+};
+
+// Filled variants are distinct artwork, not the outline paths with a fill added. Each shape sets
+// its own fill and switches stroke off, because leaving the outline stroke on top of a filled
+// shape grows it by half the stroke width in every direction. Three of the seven are drawn
+// differently from their outline counterpart rather than merely filled: home swaps its door
+// polyline for a knocked-out rectangle, explore keeps its handle as a stroked path over a filled
+// lens, and bell keeps its clapper as an open arc so it does not become a solid wedge.
+const ICONS_FILLED = {
+  home: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor" stroke="none" /><rect x="9" y="13" width="6" height="9" rx="1" fill="var(--lx-base)" stroke="none" /></>,
+  explore: <><circle cx="11" cy="11" r="7" fill="currentColor" stroke="none" /><path d="m21 21-4.35-4.35" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" /></>,
+  chat: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="currentColor" stroke="none" />,
+  bell: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="currentColor" stroke="none" /><path d="M13.73 21a2 2 0 0 1-3.46 0" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" /></>,
+  profile: <><circle cx="12" cy="7" r="4" fill="currentColor" stroke="none" /><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="currentColor" stroke="none" /></>,
+  heart: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="currentColor" stroke="none" />,
+  bookmark: <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" stroke="none" />,
 };
 
 export function LxIcon({ name, size = 20, color, filled = false, stroke = 1.5 }) {
-  const node = ICONS[name];
+  const node = (filled && ICONS_FILLED[name]) ? ICONS_FILLED[name] : ICONS[name];
   if (!node) return null;
-
-  if (name === 'home' && filled) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        <path
-          d="M3 10.25 12 3l9 7.25V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
-          fill={color || v.ink}
-        />
-        <path
-          d="M10 22v-5.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V22"
-          fill="var(--lx-base)"
-        />
-      </svg>
-    );
-  }
 
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill={filled ? (color || v.ink) : 'none'}
+      fill="none"
       stroke={color || v.ink}
+      // The filled artwork paints with currentColor, so the SVG has to carry a color for those
+      // shapes to resolve against. Without it they inherit whatever colour is in scope.
+      style={{ color: color || v.ink }}
       strokeWidth={stroke}
       strokeLinecap="round"
       strokeLinejoin="round"
