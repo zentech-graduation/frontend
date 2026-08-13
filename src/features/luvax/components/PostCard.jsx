@@ -8,6 +8,8 @@ import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSoci
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
+import { ReportModal } from './ReportModal';
+import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo } from '@/config/constants';
 
 const HEART_COLOR = 'var(--lx-error)';
@@ -24,6 +26,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const [heartBurst, setHeartBurst] = useState(false);
   const [saveBurst, setSaveBurst] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
   const menuButtonRef = useRef(null);
 
   const currentUser = useAuthStore((state) => state.user);
@@ -203,7 +206,14 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             icon: 'flag',
             label: 'Report',
             tone: 'danger',
-            onClick: () => {},
+            onClick: () =>
+              setReportTarget({
+                entityType: REPORT_TYPES.POST,
+                entityId: post.id,
+                author: authorName,
+                text: post.caption,
+                avatarUrl,
+              }),
           }
         : null,
     ],
@@ -381,6 +391,8 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       </div>
 
       <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={248} />
+
+      <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
 
       <LxBottomSheet open={editSheetOpen} onClose={() => setEditSheetOpen(false)} height="40vh">
         <div style={{ padding: '4px 16px 8px', borderBottom: `1px solid ${v.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

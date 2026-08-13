@@ -8,6 +8,8 @@ import { useCommentReplies, useDeleteComment, useEditComment, useToggleCommentLi
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
+import { ReportModal } from './ReportModal';
+import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo } from '@/config/constants';
 
 const HEART_COLOR = 'var(--lx-error)';
@@ -24,6 +26,7 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
   const [draft, setDraft] = useState(comment.content);
   const [actionError, setActionError] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
   const commentMenuButtonRef = useRef(null);
   const navigate = useNavigate();
 
@@ -136,7 +139,23 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
           { id: 'edit', icon: 'edit', label: 'Edit', separator: true, onClick: startEditing },
           { id: 'delete', icon: 'trash', label: 'Delete', tone: 'danger', onClick: () => setDeleteOpen(true) },
         ]
-      : [{ id: 'report', icon: 'flag', label: 'Report', tone: 'danger', separator: true, onClick: () => {} }]),
+      : [
+          {
+            id: 'report',
+            icon: 'flag',
+            label: 'Report',
+            tone: 'danger',
+            separator: true,
+            onClick: () =>
+              setReportTarget({
+                entityType: REPORT_TYPES.COMMENT,
+                entityId: comment.id,
+                author: authorName,
+                text: comment.content,
+                avatarUrl: author.avatarUrl,
+              }),
+          },
+        ]),
   ];
 
   return (
@@ -300,6 +319,8 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
           ? `deleting this comment also deletes its ${comment.replyCount === 1 ? 'reply' : `${comment.replyCount} replies`} and any replies to those. this cannot be undone.`
           : 'are you sure you want to delete this comment? this cannot be undone.'}
       </LxModal>
+
+      <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
     </div>
   );
 }
@@ -317,6 +338,7 @@ export function PostDetailScreen({ overlay = false }) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
+  const [postReportTarget, setPostReportTarget] = useState(null);
   const menuButtonRef = useRef(null);
   const commentsPaneRef = useRef(null);
   const commentInputRef = useRef(null);
@@ -501,8 +523,29 @@ export function PostDetailScreen({ overlay = false }) {
       { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
       { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, post.caption) },
       { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
+      // Kept off the viewer's own post, where the server refuses the report with
+      // REPORT_SELF_NOT_ALLOWED and the action could never succeed.
+      ...(isSelf
+        ? []
+        : [
+            {
+              id: 'report',
+              icon: 'flag',
+              label: 'Report',
+              tone: 'danger',
+              separator: true,
+              onClick: () =>
+                setPostReportTarget({
+                  entityType: REPORT_TYPES.POST,
+                  entityId: postId,
+                  author: authorName,
+                  text: post.caption,
+                  avatarUrl: authorAvatarUrl,
+                }),
+            },
+          ]),
     ],
-    [liked, post.caption, postId]
+    [authorAvatarUrl, authorName, isSelf, liked, post.caption, postId]
   );
 
   if (isLoading) {
@@ -723,6 +766,8 @@ export function PostDetailScreen({ overlay = false }) {
           />
         </LxModal>
       ) : null}
+
+      <ReportModal target={postReportTarget} onClose={() => setPostReportTarget(null)} />
     </>
   );
 }

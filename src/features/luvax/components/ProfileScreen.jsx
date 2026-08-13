@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent, formatCount, getUserSummary } from '@/utils/helpers';
-import { LxBtn, LxIcon } from './primitives';
+import { LxBtn, LxDropdownMenu, LxIcon } from './primitives';
+import { ReportModal } from './ReportModal';
+import { REPORT_TYPES } from '@/services/report.service';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUserPosts } from '../hooks/usePosts';
 import { useUserProfile } from '../hooks/useUsers';
@@ -18,6 +20,9 @@ export function ProfileScreen() {
   const { viewport } = useLuvaxTweaks();
   const [tab, setTab] = useState('posts');
   const [following, setFollowing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const menuButtonRef = useRef(null);
   const currentUser = useAuthStore(state => state.user);
 
   // Absent on the viewer's own profile address, which is what makes that
@@ -97,6 +102,24 @@ export function ProfileScreen() {
   const cols = viewport === 'desktop' ? 3 : viewport === 'tablet' ? 3 : 3;
   const title = user?.displayName || user?.firstName || user?.username || 'Unknown';
   const handle = user?.username || 'unknown';
+
+  // Only ever rendered behind the !isSelf guard on the button that opens it, so the
+  // report action cannot appear on the viewer's own profile.
+  const profileMenuItems = [
+    {
+      id: 'report',
+      icon: 'flag',
+      label: 'Report',
+      tone: 'danger',
+      onClick: () =>
+        setReportTarget({
+          entityType: REPORT_TYPES.USER,
+          entityId: user?.id,
+          author: title,
+          avatarUrl: user?.avatarUrl,
+        }),
+    },
+  ];
   const showHandle = Boolean(user?.username) && user?.displayName && user.displayName.toLowerCase() !== handle.toLowerCase();
   return (
     <>
@@ -129,6 +152,27 @@ export function ProfileScreen() {
                 disabled={follow.isPending || unfollow.isPending}>
                 follow
               </LxBtn>
+              <button
+                ref={menuButtonRef}
+                type="button"
+                aria-label="More options"
+                onClick={() => setMenuOpen((open) => !open)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 30,
+                  height: 30,
+                  borderRadius: 999,
+                  border: `1px solid ${v.border}`,
+                  background: 'transparent',
+                  color: v.ink2,
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                <LxIcon name="more" size={16} color={v.ink2} />
+              </button>
             </div>
           )}
           {isSelf && (
@@ -214,6 +258,17 @@ export function ProfileScreen() {
 
         <div style={{ height: 24 }} />
       </div>
+
+      <LxDropdownMenu
+        anchorRef={menuButtonRef}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={profileMenuItems}
+        width={214}
+        align="right"
+      />
+
+      <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
     </>
   );
 }
