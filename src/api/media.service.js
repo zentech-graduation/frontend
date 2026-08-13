@@ -21,5 +21,14 @@ export const mediaService = {
   async completeUpload(data) {
     const response = await axiosClient.post(`${MEDIA_API_PATH}/upload-complete`, data);
     return response.data?.data || response.data;
+  },
+
+  /**
+   * Fetch the upload limits the server enforces.
+   * @returns {Promise<Object>} - { acceptedImageMimeTypes: string[], acceptedVideoMimeTypes: string[], maxFileSizeBytes: number, maxVideoDurationSeconds: number }
+   */
+  async getConstraints() {
+    const response = await axiosClient.get(`${MEDIA_API_PATH}/constraints`);
+    return response.data?.data || response.data;
   }
 };
