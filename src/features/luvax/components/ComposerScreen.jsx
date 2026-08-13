@@ -83,7 +83,7 @@ export function ComposerScreen() {
 
     let rejection = '';
     if (selected.length > room) {
-      rejection = `a post holds ${MAX_CAROUSEL_ITEMS} items at most. there is room for ${room} more, so the rest were not added.`;
+      rejection = `a post holds ${MAX_CAROUSEL_ITEMS} items at most, so ${room} of the ${selected.length} you chose were added.`;
     }
 
     const accepted = [];
