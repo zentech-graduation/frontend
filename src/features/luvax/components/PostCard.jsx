@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, isVideoMedia, sharePost } from '@/utils/helpers';
+import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
+import { PostMedia } from './PostMedia';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -117,7 +118,6 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const avatarUrl = author.avatarUrl;
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
-  const media = post.media && post.media.length > 0 ? post.media[0] : null;
   const isMobile = viewport === 'mobile';
   const following = (() => {
     if (!myFollowingData || !targetUserId || isOwner) return false;
@@ -254,48 +254,11 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       ) : null}
 
-      {media && media.cdnUrl ? (
-        <div
-          onClick={() => openOverlay(routeTo.postDetail(post.id))}
-          style={{
-            cursor: 'pointer',
-            position: 'relative',
-            width: '100%',
-            overflow: 'hidden',
-            borderTopLeftRadius: isMobile ? 0 : 14,
-            borderTopRightRadius: isMobile ? 0 : 14,
-          }}
-        >
-          {isVideoMedia(media) ? (
-            <video
-              src={media.cdnUrl}
-              style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: isMobile ? 360 : 500 }}
-              controls
-              muted
-              playsInline
-            />
-          ) : (
-            <img
-              src={media.cdnUrl}
-              alt={media.altText || 'post image'}
-              style={{ width: '100%', display: 'block', objectFit: 'cover', maxHeight: isMobile ? 360 : 500 }}
-            />
-          )}
-        </div>
-      ) : null}
-
-      {!media && post.type === 'image' && post.media ? (
-        <div
-          onClick={() => openOverlay(routeTo.postDetail(post.id))}
-          style={{
-            height: post.media.h,
-            background: post.media.color,
-            cursor: 'pointer',
-            borderTopLeftRadius: isMobile ? 0 : 14,
-            borderTopRightRadius: isMobile ? 0 : 14,
-          }}
-        />
-      ) : null}
+      <PostMedia
+        post={post}
+        radius={isMobile ? 0 : 12}
+        onOpen={() => openOverlay(routeTo.postDetail(post.id))}
+      />
 
       <div style={{ padding: isMobile ? '14px 14px 10px' : pad }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
