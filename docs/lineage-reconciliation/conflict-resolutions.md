@@ -131,3 +131,43 @@ The two lineages both rebuilt the profile screen, so all eight hunks are governe
   - Hunk 18, dialogs: keep A's `BlockConfirmDialog`, and keep the report modal only if the kept body still opens it.
 
 Every ProfileScreen hunk is verified in the browser afterward, because a Rule 2 port is where a feature is most easily dropped by accident.
+
+---
+
+## Resolution applied
+
+This section records what was actually done once the hunks were resolved, including the two places where resolving ProfileScreen revealed more than the pre-resolution analysis anticipated.
+The merge that carries these resolutions is `merge(common): reconcile lineage A (search, saved, social, realtime)`.
+
+### The straightforward hunks
+
+- CHANGELOG.md: both entry blocks kept, only the three markers removed. No entry dropped.
+- post.service.js: A's `getUserPosts` with the comma-join kept, the duplicate `getLikedPosts` here dropped because A defines it once elsewhere. Confirmed one each of `getUserPosts`, `getLikedPosts`, `getSavedPosts`.
+- PostDetailScreen.jsx: both `useLivePostUpdates` and `useCommentDeletionScope` imported. Confirmed both are used in the merged body, at the live-updates call and the deletion-scope call.
+- ExploreScreen.jsx: resolved by what the auto-merged body uses. The body uses `getMediaList` and not `isVideoMedia` or `TOPICS`, so A's topic-rail removal stood and only the used helpers are imported.
+- shell.jsx tab button: combined. B's conformant width and B's expand-when-not-compact flex kept, A's `disabled`, `aria-disabled`, `title`, disabled cursor and dim kept. The `messages` tab declares `disabled: true`, so dropping A's handling would have let it navigate to an unbuilt screen.
+- shell.jsx trending rail: A's removal kept. The rail was a fabricated ranking and A's comment stands in its place. This leaves the desktop right rail empty, which is recorded in deferred-findings as a design gap, not re-filled with invented data.
+
+### usePosts.js like path, the highest-risk hunk
+
+The like mutation was combined rather than chosen.
+`onMutate` now marks the post in flight through `beginSelfPostLike` and then applies B's optimistic patch to `isLiked` and `likeCount`.
+`onSuccess` applies the server's authoritative count through the same patch.
+`onError` restores.
+`onSettled` clears the in-flight mark through `endSelfPostLike`.
+The in-flight mark is what makes the live post-like handler skip the broadcast frame for this post until the tap settles, so the viewer's own tap is not undone or double-counted, while a remote like still moves the count because the broadcast carries an absolute value.
+The save mutation was combined the same way: B's optimistic `isSaved` patch and rollback, plus A's `savedPostsKey` invalidation on settle so the saved screen stays live.
+
+### ProfileScreen.jsx, two findings beyond the plan
+
+The pre-resolution plan was "keep A, port styling". Resolving the file showed two things the plan did not capture, both handled to avoid losing a feature:
+
+1. The overflow menu was not one feature implemented twice. A's `menuItems` carried a real block and unblock loop with a stub report that did nothing. B's `profileMenuItems` carried a real report through `ReportModal` with the `hasReported` state, but no block. Choosing either side alone would have dropped a real capability. The two were folded into one `menuItems`: A's block loop plus B's real report with its `hasReported` handling. The `reportTarget` state and the `ReportModal` were carried over, and the orphaned `profileMenuItems` array was removed.
+2. A's grid rendered posts as a background-cover tile, which loses the conformance media work: a video shows as a still cover, a portrait is cropped, and a broken image leaves a bare tile. B's `MediaThumb` grid was ported onto A's `body` so the profile grid keeps the reserved box, the visible video, and the deliberate fallback.
+
+The profile stat block kept A's measurements rather than porting B's exact numbers.
+A's block carries the `navigable` and `renderCount` guards that render a private account's withheld counts as a placeholder and refuse navigation when the profile is unreadable, which are features B's block does not have.
+The measurement difference between the two is a few pixels and a letter-spacing value, and it could not be confirmed which set is the design-export value without guessing, so A's working block was kept intact.
+This is the one place a Rule 3 styling port was deliberately not applied, and it is recorded here so a reviewer can revisit it.
+
+The build succeeds after all resolutions.
