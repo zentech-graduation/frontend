@@ -54,11 +54,20 @@ The reconciliation was therefore performed on develop directly, which is the onl
 
 ## Final state of develop
 
-Filled in after the merge and push.
+- Local develop HEAD: `4beabb0` docs(common): record the reconciliation re-verification and findings.
+- Remote origin/develop HEAD: `4beabb0`, identical.
+- Match confirmed: local and remote develop point at the same commit.
+- No conflict markers remain anywhere in the tree.
+- No branch was deleted; all six lineage branches and every other branch are still present.
+- Nothing was force pushed and no history was rewritten.
 
-- Local develop HEAD: to be recorded.
-- Remote origin/develop HEAD: to be recorded.
-- Match confirmed: to be recorded.
+The commit sequence on develop for this work:
+
+1. `merge(common): reconcile lineage B ...` merged lineage B, clean.
+2. `docs(common): catalogue the lineage conflicts before resolving them` recorded the pre-resolution analysis.
+3. `merge(common): reconcile lineage A (search, saved, social, realtime)` merged lineage A with the nine-plus conflicts resolved.
+4. `docs(common): record the applied conflict resolutions` recorded what was done per hunk.
+5. `docs(common): record the reconciliation re-verification and findings` recorded the verification and the deferred findings, and the changelog entry.
 
 ## Backend repository was not touched
 
@@ -79,4 +88,17 @@ Changes to be committed:
 The staged `Makefile` predates this task and was not created, staged, or altered by it.
 It is a pre-existing change in the backend working tree.
 This task left it exactly as found.
-The backend `git status` at the end of the task is recorded here after completion and must be identical to the above.
+
+The backend `git status` at the end of the task, recorded verbatim, is identical to the above:
+
+```
+On branch develop
+Your branch is up to date with 'origin/develop'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	new file:   Makefile
+```
+
+The backend was run for verification (`docker compose up` for the infrastructure and `mvnw spring-boot:run` for the application), which produces only gitignored build artifacts under `target/`.
+No tracked backend file was modified, and the backend HEAD is unchanged at `26d986d`.
