@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Two parallel lines of development were reconciled into develop, bringing search and saved posts, social states and profile tabs, and the realtime client together with the design conformance and composer work, and every capability from both lines was re-verified in the running application afterward.
+
 ### Fixed
 - Liking or saving a post now updates every place that post is showing. Opening a post from the feed leaves the feed card behind it, and liking in one of them used to leave the other showing the old count until something refetched.
 - Post detail now shows whether you have already liked or saved a post. It previously started both as "no" every time the screen opened and only changed if you clicked, so the heart could contradict the count printed beside it.
