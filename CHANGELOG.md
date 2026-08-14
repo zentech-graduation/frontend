@@ -67,6 +67,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The sign-up form now enforces exactly the password rules the server enforces, so a password it accepts is not rejected on submit, and a rejected password says which rule it broke instead of only that something was wrong.
 - A failed media upload now says what went wrong and keeps your chosen file, so it can be retried without picking the file again.
 - The "Report" item in the post menu and the comment menu now does something; both were previously inert.
+- Comments on a post you have open now arrive as they are written, without a reload, along with edits, deletions, and changes to comment and post like counts.
+- A new comment arrives below what you are already reading, so nothing moves under you, and the top comments stay where the server put them.
+
+### Fixed
+- The explore screen no longer leaves a band of empty space where its topic shortcuts used to be, and the composer no longer reserves room for tag suggestions that are no longer offered.
+
+- The photos tab on a profile now works, showing the account's photo and carousel posts, filtered by the server rather than approximated.
+- The liked tab now works on your own profile, listing the posts you have liked, most recent first.
+- A private account now looks private to someone who does not follow it, and following one shows that your request is waiting rather than pretending it was accepted.
+- Blocking and unblocking someone can now be done from their profile, without having to find one of their posts first.
+- Blocking now asks first and says what it will do, including that unblocking will not restore the follows it removes.
+- Looking at the profile of someone you have blocked now says so, instead of reporting a connection error.
+
+- A search results screen reachable from the search field, covering posts, people, and hashtags, each paging on its own and each with its own empty and failure state.
+- A search now lives in the address, so it can be shared, bookmarked, and reloaded, and typing waits for a pause before searching rather than searching on every keystroke.
+- A follow control on a person in the search results shows whether you already follow them instead of always offering to follow.
+- A saved posts screen, reachable from the account section of settings, listing the posts you have bookmarked.
+- Removing a post from the saved list no longer needs a reload, and a post saved anywhere else in the application appears there straight away.
+- Comments can be liked and unliked, and a comment you have already liked now shows as liked instead of appearing untouched.
 - You can edit your own comment in place, with the same length limit the server enforces.
 - You can delete your own comment after a confirmation that warns you when replies will go with it, which they always do.
 - Comments promoted for having the most likes are now labelled, so the order of the first few comments is explicable rather than arbitrary.
@@ -75,6 +94,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - An unrecognised address inside the application now shows a "this page doesn't exist" panel with a way back to the feed, keeping the navigation in place.
 
 ### Changed
+- The post half of search now says whether there were genuinely no matches or whether search itself was unavailable, instead of one message covering both.
+- The tabs on someone else's profile no longer offer a liked list, because only your own likes can be read.
+
+### Fixed
+- A saved or liked list no longer stops loading when a page comes back empty, and no longer claims you have saved nothing while there are still pages to fetch.
+
+### Removed
+- The invented conversations, people, stories, trending tags, topic chips, tag suggestions and onboarding interests that were shown as though they were real, along with the links that led from them to profiles and stories that do not exist.
+- The story rail on the feed, which was built entirely from invented people.
+- Messages remains in the navigation but is now disabled, making clear it is not part of this build.
+
+### Changed
+- The profile tabs now show different things: "posts" lists the account's posts, while "photos" and "liked" say they are not available yet rather than silently repeating the posts grid.
 - Reloading the page no longer signs you out; the session is restored from the refresh cookie, and no token is ever written to browser storage.
 - A screen now reads what it needs from the address, so opening a link to a profile, a post, a follower list, or a search shows the same thing it showed the person who sent it.
 - Moving to a new screen starts at the top of the page, and going back returns to where you were.
@@ -83,6 +115,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Credentials are now always sent on the authentication requests that carry the refresh cookie, rather than depending on an environment variable that was never set; without this a cross-origin deployment would drop the cookie and sign users out on every reload.
 
 ### Fixed
+- Selecting "photos" on a profile no longer shows text-only posts; the tab selection now reaches the grid instead of only moving the underline.
 - The like count on a comment is no longer raised locally without anything being recorded; it now reflects what the server holds and is restored if a like fails.
 - The like control no longer appears on your own comments, where the server refuses it and the action could never succeed.
 - Submitting a comment twice in quick succession now creates one comment rather than two.

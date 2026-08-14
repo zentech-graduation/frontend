@@ -84,6 +84,25 @@ export function extractPageInfo(page) {
 }
 
 /**
+ * Reports whether a cursor page told us its results may be incomplete.
+ *
+ * The flag sits on the page itself, beside `content` and `pageInfo`, not
+ * inside `pageInfo`. Verified against the running server.
+ *
+ * It rides on every cursor-paginated response because they share one envelope,
+ * and it is false everywhere except post search with its search backend down.
+ * It is not a general health signal and must not be read as one on any other
+ * endpoint. Hashtag search deliberately never sets it: its fallback answers
+ * from the primary database, so those results are complete and only the
+ * ranking differs.
+ * @param {{data?: {degraded?: boolean}, degraded?: boolean}} page
+ * @returns {boolean}
+ */
+export function isPageDegraded(page) {
+  return Boolean(page?.data?.degraded ?? page?.degraded);
+}
+
+/**
  * Returns the next cursor for an infinite query, or undefined when the
  * server reports no further page.
  * @param {object} page a raw ApiResponse page wrapping a CursorPageResponse

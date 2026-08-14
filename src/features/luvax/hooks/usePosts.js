@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import { postService } from '@/services/post.service';
 import { getNextCursor } from '@/utils/helpers';
 import { patchCachedPost } from './usePostLikeState';
+import { beginSelfPostLike, endSelfPostLike, noteSelfCommentLike } from './useLivePostUpdates';
 
 export const useFeed = (params = {}) => {
   return useInfiniteQuery({
@@ -33,26 +34,26 @@ export const useExplore = (params = {}) => {
 };
 
 /**
- * The posts the authenticated user has liked.
+ * A user's posts, optionally narrowed to a set of post types.
  *
- * Backs the profile's `liked` tab, which previously moved an underline and left
- * the same list of the profile owner's own posts underneath it.
+ * `types` is part of the query key on purpose. A cursor issued under one type
+ * filter is rejected under any other, so the filter and the cursor sequence
+ * have to live and die together. Keying on the filter makes React Query treat
+ * a filter change as a different query, which starts it at a null cursor and
+ * makes replaying a foreign cursor impossible by construction.
+ * This hook deliberately takes no open parameter bag. The endpoint rejects any
+ * parameter it does not declare, so forwarding arbitrary caller keys into the
+ * query string would turn a harmless call site mistake into a 400.
+ * @param {string} userId - The profile being read.
+ * @param {string[]} [types] - Post types to include; omit or pass an empty array for all.
+ * @param {{enabled?: boolean}} [options] - Set enabled false when the profile is unreadable.
  */
-export const useLikedPosts = (enabled = true) => {
+export const useUserPosts = (userId, types = [], { enabled = true } = {}) => {
+  const type = types.length > 0 ? types : undefined;
   return useInfiniteQuery({
-    queryKey: ['likedPosts'],
+    queryKey: ['userPosts', userId, type ?? 'all'],
     queryFn: ({ pageParam = null, signal }) =>
-      postService.getLikedPosts({ cursor: pageParam, limit: 10, signal }),
-    getNextPageParam: getNextCursor,
-    initialPageParam: null,
-    enabled,
-  });
-};
-
-export const useUserPosts = (userId, params = {}) => {
-  return useInfiniteQuery({
-    queryKey: ['userPosts', userId, params],
-    queryFn: ({ pageParam = null, signal }) => postService.getUserPosts(userId, { ...params, cursor: pageParam, limit: 10, signal }),
+      postService.getUserPosts(userId, { type, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -60,7 +61,7 @@ export const useUserPosts = (userId, params = {}) => {
     refetchIntervalInBackground: false,
     getNextPageParam: getNextCursor,
     initialPageParam: null,
-    enabled: !!userId,
+    enabled: enabled && !!userId,
   });
 };
 
@@ -142,7 +143,14 @@ export const useLikePost = () => {
   return useMutation({
     mutationFn: ({ postId, liked }) =>
       liked ? postService.unlikePost(postId) : postService.likePost(postId),
+    // Two mechanisms cooperate on the like path. The optimistic patch gives the
+    // tap an immediate result across every rendering of the post at once. The
+    // in-flight guard tells the live post-like handler to skip the broadcast
+    // frame for this post until the mutation settles, because that frame carries
+    // an absolute count that may not yet include this viewer's tap and would
+    // otherwise visibly undo it.
     onMutate: async ({ postId, liked }) => {
+      beginSelfPostLike(postId);
       await queryClient.cancelQueries({ queryKey: ['post', postId] });
       const nextLiked = !liked;
 
@@ -165,6 +173,48 @@ export const useLikePost = () => {
     onError: (_error, _variables, context) => {
       context?.restore?.();
     },
+    onSettled: (_data, _error, { postId }) => endSelfPostLike(postId),
+  });
+};
+
+export const savedPostsKey = ['savedPosts'];
+
+/**
+ * The viewer's saved posts.
+ *
+ * Rows are SavedPostResponse, so consumers unwrap `row.post` rather than
+ * reading the post fields off the row.
+ */
+export const useSavedPosts = () => {
+  return useInfiniteQuery({
+    queryKey: savedPostsKey,
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getSavedPosts({ cursor: pageParam ?? undefined, limit: 12, signal }),
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+  });
+};
+
+export const likedPostsKey = ['likedPosts'];
+
+/**
+ * The viewer's liked posts.
+ *
+ * Always the authenticated account's own likes. The endpoint takes no path
+ * parameter for another user, so this cannot be pointed at a profile the
+ * viewer is looking at.
+ *
+ * Rows are LikedPostResponse, so consumers unwrap `row.post`. The row
+ * timestamp is `likedAt`, not `savedAt`.
+ */
+export const useLikedPosts = (enabled = true) => {
+  return useInfiniteQuery({
+    queryKey: likedPostsKey,
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getLikedPosts({ cursor: pageParam ?? undefined, limit: 12, signal }),
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+    enabled,
   });
 };
 
@@ -176,7 +226,6 @@ export const useLikePost = () => {
  */
 export const useSavePost = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ postId, saved }) =>
       saved ? postService.unsavePost(postId) : postService.savePost(postId),
@@ -187,6 +236,13 @@ export const useSavePost = () => {
     },
     onError: (_error, _variables, context) => {
       context?.restore?.();
+    },
+    // The saved list is server state, so it is re-read rather than patched.
+    // This is what makes saving from anywhere in the application show up on the
+    // saved screen, and unsaving from the saved screen drop the row without a
+    // reload.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: savedPostsKey });
     },
   });
 };
@@ -312,6 +368,13 @@ export const useToggleCommentLike = (postId) => {
     mutationFn: ({ commentId, isLiked }) =>
       isLiked ? postService.unlikeComment(commentId) : postService.likeComment(commentId),
     onMutate: async ({ commentId, isLiked, parentId }) => {
+      // The like broadcast carries no count and does not say who liked, so the
+      // live handler moves the count by one for every frame it sees. This
+      // viewer's own like comes back as such a frame, and the optimistic change
+      // below has already accounted for it. Recording it here lets the live
+      // handler skip that one echo instead of counting the like twice.
+      noteSelfCommentLike(commentId, !isLiked);
+
       const queryKey = commentListKey(postId, parentId);
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData(queryKey);

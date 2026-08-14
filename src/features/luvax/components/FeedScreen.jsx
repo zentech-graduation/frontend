@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent } from '@/utils/helpers';
-import { STORIES } from '../constants/data';
 import { LxIcon, LxAvatar, LxTag, LxBtn } from './primitives';
 import { useFeed } from '../hooks/usePosts';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
@@ -11,46 +10,18 @@ import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { ROUTES, routeTo } from '@/config/constants';
 
 // ─── Stories Carousel ──────────────────────────────────────────────────────
-export function StoriesCarousel({ viewport }) {
-  const openOverlay = useOverlayNavigate();
-  const isTablet = viewport === 'tablet';
-  return (
-    <div style={{
-      display: 'flex', gap: isTablet ? 10 : 14, overflowX: 'auto',
-      padding: isTablet ? '12px 12px 10px' : '14px 14px 12px',
-      borderBottom: `1px solid ${v.border}`,
-      flexShrink: 0, scrollbarWidth: 'none',
-    }}>
-      {STORIES.map(s => (
-        <button key={s.id}
-          onClick={() => s.isOwn ? openOverlay(ROUTES.STORY_COMPOSE) : openOverlay(routeTo.storyView(s.id))}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isTablet ? 5 : 6,
-            flexShrink: 0, padding: 0,
-          }}>
-          {s.isOwn ? (
-            <div style={{
-              width: isTablet ? 48 : 54, height: isTablet ? 48 : 54, borderRadius: '50%',
-              background: v.surface, border: `1px solid ${v.borderStrong}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <LxIcon name="plus" size={isTablet ? 18 : 20} color={v.ink2} />
-            </div>
-          ) : (
-            <LxAvatar size={isTablet ? 44 : 48} idx={s.idx} hasStory viewed={s.viewed} />
-          )}
-          <span style={{
-            fontFamily: v.fontBody, fontSize: isTablet ? 10 : 11, fontWeight: 500,
-            color: s.viewed ? v.ink3 : v.ink,
-            maxWidth: isTablet ? 52 : 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{s.author}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
+/**
+ * The story rail is gone.
+ *
+ * It was built from a hardcoded list of invented people and linked each one to
+ * a story id that does not exist, so opening any of them landed the viewer on
+ * an error. Stories are out of scope for this build, so the rail is not
+ * replaced with a server-backed one; it is removed, and the feed starts at the
+ * posts. An empty rail was rejected because a row of empty rings still asserts
+ * that stories are a thing this build does.
+ *
+ * See docs/social-states-and-tabs/fabricated-data-removal.md.
+ */
 
 import { PostCard } from './PostCard';
 
@@ -116,8 +87,6 @@ export function FeedScreen() {
 
   return (
     <>
-      <StoriesCarousel viewport={viewport} />
-
       <div style={{
         flex: 1,
         padding: isMobile ? '10px 0 24px' : '14px 16px 24px',

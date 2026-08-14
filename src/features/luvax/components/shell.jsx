@@ -13,7 +13,10 @@ import { LxHeaderSearch } from '@/features/search/components/LxHeaderSearch';
 const PRIMARY_TABS = [
   { id: 'feed', path: ROUTES.FEED, icon: 'home', label: 'home' },
   { id: 'explore', path: ROUTES.EXPLORE, icon: 'explore', label: 'explore' },
-  { id: 'messages', path: ROUTES.MESSAGES, icon: 'chat', label: 'chats' },
+  // Messages is implemented on the backend but is not part of this build.
+  // The tab stays visible so the shape of the product is honest, and is
+  // disabled so it cannot present a feature that is not there.
+  { id: 'messages', path: ROUTES.MESSAGES, icon: 'chat', label: 'chats', disabled: true },
   { id: 'compose', path: ROUTES.COMPOSE, icon: 'plus', label: 'post' },
   { id: 'notifications', path: ROUTES.NOTIFICATIONS, icon: 'bell', label: 'activity' },
 ];
@@ -67,10 +70,19 @@ export function LxTopTabs({ active, navigate, compact = false }) {
       {tabs.map(t => {
         const isActive = active === t.id;
         return (
-          <button key={t.id} onClick={() => navigate(t.path)} className="lx-tab-btn" style={{
+          <button
+            key={t.id}
+            onClick={() => !t.disabled && navigate(t.path)}
+            disabled={t.disabled}
+            aria-disabled={t.disabled || undefined}
+            title={t.disabled ? `${t.label} are not part of this build` : undefined}
+            className="lx-tab-btn"
+            style={{
             flex: compact ? '0 0 auto' : 1,
             width: compact ? 40 : undefined, minWidth: compact ? 40 : undefined, maxWidth: compact ? undefined : 110,
-            background: 'none', border: 'none', cursor: 'pointer',
+            background: 'none', border: 'none',
+            cursor: t.disabled ? 'not-allowed' : 'pointer',
+            opacity: t.disabled ? 0.4 : 1,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: compact ? 'flex-start' : 'center',
             gap: compact ? undefined : 2,
             paddingTop: compact ? 11 : undefined,
@@ -270,10 +282,19 @@ export function LxBottomNav({ active, navigate }) {
       {tabs.map(t => {
         const isActive = active === t.id;
         return (
-          <button key={t.id} onClick={() => navigate(t.path)} className="lx-tab-btn" style={{
+          <button
+            key={t.id}
+            onClick={() => !t.disabled && navigate(t.path)}
+            disabled={t.disabled}
+            aria-disabled={t.disabled || undefined}
+            title={t.disabled ? `${t.label} are not part of this build` : undefined}
+            className="lx-tab-btn"
+            style={{
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             gap: 2, height: 56,
-            background: 'none', border: 'none', cursor: 'pointer',
+            background: 'none', border: 'none',
+            cursor: t.disabled ? 'not-allowed' : 'pointer',
+            opacity: t.disabled ? 0.4 : 1,
             position: 'relative',
             transition: 'color 150ms ease-out',
           }}>
@@ -327,8 +348,6 @@ export function LxSuggestedList({ users = [] }) {
 
 // ─── Right Rail (desktop) ──────────────────────────────────────────────────
 export function LxRightRail({ compact = false }) {
-  const trending = ['light', 'analog', 'morning', 'silence', 'film', 'observation'];
-
   return (
     <aside style={{
       width: compact ? 196 : 280, flexShrink: 0,
@@ -337,18 +356,10 @@ export function LxRightRail({ compact = false }) {
       position: 'sticky', top: 56, alignSelf: 'flex-start',
       maxHeight: 'calc(100vh - 56px)', overflowY: 'auto',
     }}>
-      <div>
-        <div style={{ fontFamily: v.fontMono, fontSize: compact ? 9 : 10, color: v.ink3, letterSpacing: compact ? '0.12em' : '0.1em', textTransform: 'uppercase', marginBottom: compact ? 10 : 12 }}>trending</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 9 : 8 }}>
-          {trending.map((t, i) => (
-            <div key={t} style={{ display: 'flex', alignItems: 'baseline', gap: 8, cursor: 'pointer' }}>
-              <span style={{ fontFamily: v.fontMono, fontSize: compact ? 10 : 11, color: v.ink3, width: compact ? 15 : 18 }}>{String(i+1).padStart(2,'0')}</span>
-              <span style={{ fontFamily: v.fontBody, fontSize: compact ? 13 : 14, color: v.ink, fontWeight: compact ? 600 : 500 }}>#{t}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      {/* The trending rail was a hardcoded list of invented tags, numbered as
+          though it were a ranking and clickable as though it filtered. There is
+          a real trending endpoint, but wiring it is not part of this phase, and
+          a fabricated ranking is worse than an empty rail. */}
     </aside>
   );
 }

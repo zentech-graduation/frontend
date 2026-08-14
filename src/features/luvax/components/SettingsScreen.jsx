@@ -106,6 +106,7 @@ export function SettingsScreen() {
         <SectionHeader>account</SectionHeader>
         <SettingsRow label="edit profile" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate(ROUTES.EDIT_PROFILE)} />
         <SettingsRow label="change password" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate(ROUTES.CHANGE_PASSWORD)} />
+        <SettingsRow label="saved" sub="posts you bookmarked" control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate(ROUTES.SAVED)} />
         <SettingsRow
           label="email"
           sub={`${currentUser?.email ?? '—'}${currentUser?.isVerified ? ' · verified' : ''}`}
