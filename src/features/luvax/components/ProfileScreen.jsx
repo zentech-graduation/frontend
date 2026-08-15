@@ -15,6 +15,8 @@ import { useFollow, useUnfollow, useBlock, useUnblock, useBlockedUsers } from '.
 import { useDrainEmptyPages } from '../hooks/useDrainEmptyPages';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { BlockConfirmDialog } from './BlockConfirmDialog';
+import { ConfirmModal } from './ConfirmModal';
+import { FollowListModal } from './FollowListModal';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { ROUTES, routeTo } from '@/config/constants';
 
@@ -42,9 +44,12 @@ export function ProfileScreen() {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
   const { viewport } = useLuvaxTweaks();
-  const [tab, setTab] = useState('posts');
+  const [tab, setTab] = useState('photos');
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingBlock, setConfirmingBlock] = useState(false);
+  // Which relationship list is open in a modal: 'followers', 'following', or null.
+  const [followList, setFollowList] = useState(null);
+  const [confirmingUnfollow, setConfirmingUnfollow] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const menuAnchor = useRef(null);
   const currentUser = useAuthStore(state => state.user);
@@ -95,13 +100,19 @@ export function ProfileScreen() {
 
   const handleFollowToggle = () => {
     if (!user?.id) return;
-    // A pending request is withdrawn through the same unfollow endpoint.
-    if (isFollowing || isRequested) unfollow.mutate(user.id);
+    if (follow.isPending || unfollow.isPending) return;
+    // Unfollowing is the sensitive one, so it asks first. Withdrawing a pending
+    // request and following do not, since neither undoes an existing connection.
+    if (isFollowing) {
+      setConfirmingUnfollow(true);
+      return;
+    }
+    if (isRequested) unfollow.mutate(user.id);
     else follow.mutate(user.id);
   };
 
   const showLikedTab = isSelf;
-  const tabs = showLikedTab ? ['posts', 'photos', 'liked'] : ['posts', 'photos'];
+  const tabs = showLikedTab ? ['photos', 'posts', 'liked'] : ['photos', 'posts'];
   const isLikedTab = tab === 'liked' && showLikedTab;
 
   // Switching tabs changes the type filter, and the filter is part of the
@@ -394,8 +405,8 @@ export function ProfileScreen() {
               <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 1, cursor: navigable ? 'pointer' : 'default' }}
                    onClick={() => {
                      if (!navigable || !user?.id) return;
-                     if (label === 'followers') navigate(routeTo.userFollowers(user.id));
-                     if (label === 'following') navigate(routeTo.userFollowing(user.id));
+                     if (label === 'followers') setFollowList('followers');
+                     if (label === 'following') setFollowList('following');
                    }}>
                 <span style={{ fontFamily: v.fontMono, fontSize: 14, fontWeight: 500, color: v.ink }}>{renderCount(val)}</span>
                 <span style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, textTransform: 'uppercase', letterSpacing: '0.14em' }}>{label}</span>
@@ -440,6 +451,34 @@ export function ProfileScreen() {
       />
 
       <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
+
+      <FollowListModal
+        open={Boolean(followList) && Boolean(user?.id)}
+        mode={followList}
+        userId={user?.id}
+        onClose={() => setFollowList(null)}
+      />
+
+      <ConfirmModal
+        config={
+          confirmingUnfollow
+            ? {
+                title: 'unfollow',
+                message: (
+                  <>
+                    Stop following <strong>@{handle}</strong>? You will need to follow again to see their posts.
+                  </>
+                ),
+                confirmLabel: 'unfollow',
+                confirmDisabled: unfollow.isPending,
+                onConfirm: () => {
+                  if (user?.id) unfollow.mutate(user.id, { onSuccess: () => setConfirmingUnfollow(false) });
+                },
+              }
+            : null
+        }
+        onClose={() => setConfirmingUnfollow(false)}
+      />
     </>
   );
 }
