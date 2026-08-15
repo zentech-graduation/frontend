@@ -24,6 +24,15 @@ function resolveBaseScreen(backgroundPath) {
   return match ?? DEFAULT_BASE_SCREEN;
 }
 
+// Root scale for the authenticated app. The owner asked for everything larger
+// and more readable. The luvax screens express type and spacing as inline pixel
+// literals, so there is no token multiplier a component could read; a single
+// root zoom is the one instrument that grows type, spacing, media, avatars, the
+// logo and buttons together with their proportions intact and nothing pinned per
+// component. It is scoped to the app by this component's lifecycle, so the frozen
+// auth and landing routes are never scaled.
+const APP_SCALE = 1.14;
+
 // ─── Luvax App Layout ──────────────────────────────────────────────────────
 export function LuvaxApp() {
   const [tweaks, setTweakState] = useState(() => {
@@ -97,6 +106,16 @@ export function LuvaxApp() {
         : `color-mix(in srgb, ${tweaks.accent} 60%, #000)`);
     root.style.setProperty('--font-display', FONT_MAP[tweaks.font] || FONT_MAP.syne);
   }, [tweaks.dark, tweaks.accent, tweaks.font, tweaks.density]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--lx-scale', String(APP_SCALE));
+    root.style.zoom = String(APP_SCALE);
+    return () => {
+      root.style.zoom = '';
+      root.style.removeProperty('--lx-scale');
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
