@@ -203,9 +203,9 @@ export function LxAppBar({ screen, navigate, viewport }) {
           }}
         >
           {/* The nav stays visible on every wide screen except the settings-area
-              subpages, which keep their back header, and messages, which owns its
-              own chrome. It no longer vanishes on a results or list page. */}
-          {isWide && !showBackHeader && screen !== 'messages' ? <LxTopTabs active={screen} navigate={navigate} compact={isTablet} /> : null}
+              subpages, which keep their back header. Messages shows it too, so the
+              bar never vanishes when moving into chats. */}
+          {isWide && !showBackHeader ? <LxTopTabs active={screen} navigate={navigate} compact={isTablet} /> : null}
           {isMobile && !showBackHeader ? (
             <button
               type="button"
