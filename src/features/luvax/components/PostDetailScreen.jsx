@@ -706,7 +706,7 @@ export function PostDetailScreen({ overlay = false }) {
         ) : null}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px 12px' }}>
-          <LxAvatar size={30} idx={0} />
+          <LxAvatar size={30} src={currentUser?.avatarUrl} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ height: 40, borderRadius: 999, border: `1px solid ${v.border}`, background: 'transparent', display: 'flex', alignItems: 'center', padding: '0 14px' }}>
               <input
