@@ -142,12 +142,11 @@ function SearchResultPost({ post }) {
 export function ExploreScreen() {
   // The search terms live in the address, so an explore search can be shared
   // and survives a reload.
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const activeQuery = searchParams.get('q') || '';
   const shouldFocusSearch = searchParams.get('focusSearch') === '1';
   const { viewport } = useLuvaxTweaks();
   const [query, setQuery] = useState(activeQuery);
-  const [activeTopic, setActiveTopic] = useState(null);
   const searchInputRef = useRef(null);
 
   const { ref, inView } = useInView();
@@ -173,6 +172,8 @@ export function ExploreScreen() {
   const posts = data?.pages?.flatMap(page => extractPageContent(page)) || [];
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
+  // Every distinct author among the matches, not just the first. The prior
+  // slice(0, 1) showed one person however many matched.
   const people = posts
     .reduce((acc, post) => {
       const author = getUserSummary(post);
@@ -184,9 +185,17 @@ export function ExploreScreen() {
         avatarUrl: author.avatarUrl,
       });
       return acc;
-    }, [])
-    .slice(0, 1);
+    }, []);
   const foundCount = people.length + posts.length;
+
+  // Enter commits the query to the address so a search can be shared and
+  // survives a reload, which a bare input could not do.
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const next = query.trim();
+    setSearchParams(next ? { q: next } : {});
+    searchInputRef.current?.blur();
+  };
 
   const cols = viewport === 'desktop' ? 3 : 2;
 
@@ -197,7 +206,7 @@ export function ExploreScreen() {
         background: v.base,
         borderBottom: `1px solid ${v.border}`,
       }}>
-        <div style={{ position: 'relative' }}>
+        <form onSubmit={handleSearchSubmit} style={{ position: 'relative' }}>
           <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
             <LxIcon name="explore" size={15} color={v.ink3} />
           </div>
@@ -238,15 +247,15 @@ export function ExploreScreen() {
               <LxIcon name="close" size={12} color={v.ink3} />
             </button>
           ) : null}
-        </div>
+        </form>
       </div>
 
       {/* The topic chips that used to sit here were a hardcoded list of invented
           topics. There is no endpoint behind them, and a chip that filters
           nothing is a control that lies about what it does. Hashtag search is
-          the real way to reach a tag. The row that held them is gone too: an
-          empty flex container still reserved its vertical padding, leaving a
-          strip of blank space where the chips had been. */}
+          the real way to reach a tag. The activeTopic state that drove them was
+          removed with this phase, since nothing wrote a real value and nothing
+          read it. */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {isSearching ? (
           <div style={{ padding: '18px 16px 28px' }}>
@@ -264,37 +273,57 @@ export function ExploreScreen() {
               </span>
             </div>
 
-            {people.length > 0 ? (
-              <>
-                <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 14, marginBottom: 14 }}>
-                  people
+            {foundCount === 0 ? (
+              // Search empty state, on the design's own empty-state geometry.
+              <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+                <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 500, color: v.ink2, marginBottom: 4 }}>
+                  nothing matched “{trimmedQuery}”
                 </div>
-                <SearchResultPerson user={people[0]} />
-              </>
-            ) : null}
+                <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+                  try a different name, caption, or hashtag
+                </div>
+              </div>
+            ) : (
+              <>
+                {people.length > 0 ? (
+                  <>
+                    <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 14, marginBottom: 14 }}>
+                      people
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {people.map((person) => <SearchResultPerson key={person.id} user={person} />)}
+                    </div>
+                  </>
+                ) : null}
 
-            <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 26, marginBottom: 14 }}>
-              posts
-            </div>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {posts.map((p, i) => <SearchResultPost key={p.id || i} post={p} />)}
-            </div>
+                {posts.length > 0 ? (
+                  <>
+                    <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 26, marginBottom: 14 }}>
+                      posts
+                    </div>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      {posts.map((p, i) => <SearchResultPost key={p.id || i} post={p} />)}
+                    </div>
+                  </>
+                ) : null}
+              </>
+            )}
           </div>
         ) : (
-          <>
-            <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 16px 12px' }}>
+          // Trending is ranked by the recommendation module, which is still being
+          // built, so there is no real ranking to show. Rather than fabricate one
+          // from a fallback search, this states plainly that trending is not ready
+          // without claiming the feature is broken. See docs/layout-overhaul.
+          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+            <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>
               trending today
             </div>
-
-            <div style={{ padding: '0 16px 24px', columnCount: cols, columnGap: 8 }}>
-              {posts.map((p, i) => <MiniCard key={p.id || i} p={p} />)}
+            <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 500, color: v.ink2, marginBottom: 4 }}>
+              trending is still warming up
             </div>
-          </>
-        )}
-
-        {!isSearching && hasNextPage && (
-          <div ref={ref} style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
-            {isFetchingNextPage ? 'loading more...' : 'scroll for more'}
+            <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+              search for a name, caption, or hashtag to explore
+            </div>
           </div>
         )}
       </div>
