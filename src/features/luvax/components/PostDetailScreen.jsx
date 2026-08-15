@@ -428,6 +428,17 @@ export function PostDetailScreen({ overlay = false }) {
   // media above the comments in one scrolling column. See
   // docs/layout-overhaul/layout-decisions.md.
   const twoPane = mediaList.length > 0 && viewport === 'desktop';
+  // The popup's shape follows the media. A portrait image (taller than wide)
+  // makes the whole popup that portrait's aspect ratio, so it is not stranded in
+  // a wide dark pane. A landscape image keeps the roomier fixed frame. The ratio
+  // is width over height, taken from the first media item, as the frame is.
+  const mediaAspect = mainMedia && mainMedia.width && mainMedia.height ? mainMedia.width / mainMedia.height : 1;
+  const isPortraitMedia = mediaAspect < 1;
+  const TWO_PANE_HEIGHT = 'min(86vh, 760px)';
+  const COMMENT_PANE_WIDTH = 384;
+  const twoPaneContainerWidth = isPortraitMedia
+    ? `min(calc(${TWO_PANE_HEIGHT} * ${mediaAspect.toFixed(4)} + ${COMMENT_PANE_WIDTH}px), calc(100vw - 32px))`
+    : 'min(940px, calc(100vw - 32px))';
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
@@ -735,8 +746,8 @@ export function PostDetailScreen({ overlay = false }) {
   const container = (
     <div
       style={{
-        width: twoPane ? 'min(940px, calc(100vw - 32px))' : 'min(556px, calc(100vw - 32px))',
-        height: twoPane ? 'min(86vh, 760px)' : 'min(84vh, 728px)',
+        width: twoPane ? twoPaneContainerWidth : 'min(556px, calc(100vw - 32px))',
+        height: twoPane ? TWO_PANE_HEIGHT : 'min(84vh, 728px)',
         background: v.base,
         border: `1px solid ${v.border}`,
         borderRadius: 16,
@@ -747,14 +758,23 @@ export function PostDetailScreen({ overlay = false }) {
     >
       {twoPane ? (
         <>
-          {/* The media pane stays put. A dark ground lets a letterboxed portrait
-              sit calmly without a crop, matching the feed's no-crop rule. */}
-          <div style={{ flex: '1 1 0', minWidth: 0, background: v.storySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
-            <div style={{ width: '100%', maxHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <PostMedia post={post} radius={12} />
+          {isPortraitMedia ? (
+            // Portrait: the media pane is exactly the media's width at full popup
+            // height, so the popup takes the portrait's own aspect ratio with no
+            // dark ground. The container's own radius clips the outer corners.
+            <div style={{ width: `calc(${TWO_PANE_HEIGHT} * ${mediaAspect.toFixed(4)})`, flexShrink: 0, background: v.base, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <PostMedia post={post} radius={0} minAspect={0} />
             </div>
-          </div>
-          <div style={{ width: 384, flexShrink: 0, borderLeft: `1px solid ${v.border}`, display: 'flex' }}>
+          ) : (
+            // Landscape: the roomier flex ground. minAspect 0 lets the frame take
+            // the media's true ratio so its border hugs the image at its height.
+            <div style={{ flex: '1 1 0', minWidth: 0, background: v.storySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
+              <div style={{ width: '100%', maxHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <PostMedia post={post} radius={12} minAspect={0} />
+              </div>
+            </div>
+          )}
+          <div style={{ width: COMMENT_PANE_WIDTH, flexShrink: 0, borderLeft: `1px solid ${v.border}`, display: 'flex' }}>
             {commentColumn}
           </div>
         </>
