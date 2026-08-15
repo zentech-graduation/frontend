@@ -32,7 +32,20 @@ function resolveBaseScreen(backgroundPath) {
 // logo and buttons together with their proportions intact and nothing pinned per
 // component. It is scoped to the app by this component's lifecycle, so the frozen
 // auth and landing routes are never scaled.
-const APP_SCALE = 1.14;
+//
+// The scale is fluid, not fixed. HD screens and below keep the comfortable base;
+// 2K and larger screens grow it, so the interface and the post popup do not read
+// as small on a wide display. It is clamped at both ends so it never shrinks the
+// HD experience and never runs away on a very large screen.
+const APP_SCALE_BASE = 1.14;
+const APP_SCALE_REFERENCE_WIDTH = 1920;
+const APP_SCALE_MAX = 1.6;
+
+function computeAppScale(width) {
+  if (!width) return APP_SCALE_BASE;
+  const scaled = APP_SCALE_BASE * (width / APP_SCALE_REFERENCE_WIDTH);
+  return Math.min(APP_SCALE_MAX, Math.max(APP_SCALE_BASE, scaled));
+}
 
 // ─── Luvax App Layout ──────────────────────────────────────────────────────
 export function LuvaxApp() {
@@ -110,9 +123,15 @@ export function LuvaxApp() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty('--lx-scale', String(APP_SCALE));
-    root.style.zoom = String(APP_SCALE);
+    const apply = () => {
+      const scale = computeAppScale(window.innerWidth);
+      root.style.setProperty('--lx-scale', String(scale));
+      root.style.zoom = String(scale);
+    };
+    apply();
+    window.addEventListener('resize', apply);
     return () => {
+      window.removeEventListener('resize', apply);
       root.style.zoom = '';
       root.style.removeProperty('--lx-scale');
     };

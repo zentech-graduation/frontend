@@ -209,7 +209,9 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
   ];
 
   return (
-    <div style={{ width: '100%' }}>
+    // No lines between comments. Top-level comments are separated by generous
+    // space; a reply sits tight under its thread.
+    <div style={{ width: '100%', marginBottom: isReply ? 0 : 26 }}>
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -218,8 +220,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
           display: 'grid',
           gridTemplateColumns: '40px minmax(0, 1fr)',
           gap: 12,
-          padding: isReply ? '8px 28px 8px 0' : '14px 28px 13px 0',
-          borderBottom: isReply ? 'none' : `1px solid ${v.borderSubtle}`,
+          padding: isReply ? '6px 28px 6px 0' : '2px 28px 0 0',
         }}
       >
         <div>
@@ -345,10 +346,9 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
         </button>
       </div>
       {showReplies && hasReplies ? (
-        // Replies are one level in, marked by a single vertical thread line
-        // rather than a diagonal staircase of avatars.
-        <div style={{ position: 'relative', marginLeft: 19, paddingLeft: 20, display: 'flex', flexDirection: 'column' }}>
-          <div aria-hidden="true" style={{ position: 'absolute', left: 0, top: 2, bottom: 12, width: 1.5, borderRadius: 1, background: v.border }} />
+        // Replies are one level in, set off by indentation and their tight
+        // spacing rather than a thread line.
+        <div style={{ marginLeft: 20, marginTop: 4, display: 'flex', flexDirection: 'column' }}>
           {repliesLoading ? (
             <div style={{ padding: '8px 0', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>loading replies...</div>
           ) : (
@@ -455,11 +455,13 @@ export function PostDetailScreen({ overlay = false }) {
   // is width over height, taken from the first media item, as the frame is.
   const mediaAspect = mainMedia && mainMedia.width && mainMedia.height ? mainMedia.width / mainMedia.height : 1;
   const isPortraitMedia = mediaAspect < 1;
-  const TWO_PANE_HEIGHT = 'min(86vh, 760px)';
-  const COMMENT_PANE_WIDTH = 384;
+  // The popup is generous on large screens as well as scaling with the root, so
+  // it never reads as a small box on a wide display.
+  const TWO_PANE_HEIGHT = 'min(88vh, 860px)';
+  const COMMENT_PANE_WIDTH = 400;
   const twoPaneContainerWidth = isPortraitMedia
     ? `min(calc(${TWO_PANE_HEIGHT} * ${mediaAspect.toFixed(4)} + ${COMMENT_PANE_WIDTH}px), calc(100vw - 32px))`
-    : 'min(940px, calc(100vw - 32px))';
+    : 'min(1040px, calc(100vw - 32px))';
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
@@ -778,8 +780,8 @@ export function PostDetailScreen({ overlay = false }) {
   const container = (
     <div
       style={{
-        width: twoPane ? twoPaneContainerWidth : 'min(556px, calc(100vw - 32px))',
-        height: twoPane ? TWO_PANE_HEIGHT : 'min(84vh, 728px)',
+        width: twoPane ? twoPaneContainerWidth : 'min(560px, calc(100vw - 32px))',
+        height: twoPane ? TWO_PANE_HEIGHT : 'min(86vh, 800px)',
         background: v.base,
         border: `1px solid ${v.border}`,
         borderRadius: 16,
