@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { subscribeTopic } from '@/services/realtime/stompConnection';
+import { useAuthStore } from '@/store/useAuthStore';
 
 /**
  * Applies live comment and post events to the query cache for one open post.
@@ -177,6 +178,18 @@ export const useLivePostUpdates = (postId) => {
       if (eventType === 'comment.created.v1') {
         const incoming = data.comment;
         if (!incoming) {
+          return;
+        }
+
+        // The viewer's own new comment is already applied to the cache by the
+        // create mutation, which invalidates the comment, replies and post
+        // queries so the authoritative counts and rows are refetched. Applying
+        // this broadcast on top of that counted the same comment twice, which
+        // showed a single reply as two. A self-authored creation is therefore
+        // skipped here; a remote one still flows through below. data.userId is
+        // the event author on every comment.* frame.
+        const currentUserId = useAuthStore.getState().user?.id;
+        if (currentUserId && data.userId && currentUserId === data.userId) {
           return;
         }
 
