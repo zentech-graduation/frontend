@@ -251,6 +251,7 @@ export function SearchScreen() {
                       key={rowUser.id}
                       user={rowUser}
                       initiallyFollowing={item.viewerState?.isFollowing ?? false}
+                      initiallyRequested={item.viewerState?.isFollowRequested ?? false}
                       onAvatarClick={(u) => navigate(routeTo.userProfile(u.id))}
                     />
                   );

@@ -3,25 +3,36 @@ import { v } from '@/config/tokens';
 import { LxAvatar, LxBtn, LxIcon } from './primitives';
 import { useFollow, useUnfollow } from '../hooks/useSocial';
 
-export function UserCard({ user, onAvatarClick, onFollowToggle, initiallyFollowing = false, rightElement, compact = false }) {
+export function UserCard({ user, onAvatarClick, onFollowToggle, initiallyFollowing = false, initiallyRequested = false, rightElement, compact = false }) {
   const [isFollowing, setIsFollowing] = useState(initiallyFollowing);
-  
+  // A pending request to a private account is its own state. Reading only
+  // isFollowing showed "follow" for an account the viewer had already asked to
+  // follow. The profile screen already distinguishes all three; this makes the
+  // search result do the same.
+  const [requested, setRequested] = useState(initiallyRequested);
+
   const follow = useFollow();
   const unfollow = useUnfollow();
 
   const handleFollowClick = () => {
-    if (isFollowing) {
+    if (isFollowing || requested) {
+      // A pending request is withdrawn through the same unfollow endpoint.
       unfollow.mutate(user.id);
       setIsFollowing(false);
+      setRequested(false);
+      if (onFollowToggle) onFollowToggle(false);
     } else {
       follow.mutate(user.id);
-      setIsFollowing(true);
+      // Following a private account yields a pending request, not an accepted follow.
+      if (user.isPrivate) setRequested(true);
+      else setIsFollowing(true);
+      if (onFollowToggle) onFollowToggle(true);
     }
-    if (onFollowToggle) onFollowToggle(!isFollowing);
   };
 
+  const followLabel = isFollowing ? 'following' : requested ? 'requested' : 'follow';
   const avatarSize = compact ? 36 : 44;
-  const buttonVariant = compact ? 'ghost' : (isFollowing ? 'secondary' : 'primary');
+  const buttonVariant = compact ? 'ghost' : (isFollowing || requested ? 'secondary' : 'primary');
 
   return (
     <div style={{
@@ -61,7 +72,7 @@ export function UserCard({ user, onAvatarClick, onFollowToggle, initiallyFollowi
           disabled={follow.isPending || unfollow.isPending}
           style={compact ? { minWidth: 56, padding: '5px 11px', fontSize: 11, lineHeight: 1, color: v.ink, borderColor: v.borderStrong, flexShrink: 0, whiteSpace: 'nowrap' } : {}}
         >
-          {compact ? 'follow' : (isFollowing ? 'following' : 'follow')}
+          {followLabel}
         </LxBtn>
       )}
     </div>
