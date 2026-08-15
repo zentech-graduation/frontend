@@ -92,12 +92,30 @@ function NotifRow({ n, onAccept, onDecline }) {
   const actorName = getDisplayName(actor, 'Someone');
   const avatarSrc = actor.avatarUrl;
 
+  // Route by what the notification points at. Only a post-type notification
+  // carries a post id in entityId, so only it can open the post detail. A comment
+  // notification carries a comment id and the payload does not include the post
+  // it belongs to, and a follow carries nothing, so both open the actor's profile
+  // rather than feeding a comment id to the post detail, which showed a "post not
+  // found" error. Opening a comment's post would need the backend to include the
+  // post id on the notification.
+  const openTarget = () => {
+    if (n.entityType === 'post' && n.entityId) {
+      openOverlay(routeTo.postDetail(n.entityId));
+      return;
+    }
+    if (actor?.id) {
+      navigate(routeTo.userProfile(actor.id));
+    }
+  };
+  const isClickable = (n.entityType === 'post' && Boolean(n.entityId)) || Boolean(actor?.id);
+
   return (
-    <div onClick={() => n.entityId && openOverlay(routeTo.postDetail(n.entityId))} style={{
+    <div onClick={openTarget} style={{
       display: 'flex', alignItems: 'flex-start', gap: 12,
       padding: '12px 16px',
       background: !n.isRead ? 'var(--lx-accent-dim)' : 'transparent',
-      cursor: n.entityId ? 'pointer' : 'default',
+      cursor: isClickable ? 'pointer' : 'default',
       borderBottom: `1px solid ${v.borderSubtle}`,
       position: 'relative',
     }}>
