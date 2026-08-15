@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- The story rail is back at the top of the feed, with its viewer, restored as an interface.
+- The messaging section is back, restored as an interface with its conversation list, thread, and info panel.
+- Replying to a reply now prepends an editable @mention of the person answered, who is notified.
+
+### Changed
+- A post opened as a portrait image now shapes its popup to the image's aspect ratio instead of sitting in a wide dark pane; a landscape image keeps the roomier frame.
+- The comment field now shows your own avatar while you type.
+- The header search now opens the explore search, so the navigation bar no longer disappears on a results page, and the bar stays visible across the list and results subpages.
+- Nested replies are now two levels, like Instagram, marked by a single vertical line rather than a diagonal staircase.
+
+### Removed
+- The notification bell beside the profile avatar, which duplicated the navigation's own activity tab.
+
+### Fixed
+- The three-dot options menu on a post or comment now opens on its button instead of drifting away from it.
+- Clickable elements show the hand cursor again as a signal that they can be clicked.
+- Posting a single reply no longer sometimes registers as two.
+
 ### Changed
 - The feed is now one centred column instead of two posts side by side, with no dividing lines, no card behind each post, and no border down the column; posts are told apart by the space between them alone.
 - The whole app is larger and easier to read, grown at the root so every proportion holds, and post captions are larger again on top of that.
