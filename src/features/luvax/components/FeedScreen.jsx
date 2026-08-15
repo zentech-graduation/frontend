@@ -100,7 +100,7 @@ export function FeedScreen() {
       <div style={{ width: '100%', maxWidth: isMobile ? '100%' : FEED_COLUMN, margin: '0 auto' }}>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: isMobile ? '0 14px 16px' : '0 4px 16px' }}>today</div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}>
+        <div className="lx-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}>
           {posts.map(p => (
             <PostCard key={p.id} post={p} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
           ))}

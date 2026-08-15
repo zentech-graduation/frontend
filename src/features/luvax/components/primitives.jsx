@@ -98,7 +98,7 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
           background: v.scrim,
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 200ms ease-out',
+          transition: 'opacity var(--duration-normal) var(--ease-out)',
           zIndex: 999,
         }}
       />
@@ -115,7 +115,7 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
           borderTopRightRadius: 16,
           boxShadow: `0 -20px 60px ${v.shadow18}`,
           transform: open ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: 'transform var(--duration-slow) var(--ease-out)',
           zIndex: 1000,
           height,
           display: 'flex',
@@ -139,6 +139,7 @@ export function LxModal({ open, onClose, title, children, actions }) {
     <>
       <div
         onClick={onClose}
+        className="lx-scrim"
         style={{
           position: 'fixed',
           inset: 0,
@@ -147,6 +148,7 @@ export function LxModal({ open, onClose, title, children, actions }) {
         }}
       />
       <div
+        className="lx-modal-panel"
         style={{
           position: 'fixed',
           top: '50%',

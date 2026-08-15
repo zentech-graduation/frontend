@@ -227,6 +227,8 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
             position: 'absolute',
             inset: 0,
             opacity: i === safeIndex ? 1 : 0,
+            // Movement between carousel items crossfades rather than snapping.
+            transition: 'opacity var(--duration-normal) var(--ease-out)',
             pointerEvents: i === safeIndex ? 'auto' : 'none',
           }}
         >

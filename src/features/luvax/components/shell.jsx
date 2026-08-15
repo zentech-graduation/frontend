@@ -375,7 +375,8 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
         <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
         <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: 1260, margin: '0 auto' }}>
           <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
-          <main style={{
+          {/* Keyed by screen so a screen change fades in rather than cutting. */}
+          <main key={screen} className="lx-fade-in" style={{
             width: 680, flexShrink: 0, minWidth: 0,
             // No column rules. The feed is one continuous surface on the page
             // background, so the borders that boxed the centre column are gone.
@@ -403,7 +404,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
         <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
         <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: tabletShellWidth, margin: '0 auto' }}>
           <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
-          <main style={{
+          <main key={screen} className="lx-fade-in" style={{
             width: tabletMainWidth, flexShrink: 0, minWidth: 0,
             // Column rules removed to match the desktop feed's continuous surface.
             minHeight: 'calc(100vh - 56px)',
@@ -422,7 +423,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
   return (
     <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
       <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: 72 }}>
+      <main key={screen} className="lx-fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: 72 }}>
         {children}
       </main>
       <LxBottomNav active={screen} navigate={navigate} />

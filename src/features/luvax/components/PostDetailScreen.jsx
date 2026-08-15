@@ -757,8 +757,11 @@ export function PostDetailScreen({ overlay = false }) {
   return (
     <>
       {overlay ? (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1400, background: 'rgba(10, 8, 6, 0.18)', backdropFilter: 'blur(1px)', WebkitBackdropFilter: 'blur(1px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={closePost}>
-          <div onClick={(event) => event.stopPropagation()}>{container}</div>
+        // The scrim is stronger than before so the open post holds attention and
+        // the feed behind stops competing, without hiding it entirely. See
+        // docs/layout-overhaul/motion-vocabulary.md.
+        <div className="lx-scrim" style={{ position: 'fixed', inset: 0, zIndex: 1400, background: 'rgba(10, 8, 6, 0.62)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={closePost}>
+          <div className="lx-overlay-panel" onClick={(event) => event.stopPropagation()}>{container}</div>
         </div>
       ) : (
         container
