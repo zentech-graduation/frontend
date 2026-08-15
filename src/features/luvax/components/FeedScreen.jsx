@@ -16,10 +16,14 @@ import { ROUTES, routeTo } from '@/config/constants';
 export function StoriesCarousel({ viewport }) {
   const openOverlay = useOverlayNavigate();
   const isTablet = viewport === 'tablet';
+  // Larger avatars and a taller rail for more presence, kept restrained so it
+  // stays comfortable rather than overwhelming the feed.
+  const avatar = isTablet ? 58 : 66;
+  const ownRing = avatar + 6;
   return (
     <div style={{
-      display: 'flex', gap: isTablet ? 10 : 14, overflowX: 'auto',
-      padding: isTablet ? '4px 2px 14px' : '4px 2px 18px',
+      display: 'flex', gap: isTablet ? 12 : 16, overflowX: 'auto',
+      padding: isTablet ? '6px 2px 20px' : '8px 2px 24px',
       flexShrink: 0, scrollbarWidth: 'none',
     }}>
       {STORIES.map(s => (
@@ -27,25 +31,25 @@ export function StoriesCarousel({ viewport }) {
           onClick={() => s.isOwn ? openOverlay(ROUTES.STORY_COMPOSE) : openOverlay(routeTo.storyView(s.id))}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isTablet ? 5 : 6,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
             flexShrink: 0, padding: 0,
           }}>
           {s.isOwn ? (
             <div style={{
-              width: isTablet ? 48 : 54, height: isTablet ? 48 : 54, borderRadius: '50%',
+              width: ownRing, height: ownRing, borderRadius: '50%',
               background: v.surface, border: `1px solid ${v.borderStrong}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <LxIcon name="plus" size={isTablet ? 18 : 20} color={v.ink2} />
+              <LxIcon name="plus" size={isTablet ? 22 : 24} color={v.ink2} />
             </div>
           ) : (
-            <LxAvatar size={isTablet ? 44 : 48} idx={s.idx} hasStory viewed={s.viewed} />
+            <LxAvatar size={avatar} idx={s.idx} hasStory viewed={s.viewed} />
           )}
           <span style={{
-            fontFamily: v.fontBody, fontSize: isTablet ? 10 : 11, fontWeight: 500,
+            fontFamily: v.fontBody, fontSize: isTablet ? 11 : 12, fontWeight: 500,
             color: s.viewed ? v.ink3 : v.ink,
-            maxWidth: isTablet ? 52 : 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            maxWidth: avatar + 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{s.author}</span>
         </button>
       ))}
@@ -120,7 +124,10 @@ export function FeedScreen() {
   // between them against a much smaller gap inside each post, so the eye groups a
   // post without any divider or card. The ratio is roughly 5:1. See
   // docs/layout-overhaul/layout-decisions.md.
-  const betweenPosts = isMobile ? 44 : 56;
+  // Mobile has little room, so the space between posts is much tighter than the
+  // generous desktop gap. The within-post grouping still reads because the gap
+  // between posts stays clearly larger than the gaps inside one.
+  const betweenPosts = isMobile ? 22 : 56;
 
   return (
     <div style={{
