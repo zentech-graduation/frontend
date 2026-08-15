@@ -234,7 +234,12 @@ export function ReportModal({ target, onClose }) {
       </div>
     );
   } else if (step === STEP_DETAILS) {
-    const overLimit = description.length > REPORT_DESCRIPTION_MAX_LENGTH;
+    // The counter warns as the limit approaches rather than only once it is
+    // exceeded. The textarea clamps input at the limit, so a strictly greater
+    // than check could never fire and the colour change was dead. The design
+    // warns at ninety percent (450 of 500); the same ratio applies to the
+    // backend's 2000. See docs/layout-overhaul/changes-applied.md.
+    const nearLimit = description.length > REPORT_DESCRIPTION_MAX_LENGTH * 0.9;
     body = (
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${v.borderSubtle}` }}>
@@ -279,7 +284,7 @@ export function ReportModal({ target, onClose }) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value.slice(0, REPORT_DESCRIPTION_MAX_LENGTH))}
-              placeholder="Describe what you're seeing..."
+              placeholder="Describe what you're seeing…"
               style={{
                 width: '100%',
                 minHeight: 96,
@@ -301,7 +306,7 @@ export function ReportModal({ target, onClose }) {
                 textAlign: 'right',
                 fontFamily: v.fontMono,
                 fontSize: 10,
-                color: overLimit ? v.errorText : v.ink3,
+                color: nearLimit ? v.errorText : v.ink3,
                 marginTop: 4,
               }}
             >
@@ -385,6 +390,7 @@ export function ReportModal({ target, onClose }) {
           padding: '40px 24px 36px',
           textAlign: 'center',
           gap: 18,
+          animation: 'fadeSlideUp 280ms cubic-bezier(0.16, 1, 0.3, 1) both',
         }}
       >
         <div
@@ -396,9 +402,10 @@ export function ReportModal({ target, onClose }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            animation: 'checkPop 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
           }}
         >
-          <LxIcon name={duplicate ? 'flag' : 'check'} size={28} color={duplicate ? 'var(--lx-warning-text)' : 'var(--lx-success-text)'} />
+          <LxIcon name={duplicate ? 'flag' : 'check'} size={28} color={duplicate ? 'var(--lx-warning-text)' : 'var(--lx-success-text)'} stroke={2.2} />
         </div>
         <div>
           <div style={{ fontFamily: v.fontDisplay, fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: v.ink, marginBottom: 8 }}>
