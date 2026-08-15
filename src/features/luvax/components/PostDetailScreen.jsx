@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useViewport } from '../hooks/useViewport';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { ReportModal } from './ReportModal';
 import { toast } from './Toast';
 import { ConfirmModal } from './ConfirmModal';
@@ -458,6 +459,10 @@ export function PostDetailScreen({ overlay = false }) {
   }, [overlay]);
 
   const closePost = () => navigate(-1);
+  // The post detail is a route overlay rather than an LxModal, so it did not
+  // inherit the shared Escape handling. Wire it here so Escape closes it like
+  // every other overlay.
+  useEscapeKey(overlay, closePost);
 
   const handleLikeToggle = () => {
     setHeartBurst(false);
