@@ -230,6 +230,22 @@ select {
   outline: none;
 }
 
+/* Clickable elements signal that they can be clicked, with the pointer cursor.
+   Disabled controls keep the default arrow, since they cannot be actioned. */
+button:not(:disabled),
+a[href],
+label[for],
+summary,
+[role="button"],
+[role="tab"],
+[role="menuitem"] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
 .lx-tab-btn,
 .lx-header-icon-btn,
 .lx-avatar-btn,
