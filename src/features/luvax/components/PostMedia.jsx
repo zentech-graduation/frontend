@@ -59,6 +59,11 @@ function MediaItem({ media, active, registerVideo }) {
         playsInline
         preload="metadata"
         data-lxtap="1"
+        // Remember when the reader unmutes, so scrolling away and back does not
+        // silence a video they chose to hear.
+        onVolumeChange={(event) => {
+          if (!event.currentTarget.muted) event.currentTarget.dataset.userUnmuted = '1';
+        }}
         onError={() => setFailed(true)}
       />
     );
@@ -105,22 +110,32 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
     });
   }, [safeIndex]);
 
-  // A video scrolled out of view keeps playing, and its audio goes with it, so
-  // sound continues from a card the reader can no longer see. Playback is not
-  // resumed on the way back: the reader stopped watching, and starting again
-  // unasked would be its own surprise.
+  // A video plays only while it is on screen. It starts muted and autoplays when
+  // the post scrolls into view, and pauses when it leaves, so nothing plays before
+  // the reader reaches it and no sound follows a card off screen. Audio stays off
+  // until the reader unmutes it with the controls; the muted state the reader sets
+  // is not forced back, so scrolling away and back does not re-mute their choice.
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return undefined;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (!entry.isIntersecting && !entry.target.paused) {
-            entry.target.pause();
+          const video = entry.target;
+          if (entry.isIntersecting) {
+            // Force muted before autoplay so sound never starts on its own, unless
+            // the reader has already unmuted this video, whose choice is kept.
+            if (video.dataset.userUnmuted !== '1') video.muted = true;
+            const attempt = video.play();
+            // Autoplay can be refused; a muted video is normally allowed, and if
+            // it is not the video simply stays paused for a manual tap.
+            if (attempt && typeof attempt.catch === 'function') attempt.catch(() => {});
+          } else if (!video.paused) {
+            video.pause();
           }
         });
       },
-      { threshold: 0.25 },
+      { threshold: 0.6 },
     );
 
     const nodes = videoRefs.current.filter(Boolean);
