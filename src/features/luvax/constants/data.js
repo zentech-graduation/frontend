@@ -29,3 +29,22 @@ export const TWEAK_DEFAULTS = {
   density: 'cozy',
   showTags: true,
 };
+
+// The story rail's presentation data, restored on the owner's direction. The
+// rail is an interface with no live data wiring yet, so this stands in for the
+// stories feed the backend implements.
+export const STORIES = [
+  { id: 's0', author: 'you', idx: 0, hasStory: false, isOwn: true },
+  { id: 's1', author: 'sol.r',  idx: 1, hasStory: true, viewed: false, type: 'photo',
+    bg: '#C4BCB2', text: null, caption: 'morning' },
+  { id: 's2', author: 'jo.x',   idx: 2, hasStory: true, viewed: false, type: 'text',
+    bg: 'var(--lx-ink)', text: 'three minutes of\nreal quiet today', caption: null },
+  { id: 's3', author: 'ren.ko', idx: 3, hasStory: true, viewed: false, type: 'video',
+    bg: 'var(--lx-ink-2)', text: null, caption: 'walking somewhere' },
+  { id: 's4', author: 'lea.p',  idx: 4, hasStory: true, viewed: true, type: 'photo',
+    bg: '#BDB0A0', text: null, caption: 'film, 2023' },
+  { id: 's5', author: 'noa.b',  idx: 5, hasStory: true, viewed: true, type: 'text',
+    bg: '#C8A97E', text: 'observation\nis a practice', caption: null },
+  { id: 's6', author: 'mara.v', idx: 6, hasStory: true, viewed: true, type: 'photo',
+    bg: '#D5C9BE', text: null, caption: null },
+];
