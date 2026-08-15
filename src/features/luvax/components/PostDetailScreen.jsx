@@ -23,7 +23,11 @@ const HEART_COLOR = 'var(--lx-error)';
 // at the same number rather than inventing a limit of its own.
 const COMMENT_MAX_LENGTH = 2200;
 
-function CommentRow({ comment, onReply, indent = 0, postId }) {
+// Threads are two levels, like Instagram. A top-level comment sits at depth 0;
+// every reply, including a reply to a reply, sits at depth 1 under the same
+// thread root and carries an @mention of the person it answers. rootId is the
+// top-level comment a reply belongs to.
+function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
   const [heartBurst, setHeartBurst] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [commentMenuOpen, setCommentMenuOpen] = useState(false);
@@ -56,9 +60,13 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
   const deleteComment = useDeleteComment(postId);
   const deletionScope = useCommentDeletionScope(comment.id, deleteOpen);
 
-  const isNestedReply = indent > 0;
-  const nestedOffset = isNestedReply ? 23 : 0;
-  const hasReplies = comment.replyCount > 0;
+  const isReply = depth > 0;
+  // A reply's own replies do not nest further; they attach to the same thread
+  // root, so only a top-level comment shows and loads a replies block.
+  const hasReplies = !isReply && comment.replyCount > 0;
+  // The thread root a reply under this row belongs to: this comment when it is
+  // top level, or the root passed down when this row is itself a reply.
+  const threadRootId = isReply ? rootId : comment.id;
 
   // The like state and the count both come from the query cache, so the same
   // comment rendered in two places cannot disagree with itself.
@@ -210,14 +218,14 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
           display: 'grid',
           gridTemplateColumns: '40px minmax(0, 1fr)',
           gap: 12,
-          padding: isNestedReply ? '6px 28px 8px 0' : '14px 28px 13px 0',
-          borderBottom: `1px solid ${v.borderSubtle}`,
+          padding: isReply ? '8px 28px 8px 0' : '14px 28px 13px 0',
+          borderBottom: isReply ? 'none' : `1px solid ${v.borderSubtle}`,
         }}
       >
-        <div style={{ marginLeft: indent + nestedOffset }}>
-          <LxAvatar size={34} src={author.avatarUrl} />
+        <div>
+          <LxAvatar size={isReply ? 28 : 34} src={author.avatarUrl} />
         </div>
-        <div style={{ minWidth: 0, marginLeft: indent + nestedOffset }}>
+        <div style={{ minWidth: 0 }}>
           {comment.pinned ? (
             <div
               style={{
@@ -284,7 +292,17 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
             <span>{likeCount} likes</span>
             <button
               type="button"
-              onClick={() => onReply({ id: comment.id, author: authorName, text: comment.content })}
+              onClick={() => onReply({
+                id: comment.id,
+                author: authorName,
+                text: comment.content,
+                // A reply always lands at the thread root, so a reply to a reply
+                // stays at one level. Replying to a reply tags its author, which
+                // the backend turns into a mention notification; replying to a
+                // top-level comment needs no tag.
+                parentId: threadRootId,
+                mentionUsername: isReply ? author.username : null,
+              })}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: v.ink3, fontFamily: v.fontBody, fontSize: 11.5, fontWeight: 500 }}
             >
               Reply
@@ -327,12 +345,15 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
         </button>
       </div>
       {showReplies && hasReplies ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        // Replies are one level in, marked by a single vertical thread line
+        // rather than a diagonal staircase of avatars.
+        <div style={{ position: 'relative', marginLeft: 19, paddingLeft: 20, display: 'flex', flexDirection: 'column' }}>
+          <div aria-hidden="true" style={{ position: 'absolute', left: 0, top: 2, bottom: 12, width: 1.5, borderRadius: 1, background: v.border }} />
           {repliesLoading ? (
-            <div style={{ padding: '8px 28px 8px 63px', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>loading replies...</div>
+            <div style={{ padding: '8px 0', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>loading replies...</div>
           ) : (
             replies.map((reply) => (
-              <CommentRow key={reply.id} comment={reply} onReply={onReply} indent={indent + 30} postId={postId} />
+              <CommentRow key={reply.id} comment={reply} onReply={onReply} depth={1} rootId={comment.id} postId={postId} />
             ))
           )}
         </div>
@@ -536,7 +557,10 @@ export function PostDetailScreen({ overlay = false }) {
     if (!value) return;
 
     createComment.mutate(
-      { parentId: replyingTo?.id ?? null, content: value },
+      // A reply is attached to the thread root, so every reply is one level deep.
+      // The @mention it may carry is what tells the specific person they were
+      // answered.
+      { parentId: replyingTo?.parentId ?? null, content: value },
       {
         onSuccess: () => {
           setCommentDraft('');
@@ -553,6 +577,14 @@ export function PostDetailScreen({ overlay = false }) {
 
   const handleReplySelect = (reply) => {
     setReplyingTo(reply);
+    // Replying to a reply prefills an editable @mention of its author, so the
+    // person answered is tagged and notified. Replying to a top-level comment
+    // carries no tag. An existing tag is not stacked on top of another.
+    if (reply.mentionUsername) {
+      // Replace any leading @tag from a previous target rather than stacking one.
+      setCommentDraft((current) => `@${reply.mentionUsername} ${current.replace(/^@\S+\s+/, '')}`);
+    }
+    window.requestAnimationFrame(() => commentInputRef.current?.focus());
   };
 
   const menuItems = useMemo(
