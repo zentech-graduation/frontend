@@ -7,6 +7,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- You can upload a profile avatar from your device, not only paste an image URL.
+- Clicking a hashtag opens the tag search and searches for it immediately.
+- On mobile, double-tapping a post's media likes it.
+- A video now autoplays, muted, when it scrolls into view and pauses when it leaves; you unmute it yourself and that choice is kept.
+
+### Changed
+- A post now leads with the uploader's avatar, name, and time, followed by the media, then the caption and actions.
+- Post media fills its frame with no side gaps, keeping the whole image without cropping.
+- The interface and the post popup now scale up on 2K and larger screens instead of feeling small.
+- The story rail has larger avatars and more height.
+- Followers and following open in a pop-up on the profile instead of a separate page, and rapid follow taps no longer desync.
+- The profile tabs now read photos, posts, liked.
+- Comments use spacing instead of lines to separate threads: wider space between top-level comments, replies kept tight.
+- On mobile, posts sit closer together, a single tap does nothing, and the comment control opens the post.
+- The navigation bar stays visible on the messages screen.
+
+### Fixed
+- Clicking a notification no longer errors: it opens the post for a post notification and the person's profile otherwise.
+- Unfollowing now asks for confirmation, with the action shown in red.
+- A signed-in user who opens an unknown address stays in the app with the nav bar and a notice, then returns to their feed, instead of being sent to the login page.
+
+### Added
 - The story rail is back at the top of the feed, with its viewer, restored as an interface.
 - The messaging section is back, restored as an interface with its conversation list, thread, and info panel.
 - Replying to a reply now prepends an editable @mention of the person answered, who is notified.
