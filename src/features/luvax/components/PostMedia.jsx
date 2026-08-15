@@ -85,7 +85,7 @@ function MediaItem({ media, active, registerVideo }) {
  * The frame takes its aspect ratio from the first item and keeps it for every
  * item, so moving through a carousel of mixed shapes never resizes the card.
  */
-export function PostMedia({ post, radius = 0, onOpen = null }) {
+export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) {
   const items = getMediaList(post);
   const [index, setIndex] = useState(0);
   const [focused, setFocused] = useState(false);
@@ -130,7 +130,14 @@ export function PostMedia({ post, radius = 0, onOpen = null }) {
 
   if (count === 0) return null;
 
-  const ratio = getFrameRatio(items[0]);
+  // The frame keeps the media's own ratio, but caps how tall it may get. A wide
+  // single-column feed turns a 9:16 portrait into nearly a whole viewport, so the
+  // box is clamped to a minimum width-to-height ratio. Taller media is not cropped:
+  // object-fit contain letterboxes it against the page, which reads as breathing
+  // room on the flat feed rather than a boxed frame. minAspect is width/height, so
+  // 0.8 means the box never exceeds 5:4 tall.
+  const rawRatio = getFrameRatio(items[0]);
+  const ratio = Math.max(rawRatio, minAspect);
   const isCarousel = count > 1;
 
   const go = (next) => {

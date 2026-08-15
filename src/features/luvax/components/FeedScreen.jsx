@@ -25,12 +25,15 @@ import { ROUTES, routeTo } from '@/config/constants';
 
 import { PostCard } from './PostCard';
 
+// The single-column content width, before the root scale is applied. The root
+// zoom multiplies it, so the rendered column reads near the photo-first target
+// the owner asked for. See docs/layout-overhaul/layout-decisions.md.
+const FEED_COLUMN = 412;
+
 // ─── Feed Screen ───────────────────────────────────────────────────────────
 export function FeedScreen() {
   const { tweaks, viewport } = useLuvaxTweaks();
-  const isMulti = viewport === 'tablet' || viewport === 'desktop';
   const isMobile = viewport === 'mobile';
-  const gap = tweaks.density === 'dense' ? 8 : 12;
   const { ref, inView } = useInView();
   const { 
     data: feedResponse, 
@@ -68,56 +71,47 @@ export function FeedScreen() {
 
   if (posts.length === 0) {
     return (
-      <>
-        <StoriesCarousel viewport={viewport} />
-        {/* Geometry is the design's own empty state, taken from Explore: padding
-            48px 24px, title body 15 weight 500 in v.ink2, subtitle body 13 in
-            v.ink3. Only the copy is new, because the design defines no empty feed. */}
-        <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-          <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 500, color: v.ink2, marginBottom: 4 }}>
-            your feed is quiet
-          </div>
-          <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
-            follow a few people and their posts will appear here
-          </div>
+      // Geometry is the design's own empty state, taken from Explore: padding
+      // 48px 24px, title body 15 weight 500 in v.ink2, subtitle body 13 in
+      // v.ink3. Only the copy is new, because the design defines no empty feed.
+      <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 500, color: v.ink2, marginBottom: 4 }}>
+          your feed is quiet
         </div>
-      </>
+        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+          follow a few people and their posts will appear here
+        </div>
+      </div>
     );
   }
 
-  return (
-    <>
-      <div style={{
-        flex: 1,
-        padding: isMobile ? '10px 0 24px' : '14px 16px 24px',
-      }}>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: isMobile ? '0 14px 12px' : '2px 2px 12px' }}>today</div>
+  // One centred column, not a masonry. The content column is capped so the feed
+  // reads like a photo-first single stream. Posts are separated by a large gap
+  // between them against a much smaller gap inside each post, so the eye groups a
+  // post without any divider or card. The ratio is roughly 5:1. See
+  // docs/layout-overhaul/layout-decisions.md.
+  const betweenPosts = isMobile ? 44 : 56;
 
-        {isMulti ? (
-          <div style={{
-            columnCount: viewport === 'desktop' ? 2 : 2,
-            columnGap: gap,
-          }}>
-            {posts.map(p => (
-              <div key={p.id} style={{ breakInside: 'avoid', marginBottom: gap, display: 'inline-block', width: '100%' }}>
-                <PostCard post={p} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap }}>
-            {posts.map(p => (
-              <PostCard key={p.id} post={p} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
-            ))}
-          </div>
-        )}
+  return (
+    <div style={{
+      flex: 1,
+      padding: isMobile ? '8px 0 48px' : '20px 0 56px',
+    }}>
+      <div style={{ width: '100%', maxWidth: isMobile ? '100%' : FEED_COLUMN, margin: '0 auto' }}>
+        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: isMobile ? '0 14px 16px' : '0 4px 16px' }}>today</div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}>
+          {posts.map(p => (
+            <PostCard key={p.id} post={p} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
+          ))}
+        </div>
 
         {hasNextPage && (
-          <div ref={ref} style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+          <div ref={ref} style={{ padding: '28px 20px', textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
             {isFetchingNextPage ? 'loading more...' : 'scroll for more'}
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

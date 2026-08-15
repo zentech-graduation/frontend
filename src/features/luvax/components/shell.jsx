@@ -377,8 +377,8 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
           <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
           <main style={{
             width: 680, flexShrink: 0, minWidth: 0,
-            borderLeft: `1px solid ${v.border}`,
-            borderRight: `1px solid ${v.border}`,
+            // No column rules. The feed is one continuous surface on the page
+            // background, so the borders that boxed the centre column are gone.
             minHeight: 'calc(100vh - 56px)',
             display: 'flex', flexDirection: 'column',
             background: v.base,
@@ -405,8 +405,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
           <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
           <main style={{
             width: tabletMainWidth, flexShrink: 0, minWidth: 0,
-            borderLeft: screen === 'compose' ? 'none' : `1px solid ${v.border}`,
-            borderRight: `1px solid ${v.border}`,
+            // Column rules removed to match the desktop feed's continuous surface.
             minHeight: 'calc(100vh - 56px)',
             display: 'flex', flexDirection: 'column',
             background: v.base,

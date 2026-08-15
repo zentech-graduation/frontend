@@ -214,13 +214,11 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
     <article
       onClick={handleCardClick}
       style={{
-        background: isMobile ? v.base : v.surface,
-        borderRadius: isMobile ? 0 : 12,
-        overflow: 'hidden',
-        boxShadow: isMobile ? 'none' : '0 2px 8px rgba(26,24,22,0.06)',
+        // No card chrome. The feed is one continuous surface on the page
+        // background; posts are told apart by the space between them, not by a
+        // box, a border, or a divider. See docs/layout-overhaul/layout-decisions.md.
+        background: v.base,
         cursor: 'pointer',
-        paddingBottom: isMobile ? 12 : 0,
-        borderBottom: isMobile ? `1px solid ${v.border}` : 'none',
       }}
     >
       {block.isError ? (
@@ -239,10 +237,11 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       ) : null}
 
-      {/* The article clips its own corners, so the frame needs no radius. */}
-      <PostMedia post={post} radius={0} />
+      {/* The photo carries its own rounded frame on wide viewports and runs
+          edge to edge on a phone. There is no card around it. */}
+      <PostMedia post={post} radius={isMobile ? 0 : 14} />
 
-      <div style={{ padding: isMobile ? '14px 14px 10px' : pad }}>
+      <div style={{ padding: isMobile ? '12px 14px 0' : '12px 4px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
           <div
             data-lxtap="1"
@@ -285,7 +284,9 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             fontFamily: v.fontBody,
             // postType serialises lower case, like mediaType. Comparing against
             // "TEXT" never matched, so every text post rendered at the image size.
-            fontSize: isTextPost ? 16 : 14,
+            // Captions are grown a step beyond the root scale: the column is wider
+            // now, so the owner asked for larger caption text to keep lines readable.
+            fontSize: isTextPost ? 17 : 15,
             color: v.ink,
             lineHeight: 1.5,
             margin: 0,
