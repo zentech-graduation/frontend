@@ -12,6 +12,7 @@ import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSoci
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useViewport } from '../hooks/useViewport';
 import { ReportModal } from './ReportModal';
+import { toast } from './Toast';
 import { ConfirmModal } from './ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo } from '@/config/constants';
@@ -162,7 +163,7 @@ function CommentRow({ comment, onReply, indent = 0, postId }) {
   const commentMenuItems = [
     { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
     { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, comment.content) },
-    { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
+    { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId).then(() => toast('link copied')).catch(() => {}) },
     {
       id: 'view-profile',
       icon: 'profile',
@@ -495,7 +496,10 @@ export function PostDetailScreen({ overlay = false }) {
 
   const handleDeleteConfirm = () => {
     deletePost.mutate(postId, {
-      onSuccess: () => navigate(-1),
+      onSuccess: () => {
+        toast('post deleted');
+        navigate(-1);
+      },
     });
     setDeleteConfirmOpen(false);
   };
@@ -504,6 +508,7 @@ export function PostDetailScreen({ overlay = false }) {
     if (!targetUserId) return;
     block.mutate(targetUserId, {
       onSuccess: () => {
+        toast(`blocked @${authorHandle}`);
         setBlockModalOpen(false);
         navigate(-1);
       },
@@ -538,7 +543,7 @@ export function PostDetailScreen({ overlay = false }) {
     () => [
       { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
       { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, post.caption) },
-      { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId) },
+      { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId).then(() => toast('link copied')).catch(() => {}) },
       // Kept off the viewer's own post, where the server refuses the report with
       // REPORT_SELF_NOT_ALLOWED and the action could never succeed.
       ...(isSelf

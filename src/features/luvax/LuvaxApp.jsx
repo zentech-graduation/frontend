@@ -6,6 +6,7 @@ import { LxShell, LxAppBar, LxBottomNav } from './components/shell';
 import { v } from '@/config/tokens';
 import { APP_SCREENS, DEFAULT_BASE_SCREEN } from '@/routes/appScreens';
 import { LuvaxTweaksProvider } from './LuvaxTweaksContext';
+import { ToastHost } from './components/Toast';
 
 /**
  * Resolves the screen an overlay was opened from.
@@ -201,6 +202,7 @@ export function LuvaxApp() {
           {base.element}
         </LxShell>
         <Outlet />
+        <ToastHost />
       </LuvaxTweaksProvider>
     );
   }
@@ -212,6 +214,7 @@ export function LuvaxApp() {
       <LxShell screen={screen} navigate={navigate} showRightRail={showRail}>
         <Outlet />
       </LxShell>
+      <ToastHost />
     </LuvaxTweaksProvider>
   );
 }

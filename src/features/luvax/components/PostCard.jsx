@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { ReportModal } from './ReportModal';
+import { toast } from './Toast';
 import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo } from '@/config/constants';
 
@@ -85,7 +86,9 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   };
 
   const handleDeleteConfirm = () => {
-    deletePost.mutate(post.id);
+    // The card leaves the feed on success, so the toast confirms the delete
+    // landed rather than restating a change the user can see.
+    deletePost.mutate(post.id, { onSuccess: () => toast('post deleted') });
     setDeleteConfirmOpen(false);
   };
 
@@ -134,8 +137,10 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       {
         id: 'copy',
         icon: 'link',
+        // The link goes to the clipboard with nothing on screen to show for it,
+        // so this is one of the few actions that earns a toast.
         label: 'Copy link',
-        onClick: () => copyPostLink(post.id),
+        onClick: () => copyPostLink(post.id).then(() => toast('link copied')).catch(() => {}),
       },
       isOwner
         ? {
@@ -415,7 +420,9 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
                 confirmLabel: 'block',
                 confirmDisabled: block.isPending,
                 onConfirm: () => {
-                  if (targetUserId) block.mutate(targetUserId);
+                  // Blocking from a post's menu gives no on-screen sign it worked,
+                  // so the toast reports it. See docs/layout-overhaul/changes-applied.md.
+                  if (targetUserId) block.mutate(targetUserId, { onSuccess: () => toast(`blocked @${authorHandle}`) });
                 },
               }
             : null
