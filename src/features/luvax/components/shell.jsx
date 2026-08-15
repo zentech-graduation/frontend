@@ -13,10 +13,9 @@ import { LxHeaderSearch } from '@/features/search/components/LxHeaderSearch';
 const PRIMARY_TABS = [
   { id: 'feed', path: ROUTES.FEED, icon: 'home', label: 'home' },
   { id: 'explore', path: ROUTES.EXPLORE, icon: 'explore', label: 'explore' },
-  // Messages is implemented on the backend but is not part of this build.
-  // The tab stays visible so the shape of the product is honest, and is
-  // disabled so it cannot present a feature that is not there.
-  { id: 'messages', path: ROUTES.MESSAGES, icon: 'chat', label: 'chats', disabled: true },
+  // The messages interface is restored. It runs on its own presentation without
+  // live data wiring yet, so the tab is enabled and reachable again.
+  { id: 'messages', path: ROUTES.MESSAGES, icon: 'chat', label: 'chats' },
   { id: 'compose', path: ROUTES.COMPOSE, icon: 'plus', label: 'post' },
   { id: 'notifications', path: ROUTES.NOTIFICATIONS, icon: 'bell', label: 'activity' },
 ];
