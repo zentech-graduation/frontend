@@ -35,6 +35,42 @@ const TYPE_COLOR = {
   comment: v.accent, mention: v.avatar2, story: v.avatar3,
 };
 
+// The maps above are keyed by category, but the backend sends full enum values
+// (like_post, comment_post, reply_comment, ...). This collapses a value to its
+// category so the row can use the per-type icon and colour it was ignoring.
+function notifCategory(type) {
+  if (!type) return 'like';
+  if (type === 'follow_request') return 'follow_request';
+  if (type.startsWith('follow')) return 'follow';
+  if (type.startsWith('like')) return 'like';
+  if (type.startsWith('comment') || type.startsWith('reply')) return 'comment';
+  if (type.startsWith('mention')) return 'mention';
+  if (type.startsWith('story')) return 'story';
+  return 'comment';
+}
+
+// Groups notifications by recency for the date-grouped view the design uses.
+function notifBucket(createdAt) {
+  const then = new Date(createdAt);
+  if (Number.isNaN(then.getTime())) return 'earlier';
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const t = then.getTime();
+  if (t >= startOfToday) return 'today';
+  if (t >= startOfToday - 6 * 24 * 60 * 60 * 1000) return 'this week';
+  return 'earlier';
+}
+
+const BUCKET_ORDER = ['today', 'this week', 'earlier'];
+
+function GroupHeading({ label }) {
+  return (
+    <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '16px 16px 8px' }}>
+      {label}
+    </div>
+  );
+}
+
 function NotifRow({ n, onAccept, onDecline }) {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
@@ -45,8 +81,13 @@ function NotifRow({ n, onAccept, onDecline }) {
 
   const isFollow = n.type === 'follow' || n.type === 'follow_request';
   const text = NOTIFICATION_TEXT[n.type] ?? 'interacted with you';
-  const icon = isFollow ? 'profile' : 'heart';
-  const color = isFollow ? v.success : v.error;
+  // Use the per-type icon and colour maps rather than collapsing every type to
+  // two. A like is a filled heart in the error hue, a comment the accent reply
+  // glyph, a mention the hash, a story the eye, a follow the profile mark.
+  const category = notifCategory(n.type);
+  const icon = TYPE_ICON[category] ?? 'heart';
+  const color = TYPE_COLOR[category] ?? v.error;
+  const filledBadge = category === 'like';
 
   const actorName = getDisplayName(actor, 'Someone');
   const avatarSrc = actor.avatarUrl;
@@ -69,7 +110,7 @@ function NotifRow({ n, onAccept, onDecline }) {
           border: `2px solid var(--lx-base)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <LxIcon name={icon} size={10} color={v.white} stroke={2} filled={!isFollow} />
+          <LxIcon name={icon} size={10} color={v.white} stroke={2} filled={filledBadge} />
         </div>
       </div>
 
@@ -208,14 +249,23 @@ export function NotificationsScreen() {
           isLoadingNotifs ? (
             <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>loading notifications...</div>
           ) : notifs.length > 0 ? (
-            notifs.map((n, i) => (
-              <NotifRow
-                key={n.id || i}
-                n={n}
-                onAccept={(id) => approveReq.mutate(id)}
-                onDecline={(id) => rejectReq.mutate(id)}
-              />
-            ))
+            BUCKET_ORDER.map((bucket) => {
+              const rows = notifs.filter((n) => notifBucket(n.createdAt) === bucket);
+              if (rows.length === 0) return null;
+              return (
+                <div key={bucket}>
+                  <GroupHeading label={bucket} />
+                  {rows.map((n, i) => (
+                    <NotifRow
+                      key={n.id || `${bucket}-${i}`}
+                      n={n}
+                      onAccept={(id) => approveReq.mutate(id)}
+                      onDecline={(id) => rejectReq.mutate(id)}
+                    />
+                  ))}
+                </div>
+              );
+            })
           ) : (
             <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>No notifications yet</div>
           )
