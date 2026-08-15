@@ -7,7 +7,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- The feed is now one centred column instead of two posts side by side, with no dividing lines, no card behind each post, and no border down the column; posts are told apart by the space between them alone.
+- The whole app is larger and easier to read, grown at the root so every proportion holds, and post captions are larger again on top of that.
+- Opening a post now darkens the feed behind it more strongly, so the post holds attention without hiding its surroundings entirely.
+- Notifications are now grouped by date and each row shows the icon and colour for its own type, instead of collapsing every type into two.
+- Search now shows every matching person rather than only the first, and pressing Enter in the explore search commits the query so it can be shared and survives a reload.
 - Two parallel lines of development were reconciled into develop, bringing search and saved posts, social states and profile tabs, and the realtime client together with the design conformance and composer work, and every capability from both lines was re-verified in the running application afterward.
+
+### Added
+- A media post opened on a wide screen now shows the media on the left and the comments on the right, with the media staying put while the comments scroll; a text post stays one column and a narrow screen stacks them.
+- Motion was added across overlays, menus, the carousel, toasts, likes, content loading, and screen changes, sharing one set of durations and easings, and all of it turns off when the reader asks for reduced motion.
+- A toast now confirms actions whose result is not otherwise on screen: copying a link, deleting a post, and blocking someone from a post's menu.
+- Explore now shows a search empty state, and a deliberate placeholder for trending while its ranking is still being built, rather than blank space.
+
+### Fixed
+- A pending follow request to a private account now reads "requested" in search results, instead of still offering "follow".
+- The post detail overlay now closes when you press Escape.
+- The report modal's completion step now animates in with a confirmation mark, and its character counter warns as the limit approaches instead of never.
+- Empty-state lines and the post overflow menu now follow the design's capitalisation consistently.
 
 ### Fixed
 - Liking or saving a post now updates every place that post is showing. Opening a post from the feed leaves the feed card behind it, and liking in one of them used to leave the other showing the old count until something refetched.
