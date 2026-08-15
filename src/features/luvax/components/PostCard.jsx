@@ -13,7 +13,7 @@ import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { ReportModal } from './ReportModal';
 import { toast } from './Toast';
 import { REPORT_TYPES } from '@/services/report.service';
-import { routeTo } from '@/config/constants';
+import { ROUTES, routeTo } from '@/config/constants';
 
 const HEART_COLOR = 'var(--lx-error)';
 
@@ -35,6 +35,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const menuButtonRef = useRef(null);
+  const lastTapRef = useRef(0);
 
   const currentUser = useAuthStore((state) => state.user);
   const isOwner = currentUser?.id === post.author?.id;
@@ -62,12 +63,35 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
     saveMutation.mutate({ postId: post.id, saved });
   };
 
-  // The design puts the click on the article and skips it when the event started
-  // inside an interactive child, which it marks with data-lxtap.
+  // On a wide viewport a click on the post opens its detail, skipping clicks that
+  // started inside an interactive child (marked data-lxtap). On mobile a single
+  // tap does nothing: the detail opens from the comment control, and a double-tap
+  // on the media likes the post.
   const handleCardClick = (event) => {
+    if (isMobile) return;
     if (event.target.closest('[data-lxtap]')) return;
     openOverlay(routeTo.postDetail(post.id));
   };
+
+  // Double-tap to like on mobile, in the manner of Instagram. A double-tap always
+  // likes and never unlikes; on an already-liked post it just replays the heart.
+  const handleMediaTap = () => {
+    if (!isMobile) return;
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      lastTapRef.current = 0;
+      if (!liked) handleLikeToggle();
+      else {
+        setHeartBurst(false);
+        window.requestAnimationFrame(() => setHeartBurst(true));
+      }
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
+  // A hashtag opens the tag search and searches for it immediately.
+  const openHashtag = (tag) => navigate(`${ROUTES.SEARCH}?q=${encodeURIComponent(tag)}&type=tags`);
 
   const handleEditOpen = () => {
     setEditCaption(post.caption ?? '');
@@ -244,12 +268,10 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </div>
       ) : null}
 
-      {/* The photo carries its own rounded frame on wide viewports and runs
-          edge to edge on a phone. There is no card around it. */}
-      <PostMedia post={post} radius={isMobile ? 0 : 14} />
-
-      <div style={{ padding: isMobile ? '12px 14px 0' : '12px 4px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: gap }}>
+      {/* The uploader's avatar and info lead the post, then the media, then the
+          caption and actions. */}
+      <div style={{ padding: isMobile ? '0 14px 10px' : '0 4px 10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div
             data-lxtap="1"
             onClick={() => targetUserId && navigate(routeTo.userProfile(targetUserId))}
@@ -285,7 +307,17 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             <LxIcon name="more" size={15} color={v.ink3} />
           </button>
         </div>
+      </div>
 
+      {/* The photo carries its own rounded frame on wide viewports and runs edge
+          to edge on a phone. minAspect 0 lets the frame take the media's true
+          ratio, so the image fills it with no side gaps. Double-tap likes on
+          mobile. */}
+      <div onClick={handleMediaTap} style={{ cursor: isMobile ? 'default' : 'pointer' }}>
+        <PostMedia post={post} radius={isMobile ? 0 : 14} minAspect={0} />
+      </div>
+
+      <div style={{ padding: isMobile ? '12px 14px 0' : '12px 4px 0' }}>
         <p
           style={{
             fontFamily: v.fontBody,
@@ -306,9 +338,16 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         </p>
 
         {showTags && tags.length > 0 ? (
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: gap }}>
+          <div data-lxtap="1" style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: gap }}>
             {tags.map((tag, index) => (
-              <LxTag key={`${tag}-${index}`} size="sm">
+              <LxTag
+                key={`${tag}-${index}`}
+                size="sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openHashtag(tag);
+                }}
+              >
                 #{tag}
               </LxTag>
             ))}
