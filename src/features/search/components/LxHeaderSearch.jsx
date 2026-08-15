@@ -24,9 +24,10 @@ export function LxHeaderSearch({ navigate, viewport }) {
       next.set('focusSearch', '1');
     }
     const search = next.toString();
-    // Submitting goes to the results screen. The explore screen keeps its own
-    // `q` handling for addresses that already point at it.
-    navigate(search ? `${ROUTES.SEARCH}?${search}` : ROUTES.SEARCH);
+    // Submitting goes to the explore search, which keeps the navigation bar, so
+    // the header field and the explore field are one search experience rather
+    // than two, and the nav never disappears on a results page.
+    navigate(search ? `${ROUTES.EXPLORE}?${search}` : ROUTES.EXPLORE);
   };
 
   const submitSearch = () => {

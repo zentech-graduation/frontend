@@ -203,7 +203,10 @@ export function LxAppBar({ screen, navigate, viewport }) {
             minWidth: 0,
           }}
         >
-          {isWide && isMainTab ? <LxTopTabs active={screen} navigate={navigate} compact={isTablet} /> : null}
+          {/* The nav stays visible on every wide screen except the settings-area
+              subpages, which keep their back header, and messages, which owns its
+              own chrome. It no longer vanishes on a results or list page. */}
+          {isWide && !showBackHeader && screen !== 'messages' ? <LxTopTabs active={screen} navigate={navigate} compact={isTablet} /> : null}
           {isMobile && !showBackHeader ? (
             <button
               type="button"
@@ -243,10 +246,13 @@ export function LxAppBar({ screen, navigate, viewport }) {
             >
               <LxIcon name="edit" size={13} color={v.ink2} />
             </button>
-          ) : (screen !== 'messages' || isTablet || isDesktop) ? (
-            <button onClick={() => navigate(ROUTES.NOTIFICATIONS)} className="lx-header-icon-btn" style={{ background: isTablet ? 'none' : v.surface, border: isTablet ? `1px solid ${v.border}` : 'none', borderRadius: isTablet ? '999px' : '50%', width: isTablet ? 34 : 36, minWidth: isTablet ? 34 : 36, height: isTablet ? 34 : 36, aspectRatio: '1 / 1', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxShadow: 'none', padding: 0, flexShrink: 0, marginRight: isMobile ? 2 : 0 }}>
-              <LxIcon name="bell" size={isTablet ? 20 : 18} color={v.ink2} />
-              {hasNotifications && <span style={{ position: 'absolute', top: isTablet ? 5 : 6, right: isTablet ? 5 : 6, width: isTablet ? 6 : 7, height: isTablet ? 6 : 7, borderRadius: '50%', background: v.accent }} />}
+          ) : isMobile && screen !== 'messages' ? (
+            // The header bell is kept only on mobile, where the top bar carries no
+            // nav tabs. On a wide viewport it duplicated the nav's activity tab
+            // sitting right beside it, so it is removed there.
+            <button onClick={() => navigate(ROUTES.NOTIFICATIONS)} className="lx-header-icon-btn" style={{ background: v.surface, border: 'none', borderRadius: '50%', width: 36, minWidth: 36, height: 36, aspectRatio: '1 / 1', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxShadow: 'none', padding: 0, flexShrink: 0, marginRight: 2 }}>
+              <LxIcon name="bell" size={18} color={v.ink2} />
+              {hasNotifications && <span style={{ position: 'absolute', top: 6, right: 6, width: 7, height: 7, borderRadius: '50%', background: v.accent }} />}
             </button>
           ) : isMobile ? <div style={{ width: 24, height: 24 }} /> : null}
           {!isMobile && (screen !== 'messages' || isTablet || isDesktop) ? (
