@@ -16,21 +16,31 @@ export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196, a
       const menu = menuRef.current;
       if (!anchor || !menu) return;
 
+      // The app scales itself with a root CSS zoom. getBoundingClientRect returns
+      // visual (post-zoom) coordinates, but a position:fixed element inside the
+      // zoomed subtree has its top/left multiplied by the zoom again, so a raw
+      // rect value would land the menu one zoom-factor away from its anchor. All
+      // geometry below stays in visual pixels; the final offsets are divided by
+      // the zoom so that, once the browser multiplies them back, the menu lands
+      // exactly on its anchor. With no zoom the factor is 1 and nothing changes.
+      const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
       const rect = anchor.getBoundingClientRect();
-      const menuHeight = menu.offsetHeight || 0;
+      const menuRect = menu.getBoundingClientRect();
+      const menuHeight = menuRect.height || menu.offsetHeight * zoom;
+      const menuWidth = width * zoom;
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
       const gap = 10;
       const shouldOpenUp = rect.bottom + menuHeight + gap > viewportHeight && rect.top > menuHeight + gap;
-      const top = shouldOpenUp
+      const topVisual = shouldOpenUp
         ? Math.max(gap, rect.top - menuHeight - 8)
         : Math.min(viewportHeight - menuHeight - gap, rect.bottom + 8);
-      const preferredLeft = align === 'right' ? rect.left : rect.right - width;
-      const left = Math.min(Math.max(gap, preferredLeft), viewportWidth - width - gap);
+      const preferredLeft = align === 'right' ? rect.left : rect.right - menuWidth;
+      const leftVisual = Math.min(Math.max(gap, preferredLeft), viewportWidth - menuWidth - gap);
 
       setPosition({
-        top,
-        left,
+        top: topVisual / zoom,
+        left: leftVisual / zoom,
         placement: shouldOpenUp ? 'top' : 'bottom',
       });
     };
