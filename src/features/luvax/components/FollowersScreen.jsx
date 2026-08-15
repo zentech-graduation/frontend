@@ -85,7 +85,7 @@ export function FollowersScreen() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {followers.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: v.ink3, fontFamily: v.fontBody, fontSize: 14 }}>
-            No followers yet.
+            no followers yet
           </div>
         ) : (
           followers.map(item => {

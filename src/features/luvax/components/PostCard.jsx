@@ -146,7 +146,9 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         ? {
             id: 'edit',
             icon: 'edit',
-            label: 'edit post',
+            // Menu rows follow the design's sentence case (Share, Copy link),
+            // unlike these two rows the frontend added in lower case.
+            label: 'Edit post',
             onClick: handleEditOpen,
           }
         : null,
@@ -154,7 +156,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         ? {
             id: 'delete',
             icon: 'close',
-            label: 'delete post',
+            label: 'Delete post',
             tone: 'danger',
             onClick: handleDeleteRequest,
           }

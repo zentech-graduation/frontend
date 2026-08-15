@@ -85,7 +85,7 @@ export function FollowingScreen() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {following.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: v.ink3, fontFamily: v.fontBody, fontSize: 14 }}>
-            Not following anyone yet.
+            not following anyone yet
           </div>
         ) : (
           following.map(item => {

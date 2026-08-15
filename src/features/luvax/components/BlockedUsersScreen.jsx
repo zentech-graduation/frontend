@@ -30,9 +30,9 @@ export function BlockedUsersScreen() {
   const blocked = extractPageContent(data);
 
   const heading = () => {
-    if (isLoading) return 'Loading blocked users';
-    if (isError) return "Couldn't load blocked users";
-    if (blocked.length === 0) return 'No blocked users';
+    if (isLoading) return 'loading blocked users';
+    if (isError) return "couldn't load blocked users";
+    if (blocked.length === 0) return 'no blocked users';
     return `${blocked.length} blocked user${blocked.length !== 1 ? 's' : ''}`;
   };
 

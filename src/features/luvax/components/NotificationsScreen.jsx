@@ -243,7 +243,7 @@ export function NotificationsScreen() {
               />
             ))
           ) : (
-            <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>No pending requests</div>
+            <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>no pending requests</div>
           )
         ) : (
           isLoadingNotifs ? (
@@ -267,7 +267,7 @@ export function NotificationsScreen() {
               );
             })
           ) : (
-            <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>No notifications yet</div>
+            <div style={{ padding: 40, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>no notifications yet</div>
           )
         )}
       </div>
