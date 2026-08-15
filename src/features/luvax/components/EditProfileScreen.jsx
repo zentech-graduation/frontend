@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/config/constants';
 import { v } from '@/config/tokens';
-import { LxAvatar, LxBtn } from './primitives';
+import { LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUpdateMyProfile } from '../hooks/useUsers';
+import { useMediaUpload } from '../hooks/useMediaUpload';
 
 function fieldStyle() {
   return {
@@ -34,8 +35,31 @@ export function EditProfileScreen() {
     avatarUrl: user?.avatarUrl || '',
   });
   const [formError, setFormError] = useState('');
+  const { uploadMedia, isUploading } = useMediaUpload();
+  const fileInputRef = useRef(null);
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleAvatarFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setFormError('please choose an image file for your avatar.');
+      return;
+    }
+    setFormError('');
+    try {
+      // The avatar goes through the same pre-signed upload as post media, then its
+      // CDN URL is saved as the profile's avatarUrl.
+      const result = await uploadMedia(file);
+      const cdnUrl = result?.cdnUrl || result?.data?.cdnUrl;
+      if (cdnUrl) update('avatarUrl', cdnUrl);
+      else setFormError("we couldn't read the uploaded image. try again.");
+    } catch (error) {
+      setFormError(error?.uploadMessage || "we couldn't upload that image. try again.");
+    }
+  };
 
   const handleSave = () => {
     setFormError('');
@@ -63,18 +87,34 @@ export function EditProfileScreen() {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 32px', background: v.base }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-        <div
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarFile} style={{ display: 'none' }} />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label="upload a new avatar"
+          disabled={isUploading}
           style={{
             width: 84,
             height: 84,
             borderRadius: '50%',
             background: form.avatarUrl ? `url(${form.avatarUrl}) center/cover no-repeat` : v.avatar0,
             border: `2px solid ${v.border}`,
+            cursor: isUploading ? 'default' : 'pointer',
+            padding: 0,
+            position: 'relative',
+            overflow: 'hidden',
           }}
-        />
+        >
+          <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', color: v.white, fontFamily: v.fontMono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            {isUploading ? 'uploading' : 'change'}
+          </span>
+        </button>
+        <LxBtn variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+          {isUploading ? 'uploading...' : 'upload from device'}
+        </LxBtn>
         <div style={{ width: '100%', maxWidth: 360 }}>
           <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
-            avatar url
+            or paste an image url
           </label>
           <input value={form.avatarUrl} onChange={(e) => update('avatarUrl', e.target.value)} placeholder="https://..." style={fieldStyle()} />
         </div>
