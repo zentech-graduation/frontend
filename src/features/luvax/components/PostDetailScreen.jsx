@@ -10,6 +10,7 @@ import { useCommentDeletionScope, useCommentReplies, useDeleteComment, useEditCo
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
+import { useViewport } from '../hooks/useViewport';
 import { ReportModal } from './ReportModal';
 import { ConfirmModal } from './ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
@@ -373,6 +374,7 @@ export function PostDetailScreen({ overlay = false }) {
   const menuButtonRef = useRef(null);
   const commentsPaneRef = useRef(null);
   const commentInputRef = useRef(null);
+  const viewport = useViewport();
 
   const { postId } = useParams();
   const { data: postResponse, isLoading, isError } = usePostDetail(postId);
@@ -418,6 +420,12 @@ export function PostDetailScreen({ overlay = false }) {
   const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((tag) => tag.slice(1)) : []);
   const mediaList = post.media || [];
   const mainMedia = mediaList[0] || null;
+  // Two panes only when a media post is opened on a wide viewport: the media
+  // takes the left pane and stays put while the comments scroll on the right.
+  // A text post is always a single column, and a narrow viewport stacks the
+  // media above the comments in one scrolling column. See
+  // docs/layout-overhaul/layout-decisions.md.
+  const twoPane = mediaList.length > 0 && viewport === 'desktop';
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
@@ -578,16 +586,13 @@ export function PostDetailScreen({ overlay = false }) {
     );
   }
 
-  const container = (
+  const commentColumn = (
     <div
       style={{
-        width: 'min(556px, calc(100vw - 32px))',
-        height: 'min(84vh, 728px)',
+        height: '100%',
+        minWidth: 0,
+        flex: 1,
         background: v.base,
-        border: `1px solid ${v.border}`,
-        borderRadius: 16,
-        boxShadow: '0 24px 80px rgba(26,24,22,0.34)',
-        overflow: 'hidden',
         display: 'grid',
         gridTemplateRows: 'auto auto minmax(0, 1fr) auto',
       }}
@@ -634,7 +639,9 @@ export function PostDetailScreen({ overlay = false }) {
       </div>
 
       <div ref={commentsPaneRef} style={{ minHeight: 0, overflowY: 'auto', padding: '0 16px', scrollBehavior: 'smooth' }}>
-        {mediaList.length > 0 ? (
+        {/* In two panes the media lives in the fixed left pane and does not scroll.
+            Stacked (narrow) and text posts keep it inline above the comments. */}
+        {!twoPane && mediaList.length > 0 ? (
           <div style={{ padding: '16px 0', borderBottom: `1px solid ${v.borderSubtle}` }}>
             <PostMedia post={post} radius={14} />
           </div>
@@ -712,6 +719,38 @@ export function PostDetailScreen({ overlay = false }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+
+  const container = (
+    <div
+      style={{
+        width: twoPane ? 'min(940px, calc(100vw - 32px))' : 'min(556px, calc(100vw - 32px))',
+        height: twoPane ? 'min(86vh, 760px)' : 'min(84vh, 728px)',
+        background: v.base,
+        border: `1px solid ${v.border}`,
+        borderRadius: 16,
+        boxShadow: '0 24px 80px rgba(26,24,22,0.34)',
+        overflow: 'hidden',
+        display: 'flex',
+      }}
+    >
+      {twoPane ? (
+        <>
+          {/* The media pane stays put. A dark ground lets a letterboxed portrait
+              sit calmly without a crop, matching the feed's no-crop rule. */}
+          <div style={{ flex: '1 1 0', minWidth: 0, background: v.storySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
+            <div style={{ width: '100%', maxHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <PostMedia post={post} radius={12} />
+            </div>
+          </div>
+          <div style={{ width: 384, flexShrink: 0, borderLeft: `1px solid ${v.border}`, display: 'flex' }}>
+            {commentColumn}
+          </div>
+        </>
+      ) : (
+        commentColumn
+      )}
     </div>
   );
 
