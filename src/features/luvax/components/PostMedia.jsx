@@ -8,6 +8,14 @@ import { LxIcon } from './primitives';
 // colour, reused here as a scrim so quiet controls stay legible on any image.
 const SCRIM = 'rgba(26,24,22,0.28)';
 
+// Carousel controls read as light frosted chips with a dark glyph, so they stay
+// legible over a dark image where a dark scrim did not, without a heavy fill that
+// would compete with the photograph. Fixed hues, not theme tokens, since the
+// contrast is against the media, not the app surface.
+const CONTROL_BG = 'rgba(255,255,255,0.9)';
+const CONTROL_FG = '#1c1a17';
+const CONTROL_SHADOW = '0 1px 5px rgba(0,0,0,0.3)';
+
 // Shortest horizontal travel that reads as a deliberate swipe rather than a
 // tap that wobbled.
 const SWIPE_THRESHOLD = 40;
@@ -196,17 +204,20 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
     top: '50%',
     [side]: 8,
     transform: 'translateY(-50%)',
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
     borderRadius: 999,
     border: 'none',
-    background: SCRIM,
+    background: CONTROL_BG,
+    boxShadow: CONTROL_SHADOW,
+    backdropFilter: 'blur(2px)',
+    WebkitBackdropFilter: 'blur(2px)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 0,
-    opacity: 0.85,
+    zIndex: 2,
   });
 
   return (
@@ -234,28 +245,38 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
         outlineOffset: 2,
       }}
     >
-      {items.map((media, i) => (
-        <div
-          key={media.id || i}
-          aria-hidden={i !== safeIndex}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            opacity: i === safeIndex ? 1 : 0,
-            // Movement between carousel items crossfades rather than snapping.
-            transition: 'opacity var(--duration-normal) var(--ease-out)',
-            pointerEvents: i === safeIndex ? 'auto' : 'none',
-          }}
-        >
-          <MediaItem
-            media={media}
-            active={i === safeIndex}
-            registerVideo={(node) => {
-              videoRefs.current[i] = node;
+      {/* Items sit side by side on a track that slides horizontally to the active
+          one, so moving through a carousel reads as a smooth glide, not a snap. */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          transform: `translateX(-${safeIndex * 100}%)`,
+          transition: 'transform var(--duration-slow) var(--ease-out)',
+        }}
+      >
+        {items.map((media, i) => (
+          <div
+            key={media.id || i}
+            aria-hidden={i !== safeIndex}
+            style={{
+              position: 'relative',
+              flex: '0 0 100%',
+              width: '100%',
+              height: '100%',
             }}
-          />
-        </div>
-      ))}
+          >
+            <MediaItem
+              media={media}
+              active={i === safeIndex}
+              registerVideo={(node) => {
+                videoRefs.current[i] = node;
+              }}
+            />
+          </div>
+        ))}
+      </div>
 
       {isCarousel ? (
         <>
@@ -270,7 +291,7 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
               }}
               style={arrowStyle('left')}
             >
-              <LxIcon name="chevronLeft" size={16} color={v.base} />
+              <LxIcon name="chevronLeft" size={16} color={CONTROL_FG} />
             </button>
           ) : null}
 
@@ -285,7 +306,7 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
               }}
               style={arrowStyle('right')}
             >
-              <LxIcon name="chevronRight" size={16} color={v.base} />
+              <LxIcon name="chevronRight" size={16} color={CONTROL_FG} />
             </button>
           ) : null}
 
@@ -294,12 +315,14 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
               position: 'absolute',
               top: 10,
               right: 10,
-              background: SCRIM,
+              background: CONTROL_BG,
+              boxShadow: CONTROL_SHADOW,
               borderRadius: 999,
               padding: '3px 7px',
               fontFamily: v.fontMono,
               fontSize: 10,
-              color: v.base,
+              color: CONTROL_FG,
+              zIndex: 2,
             }}
           >
             {safeIndex + 1}/{count}
@@ -316,9 +339,11 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
               transform: 'translateX(-50%)',
               display: 'flex',
               gap: 5,
-              background: SCRIM,
+              background: CONTROL_BG,
+              boxShadow: CONTROL_SHADOW,
               borderRadius: 999,
               padding: '5px 7px',
+              zIndex: 2,
             }}
           >
             {items.map((media, i) => (
@@ -328,8 +353,8 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
                   width: 6,
                   height: 6,
                   borderRadius: '50%',
-                  background: v.base,
-                  opacity: i === safeIndex ? 1 : 0.45,
+                  background: CONTROL_FG,
+                  opacity: i === safeIndex ? 1 : 0.35,
                 }}
               />
             ))}
