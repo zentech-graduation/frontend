@@ -224,7 +224,10 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
           borderRadius: 10,
         }}
       >
-        <div>
+        <div
+          onClick={() => author.id && navigate(routeTo.userProfile(author.id))}
+          style={{ cursor: author.id ? 'pointer' : 'default' }}
+        >
           <LxAvatar size={isReply ? 28 : 34} src={author.avatarUrl} />
         </div>
         <div style={{ minWidth: 0 }}>
@@ -247,7 +250,12 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
             </div>
           ) : null}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexWrap: 'wrap', lineHeight: 1.42 }}>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink }}>{authorName}</span>
+            <span
+              onClick={() => author.id && navigate(routeTo.userProfile(author.id))}
+              style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink, cursor: author.id ? 'pointer' : 'default' }}
+            >
+              {authorName}
+            </span>
             {editing ? null : (
               <span style={{ fontFamily: v.fontBody, fontSize: 12.5, color: v.ink, minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{comment.content}</span>
             )}
@@ -258,6 +266,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 rows={2}
+                maxLength={COMMENT_MAX_LENGTH}
                 aria-label="edit comment"
                 style={{
                   width: '100%',
@@ -696,9 +705,19 @@ export function PostDetailScreen({ overlay = false }) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 14px 8px' }}>
-        <LxAvatar size={32} src={authorAvatarUrl} />
+        <div
+          onClick={() => targetUserId && navigate(routeTo.userProfile(targetUserId))}
+          style={{ cursor: targetUserId ? 'pointer' : 'default', display: 'flex' }}
+        >
+          <LxAvatar size={32} src={authorAvatarUrl} />
+        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: v.fontBody, fontSize: 13.5, fontWeight: 600, color: v.ink, lineHeight: 1.15 }}>{authorName}</div>
+          <div
+            onClick={() => targetUserId && navigate(routeTo.userProfile(targetUserId))}
+            style={{ fontFamily: v.fontBody, fontSize: 13.5, fontWeight: 600, color: v.ink, lineHeight: 1.15, cursor: targetUserId ? 'pointer' : 'default', display: 'inline-block' }}
+          >
+            {authorName}
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontFamily: v.fontMono, fontSize: 9.5, color: v.ink3, lineHeight: 1 }}>
             <span>{timeStr}</span>
             <span>ago</span>
@@ -802,6 +821,7 @@ export function PostDetailScreen({ overlay = false }) {
                 value={commentDraft}
                 onChange={(event) => setCommentDraft(event.target.value)}
                 rows={1}
+                maxLength={COMMENT_MAX_LENGTH}
                 placeholder={replyingTo ? `reply to @${replyingTo.author}...` : 'add a comment...'}
                 // A single line by default that grows with the text up to three
                 // lines, then scrolls. Long comments wrap instead of running off.
