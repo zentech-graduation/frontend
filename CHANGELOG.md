@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The navigation bar stays visible on the messages screen.
 
 ### Fixed
+- A banded, curved smear no longer appears at the bottom of the feed and post screens; each post no longer leaves a hidden bottom sheet mounted, so dozens of stacked panel shadows can no longer bleed into the viewport.
 - A long, unbroken comment now wraps inside the comment column instead of overflowing past its edge.
 - Clicking a notification no longer errors: it opens the post for a post notification and the person's profile otherwise.
 - Unfollowing now asks for confirmation, with the action shown in red.

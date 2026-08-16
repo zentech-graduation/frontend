@@ -88,6 +88,11 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
     };
   }, [open]);
 
+  // Render nothing when closed. A sheet left mounted parks its shadowed, rounded
+  // panel just below the fold; with one sheet per post, dozens stack and their
+  // upward box-shadows bleed into the viewport as a banded curve at the bottom.
+  if (!open) return null;
+
   return (
     <>
       <div
@@ -96,9 +101,7 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
           position: 'fixed',
           inset: 0,
           background: v.scrim,
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity var(--duration-normal) var(--ease-out)',
+          animation: 'lx-scrim-in var(--duration-normal) var(--ease-out)',
           zIndex: 999,
         }}
       />
@@ -114,8 +117,7 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
           boxShadow: `0 -20px 60px ${v.shadow18}`,
-          transform: open ? 'translateY(0)' : 'translateY(100%)',
-          transition: 'transform var(--duration-slow) var(--ease-out)',
+          animation: 'lx-sheet-in var(--duration-slow) var(--ease-out)',
           zIndex: 1000,
           height,
           display: 'flex',

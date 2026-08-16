@@ -429,6 +429,16 @@ button:disabled {
   }
 }
 
+/* Bottom sheet sliding up from below the fold as it mounts. */
+@keyframes lx-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 /* Toast entry and exit, a short vertical travel with a fade. */
 @keyframes lx-toast-in {
   from {
