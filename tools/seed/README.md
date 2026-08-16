@@ -5,6 +5,38 @@ Creates demo data for a local Luvax environment through the public HTTP API only
 Full documentation, including what it creates and what it cannot create, is in
 `docs/reconnaissance/seed-data.md`.
 
+Two scripts live here:
+
+- `seed.py` - a small, fixed contract-checking graph (four text-only accounts). Documented below.
+- `seed_rich.py` - a large, curated dataset with real media. Documented in the next section.
+
+## seed_rich.py - large real-media dataset
+
+Seeds around 40 curated users with real avatars, banners, and around 200 posts carrying real
+images, carousels, and videos, plus a dense graph of follows, likes, saves, comments, replies, and
+comment-likes. Every image is fetched from Picsum and every video from a public sample host, then
+uploaded through the same pre-signed R2 flow the app uses, so the CDN URLs render rather than 404.
+
+```bash
+python tools/seed/seed_rich.py                 # full: ~40 users, ~200 posts
+LUVAX_SEED_SCALE=small python tools/seed/seed_rich.py   # ~6 users, a quick check
+```
+
+It verifies each new account automatically over `docker exec` (flipping
+`user_credentials.email_verified`), so there is no manual step. It is idempotent: existing accounts
+are reused and a user who already has its marker posts is skipped, so a second run does not
+re-upload their media. Every seeded account uses `LUVAX_SEED_PASSWORD` (default `Password123!`).
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `LUVAX_SEED_SCALE` | `full` | `full` or `small` |
+| `LUVAX_PG_CONTAINER` | `backend-postgres-1` | Postgres container for the verify step |
+| `LUVAX_PG_USER` / `LUVAX_PG_DB` | `luvax` / `luvax` | Postgres role and database |
+
+Requires the docker CLI (for the verify step) and outbound network access (to fetch media).
+
+## seed.py - contract-checking graph
+
 ## Prerequisites
 
 Python 3, standard library only.
