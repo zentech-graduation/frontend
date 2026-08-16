@@ -248,7 +248,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexWrap: 'wrap', lineHeight: 1.42 }}>
             <span style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink }}>{authorName}</span>
             {editing ? null : (
-              <span style={{ fontFamily: v.fontBody, fontSize: 12.5, color: v.ink }}>{comment.content}</span>
+              <span style={{ fontFamily: v.fontBody, fontSize: 12.5, color: v.ink, minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{comment.content}</span>
             )}
           </div>
           {editing ? (
@@ -399,6 +399,16 @@ export function PostDetailScreen({ overlay = false }) {
   const commentInputRef = useRef(null);
   const viewport = useViewport();
 
+  // Keep the comment field's height matched to its content, up to three lines.
+  // This runs on every draft change, so it grows as the reader types and shrinks
+  // back after a submit clears it or an @mention prefills it.
+  useEffect(() => {
+    const el = commentInputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 70)}px`;
+  }, [commentDraft]);
+
   const { postId } = useParams();
   const { data: postResponse, isLoading, isError } = usePostDetail(postId);
 
@@ -454,14 +464,23 @@ export function PostDetailScreen({ overlay = false }) {
   // a wide dark pane. A landscape image keeps the roomier fixed frame. The ratio
   // is width over height, taken from the first media item, as the frame is.
   const mediaAspect = mainMedia && mainMedia.width && mainMedia.height ? mainMedia.width / mainMedia.height : 1;
-  const isPortraitMedia = mediaAspect < 1;
-  // The popup is generous on large screens as well as scaling with the root, so
-  // it never reads as a small box on a wide display.
-  const TWO_PANE_HEIGHT = 'min(88vh, 860px)';
-  const COMMENT_PANE_WIDTH = 400;
-  const twoPaneContainerWidth = isPortraitMedia
-    ? `min(calc(${TWO_PANE_HEIGHT} * ${mediaAspect.toFixed(4)} + ${COMMENT_PANE_WIDTH}px), calc(100vw - 32px))`
-    : 'min(1040px, calc(100vw - 32px))';
+  const A = mediaAspect.toFixed(4);
+  // The media pane takes the media's own width edge to edge, with no letterbox at the
+  // sides. Its height follows the media's aspect ratio, capped so a tall portrait does
+  // not run past the screen. The popup itself, though, never gets shorter than a floor:
+  // a wide landscape would otherwise leave the comment column too short to read, so the
+  // popup keeps the floor height and the media sits at the top of its column with the
+  // column's surface filling the remainder below it. A portrait taller than the floor
+  // makes the popup as tall as the media. See docs/layout-overhaul/layout-decisions.md.
+  const COMMENT_PANE_WIDTH = 372;
+  const POPUP_HEIGHT_CAP = 'min(82vh, 760px)';
+  const POPUP_MIN_HEIGHT = 'min(82vh, 580px)';
+  const MEDIA_MAX_WIDTH = 620;
+  const mediaMaxWidth = `min(${MEDIA_MAX_WIDTH}px, calc(100vw - 32px - ${COMMENT_PANE_WIDTH}px))`;
+  const mediaHeight = `min(${POPUP_HEIGHT_CAP}, calc(${mediaMaxWidth} / ${A}))`;
+  const mediaWidth = `calc(${mediaHeight} * ${A})`;
+  const popupHeight = `max(${mediaHeight}, ${POPUP_MIN_HEIGHT})`;
+  const twoPaneContainerWidth = `calc(${mediaWidth} + ${COMMENT_PANE_WIDTH}px)`;
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
@@ -652,11 +671,11 @@ export function PostDetailScreen({ overlay = false }) {
         gridTemplateRows: 'auto auto minmax(0, 1fr) auto',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '16px 16px 12px', borderBottom: `1px solid ${v.borderSubtle}` }}>
-        <LxAvatar size={40} src={authorAvatarUrl} />
-        <div style={{ flex: 1, minWidth: 0, paddingTop: 2 }}>
-          <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 600, color: v.ink, lineHeight: 1.15 }}>{authorName}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontFamily: v.fontMono, fontSize: 10, color: v.ink3, lineHeight: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 14px 8px' }}>
+        <LxAvatar size={32} src={authorAvatarUrl} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: v.fontBody, fontSize: 13.5, fontWeight: 600, color: v.ink, lineHeight: 1.15 }}>{authorName}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontFamily: v.fontMono, fontSize: 9.5, color: v.ink3, lineHeight: 1 }}>
             <span>{timeStr}</span>
             <span>ago</span>
           </div>
@@ -680,12 +699,12 @@ export function PostDetailScreen({ overlay = false }) {
         </button>
       </div>
 
-      <div style={{ padding: '16px 16px 14px', borderBottom: `1px solid ${v.borderSubtle}` }}>
-        <div style={{ fontFamily: v.fontBody, fontSize: mainMedia ? 18 : 17, fontWeight: 600, lineHeight: 1.52, color: v.ink, letterSpacing: '-0.025em' }}>
+      <div style={{ padding: '0 14px 10px' }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, lineHeight: 1.42, color: v.ink, letterSpacing: '-0.01em' }}>
           {post.caption}
         </div>
         {tags.length > 0 ? (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
             {tags.map((tag) => (
               <LxTag key={tag} size="sm">#{tag}</LxTag>
             ))}
@@ -693,7 +712,7 @@ export function PostDetailScreen({ overlay = false }) {
         ) : null}
       </div>
 
-      <div ref={commentsPaneRef} style={{ minHeight: 0, overflowY: 'auto', padding: '0 16px', scrollBehavior: 'smooth' }}>
+      <div ref={commentsPaneRef} style={{ minHeight: 0, overflowY: 'auto', padding: '16px 16px 0', scrollBehavior: 'smooth' }}>
         {/* In two panes the media lives in the fixed left pane and does not scroll.
             Stacked (narrow) and text posts keep it inline above the comments. */}
         {!twoPane && mediaList.length > 0 ? (
@@ -726,7 +745,7 @@ export function PostDetailScreen({ overlay = false }) {
       </div>
 
       <div style={{ borderTop: `1px solid ${v.borderSubtle}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '12px 16px', borderBottom: `1px solid ${v.borderSubtle}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '10px 16px 6px' }}>
           <button type="button" onClick={handleLikeToggle} className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
               <LxIcon name="heart" size={22} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
@@ -753,15 +772,19 @@ export function PostDetailScreen({ overlay = false }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px 12px' }}>
           <LxAvatar size={30} src={currentUser?.avatarUrl} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ height: 40, borderRadius: 999, border: `1px solid ${v.border}`, background: 'transparent', display: 'flex', alignItems: 'center', padding: '0 14px' }}>
-              <input
+            <div style={{ minHeight: 40, borderRadius: 20, border: `1px solid ${v.border}`, background: 'transparent', display: 'flex', alignItems: 'center', padding: '4px 14px' }}>
+              <textarea
                 ref={commentInputRef}
                 value={commentDraft}
                 onChange={(event) => setCommentDraft(event.target.value)}
+                rows={1}
                 placeholder={replyingTo ? `reply to @${replyingTo.author}...` : 'add a comment...'}
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: v.ink, fontFamily: v.fontBody, fontSize: 14 }}
+                // A single line by default that grows with the text up to three
+                // lines, then scrolls. Long comments wrap instead of running off.
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: v.ink, fontFamily: v.fontBody, fontSize: 14, resize: 'none', lineHeight: '20px', maxHeight: 70, overflowY: 'auto', padding: '5px 0', display: 'block' }}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
+                  // Enter sends; Shift+Enter adds a line.
+                  if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
                     handleCommentSubmit();
                   }
@@ -781,7 +804,8 @@ export function PostDetailScreen({ overlay = false }) {
     <div
       style={{
         width: twoPane ? twoPaneContainerWidth : 'min(560px, calc(100vw - 32px))',
-        height: twoPane ? TWO_PANE_HEIGHT : 'min(86vh, 800px)',
+        maxWidth: 'calc(100vw - 32px)',
+        height: twoPane ? popupHeight : 'min(82vh, 720px)',
         background: v.base,
         border: `1px solid ${v.border}`,
         borderRadius: 16,
@@ -792,22 +816,15 @@ export function PostDetailScreen({ overlay = false }) {
     >
       {twoPane ? (
         <>
-          {isPortraitMedia ? (
-            // Portrait: the media pane is exactly the media's width at full popup
-            // height, so the popup takes the portrait's own aspect ratio with no
-            // dark ground. The container's own radius clips the outer corners.
-            <div style={{ width: `calc(${TWO_PANE_HEIGHT} * ${mediaAspect.toFixed(4)})`, flexShrink: 0, background: v.base, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* The media column is the media's own width, so the image fills it to both
+              side edges with no letterbox. The image sits at the top at its true ratio
+              (minAspect 0); when the popup is taller than the image, the column's own
+              surface fills the space below rather than boxing the image on all sides. */}
+          <div style={{ width: mediaWidth, height: '100%', flexShrink: 0, background: v.base, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ width: '100%', flexShrink: 0 }}>
               <PostMedia post={post} radius={0} minAspect={0} />
             </div>
-          ) : (
-            // Landscape: the roomier flex ground. minAspect 0 lets the frame take
-            // the media's true ratio so its border hugs the image at its height.
-            <div style={{ flex: '1 1 0', minWidth: 0, background: v.storySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
-              <div style={{ width: '100%', maxHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <PostMedia post={post} radius={12} minAspect={0} />
-              </div>
-            </div>
-          )}
+          </div>
           <div style={{ width: COMMENT_PANE_WIDTH, flexShrink: 0, borderLeft: `1px solid ${v.border}`, display: 'flex' }}>
             {commentColumn}
           </div>
