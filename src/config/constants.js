@@ -88,3 +88,18 @@ export const HTTP_STATUS = {
   NOT_FOUND: 404,
   SERVER_ERROR: 500,
 };
+
+// Maximum input lengths, mirroring the backend @Size limits so the client stops
+// at the same boundary the server enforces rather than inventing its own.
+export const CHAR_LIMITS = {
+  comment: 2200,
+  caption: 2200,
+  bio: 500,
+  displayName: 100,
+  username: 30,
+  websiteUrl: 2048,
+  locationName: 255,
+  reportDescription: 2000,
+  message: 4000,
+  search: 100,
+};

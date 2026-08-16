@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 
 import { v } from '@/config/tokens';
-import { routeTo } from '@/config/constants';
+import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { extractPageContent, getUserSummary, isPageDegraded } from '@/utils/helpers';
 import { LxIcon } from '@/features/luvax/components/primitives';
 import { UserCard } from '@/features/luvax/components/UserCard';
@@ -140,6 +140,7 @@ export function SearchScreen() {
           <input
             type="search"
             value={input}
+            maxLength={CHAR_LIMITS.search}
             autoFocus
             aria-label="search posts, people, and tags"
             placeholder="search"

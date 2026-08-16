@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/config/constants';
+import { ROUTES, CHAR_LIMITS } from '@/config/constants';
 import { v } from '@/config/tokens';
 import { LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -122,7 +122,7 @@ export function EditProfileScreen() {
           </span>
         </button>
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <input value={form.bannerUrl} onChange={(e) => update('bannerUrl', e.target.value)} placeholder="or paste a banner image url" style={fieldStyle()} />
+          <input value={form.bannerUrl} onChange={(e) => update('bannerUrl', e.target.value)} maxLength={CHAR_LIMITS.websiteUrl} placeholder="or paste a banner image url" style={fieldStyle()} />
           {form.bannerUrl ? (
             <LxBtn variant="ghost" size="sm" onClick={() => update('bannerUrl', '')} disabled={isUploading}>
               remove
@@ -161,7 +161,7 @@ export function EditProfileScreen() {
           <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
             or paste an image url
           </label>
-          <input value={form.avatarUrl} onChange={(e) => update('avatarUrl', e.target.value)} placeholder="https://..." style={fieldStyle()} />
+          <input value={form.avatarUrl} onChange={(e) => update('avatarUrl', e.target.value)} maxLength={CHAR_LIMITS.websiteUrl} placeholder="https://..." style={fieldStyle()} />
         </div>
       </div>
 
@@ -170,14 +170,14 @@ export function EditProfileScreen() {
           <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
             display name
           </label>
-          <input value={form.displayName} onChange={(e) => update('displayName', e.target.value)} placeholder="your name" style={fieldStyle()} />
+          <input value={form.displayName} onChange={(e) => update('displayName', e.target.value)} maxLength={CHAR_LIMITS.displayName} placeholder="your name" style={fieldStyle()} />
         </div>
 
         <div>
           <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
             username
           </label>
-          <input value={form.username} onChange={(e) => update('username', e.target.value.toLowerCase())} placeholder="your.handle" style={fieldStyle()} />
+          <input value={form.username} onChange={(e) => update('username', e.target.value.toLowerCase())} maxLength={CHAR_LIMITS.username} placeholder="your.handle" style={fieldStyle()} />
         </div>
 
         <div>

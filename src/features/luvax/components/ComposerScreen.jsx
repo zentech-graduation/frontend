@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/config/constants';
+import { ROUTES, CHAR_LIMITS } from '@/config/constants';
 import { v } from '@/config/tokens';
 import { LxAvatar, LxDivider, LxIcon, LxTag } from './primitives';
 import { ComposerAttachments } from './ComposerAttachments';
@@ -396,6 +396,7 @@ export function ComposerScreen() {
             <textarea
               value={caption}
               onChange={(event) => handleCaptionChange(event.target.value)}
+              maxLength={CHAR_LIMITS.caption}
               placeholder={items.length === 0 ? 'say something real...' : 'add a caption (optional)'}
               style={{
                 width: '100%',

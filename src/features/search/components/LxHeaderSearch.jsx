@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { ROUTES } from '@/config/constants';
+import { ROUTES, CHAR_LIMITS } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 
 export function LxHeaderSearch({ navigate, viewport }) {
@@ -67,6 +67,7 @@ export function LxHeaderSearch({ navigate, viewport }) {
       <input
         type="search"
         value={query}
+        maxLength={CHAR_LIMITS.search}
         aria-label="search posts"
         placeholder="search"
         onChange={(event) => {

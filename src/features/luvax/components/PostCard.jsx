@@ -13,7 +13,7 @@ import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { ReportModal } from './ReportModal';
 import { toast } from './Toast';
 import { REPORT_TYPES } from '@/services/report.service';
-import { ROUTES, routeTo } from '@/config/constants';
+import { ROUTES, routeTo, CHAR_LIMITS } from '@/config/constants';
 
 const HEART_COLOR = 'var(--lx-error)';
 
@@ -412,6 +412,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
           <textarea
             value={editCaption}
             onChange={(event) => setEditCaption(event.target.value)}
+            maxLength={CHAR_LIMITS.caption}
             placeholder="write a caption..."
             style={{
               width: '100%',

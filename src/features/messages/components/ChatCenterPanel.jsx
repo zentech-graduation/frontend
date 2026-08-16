@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { v } from '@/config/tokens';
+import { CHAR_LIMITS } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { AvatarVisual } from './AvatarVisual';
 import { MessageBubble } from './MessageBubble';
@@ -185,6 +186,7 @@ export function ChatCenterPanel({
             ref={draftInputRef}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            maxLength={CHAR_LIMITS.message}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
