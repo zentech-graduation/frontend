@@ -30,6 +30,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The navigation bar stays visible on the messages screen.
 
 ### Fixed
+- Your own avatar now shows consistently in the top bar and the comment box, matching your profile, instead of appearing as a blank placeholder in some places.
+- The profile "liked" tab now updates immediately when you like or unlike a post, instead of only after a page reload.
+- Carousel navigation controls are lighter and clearly legible over dark images, and moving between carousel images now slides smoothly instead of switching abruptly.
+- In the post popup, clicking any avatar or username - the poster, a commenter, a replier, or a nested replier - now opens that person's profile.
+- Text inputs now stop at the server's maximum length - comments, captions, display name, username, bio, report details, messages, and search - instead of accepting unlimited input.
 - A banded, curved smear no longer appears at the bottom of the feed and post screens; each post no longer leaves a hidden bottom sheet mounted, so dozens of stacked panel shadows can no longer bleed into the viewport.
 - A long, unbroken comment now wraps inside the comment column instead of overflowing past its edge.
 - Clicking a notification no longer errors: it opens the post for a post notification and the person's profile otherwise.

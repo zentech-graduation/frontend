@@ -7,6 +7,8 @@ import { v } from '@/config/tokens';
 import { APP_SCREENS, DEFAULT_BASE_SCREEN } from '@/routes/appScreens';
 import { LuvaxTweaksProvider } from './LuvaxTweaksContext';
 import { ToastHost } from './components/Toast';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useUserProfile } from './hooks/useUsers';
 
 /**
  * Resolves the screen an overlay was opened from.
@@ -68,6 +70,22 @@ export function LuvaxApp() {
   const location = useLocation();
   const navigate = useNavigate();
   const matches = useMatches();
+
+  // The login/refresh session carries a lean user without avatarUrl, so the
+  // shell and comment composer would show a blank avatar while profile pages
+  // (which fetch the full record) show the real one. Hydrate the store user
+  // from the profile once, so the viewer's avatar is consistent everywhere.
+  const currentUser = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const { data: myProfileResponse } = useUserProfile(currentUser?.id, Boolean(currentUser?.id));
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const profile = myProfileResponse?.data || myProfileResponse;
+    if (!profile?.id) return;
+    if (currentUser.avatarUrl !== profile.avatarUrl || currentUser.bannerUrl !== profile.bannerUrl) {
+      setUser({ ...currentUser, avatarUrl: profile.avatarUrl, bannerUrl: profile.bannerUrl });
+    }
+  }, [myProfileResponse, currentUser, setUser]);
 
   const handle = matches[matches.length - 1]?.handle ?? {};
   const screen = handle.screen ?? DEFAULT_BASE_SCREEN.screen;

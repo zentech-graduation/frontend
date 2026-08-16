@@ -7,6 +7,7 @@ import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
 import { LxHeaderSearch } from '@/features/search/components/LxHeaderSearch';
+import { useAuthStore } from '@/store/useAuthStore';
 
 // `id` still identifies the active tab for the shell's own styling; `path` is
 // where the tab actually goes.
@@ -120,6 +121,7 @@ export function LxTopTabs({ active, navigate, compact = false }) {
 
 // ─── Persistent App Bar ────────────────────────────────────────────────────
 export function LxAppBar({ screen, navigate, viewport }) {
+  const currentUser = useAuthStore((state) => state.user);
   const isMainTab = ['feed', 'explore', 'messages', 'compose', 'notifications', 'profile'].includes(screen);
 
   const subpages = {
@@ -256,7 +258,7 @@ export function LxAppBar({ screen, navigate, viewport }) {
           ) : isMobile ? <div style={{ width: 24, height: 24 }} /> : null}
           {!isMobile && (screen !== 'messages' || isTablet || isDesktop) ? (
             <button onClick={() => navigate(ROUTES.PROFILE)} className="lx-avatar-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-              <LxAvatar size={isTablet ? 30 : 32} idx={0} ring={screen === 'profile'} />
+              <LxAvatar size={isTablet ? 30 : 32} idx={0} src={currentUser?.avatarUrl} ring={screen === 'profile'} />
             </button>
           ) : null}
         </div>
