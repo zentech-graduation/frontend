@@ -40,6 +40,26 @@ The gap between posts is much tighter on mobile, where space is scarce, while st
 
 Author-first post order, larger story rail, followers and following in a modal with a rapid-tap guard, a red unfollow confirmation, the photos-first tab order, comment threads separated by spacing rather than lines, hashtag click to tag search, muted video autoplay on scroll, and an in-app 404 for signed-in users.
 
+## Verified in the browser
+
+Every item was confirmed in a running browser against the live backend, with no console errors.
+
+- Media fills its frame with no side gaps; the popup follows a portrait's ratio.
+- The root scale reads 1.14 on HD and 1.52 on a 2560 wide screen, and returns to 1.14 back on HD.
+- The story rail has larger avatars and more height.
+- The navigation bar is present on the messages screen.
+- A comment notification opens the actor's profile instead of erroring.
+- Comment threads have no lines: top-level comments are spaced apart, replies sit tight.
+- The profile tabs read photos, posts, liked.
+- Followers and following open in a modal over the profile.
+- Unfollow opens a red confirmation dialog.
+- The avatar upload chain returns a CDN URL and saves it on the profile.
+- On mobile the gap between posts is about 25px, a single tap does nothing, and a double-tap on an unliked post fires the like request while an already-liked post is left alone.
+- A video is paused before it is reached and autoplays muted once scrolled into view.
+- The post leads with the author, then the media, then the caption.
+- Clicking a hashtag opens the tag search for it.
+- A signed-in user on an unknown address lands on an in-app notice with the nav bar, then returns to the feed.
+
 ## Backend was not touched
 
 No backend file was created, modified, or deleted.
