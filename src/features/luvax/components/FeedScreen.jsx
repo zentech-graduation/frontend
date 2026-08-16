@@ -16,15 +16,18 @@ import { ROUTES, routeTo } from '@/config/constants';
 export function StoriesCarousel({ viewport }) {
   const openOverlay = useOverlayNavigate();
   const isTablet = viewport === 'tablet';
-  // Larger avatars and a taller rail for more presence, kept restrained so it
-  // stays comfortable rather than overwhelming the feed.
-  const avatar = isTablet ? 58 : 66;
+  // Larger avatars and a taller rail for presence, trimmed about 12% from the
+  // previous size on the owner's note that they read a touch too big.
+  const avatar = isTablet ? 51 : 58;
   const ownRing = avatar + 6;
   return (
     <div style={{
       display: 'flex', gap: isTablet ? 12 : 16, overflowX: 'auto',
       padding: isTablet ? '6px 2px 20px' : '8px 2px 24px',
       flexShrink: 0, scrollbarWidth: 'none',
+      // Centre the avatars in the wider rail. When the set outgrows the rail it
+      // scrolls; new stories entering on the left stay reachable by scrolling.
+      justifyContent: 'safe center',
     }}>
       {STORIES.map(s => (
         <button key={s.id}
@@ -41,7 +44,7 @@ export function StoriesCarousel({ viewport }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <LxIcon name="plus" size={isTablet ? 22 : 24} color={v.ink2} />
+              <LxIcon name="plus" size={isTablet ? 20 : 22} color={v.ink2} />
             </div>
           ) : (
             <LxAvatar size={avatar} idx={s.idx} hasStory viewed={s.viewed} />
@@ -63,6 +66,10 @@ import { PostCard } from './PostCard';
 // zoom multiplies it, so the rendered column reads near the photo-first target
 // the owner asked for. See docs/layout-overhaul/layout-decisions.md.
 const FEED_COLUMN = 412;
+
+// The story rail spans wider than the post column, so it reads as its own band
+// across the top of the feed rather than sitting inside the post width.
+const STORY_RAIL_WIDTH = 632;
 
 // ─── Feed Screen ───────────────────────────────────────────────────────────
 export function FeedScreen() {
@@ -134,10 +141,12 @@ export function FeedScreen() {
       flex: 1,
       padding: isMobile ? '8px 0 48px' : '20px 0 56px',
     }}>
+      {/* The story rail sits in a wider band than the post column below it. */}
+      <div style={{ width: '100%', maxWidth: isMobile ? '100%' : STORY_RAIL_WIDTH, margin: '0 auto', padding: isMobile ? '0 12px' : '0 8px' }}>
+        <StoriesCarousel viewport={viewport} />
+      </div>
+
       <div style={{ width: '100%', maxWidth: isMobile ? '100%' : FEED_COLUMN, margin: '0 auto' }}>
-        <div style={{ padding: isMobile ? '0 12px' : '0 2px' }}>
-          <StoriesCarousel viewport={viewport} />
-        </div>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: isMobile ? '0 14px 16px' : '0 4px 16px' }}>today</div>
 
         <div className="lx-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}>
