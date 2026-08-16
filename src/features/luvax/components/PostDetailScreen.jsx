@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, sharePost } from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
@@ -211,7 +211,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
   return (
     // No lines between comments. Top-level comments are separated by generous
     // space; a reply sits tight under its thread.
-    <div style={{ width: '100%', marginBottom: isReply ? 0 : 26 }}>
+    <div style={{ width: '100%', marginBottom: isReply ? 0 : 26 }} data-comment-id={comment.id}>
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
@@ -221,6 +221,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
           gridTemplateColumns: '40px minmax(0, 1fr)',
           gap: 12,
           padding: isReply ? '6px 28px 6px 0' : '2px 28px 0 0',
+          borderRadius: 10,
         }}
       >
         <div>
@@ -398,6 +399,11 @@ export function PostDetailScreen({ overlay = false }) {
   const commentsPaneRef = useRef(null);
   const commentInputRef = useRef(null);
   const viewport = useViewport();
+  // A notification about a comment opens the post and asks, through history state,
+  // that the comment be focused. Kept in a ref so the flash fires once per target.
+  const location = useLocation();
+  const highlightCommentId = location.state?.highlightComment || null;
+  const flashedCommentRef = useRef(null);
 
   // Keep the comment field's height matched to its content, up to three lines.
   // This runs on every draft change, so it grows as the reader types and shrinks
@@ -483,6 +489,24 @@ export function PostDetailScreen({ overlay = false }) {
   const twoPaneContainerWidth = `calc(${mediaWidth} + ${COMMENT_PANE_WIDTH}px)`;
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
+
+  // Once the comments are loaded, scroll the notification's target comment into
+  // view and flash it briefly. It fires once per target. A comment that is a reply
+  // or sits on a later page is not in the DOM yet, so the post still opens and the
+  // flash is simply skipped rather than forced.
+  useEffect(() => {
+    if (!highlightCommentId || commentsLoading) return;
+    if (flashedCommentRef.current === highlightCommentId) return;
+    const pane = commentsPaneRef.current;
+    const row = pane?.querySelector(`[data-comment-id="${highlightCommentId}"]`);
+    if (!row) return;
+    flashedCommentRef.current = highlightCommentId;
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const flashTarget = row.firstElementChild || row;
+    flashTarget.classList.add('lx-comment-flash');
+    const timer = setTimeout(() => flashTarget.classList.remove('lx-comment-flash'), 2200);
+    return () => clearTimeout(timer);
+  }, [highlightCommentId, commentsLoading, comments.length]);
 
   // Read from the query data, exactly as this file already does for comment
   // like state a few hundred lines above. The previous local copies started at

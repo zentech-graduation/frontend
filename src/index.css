@@ -462,6 +462,24 @@ button:disabled {
   }
 }
 
+/* A comment reached from a notification flashes an accent tint, then fades so the
+   comment settles back into the thread. Applied for a fixed span by the caller. */
+.lx-comment-flash {
+  animation: lx-comment-flash 2.2s ease-out;
+}
+
+@keyframes lx-comment-flash {
+  0% {
+    background: color-mix(in srgb, var(--lx-accent) 30%, transparent);
+  }
+  35% {
+    background: color-mix(in srgb, var(--lx-accent) 22%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 /* Report modal completion, transcribed from the design source. The panel rises
    and fades, the confirmation mark pops. */
 @keyframes fadeSlideUp {

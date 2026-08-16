@@ -92,14 +92,19 @@ function NotifRow({ n, onAccept, onDecline }) {
   const actorName = getDisplayName(actor, 'Someone');
   const avatarSrc = actor.avatarUrl;
 
-  // Route by what the notification points at. Only a post-type notification
-  // carries a post id in entityId, so only it can open the post detail. A comment
-  // notification carries a comment id and the payload does not include the post
-  // it belongs to, and a follow carries nothing, so both open the actor's profile
-  // rather than feeding a comment id to the post detail, which showed a "post not
-  // found" error. Opening a comment's post would need the backend to include the
-  // post id on the notification.
+  // Route by what the notification points at. A content notification now carries
+  // postId, the post it concerns, so it opens that post directly. When the
+  // notification is about a comment (entityType 'comment', entityId the comment),
+  // the post detail is told to focus and briefly highlight that comment. Older
+  // like-post notifications carried the post id in entityId with no postId, so
+  // that path is kept. A follow or a content notification predating postId carries
+  // no post to open and falls back to the actor's profile.
   const openTarget = () => {
+    if (n.postId) {
+      const highlightComment = n.entityType === 'comment' ? n.entityId : null;
+      openOverlay(routeTo.postDetail(n.postId), highlightComment ? { highlightComment } : undefined);
+      return;
+    }
     if (n.entityType === 'post' && n.entityId) {
       openOverlay(routeTo.postDetail(n.entityId));
       return;
@@ -108,7 +113,7 @@ function NotifRow({ n, onAccept, onDecline }) {
       navigate(routeTo.userProfile(actor.id));
     }
   };
-  const isClickable = (n.entityType === 'post' && Boolean(n.entityId)) || Boolean(actor?.id);
+  const isClickable = Boolean(n.postId) || (n.entityType === 'post' && Boolean(n.entityId)) || Boolean(actor?.id);
 
   return (
     <div onClick={openTarget} style={{

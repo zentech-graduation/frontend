@@ -15,8 +15,10 @@ export function useOverlayNavigate() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // extraState rides alongside the recorded background, so an overlay can be told
+  // what to focus once it opens - for example the comment a notification points at.
   return useCallback(
-    (to) => navigate(to, { state: { background: location.pathname } }),
+    (to, extraState) => navigate(to, { state: { background: location.pathname, ...(extraState || {}) } }),
     [navigate, location.pathname]
   );
 }
