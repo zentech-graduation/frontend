@@ -173,7 +173,13 @@ export const useLikePost = () => {
     onError: (_error, _variables, context) => {
       context?.restore?.();
     },
-    onSettled: (_data, _error, { postId }) => endSelfPostLike(postId),
+    onSettled: (_data, _error, { postId }) => {
+      endSelfPostLike(postId);
+      // The profile "liked" tab is a distinct list keyed on likedAt, so a like
+      // or unlike must refetch it; the optimistic post patch alone never adds or
+      // removes the row there.
+      queryClient.invalidateQueries({ queryKey: likedPostsKey });
+    },
   });
 };
 
