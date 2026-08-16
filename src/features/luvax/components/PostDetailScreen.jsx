@@ -473,8 +473,8 @@ export function PostDetailScreen({ overlay = false }) {
   // column's surface filling the remainder below it. A portrait taller than the floor
   // makes the popup as tall as the media. See docs/layout-overhaul/layout-decisions.md.
   const COMMENT_PANE_WIDTH = 372;
-  const POPUP_HEIGHT_CAP = 'min(82vh, 760px)';
-  const POPUP_MIN_HEIGHT = 'min(82vh, 580px)';
+  const POPUP_HEIGHT_CAP = 'min(88vh, 820px)';
+  const POPUP_MIN_HEIGHT = 'min(85vh, 668px)';
   const MEDIA_MAX_WIDTH = 620;
   const mediaMaxWidth = `min(${MEDIA_MAX_WIDTH}px, calc(100vw - 32px - ${COMMENT_PANE_WIDTH}px))`;
   const mediaHeight = `min(${POPUP_HEIGHT_CAP}, calc(${mediaMaxWidth} / ${A}))`;
@@ -817,10 +817,10 @@ export function PostDetailScreen({ overlay = false }) {
       {twoPane ? (
         <>
           {/* The media column is the media's own width, so the image fills it to both
-              side edges with no letterbox. The image sits at the top at its true ratio
-              (minAspect 0); when the popup is taller than the image, the column's own
-              surface fills the space below rather than boxing the image on all sides. */}
-          <div style={{ width: mediaWidth, height: '100%', flexShrink: 0, background: v.base, display: 'flex', flexDirection: 'column' }}>
+              side edges with no letterbox. The image keeps its true ratio (minAspect 0)
+              and is centred vertically; when the popup is taller than the image, the
+              column's own surface fills evenly above and below rather than boxing it. */}
+          <div style={{ width: mediaWidth, height: '100%', flexShrink: 0, background: v.base, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div style={{ width: '100%', flexShrink: 0 }}>
               <PostMedia post={post} radius={0} minAspect={0} />
             </div>

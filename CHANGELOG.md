@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A video now autoplays, muted, when it scrolls into view and pauses when it leaves; you unmute it yourself and that choice is kept.
 
 ### Changed
-- The post popup is a contained, responsive size: its media fills the pane to every edge with no letterbox in any orientation, and the popup keeps a comfortable height so comments have room to read even under a wide landscape image.
+- The post popup is a contained, responsive size: its media fills the pane to every edge with no letterbox in any orientation, sits centred in its column, and the popup reads as a long panel short of full screen so comments have room to read even under a wide landscape image.
 - The post popup's author and caption area is more compact with its divider lines removed, so more comments are visible while the comment box keeps its size.
 - The comment box grows with your text up to three lines and then scrolls, and long comments wrap instead of running off the edge.
 - The story rail is wider than the post column, its avatars are slightly smaller, and the row is centred.

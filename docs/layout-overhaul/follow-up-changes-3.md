@@ -11,8 +11,9 @@ The popup now sizes its media pane to the media's own width and aspect ratio, so
 
 A wide landscape, sized this way, is short, and a popup only as tall as the image left the comment column too cramped to read.
 So the popup no longer takes the media's height directly.
-It keeps a floor height; when the media is shorter than the floor, the image sits at the top of its column and the column's own surface fills the space beneath it, blended into the popup body rather than boxing the image on all sides.
+It keeps a floor height; when the media is shorter than the floor, the image is centred in its column and the column's own surface fills the space evenly above and below it, blended into the popup body rather than boxing the image on all sides.
 A portrait taller than the floor makes the popup as tall as the image, and the image fills the pane completely.
+The floor is generous - the popup reads as a long panel rather than a squat one - but stays short of the full screen at both ends.
 
 The result: the width is flush with no side gaps, and the comment column always has room to read.
 
@@ -38,8 +39,8 @@ Centring uses a safe alignment, so when the set outgrows the rail it falls back 
 
 Every item was confirmed in a running browser against the live backend, with no console errors.
 
-- A landscape post popup fills its media pane to both side edges with no letterbox, keeps a comfortable height, and shows several comments where before it showed almost none.
-- The area beneath a short landscape image blends into the popup body instead of reading as a separate block.
+- A landscape post popup fills its media pane to both side edges with no letterbox, reads as a long panel short of full screen, and shows several comments where before it showed almost none.
+- A short landscape image is centred in its column, with the fill above and below blended into the popup body instead of reading as a separate block.
 - The author and caption area is compact with no divider lines; comments carry no dividers between them.
 - A long, unbroken comment wraps inside the column instead of overflowing.
 - The story avatars are centred over the post column.
