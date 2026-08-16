@@ -335,8 +335,13 @@ export function ProfileScreen() {
   return (
     <>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {/* Cover band */}
-        <div style={{ height: 88, background: v.surfaceRaised }} />
+        {/* Cover band: the user's banner when set, otherwise the plain raised band. */}
+        <div style={{
+          height: 108,
+          background: user?.bannerUrl
+            ? `url(${user.bannerUrl}) center/cover no-repeat`
+            : v.surfaceRaised,
+        }} />
 
         {/* Avatar + follow */}
         <div style={{ padding: '0 16px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -40 }}>

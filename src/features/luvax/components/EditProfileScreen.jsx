@@ -33,31 +33,37 @@ export function EditProfileScreen() {
     username: user?.username || '',
     bio: user?.bio || '',
     avatarUrl: user?.avatarUrl || '',
+    bannerUrl: user?.bannerUrl || '',
   });
   const [formError, setFormError] = useState('');
   const { uploadMedia, isUploading } = useMediaUpload();
+  const [uploadingField, setUploadingField] = useState(null);
   const fileInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  const handleAvatarFile = async (event) => {
+  // The avatar and banner both go through the same pre-signed upload as post
+  // media; the returned CDN URL is saved as avatarUrl or bannerUrl respectively.
+  const handleImageFile = async (event, field) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setFormError('please choose an image file for your avatar.');
+      setFormError(`please choose an image file for your ${field === 'bannerUrl' ? 'banner' : 'avatar'}.`);
       return;
     }
     setFormError('');
+    setUploadingField(field);
     try {
-      // The avatar goes through the same pre-signed upload as post media, then its
-      // CDN URL is saved as the profile's avatarUrl.
       const result = await uploadMedia(file);
       const cdnUrl = result?.cdnUrl || result?.data?.cdnUrl;
-      if (cdnUrl) update('avatarUrl', cdnUrl);
+      if (cdnUrl) update(field, cdnUrl);
       else setFormError("we couldn't read the uploaded image. try again.");
     } catch (error) {
       setFormError(error?.uploadMessage || "we couldn't upload that image. try again.");
+    } finally {
+      setUploadingField(null);
     }
   };
 
@@ -70,6 +76,7 @@ export function EditProfileScreen() {
         username: form.username,
         bio: form.bio,
         avatarUrl: form.avatarUrl,
+        bannerUrl: form.bannerUrl,
       },
       {
         onSuccess: (data) => {
@@ -86,8 +93,46 @@ export function EditProfileScreen() {
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 32px', background: v.base }}>
+      {/* Banner (cover image), the same pre-signed upload and clear semantics as
+          the avatar. It reads full-bleed on the profile, so it is edited here as a
+          wide strip with the avatar picker overlapping its lower edge, as it will
+          sit on the profile header. */}
+      <div style={{ maxWidth: 520, margin: '0 auto 8px' }}>
+        <input ref={bannerInputRef} type="file" accept="image/*" onChange={(e) => handleImageFile(e, 'bannerUrl')} style={{ display: 'none' }} />
+        <button
+          type="button"
+          onClick={() => bannerInputRef.current?.click()}
+          aria-label="upload a new banner"
+          disabled={isUploading}
+          style={{
+            width: '100%',
+            height: 132,
+            borderRadius: 14,
+            background: form.bannerUrl ? `url(${form.bannerUrl}) center/cover no-repeat` : v.surfaceSunken,
+            border: `1px solid ${v.border}`,
+            cursor: isUploading ? 'default' : 'pointer',
+            padding: 0,
+            position: 'relative',
+            overflow: 'hidden',
+            display: 'block',
+          }}
+        >
+          <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: form.bannerUrl ? 'rgba(0,0,0,0.28)' : 'transparent', color: form.bannerUrl ? v.white : v.ink3, fontFamily: v.fontMono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            {uploadingField === 'bannerUrl' ? 'uploading' : form.bannerUrl ? 'change banner' : 'add a banner'}
+          </span>
+        </button>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <input value={form.bannerUrl} onChange={(e) => update('bannerUrl', e.target.value)} placeholder="or paste a banner image url" style={fieldStyle()} />
+          {form.bannerUrl ? (
+            <LxBtn variant="ghost" size="sm" onClick={() => update('bannerUrl', '')} disabled={isUploading}>
+              remove
+            </LxBtn>
+          ) : null}
+        </div>
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarFile} style={{ display: 'none' }} />
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleImageFile(e, 'avatarUrl')} style={{ display: 'none' }} />
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -106,11 +151,11 @@ export function EditProfileScreen() {
           }}
         >
           <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', color: v.white, fontFamily: v.fontMono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            {isUploading ? 'uploading' : 'change'}
+            {uploadingField === 'avatarUrl' ? 'uploading' : 'change'}
           </span>
         </button>
         <LxBtn variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
-          {isUploading ? 'uploading...' : 'upload from device'}
+          {uploadingField === 'avatarUrl' ? 'uploading...' : 'upload from device'}
         </LxBtn>
         <div style={{ width: '100%', maxWidth: 360 }}>
           <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
