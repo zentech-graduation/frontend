@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A video now autoplays, muted, when it scrolls into view and pauses when it leaves; you unmute it yourself and that choice is kept.
 
 ### Changed
+- The post popup is a contained, responsive size: its media fills the pane to every edge with no letterbox in any orientation, and the popup keeps a comfortable height so comments have room to read even under a wide landscape image.
+- The post popup's author and caption area is more compact with its divider lines removed, so more comments are visible while the comment box keeps its size.
+- The comment box grows with your text up to three lines and then scrolls, and long comments wrap instead of running off the edge.
+- The story rail is wider than the post column, its avatars are slightly smaller, and the row is centred.
 - A post now leads with the uploader's avatar, name, and time, followed by the media, then the caption and actions.
 - Post media fills its frame with no side gaps, keeping the whole image without cropping.
 - The interface and the post popup now scale up on 2K and larger screens instead of feeling small.
@@ -24,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The navigation bar stays visible on the messages screen.
 
 ### Fixed
+- A long, unbroken comment now wraps inside the comment column instead of overflowing past its edge.
 - Clicking a notification no longer errors: it opens the post for a post notification and the person's profile otherwise.
 - Unfollowing now asks for confirmation, with the action shown in red.
 - A signed-in user who opens an unknown address stays in the app with the nav bar and a notice, then returns to their feed, instead of being sent to the login page.
