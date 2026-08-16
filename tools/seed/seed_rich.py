@@ -41,10 +41,18 @@ import urllib.request
 BASE = os.environ.get("LUVAX_API_BASE_URL", "http://localhost:8080/api/v1").rstrip("/")
 PASSWORD = os.environ.get("LUVAX_SEED_PASSWORD", "Password123!")
 DOMAIN = os.environ.get("LUVAX_SEED_DOMAIN", "luvax.test")
-PG_CONTAINER = os.environ.get("LUVAX_PG_CONTAINER", "backend-postgres-1")
+PG_CONTAINER = os.environ.get("LUVAX_PG_CONTAINER")  # None -> auto-detect the running one
 PG_USER = os.environ.get("LUVAX_PG_USER", "luvax")
 PG_DB = os.environ.get("LUVAX_PG_DB", "luvax")
 SCALE = os.environ.get("LUVAX_SEED_SCALE", "full")
+
+# A single "major" review account, created every run, that follows every seeded
+# user so its feed shows the whole dataset - the most authentic review experience.
+# Its credentials are printed at the end of every run.
+REVIEWER_USERNAME = os.environ.get("LUVAX_REVIEWER_USERNAME", "JohnDoe")
+REVIEWER_PASSWORD = os.environ.get("LUVAX_REVIEWER_PASSWORD", "Password123!")
+REVIEWER_NAME = os.environ.get("LUVAX_REVIEWER_NAME", "John Doe")
+REVIEWER_EMAIL = f"{REVIEWER_USERNAME.lower()}@{DOMAIN}"
 
 MARKER = "​"  # zero-width space appended to every seeded caption, invisible to readers
 TIMEOUT = 60
@@ -213,9 +221,48 @@ def fetch_bytes(url):
         return resp.read()
 
 
+_pg_container = None
+
+
+def pg_container():
+    """The Postgres container to run the verify step in.
+
+    Honours LUVAX_PG_CONTAINER when set; otherwise auto-detects the running
+    container that serves the luvax database. The compose project name (and so the
+    container name) can change between environments, which would otherwise leave a
+    hard-coded name pointing at a stopped container.
+    """
+    global _pg_container
+    if _pg_container:
+        return _pg_container
+    if PG_CONTAINER:
+        _pg_container = PG_CONTAINER
+        return _pg_container
+    try:
+        out = subprocess.run(
+            ["docker", "ps", "--format", "{{.Names}}"], capture_output=True, text=True, check=True
+        ).stdout
+        candidates = [n for n in out.split() if "postgres" in n.lower()]
+        for name in candidates:
+            probe = subprocess.run(
+                ["docker", "exec", name, "psql", "-U", PG_USER, "-d", PG_DB, "-tAc", "SELECT 1"],
+                capture_output=True, text=True,
+            )
+            if probe.returncode == 0:
+                _pg_container = name
+                return _pg_container
+        if candidates:
+            _pg_container = candidates[0]
+            return _pg_container
+    except Exception:
+        pass
+    _pg_container = "app-postgres-1"
+    return _pg_container
+
+
 def psql(sql):
     subprocess.run(
-        ["docker", "exec", PG_CONTAINER, "psql", "-U", PG_USER, "-d", PG_DB, "-v", "ON_ERROR_STOP=1", "-c", sql],
+        ["docker", "exec", pg_container(), "psql", "-U", PG_USER, "-d", PG_DB, "-v", "ON_ERROR_STOP=1", "-c", sql],
         check=True, capture_output=True, text=True,
     )
 
@@ -243,21 +290,38 @@ def register(name):
     return username
 
 
-def verify_all(usernames):
+def verify_all(emails):
     # Login gates on user_credentials.email_verified, a different flag from the
     # users.is_verified badge. Flip the credential and keep the account active; the
     # badge is set too so seeded profiles read as verified.
-    emails = ",".join("'" + u + "@" + DOMAIN + "'" for u in usernames)
-    ids = f"SELECT id FROM users WHERE email IN ({emails})"
+    email_list = ",".join("'" + e + "'" for e in emails)
+    ids = f"SELECT id FROM users WHERE email IN ({email_list})"
     psql(
         f"UPDATE user_credentials SET email_verified = true, email_verified_at = NOW() "
         f"WHERE user_id IN ({ids}); "
-        f"UPDATE users SET is_verified = true, status = 'active' WHERE email IN ({emails});"
+        f"UPDATE users SET is_verified = true, status = 'active' WHERE email IN ({email_list});"
     )
 
 
 def login(username):
     data = api("POST", "/auth/login", body={"identifier": f"{username}@{DOMAIN}", "password": PASSWORD})
+    return data["accessToken"], data["user"]["id"]
+
+
+def register_reviewer():
+    """Register the single review account, tolerating one that already exists."""
+    try:
+        api("POST", "/auth/register", body={
+            "username": REVIEWER_USERNAME, "email": REVIEWER_EMAIL,
+            "password": REVIEWER_PASSWORD, "displayName": REVIEWER_NAME,
+        })
+    except ApiError as err:
+        if err.code not in ALREADY_DONE:
+            raise
+
+
+def login_reviewer():
+    data = api("POST", "/auth/login", body={"identifier": REVIEWER_EMAIL, "password": REVIEWER_PASSWORD})
     return data["accessToken"], data["user"]["id"]
 
 
@@ -389,8 +453,9 @@ def main():
     log("accounts: register")
     names = [name for name, _ in people]
     usernames = [register(name) for name in names]
+    register_reviewer()
     log("accounts: verify via sql")
-    verify_all(usernames)
+    verify_all([u + "@" + DOMAIN for u in usernames] + [REVIEWER_EMAIL])
 
     log("accounts: login")
     sessions = {}
@@ -404,6 +469,13 @@ def main():
         log("BLOCKED: no account could log in.")
         return 1
     users = list(sessions.values())
+
+    reviewer = None
+    try:
+        rtok, rid = login_reviewer()
+        reviewer = {"name": REVIEWER_NAME, "token": rtok, "id": rid}
+    except ApiError as err:
+        log(f"  reviewer {REVIEWER_USERNAME} cannot log in: {err}")
 
     log("profiles: avatars + bios + a few banners")
     bios = {name: bio for name, bio in PEOPLE}
@@ -426,6 +498,18 @@ def main():
             stats["avatars"] += 1
         except (ApiError, urllib.error.URLError) as err:
             log(f"  avatar/profile for {u['name']} failed: {err}")
+
+    if reviewer:
+        try:
+            me = api("GET", "/users/me", reviewer["token"])
+            if not (me and me.get("avatarUrl")):
+                avatar = upload_avatar(reviewer["token"], f"av-{reviewer['id'][:8]}")
+                api("PATCH", "/users/me", reviewer["token"], {
+                    "avatarUrl": avatar["cdnUrl"], "displayName": REVIEWER_NAME,
+                    "bio": "here to see everything",
+                })
+        except (ApiError, urllib.error.URLError) as err:
+            log(f"  reviewer avatar failed: {err}")
 
     log("posts: real media")
     all_posts = []
@@ -451,6 +535,15 @@ def main():
         for target in random.sample(others, k):
             tolerant("POST", f"/social/follow/{target['id']}", u["token"])
             stats["follows"] += 1
+
+    # The review account follows every seeded user, so its feed shows the whole
+    # dataset. Tolerant, so re-runs are a no-op.
+    reviewer_follows = 0
+    if reviewer:
+        for u in users:
+            tolerant("POST", f"/social/follow/{u['id']}", reviewer["token"])
+            reviewer_follows += 1
+        log(f"  reviewer {REVIEWER_USERNAME} follows {reviewer_follows} accounts")
 
     log("engagement: likes, saves, comments, replies, comment-likes")
     for pid, owner_id in all_posts:
@@ -493,6 +586,16 @@ def main():
         log(f"  {k:14} {v}")
     log(f"  password       {PASSWORD}")
     log(f"  sample login   {users[0]['name'].lower().replace(' ', '.')}@{DOMAIN}")
+
+    log("")
+    if reviewer:
+        log("REVIEWER ACCOUNT (follows every seeded account)")
+        log(f"  username   {REVIEWER_USERNAME}")
+        log(f"  email      {REVIEWER_EMAIL}")
+        log(f"  password   {REVIEWER_PASSWORD}")
+        log(f"  follows    {reviewer_follows} accounts")
+    else:
+        log(f"REVIEWER ACCOUNT {REVIEWER_USERNAME} could not be logged in; see errors above.")
     return 0
 
 

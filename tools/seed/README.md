@@ -27,11 +27,28 @@ It verifies each new account automatically over `docker exec` (flipping
 are reused and a user who already has its marker posts is skipped, so a second run does not
 re-upload their media. Every seeded account uses `LUVAX_SEED_PASSWORD` (default `Password123!`).
 
+### Reviewer account
+
+Every run creates one "major" review account that follows every seeded user, so its feed shows the
+whole dataset - the most authentic review experience. It posts nothing; it only follows. The script
+prints its credentials at the end of every run:
+
+```
+REVIEWER ACCOUNT (follows every seeded account)
+  username   JohnDoe
+  email      johndoe@luvax.test
+  password   Password123!
+  follows    40 accounts
+```
+
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `LUVAX_SEED_SCALE` | `full` | `full` or `small` |
-| `LUVAX_PG_CONTAINER` | `backend-postgres-1` | Postgres container for the verify step |
+| `LUVAX_PG_CONTAINER` | auto-detect | Postgres container for the verify step; auto-detected from running containers when unset |
 | `LUVAX_PG_USER` / `LUVAX_PG_DB` | `luvax` / `luvax` | Postgres role and database |
+| `LUVAX_REVIEWER_USERNAME` | `JohnDoe` | Reviewer account username |
+| `LUVAX_REVIEWER_PASSWORD` | `Password123!` | Reviewer account password |
+| `LUVAX_REVIEWER_NAME` | `John Doe` | Reviewer display name |
 
 Requires the docker CLI (for the verify step) and outbound network access (to fetch media).
 
