@@ -6,9 +6,12 @@ import {
   useLocation,
 } from 'react-router-dom';
 
+import { Suspense, lazy } from 'react';
+
 import AuthSessionBootstrap from '@/components/common/AuthSessionBootstrap';
 import GuestRoute from '@/components/common/GuestRoute';
 import NotFoundPage from '@/components/common/NotFoundPage';
+import PageLoader from '@/components/common/PageLoader';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import RouterErrorPage from '@/components/common/RouterErrorPage';
 import { ROUTES } from '@/config/constants';
@@ -17,9 +20,13 @@ import VerifyEmailNoticePage from '@/pages/auth/VerifyEmailNoticePage';
 import AuthPage from '@/features/auth/components/AuthPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
-import DashboardPage from '@/pages/dashboard/DashboardPage';
-import LuvaxPage from '@/pages/LuvaxPage';
 import { APP_NOT_FOUND_SCREEN, APP_OVERLAY_SCREENS, APP_SCREENS } from './appScreens';
+
+// The authenticated shell and everything under it load on demand. An anonymous visitor on the
+// sign-in page has no use for either, and the shell was the largest single contributor to the
+// entry chunk.
+const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
+const LuvaxPage = lazy(() => import('@/pages/LuvaxPage'));
 
 function RootLayout() {
   return (
@@ -29,7 +36,12 @@ function RootLayout() {
           to its previous offset on back, replacing the manual scroll reset the
           screen switch used to perform. */}
       <ScrollRestoration />
-      <Outlet />
+      {/* Screens under the authenticated shell are code-split, so a first visit to one suspends
+          while its chunk downloads. One boundary here covers every route rather than each screen
+          having to remember its own. */}
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
     </>
   );
 }

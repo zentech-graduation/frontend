@@ -1,22 +1,105 @@
+import { lazy } from 'react';
+
 import { ROUTES } from '@/config/constants';
-import { BlockedUsersScreen } from '@/features/luvax/components/BlockedUsersScreen';
-import { ChangePasswordScreen } from '@/features/luvax/components/ChangePasswordScreen';
-import { ComposerScreen } from '@/features/luvax/components/ComposerScreen';
-import { EditProfileScreen } from '@/features/luvax/components/EditProfileScreen';
-import { ExploreScreen } from '@/features/luvax/components/ExploreScreen';
-import { FeedScreen } from '@/features/luvax/components/FeedScreen';
-import { FollowersScreen } from '@/features/luvax/components/FollowersScreen';
-import { FollowingScreen } from '@/features/luvax/components/FollowingScreen';
-import { NotificationsScreen } from '@/features/luvax/components/NotificationsScreen';
-import { OnboardingScreen } from '@/features/luvax/components/OnboardingScreen';
-import { PostDetailScreen } from '@/features/luvax/components/PostDetailScreen';
-import { ProfileScreen } from '@/features/luvax/components/ProfileScreen';
-import { SavedPostsScreen } from '@/features/luvax/components/SavedPostsScreen';
-import { SearchScreen } from '@/features/search/components/SearchScreen';
 import { ScreenNotFound } from '@/features/luvax/components/ScreenNotFound';
-import { SettingsScreen } from '@/features/luvax/components/SettingsScreen';
-import { StoryComposerScreen, StoryViewScreen } from '@/features/luvax/components/StoryScreens';
-import { MessagesScreen } from '@/features/messages/MessagesScreen';
+
+/**
+ * Screens loaded on demand.
+ *
+ * The whole application used to arrive in one chunk, so a visitor on the sign-in page downloaded
+ * the composer, the story viewer, and the message pane before the form was interactive. Every
+ * screen here is now deferred, as is the shell that frames them.
+ *
+ * {@code ScreenNotFound} stays eager: it is the fallback for an address that matched nothing, so
+ * suspending to fetch a chunk in order to say "not found" would be the wrong trade.
+ *
+ * The route table below is unchanged. Only the import style differs, and the Suspense boundary in
+ * the router supplies the fallback.
+ */
+const FeedScreen = lazy(() =>
+  import('@/features/luvax/components/FeedScreen').then((m) => ({ default: m.FeedScreen }))
+);
+const PostDetailScreen = lazy(() =>
+  import('@/features/luvax/components/PostDetailScreen').then((m) => ({
+    default: m.PostDetailScreen,
+  }))
+);
+const ProfileScreen = lazy(() =>
+  import('@/features/luvax/components/ProfileScreen').then((m) => ({ default: m.ProfileScreen }))
+);
+const BlockedUsersScreen = lazy(() =>
+  import('@/features/luvax/components/BlockedUsersScreen').then((m) => ({
+    default: m.BlockedUsersScreen,
+  }))
+);
+const ChangePasswordScreen = lazy(() =>
+  import('@/features/luvax/components/ChangePasswordScreen').then((m) => ({
+    default: m.ChangePasswordScreen,
+  }))
+);
+const ComposerScreen = lazy(() =>
+  import('@/features/luvax/components/ComposerScreen').then((m) => ({
+    default: m.ComposerScreen,
+  }))
+);
+const EditProfileScreen = lazy(() =>
+  import('@/features/luvax/components/EditProfileScreen').then((m) => ({
+    default: m.EditProfileScreen,
+  }))
+);
+const ExploreScreen = lazy(() =>
+  import('@/features/luvax/components/ExploreScreen').then((m) => ({
+    default: m.ExploreScreen,
+  }))
+);
+const FollowersScreen = lazy(() =>
+  import('@/features/luvax/components/FollowersScreen').then((m) => ({
+    default: m.FollowersScreen,
+  }))
+);
+const FollowingScreen = lazy(() =>
+  import('@/features/luvax/components/FollowingScreen').then((m) => ({
+    default: m.FollowingScreen,
+  }))
+);
+const NotificationsScreen = lazy(() =>
+  import('@/features/luvax/components/NotificationsScreen').then((m) => ({
+    default: m.NotificationsScreen,
+  }))
+);
+const OnboardingScreen = lazy(() =>
+  import('@/features/luvax/components/OnboardingScreen').then((m) => ({
+    default: m.OnboardingScreen,
+  }))
+);
+const SavedPostsScreen = lazy(() =>
+  import('@/features/luvax/components/SavedPostsScreen').then((m) => ({
+    default: m.SavedPostsScreen,
+  }))
+);
+const SearchScreen = lazy(() =>
+  import('@/features/search/components/SearchScreen').then((m) => ({
+    default: m.SearchScreen,
+  }))
+);
+const SettingsScreen = lazy(() =>
+  import('@/features/luvax/components/SettingsScreen').then((m) => ({
+    default: m.SettingsScreen,
+  }))
+);
+const StoryComposerScreen = lazy(() =>
+  import('@/features/luvax/components/StoryScreens').then((m) => ({
+    default: m.StoryComposerScreen,
+  }))
+);
+const StoryViewScreen = lazy(() =>
+  import('@/features/luvax/components/StoryScreens').then((m) => ({
+    default: m.StoryViewScreen,
+  }))
+);
+const MessagesScreen = lazy(() =>
+  import('@/features/messages/MessagesScreen').then((m) => ({ default: m.MessagesScreen }))
+);
 
 /**
  * Every screen reachable inside the authenticated shell.
