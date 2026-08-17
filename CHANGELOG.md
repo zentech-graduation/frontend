@@ -7,8 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- On desktop and tablet, scrolling down reveals a slim icon rail on the left for quick navigation - home, explore, messages, new post, and activity - with your avatar at the bottom linking to settings, mirroring when the top bar hides itself.
-- On desktop and tablet, a floating messages button appears in the bottom-right corner whenever the top bar is hidden, taking you straight to your messages; it's hidden while you're already there.
+- On desktop and tablet, scrolling down reveals a slim icon rail on the left for quick navigation - home, message, new post, search, notifications, and your profile - with a settings shortcut at the bottom, mirroring when the top bar hides itself.
+- On desktop and tablet, a floating "message" button appears in the bottom-right corner whenever the top bar is hidden, taking you straight to your messages; it's hidden while you're already there.
+
+### Changed
 - The privacy and notifications settings are now real: private account, activity status, story replies, message requests, and each notification type save to your account instead of being fixed "coming soon" toggles. "Notify me about story views" has no setting to bind to yet and stays a placeholder.
 - Stories are now real: the home rail, "your story," and the story viewer read and write actual story data instead of a fixed demo set. Creating a story uploads a real photo or video and an optional caption, exactly like a post; there is no text-only story, since the platform doesn't support one.
 - The story viewer now has visible previous/next buttons, alongside the existing tap zones, so you can move through a person's stories - and straight into the next person's - without closing and reopening the viewer.
@@ -24,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A video now autoplays, muted, when it scrolls into view and pauses when it leaves; you unmute it yourself and that choice is kept.
 
 ### Changed
+- The order of the main navigation icons is now home, message, new post, search, and notifications on every screen size.
 - Moving between stories now crossfades the media instead of cutting straight to the next photo or frame.
 - The "new post" screen has a more inviting, less utilitarian layout: a larger add-media area, your real name and avatar, and a single hashtag indicator instead of two that said almost the same thing. What you can upload and how captions and hashtags work has not changed.
 - The post popup is a contained, responsive size: its media fills the pane to every edge with no letterbox in any orientation, sits centred in its column, and the popup reads as a long panel short of full screen so comments have room to read even under a wide landscape image.
