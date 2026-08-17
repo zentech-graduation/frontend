@@ -29,6 +29,14 @@ export function ChatCenterPanel({
   setDraft,
   handleSend,
 }) {
+  const draftInputRef = useRef(null);
+
+  useEffect(() => {
+    autoResizeDraft(draftInputRef.current);
+  }, [draft, replyingTo]);
+
+  // Hooks above this line. Both previously sat below it, so opening or closing a thread changed the
+  // hook count between renders, which React resolves by binding state to the wrong slot.
   if (!activeThread) return null;
 
   const mobileHeaderIconButton = {
@@ -45,12 +53,6 @@ export function ChatCenterPanel({
     flexShrink: 0,
     boxShadow: 'none',
   };
-
-  const draftInputRef = useRef(null);
-
-  useEffect(() => {
-    autoResizeDraft(draftInputRef.current);
-  }, [draft, replyingTo]);
 
   return (
     <section

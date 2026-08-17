@@ -210,7 +210,10 @@ function useFlatStorySequence() {
 export function StoryViewScreen({ viewport: vpProp }) {
   const navigate = useNavigate();
   const { storyId } = useParams();
-  const vp = vpProp || useViewport();
+  // Called unconditionally. Short-circuiting on the prop skipped the hook whenever a viewport was
+  // passed, so the hook count changed between renders and React misbound every hook after it.
+  const measuredViewport = useViewport();
+  const vp = vpProp || measuredViewport;
   const currentUser = useAuthStore((state) => state.user);
   const sequence = useFlatStorySequence();
   const recordView = useRecordStoryView();
@@ -529,7 +532,9 @@ export function StoryViewScreen({ viewport: vpProp }) {
 // ─── Story Composer Screen ──────────────────────────────────────────────────
 export function StoryComposerScreen({ viewport: vpProp }) {
   const navigate = useNavigate();
-  const vp = vpProp || useViewport();
+  // See StoryViewScreen: the hook must run on every render regardless of the prop.
+  const measuredViewport = useViewport();
+  const vp = vpProp || measuredViewport;
   const fileInputRef = useRef(null);
   const [item, setItem] = useState(null);
   const [caption, setCaption] = useState('');
