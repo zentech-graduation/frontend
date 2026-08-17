@@ -78,20 +78,27 @@ export function ChatCenterPanel({
           padding: viewport === 'mobile' ? '0 20px' : '0 18px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: viewport === 'mobile' ? 10 : 12, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: viewport === 'mobile' ? 10 : 12,
+            minWidth: 0,
+          }}
+        >
           {viewport !== 'desktop' && viewport !== 'tablet' ? (
-            <button
-              type="button"
-              onClick={() => closeThread()}
-              style={mobileHeaderIconButton}
-            >
+            <button type="button" onClick={() => closeThread()} style={mobileHeaderIconButton}>
               <LxIcon name="chevronLeft" size={15} color={v.ink2} />
             </button>
           ) : null}
           <AvatarVisual thread={activeThread} size={40} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-            <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink }}>{activeThread.name}</div>
-            <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>@{activeThread.username}</div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink }}>
+              {activeThread.name}
+            </div>
+            <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
+              @{activeThread.username}
+            </div>
           </div>
         </div>
         {viewport === 'mobile' ? (
@@ -106,16 +113,34 @@ export function ChatCenterPanel({
         ) : null}
       </div>
 
-      <div ref={scrollerRef} style={{ overflowY: 'auto', padding: viewport === 'mobile' ? '18px 24px' : '20px 22px 12px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 28, minHeight: '100%', justifyContent: activeThread.messages.length <= 1 ? 'space-between' : 'flex-start' }}>
+      <div
+        ref={scrollerRef}
+        style={{
+          overflowY: 'auto',
+          padding: viewport === 'mobile' ? '18px 24px' : '20px 22px 12px',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 28,
+            minHeight: '100%',
+            justifyContent: activeThread.messages.length <= 1 ? 'space-between' : 'flex-start',
+          }}
+        >
           {activeThread.messages.map((message, index) => (
             <div
               key={message.id}
               style={{
                 display: 'flex',
                 justifyContent: message.from === 'me' ? 'flex-end' : 'flex-start',
-                minHeight: activeThread.messages.length <= 1 && index === 0 && isDesktop ? 420 : 'auto',
-                alignItems: activeThread.messages.length <= 1 && index === 0 && isDesktop ? 'flex-start' : 'stretch',
+                minHeight:
+                  activeThread.messages.length <= 1 && index === 0 && isDesktop ? 420 : 'auto',
+                alignItems:
+                  activeThread.messages.length <= 1 && index === 0 && isDesktop
+                    ? 'flex-start'
+                    : 'stretch',
               }}
             >
               <MessageBubble
@@ -125,7 +150,11 @@ export function ChatCenterPanel({
                 onPreviewMedia={setPreviewItem}
                 onDeleteToggle={handleDeleteToggle}
                 onReplyMessage={setReplyingTo}
-                canDelete={message.from === 'me' && message.kind !== 'deleted' && index >= activeThread.messages.length - 2}
+                canDelete={
+                  message.from === 'me' &&
+                  message.kind !== 'deleted' &&
+                  index >= activeThread.messages.length - 2
+                }
               />
             </div>
           ))}
@@ -143,12 +172,51 @@ export function ChatCenterPanel({
         }}
       >
         {replyingTo ? (
-          <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '0 2px 2px', fontFamily: v.fontMono, fontSize: 11, color: v.accentText }}>
-            <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <span style={{ marginRight: 6 }}>↩ replying to {replyingTo.from === 'me' ? 'you' : activeThread.name}</span>
+          <div
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              padding: '0 2px 2px',
+              fontFamily: v.fontMono,
+              fontSize: 11,
+              color: v.accentText,
+            }}
+          >
+            <div
+              style={{
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span style={{ marginRight: 6 }}>
+                ↩ replying to {replyingTo.from === 'me' ? 'you' : activeThread.name}
+              </span>
               <span style={{ color: v.ink2 }}>{replyingTo.text}</span>
             </div>
-            <button type="button" onClick={() => setReplyingTo(null)} style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.14)', border: 'none', color: v.ink3, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, lineHeight: 1 }}>
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                background: 'rgba(0,0,0,0.14)',
+                border: 'none',
+                color: v.ink3,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                fontSize: 11,
+                lineHeight: 1,
+              }}
+            >
               ×
             </button>
           </div>

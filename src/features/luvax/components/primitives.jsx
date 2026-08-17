@@ -37,7 +37,14 @@ export function LxTag({ children, active = false, onClick, size = 'md' }) {
   );
 }
 
-export function LxBtn({ children, variant = 'primary', size = 'md', onClick, disabled = false, style = {} }) {
+export function LxBtn({
+  children,
+  variant = 'primary',
+  size = 'md',
+  onClick,
+  disabled = false,
+  style = {},
+}) {
   const sizes = {
     sm: { fontSize: 12, padding: '5px 14px' },
     md: { fontSize: 14, padding: '9px 20px' },
@@ -124,7 +131,9 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
           flexDirection: 'column',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', flexShrink: 0 }}>
+        <div
+          style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 4px', flexShrink: 0 }}
+        >
           <div style={{ width: 36, height: 4, borderRadius: 2, background: v.border }} />
         </div>
         {children}
@@ -168,15 +177,41 @@ export function LxModal({ open, onClose, title, children, actions }) {
         }}
       >
         {title ? (
-          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${v.border}`, fontFamily: v.fontDisplay, fontSize: 16, fontWeight: 600, color: v.ink }}>
+          <div
+            style={{
+              padding: '16px 20px',
+              borderBottom: `1px solid ${v.border}`,
+              fontFamily: v.fontDisplay,
+              fontSize: 16,
+              fontWeight: 600,
+              color: v.ink,
+            }}
+          >
             {title}
           </div>
         ) : null}
-        <div style={{ padding: '20px', fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.5 }}>
+        <div
+          style={{
+            padding: '20px',
+            fontFamily: v.fontBody,
+            fontSize: 14,
+            color: v.ink2,
+            lineHeight: 1.5,
+          }}
+        >
           {children}
         </div>
         {actions ? (
-          <div style={{ padding: '12px 20px', borderTop: `1px solid ${v.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8, background: v.surfaceRaised }}>
+          <div
+            style={{
+              padding: '12px 20px',
+              borderTop: `1px solid ${v.border}`,
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 8,
+              background: v.surfaceRaised,
+            }}
+          >
             {actions}
           </div>
         ) : null}

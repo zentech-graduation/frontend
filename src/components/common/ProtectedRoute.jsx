@@ -42,13 +42,7 @@ export default function ProtectedRoute() {
   if (!isLiveSession) {
     // Pass only the pathname — never search or hash — so no tokens leak
     // into router state that survives browser history traversal.
-    return (
-      <Navigate
-        to={ROUTES.LOGIN}
-        replace
-        state={{ from: { pathname: location.pathname } }}
-      />
-    );
+    return <Navigate to={ROUTES.LOGIN} replace state={{ from: { pathname: location.pathname } }} />;
   }
 
   return <Outlet />;

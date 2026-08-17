@@ -33,7 +33,9 @@ export function ScreenNotFound() {
       }}
     >
       <LxIcon name="explore" size={32} color={v.ink3} />
-      <div style={{ fontSize: 15, fontWeight: 500, color: v.ink2 }}>you cannot view this content</div>
+      <div style={{ fontSize: 15, fontWeight: 500, color: v.ink2 }}>
+        you cannot view this content
+      </div>
       <div style={{ fontSize: 13, color: v.ink3 }}>taking you back to your feed...</div>
       <LxBtn variant="secondary" size="sm" onClick={() => navigate(ROUTES.FEED, { replace: true })}>
         back to feed

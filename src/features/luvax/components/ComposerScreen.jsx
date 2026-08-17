@@ -171,13 +171,13 @@ export function ComposerScreen() {
     // cannot change underneath this.
     const ordered = items;
     const assetIds = new Map(
-      ordered.filter((item) => item.status === 'done').map((item) => [item.id, item.assetId]),
+      ordered.filter((item) => item.status === 'done').map((item) => [item.id, item.assetId])
     );
 
     const pending = ordered.filter((item) => item.status !== 'done');
     if (pending.length > 0) {
       const results = await Promise.all(
-        pending.map(async (item) => [item.id, await uploadOne(item)]),
+        pending.map(async (item) => [item.id, await uploadOne(item)])
       );
       results.forEach(([id, assetId]) => assetIds.set(id, assetId));
 
@@ -185,7 +185,7 @@ export function ComposerScreen() {
         setFormError(
           pending.length === 1
             ? "that file didn't upload. retry it or remove it, then post again."
-            : "some files didn't upload. retry or remove them, then post again.",
+            : "some files didn't upload. retry or remove them, then post again."
         );
         return;
       }
@@ -216,16 +216,19 @@ export function ComposerScreen() {
   const insertTag = (tag) => {
     const regex = new RegExp(`#${tag}(?![A-Za-z0-9_])`, 'gi');
     if (regex.test(caption)) {
-      handleCaptionChange(caption.replace(regex, '').replace(/[ \t]{2,}/g, ' ').trim());
+      handleCaptionChange(
+        caption
+          .replace(regex, '')
+          .replace(/[ \t]{2,}/g, ' ')
+          .trim()
+      );
       return;
     }
     handleCaptionChange(caption ? `${caption} #${tag}` : `#${tag}`);
   };
 
   const isActionDisabled =
-    createPostMutation.isPending ||
-    isUploading ||
-    (postType === 'TEXT' && !caption.trim());
+    createPostMutation.isPending || isUploading || (postType === 'TEXT' && !caption.trim());
 
   const completedCount = items.filter((item) => item.status === 'done').length;
   const submitLabel =
@@ -260,13 +263,25 @@ export function ComposerScreen() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: isTablet ? `10px ${tabletBodyPadRight}px 10px ${tabletBodyPadLeft}px` : '10px 16px',
+          padding: isTablet
+            ? `10px ${tabletBodyPadRight}px 10px ${tabletBodyPadLeft}px`
+            : '10px 16px',
           borderBottom: isTablet ? 'none' : `1px solid ${v.border}`,
           background: v.base,
           position: 'relative',
         }}
       >
-        <span style={{ fontFamily: v.fontDisplay, fontSize: 16, fontWeight: 600, color: v.ink, letterSpacing: '-0.01em' }}>new post</span>
+        <span
+          style={{
+            fontFamily: v.fontDisplay,
+            fontSize: 16,
+            fontWeight: 600,
+            color: v.ink,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          new post
+        </span>
         <button
           onClick={handlePost}
           disabled={isActionDisabled}
@@ -307,7 +322,9 @@ export function ComposerScreen() {
         <div
           role="alert"
           style={{
-            padding: isTablet ? `10px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px` : '10px 16px 0',
+            padding: isTablet
+              ? `10px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px`
+              : '10px 16px 0',
             fontFamily: v.fontBody,
             fontSize: 13,
             color: v.error,
@@ -318,10 +335,26 @@ export function ComposerScreen() {
       ) : null}
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
-        <div style={{ display: 'flex', gap: 12, padding: isTablet ? `20px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px` : '20px 16px 0' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            padding: isTablet
+              ? `20px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px`
+              : '20px 16px 0',
+          }}
+        >
           <LxAvatar size={38} src={currentUser?.avatarUrl} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, marginBottom: 10 }}>
+            <div
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 13,
+                fontWeight: 600,
+                color: v.ink,
+                marginBottom: 10,
+              }}
+            >
               {currentUser?.displayName || currentUser?.username || 'you'}
             </div>
 
@@ -359,20 +392,46 @@ export function ComposerScreen() {
                   marginBottom: 16,
                   position: 'relative',
                   overflow: 'hidden',
-                  transition: 'border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out)',
+                  transition:
+                    'border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out)',
                 }}
-                onMouseEnter={(event) => { event.currentTarget.style.borderColor = v.accent; }}
-                onMouseLeave={(event) => { event.currentTarget.style.borderColor = v.border; }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.borderColor = v.accent;
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.borderColor = v.border;
+                }}
               >
-                <div style={{
-                  width: 56, height: 56, borderRadius: '50%',
-                  background: v.surface, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '50%',
+                    background: v.surface,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
                   <LxIcon name="image" size={26} color={v.ink2} />
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>add photos or a video</div>
-                  <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 6, padding: '0 12px' }}>{helperText}</div>
+                  <div
+                    style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}
+                  >
+                    add photos or a video
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: v.fontMono,
+                      fontSize: 10,
+                      color: v.ink3,
+                      marginTop: 6,
+                      padding: '0 12px',
+                    }}
+                  >
+                    {helperText}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -401,7 +460,9 @@ export function ComposerScreen() {
                 }}
               >
                 <LxIcon name="plus" size={16} color={canAttachMore ? v.ink2 : v.ink3} />
-                {canAttachMore ? `add more (${items.length}/${MAX_CAROUSEL_ITEMS})` : `${MAX_CAROUSEL_ITEMS} is the maximum`}
+                {canAttachMore
+                  ? `add more (${items.length}/${MAX_CAROUSEL_ITEMS})`
+                  : `${MAX_CAROUSEL_ITEMS} is the maximum`}
               </button>
             )}
 
@@ -409,7 +470,9 @@ export function ComposerScreen() {
               value={caption}
               onChange={(event) => handleCaptionChange(event.target.value)}
               maxLength={CHAR_LIMITS.caption}
-              placeholder={items.length === 0 ? 'say something real...' : 'add a caption (optional)'}
+              placeholder={
+                items.length === 0 ? 'say something real...' : 'add a caption (optional)'
+              }
               style={{
                 width: '100%',
                 fontFamily: v.fontBody,
@@ -437,12 +500,27 @@ export function ComposerScreen() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: isTablet ? `14px ${tabletBodyPadRight}px 14px ${tabletBodyPadLeft}px` : '14px 16px',
+            padding: isTablet
+              ? `14px ${tabletBodyPadRight}px 14px ${tabletBodyPadLeft}px`
+              : '14px 16px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: v.fontMono, fontSize: 11, color: allTags.length > 0 ? v.accentText : v.ink3 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontFamily: v.fontMono,
+              fontSize: 11,
+              color: allTags.length > 0 ? v.accentText : v.ink3,
+            }}
+          >
             <LxIcon name="hash" size={13} color={allTags.length > 0 ? 'currentColor' : v.ink3} />
-            <span>{allTags.length > 0 ? `${allTags.length} hashtag${allTags.length > 1 ? 's' : ''}` : 'no hashtags yet'}</span>
+            <span>
+              {allTags.length > 0
+                ? `${allTags.length} hashtag${allTags.length > 1 ? 's' : ''}`
+                : 'no hashtags yet'}
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {caption.length > 0 ? (
@@ -460,7 +538,13 @@ export function ComposerScreen() {
                 <div style={{ width: 17, height: 17, borderRadius: '50%', background: v.base }} />
               </div>
             ) : null}
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: caption.length > MAX_CHARS * 0.9 ? v.error : v.ink3 }}>
+            <span
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 11,
+                color: caption.length > MAX_CHARS * 0.9 ? v.error : v.ink3,
+              }}
+            >
               {MAX_CHARS - caption.length}
             </span>
           </div>

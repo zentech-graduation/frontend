@@ -143,7 +143,7 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
           }
         });
       },
-      { threshold: 0.6 },
+      { threshold: 0.6 }
     );
 
     const nodes = videoRefs.current.filter(Boolean);

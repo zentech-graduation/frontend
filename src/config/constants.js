@@ -4,7 +4,9 @@ export const APP_NAME = import.meta.env.VITE_APP_NAME || 'MyApp';
 
 const ENV_API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
 
-export const API_URL = import.meta.env.DEV ? '/api/v1' : ENV_API_URL || 'http://localhost:8080/api/v1';
+export const API_URL = import.meta.env.DEV
+  ? '/api/v1'
+  : ENV_API_URL || 'http://localhost:8080/api/v1';
 
 /** Route paths — single source of truth for navigation */
 export const ROUTES = {
@@ -73,9 +75,9 @@ export const routeTo = {
 
 /** Query cache stale times (ms) */
 export const STALE_TIME = {
-  SHORT: 30_000,      // 30 seconds
+  SHORT: 30_000, // 30 seconds
   MEDIUM: 5 * 60_000, // 5 minutes
-  LONG: 30 * 60_000,  // 30 minutes
+  LONG: 30 * 60_000, // 30 minutes
 };
 
 /** HTTP status codes */

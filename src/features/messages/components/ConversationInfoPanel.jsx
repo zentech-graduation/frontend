@@ -5,7 +5,13 @@ import { LxIcon } from '@/components/ui/lx-icon';
 import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
 
-export function ConversationInfoPanel({ activeThread, setPreviewItem, compact = false, mobileOverlay = false, onClose }) {
+export function ConversationInfoPanel({
+  activeThread,
+  setPreviewItem,
+  compact = false,
+  mobileOverlay = false,
+  onClose,
+}) {
   const navigate = useNavigate();
   if (!activeThread) return null;
 
@@ -33,7 +39,9 @@ export function ConversationInfoPanel({ activeThread, setPreviewItem, compact = 
             padding: '0 18px 0 20px',
           }}
         >
-          <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink }}>chat info</div>
+          <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 700, color: v.ink }}>
+            chat info
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -67,8 +75,19 @@ export function ConversationInfoPanel({ activeThread, setPreviewItem, compact = 
       >
         <AvatarVisual thread={activeThread} size={mobileOverlay ? 74 : compact ? 54 : 66} />
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontFamily: v.fontDisplay, fontSize: mobileOverlay ? 18 : compact ? 15 : 18, fontWeight: 700, color: v.ink }}>{activeThread.name}</div>
-          <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 4 }}>@{activeThread.username}</div>
+          <div
+            style={{
+              fontFamily: v.fontDisplay,
+              fontSize: mobileOverlay ? 18 : compact ? 15 : 18,
+              fontWeight: 700,
+              color: v.ink,
+            }}
+          >
+            {activeThread.name}
+          </div>
+          <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 4 }}>
+            @{activeThread.username}
+          </div>
         </div>
         <button
           type="button"
@@ -89,16 +108,44 @@ export function ConversationInfoPanel({ activeThread, setPreviewItem, compact = 
         </button>
       </div>
 
-      <div style={{ padding: mobileOverlay ? '16px 20px 22px' : compact ? '16px 14px' : '20px 22px', display: 'flex', flexDirection: 'column', gap: mobileOverlay ? 14 : compact ? 12 : 16 }}>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+      <div
+        style={{
+          padding: mobileOverlay ? '16px 20px 22px' : compact ? '16px 14px' : '20px 22px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: mobileOverlay ? 14 : compact ? 12 : 16,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: v.fontMono,
+            fontSize: 10,
+            color: v.ink3,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+          }}
+        >
           shared media
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: mobileOverlay ? 8 : compact ? 5 : 6 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: mobileOverlay ? 8 : compact ? 5 : 6,
+          }}
+        >
           {activeThread.media.map((item) => (
             <MediaPlaceholder key={item.id} item={item} onClick={() => setPreviewItem(item)} />
           ))}
         </div>
-        <div style={{ fontFamily: v.fontMono, fontSize: mobileOverlay ? 11 : compact ? 10 : 11, color: v.ink3, textAlign: 'center' }}>
+        <div
+          style={{
+            fontFamily: v.fontMono,
+            fontSize: mobileOverlay ? 11 : compact ? 10 : 11,
+            color: v.ink3,
+            textAlign: 'center',
+          }}
+        >
           {activeThread.mediaLabel}
         </div>
       </div>

@@ -48,9 +48,7 @@ export default function RouterErrorPage() {
 
   return (
     <main className="router-error-page">
-      {statusCode ? (
-        <p className="router-error-page__code">{statusCode}</p>
-      ) : null}
+      {statusCode ? <p className="router-error-page__code">{statusCode}</p> : null}
       <h1>{title}</h1>
       <p className="router-error-page__description">{description}</p>
 
@@ -62,7 +60,10 @@ export default function RouterErrorPage() {
         <button className="router-error-page__btn" onClick={() => navigate(-1)}>
           Go back
         </button>
-        <button className="router-error-page__btn router-error-page__btn--primary" onClick={() => navigate(ROUTES.HOME, { replace: true })}>
+        <button
+          className="router-error-page__btn router-error-page__btn--primary"
+          onClick={() => navigate(ROUTES.HOME, { replace: true })}
+        >
           Home
         </button>
       </div>

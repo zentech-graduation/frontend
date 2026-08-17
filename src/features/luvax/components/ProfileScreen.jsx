@@ -52,7 +52,7 @@ export function ProfileScreen() {
   const [confirmingUnfollow, setConfirmingUnfollow] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const menuAnchor = useRef(null);
-  const currentUser = useAuthStore(state => state.user);
+  const currentUser = useAuthStore((state) => state.user);
 
   // Absent on the viewer's own profile address, which is what makes that
   // address constructible before the user object has loaded.
@@ -60,8 +60,11 @@ export function ProfileScreen() {
   const isSelf = !targetUserId || targetUserId === currentUser?.id;
 
   const queryUserId = targetUserId || currentUser?.id;
-  const { data: profileResponse, isError: isProfileError, isLoading: isProfileLoading } =
-    useUserProfile(queryUserId);
+  const {
+    data: profileResponse,
+    isError: isProfileError,
+    isLoading: isProfileLoading,
+  } = useUserProfile(queryUserId);
   const fetchedUser = profileResponse?.data || profileResponse;
 
   const user = fetchedUser || (isSelf ? currentUser : null);
@@ -78,8 +81,9 @@ export function ProfileScreen() {
   //
   // Reading it here rather than remembering the click keeps the state correct
   // across a reload and when the block was made from somewhere else.
-  const { data: blockedResponse } = useBlockedUsers(); const blockedRows = extractPageContent(blockedResponse);
-  const blockedRow = blockedRows.find(row => (row?.user?.id ?? row?.id) === queryUserId);
+  const { data: blockedResponse } = useBlockedUsers();
+  const blockedRows = extractPageContent(blockedResponse);
+  const blockedRow = blockedRows.find((row) => (row?.user?.id ?? row?.id) === queryUserId);
   const isBlocking = Boolean(blockedRow) || Boolean(user?.viewerState?.isBlocking);
 
   const viewerState = user?.viewerState || {};
@@ -135,8 +139,8 @@ export function ProfileScreen() {
 
   // Liked rows nest the post under `post` and carry `likedAt`; profile rows are
   // bare posts. Unwrapping covers both without the caller having to know which.
-  const posts = (active.data?.pages?.flatMap(page => extractPageContent(page)) || [])
-    .map(row => row?.post ?? row)
+  const posts = (active.data?.pages?.flatMap((page) => extractPageContent(page)) || [])
+    .map((row) => row?.post ?? row)
     .filter(Boolean);
 
   // A like record outlives the post behind it, so the liked list can answer
@@ -156,7 +160,18 @@ export function ProfileScreen() {
   // name before replacing it.
   if (isProfileLoading && !hasIdentifiableUser) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, fontFamily: v.fontBody, fontSize: 14, color: v.ink3 }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 40,
+          fontFamily: v.fontBody,
+          fontSize: 14,
+          color: v.ink3,
+        }}
+      >
         loading profile...
       </div>
     );
@@ -169,19 +184,47 @@ export function ProfileScreen() {
   if (isBlocking && !hasIdentifiableUser) {
     const blockedHandle = blockedRow?.user?.username || 'this account';
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12, textAlign: 'center' }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 40,
+          gap: 12,
+          textAlign: 'center',
+        }}
+      >
         <LxIcon name="close" size={36} color={v.ink3} />
-        <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, maxWidth: 320, lineHeight: 1.5 }}>
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 14,
+            color: v.ink2,
+            maxWidth: 320,
+            lineHeight: 1.5,
+          }}
+        >
           you blocked @{blockedHandle}.
         </div>
-        <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, maxWidth: 320, lineHeight: 1.5 }}>
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 12,
+            color: v.ink3,
+            maxWidth: 320,
+            lineHeight: 1.5,
+          }}
+        >
           their profile stays hidden until you unblock them.
         </div>
         <LxBtn
           variant="secondary"
           size="sm"
           disabled={unblock.isPending}
-          onClick={() => unblock.mutate(queryUserId)}>
+          onClick={() => unblock.mutate(queryUserId)}
+        >
           {unblock.isPending ? 'unblocking...' : 'unblock'}
         </LxBtn>
       </div>
@@ -190,7 +233,18 @@ export function ProfileScreen() {
 
   if (isProfileError && !hasIdentifiableUser) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, fontFamily: v.fontBody, fontSize: 14, color: v.error }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 40,
+          fontFamily: v.fontBody,
+          fontSize: 14,
+          color: v.error,
+        }}
+      >
         we couldn't load this profile. check your connection and try again.
       </div>
     );
@@ -200,7 +254,10 @@ export function ProfileScreen() {
   const title = user?.displayName || user?.firstName || user?.username || 'Unknown';
   const handle = user?.username || 'unknown';
 
-  const showHandle = Boolean(user?.username) && user?.displayName && user.displayName.toLowerCase() !== handle.toLowerCase();
+  const showHandle =
+    Boolean(user?.username) &&
+    user?.displayName &&
+    user.displayName.toLowerCase() !== handle.toLowerCase();
 
   const followLabel = isFollowing ? 'following' : isRequested ? 'requested' : 'follow';
 
@@ -249,13 +306,44 @@ export function ProfileScreen() {
   // A count of null is what a private account returns to a non-follower. It is
   // withheld rather than zero, so it renders as an em-free placeholder instead
   // of a number the viewer would read as fact.
-  const renderCount = value => (value === null || value === undefined ? '-' : formatCount(value));
+  const renderCount = (value) => (value === null || value === undefined ? '-' : formatCount(value));
 
   const notice = (icon, heading, detail) => (
-    <div style={{ padding: '48px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12 }}>
+    <div
+      style={{
+        padding: '48px 32px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        gap: 12,
+      }}
+    >
       <LxIcon name={icon} size={36} color={v.ink3} />
-      <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, maxWidth: 320, lineHeight: 1.5 }}>{heading}</div>
-      {detail && <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, maxWidth: 320, lineHeight: 1.5 }}>{detail}</div>}
+      <div
+        style={{
+          fontFamily: v.fontBody,
+          fontSize: 14,
+          color: v.ink2,
+          maxWidth: 320,
+          lineHeight: 1.5,
+        }}
+      >
+        {heading}
+      </div>
+      {detail && (
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 12,
+            color: v.ink3,
+            maxWidth: 320,
+            lineHeight: 1.5,
+          }}
+        >
+          {detail}
+        </div>
+      )}
     </div>
   );
 
@@ -294,26 +382,52 @@ export function ProfileScreen() {
   } else {
     body = (
       <>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: '2px 0 0' }}>
-          {posts.map(p => {
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gap: 2,
+            padding: '2px 0 0',
+          }}
+        >
+          {posts.map((p) => {
             const hasMedia = (p.media || []).length > 0;
             return (
-              <div key={p.id} onClick={() => openOverlay(routeTo.postDetail(p.id))} style={{ cursor: 'pointer' }}>
+              <div
+                key={p.id}
+                onClick={() => openOverlay(routeTo.postDetail(p.id))}
+                style={{ cursor: 'pointer' }}
+              >
                 {hasMedia ? (
                   <MediaThumb post={p} radius={4} />
                 ) : (
                   // Only text posts reach this branch, and a caption tile is the
                   // correct treatment for a post that genuinely carries no media.
-                  <div style={{
-                    aspectRatio: '1/1',
-                    borderRadius: 4,
-                    background: 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: 10,
-                    boxSizing: 'border-box'
-                  }}>
+                  <div
+                    style={{
+                      aspectRatio: '1/1',
+                      borderRadius: 4,
+                      background: 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 10,
+                      boxSizing: 'border-box',
+                    }}
+                  >
                     {p.caption ? (
-                      <span style={{ fontSize: 11, fontFamily: v.fontBody, color: v.ink3, textAlign: 'center', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontFamily: v.fontBody,
+                          color: v.ink3,
+                          textAlign: 'center',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
                         {p.caption}
                       </span>
                     ) : null}
@@ -324,7 +438,16 @@ export function ProfileScreen() {
           })}
         </div>
         {active.hasNextPage && (
-          <div ref={ref} style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+          <div
+            ref={ref}
+            style={{
+              padding: 20,
+              textAlign: 'center',
+              fontFamily: v.fontMono,
+              fontSize: 12,
+              color: v.ink3,
+            }}
+          >
             {active.isFetchingNextPage ? 'loading more...' : 'scroll for more'}
           </div>
         )}
@@ -336,43 +459,81 @@ export function ProfileScreen() {
     <>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {/* Cover band: the user's banner when set, otherwise the plain raised band. */}
-        <div style={{
-          height: 108,
-          background: user?.bannerUrl
-            ? `url(${user.bannerUrl}) center/cover no-repeat`
-            : v.surfaceRaised,
-        }} />
+        <div
+          style={{
+            height: 108,
+            background: user?.bannerUrl
+              ? `url(${user.bannerUrl}) center/cover no-repeat`
+              : v.surfaceRaised,
+          }}
+        />
 
         {/* Avatar + follow */}
-        <div style={{ padding: '0 16px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -40 }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: user?.avatarUrl ? `url(${user.avatarUrl}) center/cover no-repeat` : v.avatar0,
-            border: `3px solid var(--lx-base)`,
-            flexShrink: 0,
-          }} />
+        <div
+          style={{
+            padding: '0 16px',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            marginTop: -40,
+          }}
+        >
+          <div
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: user?.avatarUrl
+                ? `url(${user.avatarUrl}) center/cover no-repeat`
+                : v.avatar0,
+              border: `3px solid var(--lx-base)`,
+              flexShrink: 0,
+            }}
+          />
           {!isSelf && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2, transform: 'translateY(6px)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 2,
+                transform: 'translateY(6px)',
+              }}
+            >
               {!isBlocking && (
                 <LxBtn
                   variant={isFollowing || isRequested ? 'secondary' : 'primary'}
                   size="sm"
-                  style={{ minWidth: 62, height: 30, padding: '0 14px', fontSize: 13, borderRadius: 999 }}
+                  style={{
+                    minWidth: 62,
+                    height: 30,
+                    padding: '0 14px',
+                    fontSize: 13,
+                    borderRadius: 999,
+                  }}
                   onClick={handleFollowToggle}
-                  disabled={follow.isPending || unfollow.isPending}>
+                  disabled={follow.isPending || unfollow.isPending}
+                >
                   {followLabel}
                 </LxBtn>
               )}
               <button
                 ref={menuAnchor}
                 aria-label={`more options for @${handle}`}
-                onClick={() => setMenuOpen(open => !open)}
+                onClick={() => setMenuOpen((open) => !open)}
                 style={{
-                  width: 30, height: 30, borderRadius: 999,
-                  border: `1px solid ${v.border}`, background: 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', padding: 0,
-                }}>
+                  width: 30,
+                  height: 30,
+                  borderRadius: 999,
+                  border: `1px solid ${v.border}`,
+                  background: 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
                 <LxIcon name="more" size={16} color={v.ink2} />
               </button>
               <LxDropdownMenu
@@ -385,7 +546,12 @@ export function ProfileScreen() {
             </div>
           )}
           {isSelf && (
-            <LxBtn variant="secondary" size="sm" style={{ marginBottom: 2, transform: 'translateY(6px)' }} onClick={() => navigate(ROUTES.SETTINGS)}>
+            <LxBtn
+              variant="secondary"
+              size="sm"
+              style={{ marginBottom: 2, transform: 'translateY(6px)' }}
+              onClick={() => navigate(ROUTES.SETTINGS)}
+            >
               edit profile
             </LxBtn>
           )}
@@ -394,27 +560,85 @@ export function ProfileScreen() {
         {/* Name + bio */}
         <div style={{ padding: '12px 16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontFamily: v.fontDisplay, fontSize: 22, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em' }}>{title}</div>
+            <div
+              style={{
+                fontFamily: v.fontDisplay,
+                fontSize: 22,
+                fontWeight: 700,
+                color: v.ink,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {title}
+            </div>
             {user?.isVerified && <LxIcon name="check" size={18} color={v.accent} />}
             {user?.isPrivate && !isSelf && <LxIcon name="lock" size={14} color={v.ink3} />}
           </div>
-          {showHandle ? <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 4 }}>@{handle}</div> : null}
-          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.5, marginTop: user?.bio ? 10 : 0, maxWidth: 480 }}>{user?.bio || ''}</div>
+          {showHandle ? (
+            <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginTop: 4 }}>
+              @{handle}
+            </div>
+          ) : null}
+          <div
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 14,
+              color: v.ink2,
+              lineHeight: 1.5,
+              marginTop: user?.bio ? 10 : 0,
+              maxWidth: 480,
+            }}
+          >
+            {user?.bio || ''}
+          </div>
         </div>
 
         {/* Stats */}
-        <div style={{ display: 'flex', gap: 30, padding: '20px 16px 14px', borderBottom: `1px solid ${v.border}` }}>
-          {[['posts', user?.postCount], ['following', user?.followingCount], ['followers', user?.followerCount]].map(([label, val]) => {
+        <div
+          style={{
+            display: 'flex',
+            gap: 30,
+            padding: '20px 16px 14px',
+            borderBottom: `1px solid ${v.border}`,
+          }}
+        >
+          {[
+            ['posts', user?.postCount],
+            ['following', user?.followingCount],
+            ['followers', user?.followerCount],
+          ].map(([label, val]) => {
             const navigable = label !== 'posts' && isReadable && val !== null && val !== undefined;
             return (
-              <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 1, cursor: navigable ? 'pointer' : 'default' }}
-                   onClick={() => {
-                     if (!navigable || !user?.id) return;
-                     if (label === 'followers') setFollowList('followers');
-                     if (label === 'following') setFollowList('following');
-                   }}>
-                <span style={{ fontFamily: v.fontMono, fontSize: 14, fontWeight: 500, color: v.ink }}>{renderCount(val)}</span>
-                <span style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, textTransform: 'uppercase', letterSpacing: '0.14em' }}>{label}</span>
+              <div
+                key={label}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  cursor: navigable ? 'pointer' : 'default',
+                }}
+                onClick={() => {
+                  if (!navigable || !user?.id) return;
+                  if (label === 'followers') setFollowList('followers');
+                  if (label === 'following') setFollowList('following');
+                }}
+              >
+                <span
+                  style={{ fontFamily: v.fontMono, fontSize: 14, fontWeight: 500, color: v.ink }}
+                >
+                  {renderCount(val)}
+                </span>
+                <span
+                  style={{
+                    fontFamily: v.fontMono,
+                    fontSize: 9,
+                    color: v.ink3,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.14em',
+                  }}
+                >
+                  {label}
+                </span>
               </div>
             );
           })}
@@ -427,15 +651,27 @@ export function ProfileScreen() {
             the list exists and is merely withheld. */}
         {isReadable && (
           <div style={{ display: 'flex', borderBottom: `1px solid ${v.border}` }}>
-            {tabs.map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{
-                flex: 1, fontFamily: v.fontBody, fontSize: 13, fontWeight: 500,
-                color: tab === t ? v.ink : v.ink3,
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: '13px 0 14px',
-                borderBottom: tab === t ? `2px solid var(--lx-ink)` : '2px solid transparent',
-                marginBottom: -1, letterSpacing: '0.01em',
-              }}>{t}</button>
+            {tabs.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  flex: 1,
+                  fontFamily: v.fontBody,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: tab === t ? v.ink : v.ink3,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '13px 0 14px',
+                  borderBottom: tab === t ? `2px solid var(--lx-ink)` : '2px solid transparent',
+                  marginBottom: -1,
+                  letterSpacing: '0.01em',
+                }}
+              >
+                {t}
+              </button>
             ))}
           </div>
         )}
@@ -471,13 +707,15 @@ export function ProfileScreen() {
                 title: 'unfollow',
                 message: (
                   <>
-                    Stop following <strong>@{handle}</strong>? You will need to follow again to see their posts.
+                    Stop following <strong>@{handle}</strong>? You will need to follow again to see
+                    their posts.
                   </>
                 ),
                 confirmLabel: 'unfollow',
                 confirmDisabled: unfollow.isPending,
                 onConfirm: () => {
-                  if (user?.id) unfollow.mutate(user.id, { onSuccess: () => setConfirmingUnfollow(false) });
+                  if (user?.id)
+                    unfollow.mutate(user.id, { onSuccess: () => setConfirmingUnfollow(false) });
                 },
               }
             : null

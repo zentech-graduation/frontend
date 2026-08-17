@@ -5,7 +5,15 @@ import { LxIcon } from '@/components/ui/lx-icon';
 import { copyToClipboard } from '@/utils/helpers';
 import { MediaPlaceholder } from './MediaPlaceholder';
 
-export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteToggle, onReplyMessage, canDelete, viewport }) {
+export function MessageBubble({
+  message,
+  activeThread,
+  onPreviewMedia,
+  onDeleteToggle,
+  onReplyMessage,
+  canDelete,
+  viewport,
+}) {
   const isMine = message.from === 'me';
   const isMobile = viewport === 'mobile';
   const isTouchLayout = viewport === 'mobile' || viewport === 'tablet';
@@ -14,13 +22,14 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
   const [touchRevealed, setTouchRevealed] = useState(false);
   const menuButtonRef = useRef(null);
   const bubbleRowRef = useRef(null);
-  const textForCopy = message.kind === 'reply'
-    ? `${message.replyText}\n${message.text}`
-    : message.kind === 'post'
-      ? [message.handle, message.title, message.meta].filter(Boolean).join('\n')
-      : message.kind === 'file'
-        ? message.text
-        : message.text;
+  const textForCopy =
+    message.kind === 'reply'
+      ? `${message.replyText}\n${message.text}`
+      : message.kind === 'post'
+        ? [message.handle, message.title, message.meta].filter(Boolean).join('\n')
+        : message.kind === 'file'
+          ? message.text
+          : message.text;
   const canCopyText = Boolean(textForCopy);
   const menuItems = useMemo(
     () =>
@@ -53,9 +62,10 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
       ].filter(Boolean),
     [canDelete, message, onDeleteToggle, onReplyMessage, textForCopy]
   );
-  const supportsHover = typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const supportsHover =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const showActions = menuOpen || (!isTouchLayout && hovered) || (isTouchLayout && touchRevealed);
 
   const handleHoverStart = () => {
@@ -102,11 +112,18 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
   };
 
   const bubbleBase = {
-    maxWidth: message.kind === 'post' || message.kind === 'file'
-      ? (isMobile ? 228 : 292)
-      : isMine
-        ? (isMobile ? 'min(100%, 286px)' : 520)
-        : (isMobile ? 'min(100%, 244px)' : 340),
+    maxWidth:
+      message.kind === 'post' || message.kind === 'file'
+        ? isMobile
+          ? 228
+          : 292
+        : isMine
+          ? isMobile
+            ? 'min(100%, 286px)'
+            : 520
+          : isMobile
+            ? 'min(100%, 244px)'
+            : 340,
     borderRadius: 18,
     padding: message.kind === 'deleted' ? '12px 16px' : '14px 16px',
     fontFamily: v.fontBody,
@@ -119,7 +136,15 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
 
   if (message.kind === 'deleted') {
     return (
-      <div style={{ alignSelf: 'flex-end', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+      <div
+        style={{
+          alignSelf: 'flex-end',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: 4,
+        }}
+      >
         <div
           style={{
             ...bubbleBase,
@@ -160,7 +185,11 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
               padding: 12,
             }}
           >
-            <MediaPlaceholder item={{ label: message.text }} large onClick={() => onPreviewMedia({ label: message.text })} />
+            <MediaPlaceholder
+              item={{ label: message.text }}
+              large
+              onClick={() => onPreviewMedia({ label: message.text })}
+            />
           </div>
           {showActions ? (
             <button
@@ -168,14 +197,33 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
               aria-label="message actions"
-              style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0.82, padding: 0, flexShrink: 0 }}
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                opacity: 0.82,
+                padding: 0,
+                flexShrink: 0,
+              }}
             >
               <LxIcon name="more" size={11} color={v.ink3} />
             </button>
           ) : null}
         </div>
         <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
-        <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={182} />
+        <LxDropdownMenu
+          anchorRef={menuButtonRef}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          items={menuItems}
+          width={182}
+        />
       </div>
     );
   }
@@ -205,16 +253,35 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <MediaPlaceholder item={{ label: message.handle }} onClick={() => onPreviewMedia({ label: message.title })} />
+              <MediaPlaceholder
+                item={{ label: message.handle }}
+                onClick={() => onPreviewMedia({ label: message.title })}
+              />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.accent }}>{message.handle}</div>
+                <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.accent }}>
+                  {message.handle}
+                </div>
                 <div style={{ color: v.ink, fontSize: 14 }}>{message.title}</div>
-                <div style={{ display: 'flex', gap: 8, fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    fontFamily: v.fontMono,
+                    fontSize: 11,
+                    color: v.ink3,
+                  }}
+                >
                   <span>{message.meta}</span>
                   <button
                     type="button"
                     onClick={() => onPreviewMedia({ label: message.title })}
-                    style={{ background: 'none', border: 'none', color: v.ink3, cursor: 'pointer', padding: 0 }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: v.ink3,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
                   >
                     view
                   </button>
@@ -228,14 +295,33 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
               aria-label="message actions"
-              style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0.82, padding: 0, flexShrink: 0 }}
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                opacity: 0.82,
+                padding: 0,
+                flexShrink: 0,
+              }}
             >
               <LxIcon name="more" size={11} color={v.ink3} />
             </button>
           ) : null}
         </div>
         <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
-        <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={182} />
+        <LxDropdownMenu
+          anchorRef={menuButtonRef}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          items={menuItems}
+          width={182}
+        />
       </div>
     );
   }
@@ -256,7 +342,12 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
     >
       <div
         ref={bubbleRowRef}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, flexDirection: isMine ? 'row-reverse' : 'row' }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexDirection: isMine ? 'row-reverse' : 'row',
+        }}
         onMouseMove={handleHoverStart}
         onPointerMove={handleHoverStart}
         onPointerDown={handleBubbleInteraction}
@@ -290,14 +381,33 @@ export function MessageBubble({ message, activeThread, onPreviewMedia, onDeleteT
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
             aria-label="message actions"
-            style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0.82, padding: 0, flexShrink: 0 }}
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              opacity: 0.82,
+              padding: 0,
+              flexShrink: 0,
+            }}
           >
             <LxIcon name="more" size={11} color={isMine ? v.ink2 : v.ink3} />
           </button>
         ) : null}
       </div>
       <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
-      <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={182} />
+      <LxDropdownMenu
+        anchorRef={menuButtonRef}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={menuItems}
+        width={182}
+      />
     </div>
   );
 }

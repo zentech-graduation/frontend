@@ -57,7 +57,7 @@ const patchCachedStory = (queryClient, storyId, patch) => {
       data: envelope.data.map((entry) => ({
         ...entry,
         stories: entry.stories.map((story) =>
-          story.id === storyId ? { ...story, ...patch } : story,
+          story.id === storyId ? { ...story, ...patch } : story
         ),
       })),
     };

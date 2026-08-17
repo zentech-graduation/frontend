@@ -8,7 +8,8 @@ import { beginSelfPostLike, endSelfPostLike, noteSelfCommentLike } from './useLi
 export const useFeed = (params = {}) => {
   return useInfiniteQuery({
     queryKey: ['feed', params],
-    queryFn: ({ pageParam = null, signal }) => postService.getFeed({ ...params, cursor: pageParam, limit: 10, signal }),
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getFeed({ ...params, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -22,7 +23,8 @@ export const useFeed = (params = {}) => {
 export const useExplore = (params = {}) => {
   return useInfiniteQuery({
     queryKey: ['explore', params],
-    queryFn: ({ pageParam = null, signal }) => postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10, signal }),
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -256,7 +258,8 @@ export const useSavePost = () => {
 export const useTopLevelComments = (postId) => {
   return useInfiniteQuery({
     queryKey: ['comments', postId],
-    queryFn: ({ pageParam = null }) => postService.getComments(postId, { cursor: pageParam, limit: 20 }),
+    queryFn: ({ pageParam = null }) =>
+      postService.getComments(postId, { cursor: pageParam, limit: 20 }),
     getNextPageParam: getNextCursor,
     initialPageParam: null,
     enabled: !!postId,

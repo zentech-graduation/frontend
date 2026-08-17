@@ -63,8 +63,7 @@ const migrateLegacyPersistedTokens = () => {
  * argument. Deriving it from the argument let a blank token persist `isAuthenticated: true`
  * alongside `accessToken: null`, and `isAuthenticated` is the half that reaches localStorage.
  */
-const normalizeToken = (value) =>
-  typeof value === 'string' && value.trim() ? value : null;
+const normalizeToken = (value) => (typeof value === 'string' && value.trim() ? value : null);
 
 const initialState = {
   // Access token is in-memory only — never persisted to localStorage.

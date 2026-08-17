@@ -315,7 +315,6 @@ export const postService = {
   getCommentDeletionScope,
   deleteComment,
   getSavedPosts,
-  getLikedPosts,
 };
 
 export default postService;

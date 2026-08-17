@@ -3,7 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar } from './primitives';
-import { useStoryFeed, useCreateStory, useRecordStoryView, useLikeStory } from '../hooks/useStories';
+import {
+  useStoryFeed,
+  useCreateStory,
+  useRecordStoryView,
+  useLikeStory,
+} from '../hooks/useStories';
 import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useMediaConstraints } from '../hooks/useMediaConstraints';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -38,22 +43,52 @@ function StoryPeek({ side, item, onClick, height }) {
       onClick={onClick}
       aria-label={`${side === 'left' ? 'previous' : 'next'}: ${entry.userDisplayName || entry.username}'s story`}
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-        background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 8,
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        padding: 0,
+        flexShrink: 0,
       }}
     >
-      <div style={{
-        width, height, borderRadius: STORY_CARD_RADIUS - 4, overflow: 'hidden',
-        position: 'relative', opacity: 0.7,
-      }}>
+      <div
+        style={{
+          width,
+          height,
+          borderRadius: STORY_CARD_RADIUS - 4,
+          overflow: 'hidden',
+          position: 'relative',
+          opacity: 0.7,
+        }}
+      >
         {isVideo ? (
-          <video src={story.media.cdnUrl} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <video
+            src={story.media.cdnUrl}
+            muted
+            playsInline
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         ) : (
-          <img src={story.media.cdnUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img
+            src={story.media.cdnUrl}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         )}
         <div style={{ position: 'absolute', inset: 0, background: v.black40 }} />
       </div>
-      <span style={{ fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.white70, maxWidth: width }}>
+      <span
+        style={{
+          fontFamily: v.fontBody,
+          fontSize: 12,
+          fontWeight: 500,
+          color: v.white70,
+          maxWidth: width,
+        }}
+      >
         {entry.userDisplayName || entry.username}
       </span>
     </button>
@@ -64,16 +99,31 @@ function NavButton({ side, onClick }) {
   if (!onClick) return null;
   return (
     <button
-      onClick={(event) => { event.stopPropagation(); onClick(); }}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
       aria-label={side === 'left' ? 'previous story' : 'next story'}
       style={{
-        width: 34, height: 34, borderRadius: 999, border: 'none', flexShrink: 0,
-        background: CONTROL_BG, boxShadow: CONTROL_SHADOW,
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 34,
+        height: 34,
+        borderRadius: 999,
+        border: 'none',
+        flexShrink: 0,
+        background: CONTROL_BG,
+        boxShadow: CONTROL_SHADOW,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         padding: 0,
       }}
     >
-      <LxIcon name={side === 'left' ? 'chevronLeft' : 'chevronRight'} size={18} color={CONTROL_FG} />
+      <LxIcon
+        name={side === 'left' ? 'chevronLeft' : 'chevronRight'}
+        size={18}
+        color={CONTROL_FG}
+      />
     </button>
   );
 }
@@ -88,18 +138,37 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
 
   if (isMobile) {
     return (
-      <div style={{
-        position: 'fixed', inset: 0, background: v.black, zIndex: 1000,
-        display: 'flex', flexDirection: 'column',
-      }}>
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: v.black,
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           {children}
-          <button onClick={onClose} aria-label="close" style={{
-            position: 'absolute', top: 14, right: 12, zIndex: 5,
-            background: v.black35, border: 'none', cursor: 'pointer',
-            width: 34, height: 34, borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          <button
+            onClick={onClose}
+            aria-label="close"
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 12,
+              zIndex: 5,
+              background: v.black35,
+              border: 'none',
+              cursor: 'pointer',
+              width: 34,
+              height: 34,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <LxIcon name="close" size={20} color={v.white} />
           </button>
         </div>
@@ -111,7 +180,7 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
   // Contained, not near-fullscreen, so the peeks and chevrons around it have
   // room to read as their own elements rather than crowding the card's edge.
   const cardHeight = 'min(80vh, 760px)';
-  const cardWidth  = `calc(${cardHeight} * ${STORY_RATIO})`;
+  const cardWidth = `calc(${cardHeight} * ${STORY_RATIO})`;
   const peekHeight = `calc(${cardHeight} * 0.78)`;
 
   return (
@@ -121,22 +190,38 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
         background: v.black78,
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24, cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        cursor: 'pointer',
       }}
     >
       <button
-        onClick={(event) => { event.stopPropagation(); onClose(); }}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
         aria-label="close"
         style={{
-          position: 'absolute', top: 20, right: 20,
-          background: v.white12, border: 'none', cursor: 'pointer',
-          width: 38, height: 38, borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'absolute',
+          top: 20,
+          right: 20,
+          background: v.white12,
+          border: 'none',
+          cursor: 'pointer',
+          width: 38,
+          height: 38,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <LxIcon name="close" size={20} color={v.white} />
@@ -151,7 +236,12 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
           {peeks ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
-                <StoryPeek side="left" item={peeks.prev} onClick={peeks.onPrev} height={peekHeight} />
+                <StoryPeek
+                  side="left"
+                  item={peeks.prev}
+                  onClick={peeks.onPrev}
+                  height={peekHeight}
+                />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
                 <NavButton side="left" onClick={peeks.prev ? peeks.onPrev : null} />
@@ -159,21 +249,27 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
             </>
           ) : null}
 
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-          }}>
-            <div style={{
-              width: cardWidth, height: cardHeight,
-              borderRadius: STORY_CARD_RADIUS, overflow: 'hidden', position: 'relative',
-              boxShadow: `0 32px 80px ${v.black55}, 0 0 0 1px ${v.white04}`,
-            }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: cardWidth,
+                height: cardHeight,
+                borderRadius: STORY_CARD_RADIUS,
+                overflow: 'hidden',
+                position: 'relative',
+                boxShadow: `0 32px 80px ${v.black55}, 0 0 0 1px ${v.white04}`,
+              }}
+            >
               {children}
             </div>
-            {footer && (
-              <div style={{ width: cardWidth }}>
-                {footer}
-              </div>
-            )}
+            {footer && <div style={{ width: cardWidth }}>{footer}</div>}
           </div>
 
           {peeks ? (
@@ -182,7 +278,12 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
                 <NavButton side="right" onClick={peeks.next ? peeks.onNext : null} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
-                <StoryPeek side="right" item={peeks.next} onClick={peeks.onNext} height={peekHeight} />
+                <StoryPeek
+                  side="right"
+                  item={peeks.next}
+                  onClick={peeks.onNext}
+                  height={peekHeight}
+                />
               </div>
             </>
           ) : null}
@@ -202,7 +303,7 @@ function useFlatStorySequence() {
   const { tray } = useStoryFeed();
   return useMemo(
     () => tray.flatMap((entry) => entry.stories.map((story) => ({ story, entry }))),
-    [tray],
+    [tray]
   );
 }
 
@@ -283,7 +384,6 @@ export function StoryViewScreen({ viewport: vpProp }) {
       if (pct >= 100) clearInterval(timer);
     }, 80);
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story?.id, isVideo]);
 
   useEffect(() => {
@@ -296,7 +396,11 @@ export function StoryViewScreen({ viewport: vpProp }) {
   }, [progress, isVideo]);
 
   if (!story || !entry) {
-    return <StoryStage viewport={vp} onClose={close}><div /></StoryStage>;
+    return (
+      <StoryStage viewport={vp} onClose={close}>
+        <div />
+      </StoryStage>
+    );
   }
 
   const authorName = entry.userDisplayName || entry.username;
@@ -334,11 +438,16 @@ export function StoryViewScreen({ viewport: vpProp }) {
   };
 
   const card = (
-    <div style={{
-      position: 'absolute', inset: 0,
-      background: v.storySurface,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: v.storySurface,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       {isVideo ? (
         <video
           key={story.id}
@@ -368,51 +477,129 @@ export function StoryViewScreen({ viewport: vpProp }) {
       {/* Progress bar: one segment per story this author currently has active. */}
       <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', gap: 4 }}>
         {Array.from({ length: segmentCount }).map((_, i) => (
-          <div key={i} style={{ flex: 1, height: 2, background: v.white30, borderRadius: 1, overflow: 'hidden' }}>
-            <div style={{
-              width: `${i < segmentIndex ? 100 : i === segmentIndex ? progress : 0}%`,
-              height: '100%', background: v.white,
-              transition: i === segmentIndex ? 'width 80ms linear' : 'none',
-            }} />
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              height: 2,
+              background: v.white30,
+              borderRadius: 1,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${i < segmentIndex ? 100 : i === segmentIndex ? progress : 0}%`,
+                height: '100%',
+                background: v.white,
+                transition: i === segmentIndex ? 'width 80ms linear' : 'none',
+              }}
+            />
           </div>
         ))}
       </div>
 
       {/* Author header */}
-      <div style={{
-        position: 'absolute', top: 24, left: 14, right: 14,
-        display: 'flex', alignItems: 'center', gap: 8,
-      }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: 24,
+          left: 14,
+          right: 14,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
         <LxAvatar size={30} src={entry.userAvatarUrl} />
-        <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.white, textShadow: `0 1px 6px ${v.black40}` }}>{authorName}</span>
-        <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.white70, textShadow: `0 1px 6px ${v.black40}` }}>{formatRelativeTime(story.createdAt)}</span>
+        <span
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 13,
+            fontWeight: 600,
+            color: v.white,
+            textShadow: `0 1px 6px ${v.black40}`,
+          }}
+        >
+          {authorName}
+        </span>
+        <span
+          style={{
+            fontFamily: v.fontMono,
+            fontSize: 11,
+            color: v.white70,
+            textShadow: `0 1px 6px ${v.black40}`,
+          }}
+        >
+          {formatRelativeTime(story.createdAt)}
+        </span>
       </div>
 
       {/* Caption */}
       {story.caption && (
-        <div style={{
-          position: 'absolute', bottom: 24, left: 16, right: 16,
-          fontFamily: v.fontBody, fontSize: 15, fontWeight: 500,
-          color: v.white, textShadow: `0 1px 8px ${v.black55}`,
-        }}>{story.caption}</div>
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            left: 16,
+            right: 16,
+            fontFamily: v.fontBody,
+            fontSize: 15,
+            fontWeight: 500,
+            color: v.white,
+            textShadow: `0 1px 8px ${v.black55}`,
+          }}
+        >
+          {story.caption}
+        </div>
       )}
 
       {/* Tap zones: the whole means of navigation on mobile, and a larger
           touch target than the desktop chevrons need no precise aim to hit.
           The centre strip between them is reserved for double-tap-to-like,
           so a quick double-tap there can't also fire two navigations. */}
-      <button onClick={prev} style={{
-        position: 'absolute', left: 0, top: 60, bottom: 80, width: '30%',
-        background: 'transparent', border: 'none', cursor: 'pointer',
-      }} aria-label="previous" />
-      <button onClick={handleCenterDoubleTap} style={{
-        position: 'absolute', left: '30%', top: 60, bottom: 80, width: '40%',
-        background: 'transparent', border: 'none', cursor: 'default',
-      }} aria-label="story media" />
-      <button onClick={next} style={{
-        position: 'absolute', right: 0, top: 60, bottom: 80, width: '30%',
-        background: 'transparent', border: 'none', cursor: 'pointer',
-      }} aria-label="next" />
+      <button
+        onClick={prev}
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 60,
+          bottom: 80,
+          width: '30%',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+        aria-label="previous"
+      />
+      <button
+        onClick={handleCenterDoubleTap}
+        style={{
+          position: 'absolute',
+          left: '30%',
+          top: 60,
+          bottom: 80,
+          width: '40%',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'default',
+        }}
+        aria-label="story media"
+      />
+      <button
+        onClick={next}
+        style={{
+          position: 'absolute',
+          right: 0,
+          top: 60,
+          bottom: 80,
+          width: '30%',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+        aria-label="next"
+      />
 
       {showBigHeart && (
         <div
@@ -420,7 +607,10 @@ export function StoryViewScreen({ viewport: vpProp }) {
           className="lx-story-heart-pop"
           onAnimationEnd={() => setShowBigHeart(false)}
           style={{
-            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
             pointerEvents: 'none',
           }}
         >
@@ -431,21 +621,53 @@ export function StoryViewScreen({ viewport: vpProp }) {
       {vp === 'mobile' && (currentIndex > 0 || currentIndex < sequence.length - 1) ? (
         <>
           {currentIndex > 0 && (
-            <button onClick={prev} aria-label="previous story" style={{
-              position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)',
-              width: 34, height: 34, borderRadius: 999, border: 'none',
-              background: CONTROL_BG, boxShadow: CONTROL_SHADOW, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, zIndex: 5,
-            }}>
+            <button
+              onClick={prev}
+              aria-label="previous story"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: 10,
+                transform: 'translateY(-50%)',
+                width: 34,
+                height: 34,
+                borderRadius: 999,
+                border: 'none',
+                background: CONTROL_BG,
+                boxShadow: CONTROL_SHADOW,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                zIndex: 5,
+              }}
+            >
               <LxIcon name="chevronLeft" size={18} color={CONTROL_FG} />
             </button>
           )}
-          <button onClick={next} aria-label="next story" style={{
-            position: 'absolute', top: '50%', right: 10, transform: 'translateY(-50%)',
-            width: 34, height: 34, borderRadius: 999, border: 'none',
-            background: CONTROL_BG, boxShadow: CONTROL_SHADOW, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, zIndex: 5,
-          }}>
+          <button
+            onClick={next}
+            aria-label="next story"
+            style={{
+              position: 'absolute',
+              top: '50%',
+              right: 10,
+              transform: 'translateY(-50%)',
+              width: 34,
+              height: 34,
+              borderRadius: 999,
+              border: 'none',
+              background: CONTROL_BG,
+              boxShadow: CONTROL_SHADOW,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              zIndex: 5,
+            }}
+          >
             <LxIcon name="chevronRight" size={18} color={CONTROL_FG} />
           </button>
         </>
@@ -464,23 +686,41 @@ export function StoryViewScreen({ viewport: vpProp }) {
   };
 
   const replyBar = (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: vp === 'mobile' ? '12px 16px 18px' : 0,
-      background: vp === 'mobile' ? v.black : 'transparent',
-    }}>
-      <div style={{
-        flex: 1, display: 'flex', alignItems: 'center',
-        background: v.white08, border: `1px solid ${v.white18}`, borderRadius: 999, padding: '9px 16px',
-      }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: vp === 'mobile' ? '12px 16px 18px' : 0,
+        background: vp === 'mobile' ? v.black : 'transparent',
+      }}
+    >
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          background: v.white08,
+          border: `1px solid ${v.white18}`,
+          borderRadius: 999,
+          padding: '9px 16px',
+        }}
+      >
         <input
           value={replyDraft}
           onChange={(event) => setReplyDraft(event.target.value.slice(0, CHAR_LIMITS.message))}
-          onKeyDown={(event) => { if (event.key === 'Enter') handleReplySend(); }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') handleReplySend();
+          }}
           placeholder={`reply to ${authorName}...`}
           style={{
-            flex: 1, fontFamily: v.fontBody, fontSize: 13.5, color: v.white,
-            background: 'transparent', border: 'none', outline: 'none',
+            flex: 1,
+            fontFamily: v.fontBody,
+            fontSize: 13.5,
+            color: v.white,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
           }}
         />
       </div>
@@ -489,13 +729,25 @@ export function StoryViewScreen({ viewport: vpProp }) {
         aria-label={story.liked ? 'unlike' : 'like'}
         className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
         style={{
-          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-          background: v.white08, border: `1px solid ${v.white18}`, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          flexShrink: 0,
+          background: v.white08,
+          border: `1px solid ${v.white18}`,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
-          <LxIcon name="heart" size={18} color={story.liked ? HEART_COLOR : v.white} filled={story.liked} />
+          <LxIcon
+            name="heart"
+            size={18}
+            color={story.liked ? HEART_COLOR : v.white}
+            filled={story.liked}
+          />
         </span>
       </button>
       <button
@@ -503,10 +755,17 @@ export function StoryViewScreen({ viewport: vpProp }) {
         disabled={!replyDraft.trim()}
         aria-label="send reply"
         style={{
-          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-          background: v.white08, border: `1px solid ${v.white18}`,
-          cursor: replyDraft.trim() ? 'pointer' : 'default', opacity: replyDraft.trim() ? 1 : 0.5,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          flexShrink: 0,
+          background: v.white08,
+          border: `1px solid ${v.white18}`,
+          cursor: replyDraft.trim() ? 'pointer' : 'default',
+          opacity: replyDraft.trim() ? 1 : 0.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <LxIcon name="send" size={18} color={v.white} />
@@ -522,7 +781,9 @@ export function StoryViewScreen({ viewport: vpProp }) {
       viewport={vp}
       onClose={close}
       footer={replyBar}
-      peeks={vp === 'mobile' ? null : { prev: prevItem, next: nextItem, onPrev: prev, onNext: next }}
+      peeks={
+        vp === 'mobile' ? null : { prev: prevItem, next: nextItem, onPrev: prev, onNext: next }
+      }
     >
       {card}
     </StoryStage>
@@ -587,7 +848,7 @@ export function StoryComposerScreen({ viewport: vpProp }) {
           onError: (error) => {
             setFormError(error.message || "we couldn't share that story. try again.");
           },
-        },
+        }
       );
     } catch (error) {
       setFormError(error?.uploadMessage || "we couldn't upload that file. try again.");
@@ -595,26 +856,50 @@ export function StoryComposerScreen({ viewport: vpProp }) {
   };
 
   const card = (
-    <div style={{
-      position: 'absolute', inset: 0,
-      background: v.storySurface,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background: v.storySurface,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       {item ? (
         <>
           {item.isVideo ? (
-            <video src={item.previewUrl} autoPlay loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <video
+              src={item.previewUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           ) : (
-            <img src={item.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img
+              src={item.previewUrl}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           )}
           <button
             onClick={() => fileInputRef.current?.click()}
             aria-label="choose a different file"
             style={{
-              position: 'absolute', top: 14, left: 14,
-              background: v.black35, border: 'none', cursor: 'pointer',
-              width: 34, height: 34, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'absolute',
+              top: 14,
+              left: 14,
+              background: v.black35,
+              border: 'none',
+              cursor: 'pointer',
+              width: 34,
+              height: 34,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             <LxIcon name="image" size={16} color={v.white} />
@@ -624,17 +909,33 @@ export function StoryComposerScreen({ viewport: vpProp }) {
             onChange={(event) => setCaption(event.target.value.slice(0, CHAR_LIMITS.caption))}
             placeholder="add a caption..."
             style={{
-              position: 'absolute', bottom: 20, left: 16, right: 16,
-              fontFamily: v.fontBody, fontSize: 15, fontWeight: 500,
-              color: v.white, textShadow: `0 1px 8px ${v.black55}`,
-              background: 'transparent', border: 'none', outline: 'none',
+              position: 'absolute',
+              bottom: 20,
+              left: 16,
+              right: 16,
+              fontFamily: v.fontBody,
+              fontSize: 15,
+              fontWeight: 500,
+              color: v.white,
+              textShadow: `0 1px 8px ${v.black55}`,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
             }}
           />
         </>
       ) : (
         <button
           onClick={() => fileInputRef.current?.click()}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: v.white65, fontFamily: v.fontBody, fontSize: 14, textAlign: 'center' }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: v.white65,
+            fontFamily: v.fontBody,
+            fontSize: 14,
+            textAlign: 'center',
+          }}
         >
           <LxIcon name="image" size={48} color={v.white45} />
           <div style={{ marginTop: 12 }}>tap to add a photo or video</div>
@@ -651,24 +952,39 @@ export function StoryComposerScreen({ viewport: vpProp }) {
   );
 
   const controls = (
-    <div style={{
-      display: 'flex', flexDirection: 'column', gap: 10,
-      padding: vp === 'mobile' ? '14px 16px 20px' : '4px 0',
-      background: vp === 'mobile' ? v.black : 'transparent',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+        padding: vp === 'mobile' ? '14px 16px 20px' : '4px 0',
+        background: vp === 'mobile' ? v.black : 'transparent',
+      }}
+    >
       {formError ? (
-        <div role="alert" style={{ fontFamily: v.fontBody, fontSize: 12, color: v.error, textAlign: 'center' }}>{formError}</div>
+        <div
+          role="alert"
+          style={{ fontFamily: v.fontBody, fontSize: 12, color: v.error, textAlign: 'center' }}
+        >
+          {formError}
+        </div>
       ) : null}
       <button
         onClick={handleShare}
         disabled={!canShare}
         style={{
-          width: '100%', fontFamily: v.fontBody, fontSize: 14, fontWeight: 600,
+          width: '100%',
+          fontFamily: v.fontBody,
+          fontSize: 14,
+          fontWeight: 600,
           background: canShare ? v.accent : v.white12,
           color: canShare ? v.ink : v.white40,
-          border: 'none', borderRadius: 999, padding: '12px 20px',
+          border: 'none',
+          borderRadius: 999,
+          padding: '12px 20px',
           cursor: canShare ? 'pointer' : 'default',
-        }}>
+        }}
+      >
         {isUploading ? 'uploading...' : createStory.isPending ? 'sharing...' : 'share to story'}
       </button>
     </div>

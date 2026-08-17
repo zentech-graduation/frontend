@@ -50,7 +50,9 @@ export function EditProfileScreen() {
     event.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setFormError(`please choose an image file for your ${field === 'bannerUrl' ? 'banner' : 'avatar'}.`);
+      setFormError(
+        `please choose an image file for your ${field === 'bannerUrl' ? 'banner' : 'avatar'}.`
+      );
       return;
     }
     setFormError('');
@@ -98,7 +100,13 @@ export function EditProfileScreen() {
           wide strip with the avatar picker overlapping its lower edge, as it will
           sit on the profile header. */}
       <div style={{ maxWidth: 520, margin: '0 auto 8px' }}>
-        <input ref={bannerInputRef} type="file" accept="image/*" onChange={(e) => handleImageFile(e, 'bannerUrl')} style={{ display: 'none' }} />
+        <input
+          ref={bannerInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleImageFile(e, 'bannerUrl')}
+          style={{ display: 'none' }}
+        />
         <button
           type="button"
           onClick={() => bannerInputRef.current?.click()}
@@ -108,7 +116,9 @@ export function EditProfileScreen() {
             width: '100%',
             height: 132,
             borderRadius: 14,
-            background: form.bannerUrl ? `url(${form.bannerUrl}) center/cover no-repeat` : v.surfaceSunken,
+            background: form.bannerUrl
+              ? `url(${form.bannerUrl}) center/cover no-repeat`
+              : v.surfaceSunken,
             border: `1px solid ${v.border}`,
             cursor: isUploading ? 'default' : 'pointer',
             padding: 0,
@@ -117,22 +127,66 @@ export function EditProfileScreen() {
             display: 'block',
           }}
         >
-          <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: form.bannerUrl ? 'rgba(0,0,0,0.28)' : 'transparent', color: form.bannerUrl ? v.white : v.ink3, fontFamily: v.fontMono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            {uploadingField === 'bannerUrl' ? 'uploading' : form.bannerUrl ? 'change banner' : 'add a banner'}
+          <span
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              background: form.bannerUrl ? 'rgba(0,0,0,0.28)' : 'transparent',
+              color: form.bannerUrl ? v.white : v.ink3,
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {uploadingField === 'bannerUrl'
+              ? 'uploading'
+              : form.bannerUrl
+                ? 'change banner'
+                : 'add a banner'}
           </span>
         </button>
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <input value={form.bannerUrl} onChange={(e) => update('bannerUrl', e.target.value)} maxLength={CHAR_LIMITS.websiteUrl} placeholder="or paste a banner image url" style={fieldStyle()} />
+          <input
+            value={form.bannerUrl}
+            onChange={(e) => update('bannerUrl', e.target.value)}
+            maxLength={CHAR_LIMITS.websiteUrl}
+            placeholder="or paste a banner image url"
+            style={fieldStyle()}
+          />
           {form.bannerUrl ? (
-            <LxBtn variant="ghost" size="sm" onClick={() => update('bannerUrl', '')} disabled={isUploading}>
+            <LxBtn
+              variant="ghost"
+              size="sm"
+              onClick={() => update('bannerUrl', '')}
+              disabled={isUploading}
+            >
               remove
             </LxBtn>
           ) : null}
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handleImageFile(e, 'avatarUrl')} style={{ display: 'none' }} />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 28,
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleImageFile(e, 'avatarUrl')}
+          style={{ display: 'none' }}
+        />
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -142,7 +196,9 @@ export function EditProfileScreen() {
             width: 84,
             height: 84,
             borderRadius: '50%',
-            background: form.avatarUrl ? `url(${form.avatarUrl}) center/cover no-repeat` : v.avatar0,
+            background: form.avatarUrl
+              ? `url(${form.avatarUrl}) center/cover no-repeat`
+              : v.avatar0,
             border: `2px solid ${v.border}`,
             cursor: isUploading ? 'default' : 'pointer',
             padding: 0,
@@ -150,38 +206,123 @@ export function EditProfileScreen() {
             overflow: 'hidden',
           }}
         >
-          <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', color: v.white, fontFamily: v.fontMono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <span
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,0.35)',
+              color: v.white,
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
             {uploadingField === 'avatarUrl' ? 'uploading' : 'change'}
           </span>
         </button>
-        <LxBtn variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+        <LxBtn
+          variant="secondary"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+        >
           {uploadingField === 'avatarUrl' ? 'uploading...' : 'upload from device'}
         </LxBtn>
         <div style={{ width: '100%', maxWidth: 360 }}>
-          <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              color: v.ink3,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}
+          >
             or paste an image url
           </label>
-          <input value={form.avatarUrl} onChange={(e) => update('avatarUrl', e.target.value)} maxLength={CHAR_LIMITS.websiteUrl} placeholder="https://..." style={fieldStyle()} />
+          <input
+            value={form.avatarUrl}
+            onChange={(e) => update('avatarUrl', e.target.value)}
+            maxLength={CHAR_LIMITS.websiteUrl}
+            placeholder="https://..."
+            style={fieldStyle()}
+          />
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 520, margin: '0 auto' }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          maxWidth: 520,
+          margin: '0 auto',
+        }}
+      >
         <div>
-          <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              color: v.ink3,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}
+          >
             display name
           </label>
-          <input value={form.displayName} onChange={(e) => update('displayName', e.target.value)} maxLength={CHAR_LIMITS.displayName} placeholder="your name" style={fieldStyle()} />
+          <input
+            value={form.displayName}
+            onChange={(e) => update('displayName', e.target.value)}
+            maxLength={CHAR_LIMITS.displayName}
+            placeholder="your name"
+            style={fieldStyle()}
+          />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              color: v.ink3,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}
+          >
             username
           </label>
-          <input value={form.username} onChange={(e) => update('username', e.target.value.toLowerCase())} maxLength={CHAR_LIMITS.username} placeholder="your.handle" style={fieldStyle()} />
+          <input
+            value={form.username}
+            onChange={(e) => update('username', e.target.value.toLowerCase())}
+            maxLength={CHAR_LIMITS.username}
+            placeholder="your.handle"
+            style={fieldStyle()}
+          />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+          <label
+            style={{
+              display: 'block',
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              color: v.ink3,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}
+          >
             bio
           </label>
           <textarea
@@ -190,7 +331,17 @@ export function EditProfileScreen() {
             placeholder="say something real..."
             style={{ ...fieldStyle(), resize: 'none', minHeight: 96, lineHeight: 1.5 }}
           />
-          <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 6, textAlign: 'right' }}>{160 - form.bio.length}</div>
+          <div
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              color: v.ink3,
+              marginTop: 6,
+              textAlign: 'right',
+            }}
+          >
+            {160 - form.bio.length}
+          </div>
         </div>
 
         {formError ? (
@@ -198,10 +349,20 @@ export function EditProfileScreen() {
         ) : null}
 
         <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
-          <LxBtn variant="ghost" onClick={() => navigate(ROUTES.PROFILE)} style={{ flex: 1 }} disabled={updateProfile.isPending}>
+          <LxBtn
+            variant="ghost"
+            onClick={() => navigate(ROUTES.PROFILE)}
+            style={{ flex: 1 }}
+            disabled={updateProfile.isPending}
+          >
             cancel
           </LxBtn>
-          <LxBtn variant="primary" onClick={handleSave} style={{ flex: 1 }} disabled={updateProfile.isPending}>
+          <LxBtn
+            variant="primary"
+            onClick={handleSave}
+            style={{ flex: 1 }}
+            disabled={updateProfile.isPending}
+          >
             {updateProfile.isPending ? 'saving...' : 'save profile'}
           </LxBtn>
         </div>

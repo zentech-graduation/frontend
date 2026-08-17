@@ -23,7 +23,9 @@ function resolveBaseScreen(backgroundPath) {
     return DEFAULT_BASE_SCREEN;
   }
 
-  const match = APP_SCREENS.find((entry) => matchPath({ path: entry.path, end: true }, backgroundPath));
+  const match = APP_SCREENS.find((entry) =>
+    matchPath({ path: entry.path, end: true }, backgroundPath)
+  );
   return match ?? DEFAULT_BASE_SCREEN;
 }
 
@@ -82,7 +84,10 @@ export function LuvaxApp() {
     if (!currentUser?.id) return;
     const profile = myProfileResponse?.data || myProfileResponse;
     if (!profile?.id) return;
-    if (currentUser.avatarUrl !== profile.avatarUrl || currentUser.bannerUrl !== profile.bannerUrl) {
+    if (
+      currentUser.avatarUrl !== profile.avatarUrl ||
+      currentUser.bannerUrl !== profile.bannerUrl
+    ) {
       setUser({ ...currentUser, avatarUrl: profile.avatarUrl, bannerUrl: profile.bannerUrl });
     }
   }, [myProfileResponse, currentUser, setUser]);
@@ -93,9 +98,9 @@ export function LuvaxApp() {
   const isOverlay = chrome === 'overlay';
 
   const setTweak = (keyOrEdits, val) => {
-    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null
-      ? keyOrEdits : { [keyOrEdits]: val };
-    setTweakState(prev => ({ ...prev, ...edits }));
+    const edits =
+      typeof keyOrEdits === 'object' && keyOrEdits !== null ? keyOrEdits : { [keyOrEdits]: val };
+    setTweakState((prev) => ({ ...prev, ...edits }));
   };
 
   useEffect(() => {
@@ -128,14 +133,17 @@ export function LuvaxApp() {
     root.setAttribute('data-theme', tweaks.dark ? 'dark' : 'light');
     root.setAttribute('data-density', tweaks.density);
     root.style.setProperty('--lx-accent', tweaks.accent);
-    root.style.setProperty('--lx-accent-dim',
-      `color-mix(in srgb, ${tweaks.accent} ${tweaks.dark ? '22%' : '28%'}, var(--lx-base))`);
-    root.style.setProperty('--lx-accent-dark',
-      `color-mix(in srgb, ${tweaks.accent} 78%, #000)`);
-    root.style.setProperty('--lx-accent-text',
+    root.style.setProperty(
+      '--lx-accent-dim',
+      `color-mix(in srgb, ${tweaks.accent} ${tweaks.dark ? '22%' : '28%'}, var(--lx-base))`
+    );
+    root.style.setProperty('--lx-accent-dark', `color-mix(in srgb, ${tweaks.accent} 78%, #000)`);
+    root.style.setProperty(
+      '--lx-accent-text',
       tweaks.dark
         ? `color-mix(in srgb, ${tweaks.accent} 60%, #fff)`
-        : `color-mix(in srgb, ${tweaks.accent} 60%, #000)`);
+        : `color-mix(in srgb, ${tweaks.accent} 60%, #000)`
+    );
     root.style.setProperty('--font-display', FONT_MAP[tweaks.font] || FONT_MAP.syne);
   }, [tweaks.dark, tweaks.accent, tweaks.font, tweaks.density]);
 
@@ -231,7 +239,8 @@ export function LuvaxApp() {
 
   if (isOverlay) {
     const base = resolveBaseScreen(location.state?.background);
-    const baseShowRail = Boolean(base.rightRail) && (viewport === 'desktop' || viewport === 'tablet');
+    const baseShowRail =
+      Boolean(base.rightRail) && (viewport === 'desktop' || viewport === 'tablet');
 
     return (
       <LuvaxTweaksProvider value={tweakContext}>

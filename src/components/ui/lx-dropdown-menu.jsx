@@ -2,7 +2,15 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 
-export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196, align = 'left', zIndex = 1200 }) {
+export function LxDropdownMenu({
+  anchorRef,
+  open,
+  onClose,
+  items,
+  width = 196,
+  align = 'left',
+  zIndex = 1200,
+}) {
   const menuRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0, placement: 'bottom' });
 
@@ -31,7 +39,8 @@ export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196, a
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
       const gap = 10;
-      const shouldOpenUp = rect.bottom + menuHeight + gap > viewportHeight && rect.top > menuHeight + gap;
+      const shouldOpenUp =
+        rect.bottom + menuHeight + gap > viewportHeight && rect.top > menuHeight + gap;
       const topVisual = shouldOpenUp
         ? Math.max(gap, rect.top - menuHeight - 8)
         : Math.min(viewportHeight - menuHeight - gap, rect.bottom + 8);
@@ -122,7 +131,13 @@ export function LxDropdownMenu({ anchorRef, open, onClose, items, width = 196, a
             }}
             disabled={item.disabled}
           >
-            {item.icon ? <LxIcon name={item.icon} size={16} color={item.tone === 'danger' ? v.error : v.ink2} /> : null}
+            {item.icon ? (
+              <LxIcon
+                name={item.icon}
+                size={16}
+                color={item.tone === 'danger' ? v.error : v.ink2}
+              />
+            ) : null}
             <span>{item.label}</span>
           </button>
         )

@@ -1,8 +1,22 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, sharePost } from '@/utils/helpers';
-import { LxAvatar, LxBottomSheet, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
+import {
+  copyPostLink,
+  extractPageContent,
+  getDisplayName,
+  getUserSummary,
+  sharePost,
+} from '@/utils/helpers';
+import {
+  LxAvatar,
+  LxBottomSheet,
+  LxBtn,
+  LxDropdownMenu,
+  LxIcon,
+  LxModal,
+  LxTag,
+} from './primitives';
 import { PostMedia } from './PostMedia';
 import { ConfirmModal } from './ConfirmModal';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
@@ -125,7 +139,8 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const targetUserId = author.id;
   const avatarUrl = author.avatarUrl;
   const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
-  const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
+  const tags =
+    post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const isMobile = viewport === 'mobile';
   const isTextPost = String(post.postType || post.type || '').toLowerCase() === 'text';
   const following = (() => {
@@ -164,7 +179,10 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         // The link goes to the clipboard with nothing on screen to show for it,
         // so this is one of the few actions that earns a toast.
         label: 'Copy link',
-        onClick: () => copyPostLink(post.id).then(() => toast('link copied')).catch(() => {}),
+        onClick: () =>
+          copyPostLink(post.id)
+            .then(() => toast('link copied'))
+            .catch(() => {}),
       },
       isOwner
         ? {
@@ -238,7 +256,23 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
           }
         : null,
     ],
-    [authorHandle, authorName, avatarUrl, block, follow.isPending, following, isOwner, liked, myFollowingData, navigate, post.caption, post.hasReported, post.id, targetUserId, unfollow.isPending]
+    [
+      authorHandle,
+      authorName,
+      avatarUrl,
+      block,
+      follow.isPending,
+      following,
+      isOwner,
+      liked,
+      myFollowingData,
+      navigate,
+      post.caption,
+      post.hasReported,
+      post.id,
+      targetUserId,
+      unfollow.isPending,
+    ]
   );
 
   return (
@@ -376,20 +410,48 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
             </span>
             {/* The design keeps the count in v.ink3 whether or not the post is liked;
                 only the glyph takes the like colour. */}
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
-              {likeCount}
-            </span>
+            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>{likeCount}</span>
           </button>
-          <button type="button" data-lxtap="1" onClick={() => openOverlay(routeTo.postDetail(post.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <button
+            type="button"
+            data-lxtap="1"
+            onClick={() => openOverlay(routeTo.postDetail(post.id))}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
             <LxIcon name="reply" size={17} color={v.ink3} />
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
               {post.commentCount ?? 0}
             </span>
           </button>
-          <button type="button" data-lxtap="1" onClick={() => sharePost(post.id, post.caption)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          <button
+            type="button"
+            data-lxtap="1"
+            onClick={() => sharePost(post.id, post.caption)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
             <LxIcon name="share" size={17} color={v.ink3} />
           </button>
-          <button type="button" data-lxtap="1" onClick={handleSaveToggle} className={saveBurst ? 'lx-bookmark-button is-saved' : 'lx-bookmark-button'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'auto' }}>
+          <button
+            type="button"
+            data-lxtap="1"
+            onClick={handleSaveToggle}
+            className={saveBurst ? 'lx-bookmark-button is-saved' : 'lx-bookmark-button'}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              marginLeft: 'auto',
+            }}
+          >
             <span className="lx-bookmark-icon" style={{ display: 'inline-flex' }}>
               <LxIcon name="bookmark" size={17} color={saved ? v.ink : v.ink3} filled={saved} />
             </span>
@@ -400,77 +462,97 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       {/* These overlays are children of the article, so without the opt-out every
           click inside them would also open the post. */}
       <div data-lxtap="1">
-      <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={248} />
+        <LxDropdownMenu
+          anchorRef={menuButtonRef}
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          items={menuItems}
+          width={248}
+        />
 
-      <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
+        <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
 
-      <LxBottomSheet open={editSheetOpen} onClose={() => setEditSheetOpen(false)} height="40vh">
-        <div style={{ padding: '4px 16px 8px', borderBottom: `1px solid ${v.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 600, color: v.ink }}>edit post</div>
-        </div>
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
-          <textarea
-            value={editCaption}
-            onChange={(event) => setEditCaption(event.target.value)}
-            maxLength={CHAR_LIMITS.caption}
-            placeholder="write a caption..."
+        <LxBottomSheet open={editSheetOpen} onClose={() => setEditSheetOpen(false)} height="40vh">
+          <div
             style={{
-              width: '100%',
-              height: 100,
-              fontFamily: v.fontBody,
-              fontSize: 15,
-              color: v.ink,
-              border: `1px solid ${v.border}`,
-              borderRadius: 8,
-              padding: 12,
-              resize: 'none',
-              outline: 'none',
+              padding: '4px 16px 8px',
+              borderBottom: `1px solid ${v.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
-          />
-          <LxBtn variant="primary" onClick={handleEditSubmit}>
-            save changes
-          </LxBtn>
-        </div>
-      </LxBottomSheet>
+          >
+            <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 600, color: v.ink }}>
+              edit post
+            </div>
+          </div>
+          <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
+            <textarea
+              value={editCaption}
+              onChange={(event) => setEditCaption(event.target.value)}
+              maxLength={CHAR_LIMITS.caption}
+              placeholder="write a caption..."
+              style={{
+                width: '100%',
+                height: 100,
+                fontFamily: v.fontBody,
+                fontSize: 15,
+                color: v.ink,
+                border: `1px solid ${v.border}`,
+                borderRadius: 8,
+                padding: 12,
+                resize: 'none',
+                outline: 'none',
+              }}
+            />
+            <LxBtn variant="primary" onClick={handleEditSubmit}>
+              save changes
+            </LxBtn>
+          </div>
+        </LxBottomSheet>
 
-      <ConfirmModal
-        config={
-          deleteConfirmOpen
-            ? {
-                title: 'delete post',
-                message: 'are you sure you want to delete this post?',
-                confirmLabel: 'delete',
-                onConfirm: handleDeleteConfirm,
-              }
-            : null
-        }
-        onClose={() => setDeleteConfirmOpen(false)}
-      />
+        <ConfirmModal
+          config={
+            deleteConfirmOpen
+              ? {
+                  title: 'delete post',
+                  message: 'are you sure you want to delete this post?',
+                  confirmLabel: 'delete',
+                  onConfirm: handleDeleteConfirm,
+                }
+              : null
+          }
+          onClose={() => setDeleteConfirmOpen(false)}
+        />
 
-      <ConfirmModal
-        config={
-          blockConfirmOpen
-            ? {
-                title: 'block user',
-                // The same wording the profile and post detail already use, so
-                // one irreversible action reads the same way everywhere.
-                message: (
-                  <>
-                    Are you sure you want to block <strong>{authorName}</strong>? They won&apos;t be able to find your profile, posts or story on Luvax.
-                  </>
-                ),
-                confirmLabel: 'block',
-                confirmDisabled: block.isPending,
-                onConfirm: () => {
-                  // Blocking from a post's menu gives no on-screen sign it worked,
-                  // so the toast reports it. See docs/layout-overhaul/changes-applied.md.
-                  if (targetUserId) block.mutate(targetUserId, { onSuccess: () => toast(`blocked @${authorHandle}`) });
-                },
-              }
-            : null
-        }
-        onClose={() => setBlockConfirmOpen(false)}
-      />
+        <ConfirmModal
+          config={
+            blockConfirmOpen
+              ? {
+                  title: 'block user',
+                  // The same wording the profile and post detail already use, so
+                  // one irreversible action reads the same way everywhere.
+                  message: (
+                    <>
+                      Are you sure you want to block <strong>{authorName}</strong>? They won&apos;t
+                      be able to find your profile, posts or story on Luvax.
+                    </>
+                  ),
+                  confirmLabel: 'block',
+                  confirmDisabled: block.isPending,
+                  onConfirm: () => {
+                    // Blocking from a post's menu gives no on-screen sign it worked,
+                    // so the toast reports it. See docs/layout-overhaul/changes-applied.md.
+                    if (targetUserId)
+                      block.mutate(targetUserId, {
+                        onSuccess: () => toast(`blocked @${authorHandle}`),
+                      });
+                  },
+                }
+              : null
+          }
+          onClose={() => setBlockConfirmOpen(false)}
+        />
       </div>
     </article>
   );

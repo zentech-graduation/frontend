@@ -4,7 +4,8 @@ export const THREADS = [
     idx: 0,
     name: 'priya',
     username: 'priya_m',
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
     preview: 'sent you the files!',
     time: '2m',
     unread: 2,
@@ -12,7 +13,13 @@ export const THREADS = [
     mediaLabel: 'shared photos & files',
     media: [
       { id: 'm1', type: 'file', label: 'mockup-v2.png' },
-      { id: 'm2', type: 'post', label: '@designthoughts', title: 'Why spacing matters in UI design', meta: 'shared post' },
+      {
+        id: 'm2',
+        type: 'post',
+        label: '@designthoughts',
+        title: 'Why spacing matters in UI design',
+        meta: 'shared post',
+      },
       { id: 'm3', type: 'image', label: 'color-study.jpg' },
       { id: 'm4', type: 'image', label: 'wireframe-notes.png' },
       { id: 'm5', type: 'image', label: 'grid-system.png' },
@@ -39,7 +46,13 @@ export const THREADS = [
         time: '10:16',
       },
       { id: 'p4', from: 'them', kind: 'text', text: 'thank you :)', time: '10:17' },
-      { id: 'p5', from: 'me', kind: 'text', text: 'no rush! sent you the files too', time: '10:20' },
+      {
+        id: 'p5',
+        from: 'me',
+        kind: 'text',
+        text: 'no rush! sent you the files too',
+        time: '10:20',
+      },
       { id: 'p6', from: 'me', kind: 'text', text: 'sent you the files!', time: '10:20' },
       { id: 'p7', from: 'me', kind: 'deleted', text: 'this message was deleted', time: '10:18' },
     ],
@@ -125,8 +138,6 @@ export const THREADS = [
     accent: 'rgba(122, 158, 122, 0.12)',
     mediaLabel: 'shared memories',
     media: [],
-    messages: [
-      { id: 's1', from: 'them', kind: 'text', text: 'see you then!', time: '2d' },
-    ],
+    messages: [{ id: 's1', from: 'them', kind: 'text', text: 'see you then!', time: '2d' }],
   },
 ];

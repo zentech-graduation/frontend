@@ -22,7 +22,7 @@ export const useUpdateMySettings = () => {
       await queryClient.cancelQueries({ queryKey: settingsKey });
       const previous = queryClient.getQueryData(settingsKey);
       queryClient.setQueryData(settingsKey, (envelope) =>
-        envelope?.data ? { ...envelope, data: { ...envelope.data, ...patch } } : envelope,
+        envelope?.data ? { ...envelope, data: { ...envelope.data, ...patch } } : envelope
       );
       return { previous };
     },

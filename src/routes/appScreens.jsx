@@ -39,21 +39,64 @@ import { MessagesScreen } from '@/features/messages/MessagesScreen';
  * the trending rail.
  */
 export const APP_SCREENS = [
-  { screen: 'feed', index: true, path: ROUTES.FEED, element: <FeedScreen />, chrome: 'shell', rightRail: true },
-  { screen: 'explore', path: ROUTES.EXPLORE, element: <ExploreScreen />, chrome: 'shell', rightRail: true },
+  {
+    screen: 'feed',
+    index: true,
+    path: ROUTES.FEED,
+    element: <FeedScreen />,
+    chrome: 'shell',
+    rightRail: true,
+  },
+  {
+    screen: 'explore',
+    path: ROUTES.EXPLORE,
+    element: <ExploreScreen />,
+    chrome: 'shell',
+    rightRail: true,
+  },
   { screen: 'search', path: ROUTES.SEARCH, element: <SearchScreen />, chrome: 'shell' },
   { screen: 'compose', path: ROUTES.COMPOSE, element: <ComposerScreen />, chrome: 'shell' },
-  { screen: 'notifications', path: ROUTES.NOTIFICATIONS, element: <NotificationsScreen />, chrome: 'shell' },
+  {
+    screen: 'notifications',
+    path: ROUTES.NOTIFICATIONS,
+    element: <NotificationsScreen />,
+    chrome: 'shell',
+  },
   { screen: 'messages', path: ROUTES.MESSAGES, element: <MessagesScreen />, chrome: 'messages' },
   { screen: 'settings', path: ROUTES.SETTINGS, element: <SettingsScreen />, chrome: 'shell' },
-  { screen: 'edit-profile', path: ROUTES.EDIT_PROFILE, element: <EditProfileScreen />, chrome: 'shell' },
-  { screen: 'change-password', path: ROUTES.CHANGE_PASSWORD, element: <ChangePasswordScreen />, chrome: 'shell' },
-  { screen: 'blocked', path: ROUTES.BLOCKED_USERS, element: <BlockedUsersScreen />, chrome: 'shell' },
+  {
+    screen: 'edit-profile',
+    path: ROUTES.EDIT_PROFILE,
+    element: <EditProfileScreen />,
+    chrome: 'shell',
+  },
+  {
+    screen: 'change-password',
+    path: ROUTES.CHANGE_PASSWORD,
+    element: <ChangePasswordScreen />,
+    chrome: 'shell',
+  },
+  {
+    screen: 'blocked',
+    path: ROUTES.BLOCKED_USERS,
+    element: <BlockedUsersScreen />,
+    chrome: 'shell',
+  },
   { screen: 'saved', path: ROUTES.SAVED, element: <SavedPostsScreen />, chrome: 'shell' },
   { screen: 'profile', path: ROUTES.PROFILE, element: <ProfileScreen />, chrome: 'shell' },
   { screen: 'profile', path: ROUTES.USER_PROFILE, element: <ProfileScreen />, chrome: 'shell' },
-  { screen: 'followers', path: ROUTES.USER_FOLLOWERS, element: <FollowersScreen />, chrome: 'shell' },
-  { screen: 'following', path: ROUTES.USER_FOLLOWING, element: <FollowingScreen />, chrome: 'shell' },
+  {
+    screen: 'followers',
+    path: ROUTES.USER_FOLLOWERS,
+    element: <FollowersScreen />,
+    chrome: 'shell',
+  },
+  {
+    screen: 'following',
+    path: ROUTES.USER_FOLLOWING,
+    element: <FollowingScreen />,
+    chrome: 'shell',
+  },
   { screen: 'onboarding', path: ROUTES.ONBOARDING, element: <OnboardingScreen />, chrome: 'bare' },
 ];
 

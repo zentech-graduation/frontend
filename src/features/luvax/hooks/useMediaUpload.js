@@ -39,7 +39,7 @@ export const useMediaUpload = () => {
     return new Promise((resolve, reject) => {
       const isVideo = file.type.startsWith('video/');
       const url = URL.createObjectURL(file);
-      
+
       if (isVideo) {
         const video = document.createElement('video');
         video.preload = 'metadata';
@@ -48,7 +48,7 @@ export const useMediaUpload = () => {
           resolve({
             width: video.videoWidth,
             height: video.videoHeight,
-            duration: Math.round(video.duration)
+            duration: Math.round(video.duration),
           });
         };
         video.onerror = () => reject(new Error('Failed to load video metadata'));
@@ -59,7 +59,7 @@ export const useMediaUpload = () => {
           URL.revokeObjectURL(url);
           resolve({
             width: img.width,
-            height: img.height
+            height: img.height,
           });
         };
         img.onerror = () => reject(new Error('Failed to load image metadata'));
@@ -75,11 +75,11 @@ export const useMediaUpload = () => {
     setIsUploading(true);
     setProgress(0);
     setError(null);
-    
+
     try {
       const isVideo = file.type.startsWith('video/');
       const mediaType = isVideo ? 'VIDEO' : 'IMAGE';
-      
+
       // 1. Get metadata (width, height, duration)
       const metadata = await getMediaMetadata(file);
 
@@ -87,13 +87,13 @@ export const useMediaUpload = () => {
       const { uploadUrl, storageKey } = await mediaService.createUploadUrl({
         mediaType,
         mimeType: file.type,
-        fileSize: file.size
+        fileSize: file.size,
       });
 
       // 3. Direct upload to R2/S3 via PUT using raw axios to avoid interceptor auth headers
       await axios.put(uploadUrl, file, {
         headers: {
-          'Content-Type': file.type
+          'Content-Type': file.type,
         },
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
@@ -104,7 +104,7 @@ export const useMediaUpload = () => {
             // tracks each file's own progress through this callback.
             if (onProgress) onProgress(percentCompleted);
           }
-        }
+        },
       });
 
       // 4. Confirm upload
@@ -115,13 +115,12 @@ export const useMediaUpload = () => {
         fileSize: file.size,
         width: metadata.width,
         height: metadata.height,
-        duration: metadata.duration || null
+        duration: metadata.duration || null,
       });
 
       setIsUploading(false);
       setProgress(100);
       return response; // Contains the mediaAssetId and other details
-
     } catch (err) {
       const message = describeMediaUploadError(err);
       setError(message);
@@ -142,6 +141,6 @@ export const useMediaUpload = () => {
     getMediaMetadata,
     isUploading,
     progress,
-    error
+    error,
   };
 };

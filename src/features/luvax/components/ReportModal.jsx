@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react';
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { LxAvatar } from '@/components/ui/lx-avatar';
-import {
-  REPORT_REASONS,
-  REPORT_DESCRIPTION_MAX_LENGTH,
-} from '@/services/report.service';
+import { REPORT_REASONS, REPORT_DESCRIPTION_MAX_LENGTH } from '@/services/report.service';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import {
   useSubmitReport,
@@ -108,14 +105,38 @@ export function ReportModal({ target, onClose }) {
   };
 
   const previewCard = (
-    <div style={{ background: v.surface, border: `1px solid ${v.border}`, borderRadius: 12, padding: '13px 15px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: target.text ? 10 : 0 }}>
+    <div
+      style={{
+        background: v.surface,
+        border: `1px solid ${v.border}`,
+        borderRadius: 12,
+        padding: '13px 15px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          marginBottom: target.text ? 10 : 0,
+        }}
+      >
         <LxAvatar size={30} src={target.avatarUrl} />
         <div style={{ flex: 1, minWidth: 0 }}>
           {target.author ? (
-            <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>{target.author}</div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>
+              {target.author}
+            </div>
           ) : null}
-          <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              color: v.ink3,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+            }}
+          >
             {entityLabel}
           </div>
         </div>
@@ -158,10 +179,20 @@ export function ReportModal({ target, onClose }) {
     body = (
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '18px 20px 14px', borderBottom: `1px solid ${v.borderSubtle}` }}>
-          <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', color: v.ink }}>
+          <div
+            style={{
+              fontFamily: v.fontDisplay,
+              fontSize: 18,
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              color: v.ink,
+            }}
+          >
             report {entityLabel}
           </div>
-          <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3, marginTop: 2 }}>why are you reporting this?</div>
+          <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3, marginTop: 2 }}>
+            why are you reporting this?
+          </div>
         </div>
         <div style={{ maxHeight: 340, overflowY: 'auto' }}>
           {REPORT_REASONS.map((r) => {
@@ -198,11 +229,35 @@ export function ReportModal({ target, onClose }) {
                     background: selected ? v.accentDim : 'transparent',
                   }}
                 >
-                  {selected ? <div style={{ width: 10, height: 10, borderRadius: '50%', background: v.accent }} /> : null}
+                  {selected ? (
+                    <div
+                      style={{ width: 10, height: 10, borderRadius: '50%', background: v.accent }}
+                    />
+                  ) : null}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink, lineHeight: 1.3 }}>{r.label}</div>
-                  <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, marginTop: 1, lineHeight: 1.4 }}>{r.desc}</div>
+                  <div
+                    style={{
+                      fontFamily: v.fontBody,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: v.ink,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {r.label}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: v.fontBody,
+                      fontSize: 12,
+                      color: v.ink3,
+                      marginTop: 1,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {r.desc}
+                  </div>
                 </div>
                 <LxIcon name="chevronRight" size={13} color={v.borderStrong} />
               </button>
@@ -242,23 +297,60 @@ export function ReportModal({ target, onClose }) {
     const nearLimit = description.length > REPORT_DESCRIPTION_MAX_LENGTH * 0.9;
     body = (
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${v.borderSubtle}` }}>
+        <div
+          style={{
+            padding: '14px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            borderBottom: `1px solid ${v.borderSubtle}`,
+          }}
+        >
           <button
             type="button"
             aria-label="Back"
             onClick={() => setStep(STEP_REASON)}
-            style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', color: v.ink2, padding: 2, cursor: 'pointer' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              color: v.ink2,
+              padding: 2,
+              cursor: 'pointer',
+            }}
           >
             <LxIcon name="back" size={18} color={v.ink2} />
           </button>
           <div>
-            <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', color: v.ink }}>add details</div>
-            <div style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink3 }}>optional - helps our team review faster</div>
+            <div
+              style={{
+                fontFamily: v.fontDisplay,
+                fontSize: 18,
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                color: v.ink,
+              }}
+            >
+              add details
+            </div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink3 }}>
+              optional - helps our team review faster
+            </div>
           </div>
         </div>
         <div style={{ padding: '16px 20px' }}>
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontFamily: v.fontMono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: v.ink3, marginBottom: 6 }}>
+            <div
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 10,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: v.ink3,
+                marginBottom: 6,
+              }}
+            >
               Selected reason
             </div>
             <span
@@ -278,12 +370,23 @@ export function ReportModal({ target, onClose }) {
             </span>
           </div>
           <div>
-            <div style={{ fontFamily: v.fontMono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: v.ink3, marginBottom: 6 }}>
+            <div
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 10,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: v.ink3,
+                marginBottom: 6,
+              }}
+            >
               Additional context
             </div>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value.slice(0, REPORT_DESCRIPTION_MAX_LENGTH))}
+              onChange={(e) =>
+                setDescription(e.target.value.slice(0, REPORT_DESCRIPTION_MAX_LENGTH))
+              }
               placeholder="Describe what you're seeing…"
               style={{
                 width: '100%',
@@ -333,7 +436,15 @@ export function ReportModal({ target, onClose }) {
             </div>
           ) : null}
         </div>
-        <div style={{ padding: '12px 20px 16px', borderTop: `1px solid ${v.border}`, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div
+          style={{
+            padding: '12px 20px 16px',
+            borderTop: `1px solid ${v.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
           <button
             type="button"
             onClick={handleSubmit}
@@ -405,13 +516,36 @@ export function ReportModal({ target, onClose }) {
             animation: 'checkPop 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
           }}
         >
-          <LxIcon name={duplicate ? 'flag' : 'check'} size={28} color={duplicate ? 'var(--lx-warning-text)' : 'var(--lx-success-text)'} stroke={2.2} />
+          <LxIcon
+            name={duplicate ? 'flag' : 'check'}
+            size={28}
+            color={duplicate ? 'var(--lx-warning-text)' : 'var(--lx-success-text)'}
+            stroke={2.2}
+          />
         </div>
         <div>
-          <div style={{ fontFamily: v.fontDisplay, fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: v.ink, marginBottom: 8 }}>
+          <div
+            style={{
+              fontFamily: v.fontDisplay,
+              fontSize: 20,
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              color: v.ink,
+              marginBottom: 8,
+            }}
+          >
             {duplicate ? 'you already reported this' : 'report submitted'}
           </div>
-          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55, maxWidth: 300, margin: '0 auto' }}>
+          <div
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 14,
+              color: v.ink3,
+              lineHeight: 1.55,
+              maxWidth: 300,
+              margin: '0 auto',
+            }}
+          >
             {duplicate
               ? 'This is already with our review team, so there is nothing more to send.'
               : "We'll review this content and take action if it violates our community guidelines."}
@@ -461,7 +595,15 @@ export function ReportModal({ target, onClose }) {
       role="dialog"
       aria-modal="true"
       aria-label={`Report ${entityLabel}`}
-      style={{ position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
     >
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: v.scrim }} />
       <div
@@ -477,7 +619,16 @@ export function ReportModal({ target, onClose }) {
         }}
       >
         {step !== STEP_DONE ? previewCard : null}
-        <div style={{ background: v.base, border: `1px solid ${v.border}`, borderRadius: 12, overflow: 'hidden' }}>{body}</div>
+        <div
+          style={{
+            background: v.base,
+            border: `1px solid ${v.border}`,
+            borderRadius: 12,
+            overflow: 'hidden',
+          }}
+        >
+          {body}
+        </div>
       </div>
     </div>
   );

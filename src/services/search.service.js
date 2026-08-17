@@ -37,7 +37,10 @@ const buildParams = (q, cursor, limit) => {
  * @returns {Promise<Object>} The ApiResponse envelope wrapping a cursor page of PostResponse.
  */
 export const searchPosts = async (q, cursor, limit, signal) => {
-  const response = await axiosInstance.get('/posts/search', { params: buildParams(q, cursor, limit), signal });
+  const response = await axiosInstance.get('/posts/search', {
+    params: buildParams(q, cursor, limit),
+    signal,
+  });
   return response.data;
 };
 
@@ -54,7 +57,10 @@ export const searchPosts = async (q, cursor, limit, signal) => {
  * @returns {Promise<Object>} The ApiResponse envelope wrapping a cursor page of UserListItemResponse.
  */
 export const searchUsers = async (q, cursor, limit, signal) => {
-  const response = await axiosInstance.get('/users/search', { params: buildParams(q, cursor, limit), signal });
+  const response = await axiosInstance.get('/users/search', {
+    params: buildParams(q, cursor, limit),
+    signal,
+  });
   return response.data;
 };
 
@@ -70,7 +76,10 @@ export const searchUsers = async (q, cursor, limit, signal) => {
  * @returns {Promise<Object>} The ApiResponse envelope wrapping a cursor page of hashtag rows.
  */
 export const searchHashtags = async (q, cursor, limit, signal) => {
-  const response = await axiosInstance.get('/hashtags/search', { params: buildParams(q, cursor, limit), signal });
+  const response = await axiosInstance.get('/hashtags/search', {
+    params: buildParams(q, cursor, limit),
+    signal,
+  });
   return response.data;
 };
 

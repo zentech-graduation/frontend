@@ -75,10 +75,7 @@ const usernameField = z
   .trim()
   .min(3, 'username must be at least 3 characters.')
   .max(30, 'username must be 30 characters or fewer.')
-  .regex(
-    /^[a-zA-Z0-9_.]+$/,
-    'username may only contain letters, digits, underscores and dots.'
-  );
+  .regex(/^[a-zA-Z0-9_.]+$/, 'username may only contain letters, digits, underscores and dots.');
 
 // Backend RegisterRequest.displayName: @Size(max = 100), optional.
 const displayNameField = z

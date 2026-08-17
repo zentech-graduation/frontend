@@ -29,7 +29,9 @@ export function ToastHost() {
     const add = ({ id, message }) => {
       setItems((current) => [...current, { id, message, leaving: false }]);
       window.setTimeout(() => {
-        setItems((current) => current.map((item) => (item.id === id ? { ...item, leaving: true } : item)));
+        setItems((current) =>
+          current.map((item) => (item.id === id ? { ...item, leaving: true } : item))
+        );
         window.setTimeout(() => {
           setItems((current) => current.filter((item) => item.id !== id));
         }, EXIT_MS);

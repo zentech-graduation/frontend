@@ -34,7 +34,15 @@ function Notice({ icon, title, detail, tone = 'muted' }) {
         {title}
       </div>
       {detail && (
-        <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, maxWidth: 320, lineHeight: 1.5 }}>
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 12,
+            color: v.ink3,
+            maxWidth: 320,
+            lineHeight: 1.5,
+          }}
+        >
           {detail}
         </div>
       )}

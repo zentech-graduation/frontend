@@ -10,7 +10,8 @@ export const notifKeys = {
 export const useNotifications = (params = {}) => {
   return useInfiniteQuery({
     queryKey: [...notifKeys.all, params],
-    queryFn: ({ pageParam = null }) => notifService.getNotifications({ ...params, cursor: pageParam, limit: 20 }),
+    queryFn: ({ pageParam = null }) =>
+      notifService.getNotifications({ ...params, cursor: pageParam, limit: 20 }),
     getNextPageParam: getNextCursor,
   });
 };

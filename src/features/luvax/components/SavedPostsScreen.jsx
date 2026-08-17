@@ -23,7 +23,8 @@ export function SavedPostsScreen() {
   const cols = viewport === 'desktop' ? 3 : 2;
 
   const { ref, inView } = useInView();
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useSavedPosts();
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useSavedPosts();
   const saveMutation = useSavePost();
 
   useEffect(() => {
@@ -62,7 +63,9 @@ export function SavedPostsScreen() {
         zIndex: 10,
       }}
     >
-      <div style={{ fontFamily: v.fontBody, fontSize: 16, fontWeight: 600, color: v.ink }}>saved</div>
+      <div style={{ fontFamily: v.fontBody, fontSize: 16, fontWeight: 600, color: v.ink }}>
+        saved
+      </div>
     </div>
   );
 
@@ -78,11 +81,29 @@ export function SavedPostsScreen() {
       }}
     >
       <LxIcon name={icon} size={36} color={tone === 'error' ? v.error : v.ink3} />
-      <div style={{ fontFamily: v.fontBody, fontSize: 14, color: tone === 'error' ? v.error : v.ink2, maxWidth: 320, lineHeight: 1.5 }}>
+      <div
+        style={{
+          fontFamily: v.fontBody,
+          fontSize: 14,
+          color: tone === 'error' ? v.error : v.ink2,
+          maxWidth: 320,
+          lineHeight: 1.5,
+        }}
+      >
         {title}
       </div>
       {detail && (
-        <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, maxWidth: 320, lineHeight: 1.5 }}>{detail}</div>
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 12,
+            color: v.ink3,
+            maxWidth: 320,
+            lineHeight: 1.5,
+          }}
+        >
+          {detail}
+        </div>
       )}
     </div>
   );
@@ -91,13 +112,25 @@ export function SavedPostsScreen() {
   if (isLoading || isDraining) {
     body = notice('bookmark', 'loading your saved posts...');
   } else if (isError) {
-    body = notice('alert', "we couldn't load your saved posts.", 'check your connection and try again.', 'error');
+    body = notice(
+      'alert',
+      "we couldn't load your saved posts.",
+      'check your connection and try again.',
+      'error'
+    );
   } else if (posts.length === 0) {
     body = notice('bookmark', 'nothing saved yet.', 'tap the bookmark on a post to keep it here.');
   } else {
     body = (
       <>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: '2px 0 0' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gap: 2,
+            padding: '2px 0 0',
+          }}
+        >
           {posts.map((post) => {
             const mediaUrl = post.media && post.media.length > 0 ? post.media[0].cdnUrl : null;
             return (
@@ -167,8 +200,15 @@ export function SavedPostsScreen() {
             );
           })}
         </div>
-        <div ref={ref} style={{ height: 20, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          {isFetchingNextPage && <span style={{ color: v.ink3, fontSize: 12, fontFamily: v.fontBody }}>loading more...</span>}
+        <div
+          ref={ref}
+          style={{ height: 20, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+        >
+          {isFetchingNextPage && (
+            <span style={{ color: v.ink3, fontSize: 12, fontFamily: v.fontBody }}>
+              loading more...
+            </span>
+          )}
         </div>
       </>
     );

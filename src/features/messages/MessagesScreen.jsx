@@ -33,7 +33,8 @@ export function MessagesScreen() {
     );
   }, [search, threads]);
 
-  const activeThread = threads.find((thread) => thread.id === activeThreadId) || filteredThreads[0] || threads[0];
+  const activeThread =
+    threads.find((thread) => thread.id === activeThreadId) || filteredThreads[0] || threads[0];
 
   useEffect(() => {
     if (!activeThreadId && filteredThreads[0]) {
@@ -56,6 +57,33 @@ export function MessagesScreen() {
     if (!scroller) return;
     scroller.scrollTop = scroller.scrollHeight;
   }, [activeThreadId, threads]);
+
+  // Declared above the effect that calls it. The effect body referenced it before its
+  // declaration, which is safe only because effects run after the component body has
+  // finished evaluating - an ordering the reader should not have to reconstruct.
+  const handleCompose = () => {
+    const newThreadId = `new-${composerSeed + 1}`;
+    const newThread = {
+      id: newThreadId,
+      idx: 6,
+      initials: 'N',
+      name: 'new conversation',
+      username: 'draft',
+      preview: 'start writing...',
+      time: 'now',
+      unread: 0,
+      accent: 'rgba(200, 169, 126, 0.16)',
+      mediaLabel: 'shared files',
+      media: [],
+      messages: [],
+    };
+
+    setComposerSeed((seed) => seed + 1);
+    setThreads((current) => [newThread, ...current]);
+    setActiveThreadId(newThreadId);
+    setDraft('');
+    setReplyingTo(null);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -107,36 +135,8 @@ export function MessagesScreen() {
       setMobileInfoOpen(false);
     }
     setThreads((current) =>
-      current.map((thread) =>
-        thread.id === threadId
-          ? { ...thread, unread: 0 }
-          : thread
-      )
+      current.map((thread) => (thread.id === threadId ? { ...thread, unread: 0 } : thread))
     );
-  };
-
-  const handleCompose = () => {
-    const newThreadId = `new-${composerSeed + 1}`;
-    const newThread = {
-      id: newThreadId,
-      idx: 6,
-      initials: 'N',
-      name: 'new conversation',
-      username: 'draft',
-      preview: 'start writing...',
-      time: 'now',
-      unread: 0,
-      accent: 'rgba(200, 169, 126, 0.16)',
-      mediaLabel: 'shared files',
-      media: [],
-      messages: [],
-    };
-
-    setComposerSeed((seed) => seed + 1);
-    setThreads((current) => [newThread, ...current]);
-    setActiveThreadId(newThreadId);
-    setDraft('');
-    setReplyingTo(null);
   };
 
   const handleSend = () => {
@@ -302,7 +302,7 @@ export function MessagesScreen() {
           >
             <ConversationInfoPanel
               activeThread={activeThread}
-                  setPreviewItem={setPreviewItem}
+              setPreviewItem={setPreviewItem}
               mobileOverlay
               onClose={() => setMobileInfoOpen(false)}
             />
@@ -338,7 +338,9 @@ export function MessagesScreen() {
             }}
           >
             <MediaPlaceholder item={previewItem} large />
-            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>{previewItem.title || previewItem.label}</div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>
+              {previewItem.title || previewItem.label}
+            </div>
             <button
               type="button"
               onClick={() => setPreviewItem(null)}
@@ -387,10 +389,26 @@ export function MessagesScreen() {
               padding: '22px 24px 20px',
             }}
           >
-            <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, color: v.ink, letterSpacing: '-0.03em' }}>
+            <div
+              style={{
+                fontFamily: v.fontDisplay,
+                fontSize: 18,
+                fontWeight: 700,
+                color: v.ink,
+                letterSpacing: '-0.03em',
+              }}
+            >
               delete message?
             </div>
-            <div style={{ marginTop: 10, fontFamily: v.fontBody, fontSize: 14, lineHeight: 1.45, color: v.ink3 }}>
+            <div
+              style={{
+                marginTop: 10,
+                fontFamily: v.fontBody,
+                fontSize: 14,
+                lineHeight: 1.45,
+                color: v.ink3,
+              }}
+            >
               this can't be undone.
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>

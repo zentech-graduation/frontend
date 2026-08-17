@@ -11,7 +11,13 @@ import { useOverlayNavigate } from '@/features/luvax/hooks/useOverlayNavigate';
 import { useViewport } from '@/features/luvax/hooks/useViewport';
 
 import { useHashtagSearch, usePostSearch, useUserSearch } from '../hooks/useSearch';
-import { SearchDegraded, SearchEmpty, SearchFailed, SearchLoading, SearchPrompt } from './SearchResultsEmpty';
+import {
+  SearchDegraded,
+  SearchEmpty,
+  SearchFailed,
+  SearchLoading,
+  SearchPrompt,
+} from './SearchResultsEmpty';
 
 const TABS = [
   { id: 'posts', label: 'posts' },
@@ -53,7 +59,11 @@ function ResultsSection({ query, label, result, renderRows }) {
     // down and this page is not an answer". Reading the flag off any page is
     // enough, because a degraded search returns no rows at all.
     const degraded = (data?.pages || []).some((page) => isPageDegraded(page));
-    return degraded ? <SearchDegraded label={label} /> : <SearchEmpty label={label} query={query} />;
+    return degraded ? (
+      <SearchDegraded label={label} />
+    ) : (
+      <SearchEmpty label={label} query={query} />
+    );
   }
 
   return (
@@ -61,8 +71,15 @@ function ResultsSection({ query, label, result, renderRows }) {
       {renderRows(rows)}
       {/* Infinite scroll trigger. Each half owns its own, so one running out of
           pages does not stop the others. */}
-      <div ref={ref} style={{ height: 20, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        {isFetchingNextPage && <span style={{ color: v.ink3, fontSize: 12, fontFamily: v.fontBody }}>loading more...</span>}
+      <div
+        ref={ref}
+        style={{ height: 20, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+      >
+        {isFetchingNextPage && (
+          <span style={{ color: v.ink3, fontSize: 12, fontFamily: v.fontBody }}>
+            loading more...
+          </span>
+        )}
       </div>
     </>
   );
@@ -190,9 +207,17 @@ export function SearchScreen() {
             label="posts"
             result={postResult}
             renderRows={(rows) => (
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 2, padding: '2px 0 0' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                  gap: 2,
+                  padding: '2px 0 0',
+                }}
+              >
                 {rows.map((post) => {
-                  const mediaUrl = post.media && post.media.length > 0 ? post.media[0].cdnUrl : null;
+                  const mediaUrl =
+                    post.media && post.media.length > 0 ? post.media[0].cdnUrl : null;
                   return (
                     <div
                       key={post.id}
@@ -295,10 +320,24 @@ export function SearchScreen() {
                       <LxIcon name="hash" size={18} color={v.ink2} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>
+                      <div
+                        style={{
+                          fontFamily: v.fontBody,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: v.ink,
+                        }}
+                      >
                         #{tag.name}
                       </div>
-                      <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, marginTop: 2 }}>
+                      <div
+                        style={{
+                          fontFamily: v.fontBody,
+                          fontSize: 12,
+                          color: v.ink3,
+                          marginTop: 2,
+                        }}
+                      >
                         {tag.postCount} {tag.postCount === 1 ? 'post' : 'posts'}
                       </div>
                     </div>

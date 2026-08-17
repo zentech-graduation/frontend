@@ -40,7 +40,7 @@ export function BlockConfirmDialog({ open, handle, pending, onCancel, onConfirm 
       }}
     >
       <div
-        onClick={event => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
         style={{
           background: v.base,
           borderRadius: 16,
@@ -53,7 +53,15 @@ export function BlockConfirmDialog({ open, handle, pending, onCancel, onConfirm 
           gap: 14,
         }}
       >
-        <div style={{ fontFamily: v.fontDisplay, fontSize: 20, fontWeight: 700, color: v.ink, letterSpacing: '-0.02em' }}>
+        <div
+          style={{
+            fontFamily: v.fontDisplay,
+            fontSize: 20,
+            fontWeight: 700,
+            color: v.ink,
+            letterSpacing: '-0.02em',
+          }}
+        >
           block @{handle}?
         </div>
 
@@ -61,14 +69,19 @@ export function BlockConfirmDialog({ open, handle, pending, onCancel, onConfirm 
           blocking takes effect straight away:
         </div>
 
-        <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <ul
+          style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6 }}
+        >
           {[
             'you both stop following each other',
             'their posts leave your feed',
             'neither of you finds the other in search',
             'you can no longer open their profile',
-          ].map(line => (
-            <li key={line} style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, lineHeight: 1.5 }}>
+          ].map((line) => (
+            <li
+              key={line}
+              style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, lineHeight: 1.5 }}
+            >
               {line}
             </li>
           ))}
@@ -85,8 +98,8 @@ export function BlockConfirmDialog({ open, handle, pending, onCancel, onConfirm 
             lineHeight: 1.5,
           }}
         >
-          unblocking later restores access but does not restore the follows. if you want to
-          follow each other again, you will both have to do it again.
+          unblocking later restores access but does not restore the follows. if you want to follow
+          each other again, you will both have to do it again.
         </div>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>

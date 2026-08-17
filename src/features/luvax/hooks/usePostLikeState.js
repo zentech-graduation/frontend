@@ -50,7 +50,7 @@ const applyToPost = (postId, patch) => (cached) => {
  */
 export const patchCachedPost = (queryClient, postId, patch) => {
   const entries = POST_LIST_PREFIXES.flatMap((queryKey) =>
-    queryClient.getQueriesData({ queryKey }),
+    queryClient.getQueriesData({ queryKey })
   ).concat(queryClient.getQueriesData({ queryKey: ['post', postId] }));
 
   entries.forEach(([queryKey]) => {

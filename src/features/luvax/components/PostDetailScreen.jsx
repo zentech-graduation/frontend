@@ -1,12 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { copyPostLink, extractPageContent, getDisplayName, getUserSummary, sharePost } from '@/utils/helpers';
+import {
+  copyPostLink,
+  extractPageContent,
+  getDisplayName,
+  getUserSummary,
+  sharePost,
+} from '@/utils/helpers';
 import { LxAvatar, LxBtn, LxDropdownMenu, LxIcon, LxModal, LxTag } from './primitives';
 import { PostMedia } from './PostMedia';
-import { useCreateComment, useDeletePost, useLikePost, usePostDetail, useSavePost, useTopLevelComments, useUpdatePost } from '../hooks/usePosts';
+import {
+  useCreateComment,
+  useDeletePost,
+  useLikePost,
+  usePostDetail,
+  useSavePost,
+  useTopLevelComments,
+  useUpdatePost,
+} from '../hooks/usePosts';
 import { useLivePostUpdates } from '../hooks/useLivePostUpdates';
-import { useCommentDeletionScope, useCommentReplies, useDeleteComment, useEditComment, useToggleCommentLike } from '../hooks/usePosts';
+import {
+  useCommentDeletionScope,
+  useCommentReplies,
+  useDeleteComment,
+  useEditComment,
+  useToggleCommentLike,
+} from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useRelativeTime } from '../hooks/useRelativeTime';
@@ -52,7 +72,10 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
 
   const timeStr = useRelativeTime(comment.createdAt, { seedKey: comment.id });
 
-  const { data: repliesResponse, isLoading: repliesLoading } = useCommentReplies(comment.id, showReplies);
+  const { data: repliesResponse, isLoading: repliesLoading } = useCommentReplies(
+    comment.id,
+    showReplies
+  );
   const replies = extractPageContent(repliesResponse);
 
   const toggleLike = useToggleCommentLike(postId);
@@ -171,8 +194,21 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
 
   const commentMenuItems = [
     { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
-    { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, comment.content) },
-    { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId).then(() => toast('link copied')).catch(() => {}) },
+    {
+      id: 'share',
+      icon: 'share',
+      label: 'Share',
+      onClick: () => sharePost(postId, comment.content),
+    },
+    {
+      id: 'copy',
+      icon: 'link',
+      label: 'Copy link',
+      onClick: () =>
+        copyPostLink(postId)
+          .then(() => toast('link copied'))
+          .catch(() => {}),
+    },
     {
       id: 'view-profile',
       icon: 'profile',
@@ -182,7 +218,13 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
     ...(isOwn
       ? [
           { id: 'edit', icon: 'edit', label: 'Edit', separator: true, onClick: startEditing },
-          { id: 'delete', icon: 'trash', label: 'Delete', tone: 'danger', onClick: () => setDeleteOpen(true) },
+          {
+            id: 'delete',
+            icon: 'trash',
+            label: 'Delete',
+            tone: 'danger',
+            onClick: () => setDeleteOpen(true),
+          },
         ]
       : [
           // hasReported is true exactly when a new report would be refused as a
@@ -249,15 +291,40 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
               <span>top comment</span>
             </div>
           ) : null}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, flexWrap: 'wrap', lineHeight: 1.42 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 7,
+              flexWrap: 'wrap',
+              lineHeight: 1.42,
+            }}
+          >
             <span
               onClick={() => author.id && navigate(routeTo.userProfile(author.id))}
-              style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink, cursor: author.id ? 'pointer' : 'default' }}
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: v.ink,
+                cursor: author.id ? 'pointer' : 'default',
+              }}
             >
               {authorName}
             </span>
             {editing ? null : (
-              <span style={{ fontFamily: v.fontBody, fontSize: 12.5, color: v.ink, minWidth: 0, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{comment.content}</span>
+              <span
+                style={{
+                  fontFamily: v.fontBody,
+                  fontSize: 12.5,
+                  color: v.ink,
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {comment.content}
+              </span>
             )}
           </div>
           {editing ? (
@@ -285,17 +352,38 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
                 <LxBtn variant="primary" size="sm" onClick={submitEdit} disabled={!canSaveEdit}>
                   {editComment.isPending ? 'saving...' : 'save'}
                 </LxBtn>
-                <LxBtn variant="ghost" size="sm" onClick={cancelEditing}>cancel</LxBtn>
-                <span style={{ marginLeft: 'auto', fontFamily: v.fontMono, fontSize: 10, color: draftTooLong ? v.error : v.ink3 }}>
+                <LxBtn variant="ghost" size="sm" onClick={cancelEditing}>
+                  cancel
+                </LxBtn>
+                <span
+                  style={{
+                    marginLeft: 'auto',
+                    fontFamily: v.fontMono,
+                    fontSize: 10,
+                    color: draftTooLong ? v.error : v.ink3,
+                  }}
+                >
                   {draft.length}/{COMMENT_MAX_LENGTH}
                 </span>
               </div>
             </div>
           ) : null}
           {actionError ? (
-            <div style={{ marginTop: 6, fontFamily: v.fontBody, fontSize: 11.5, color: v.error }}>{actionError}</div>
+            <div style={{ marginTop: 6, fontFamily: v.fontBody, fontSize: 11.5, color: v.error }}>
+              {actionError}
+            </div>
           ) : null}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 6, fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              marginTop: 6,
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              color: v.ink3,
+            }}
+          >
             <span>{timeStr}</span>
             {/* editedAt is set only by a content change. updatedAt also moves when
                 the comment is liked or replied to, so it cannot carry this marker. */}
@@ -303,18 +391,29 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
             <span>{likeCount} likes</span>
             <button
               type="button"
-              onClick={() => onReply({
-                id: comment.id,
-                author: authorName,
-                text: comment.content,
-                // A reply always lands at the thread root, so a reply to a reply
-                // stays at one level. Replying to a reply tags its author, which
-                // the backend turns into a mention notification; replying to a
-                // top-level comment needs no tag.
-                parentId: threadRootId,
-                mentionUsername: isReply ? author.username : null,
-              })}
-              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: v.ink3, fontFamily: v.fontBody, fontSize: 11.5, fontWeight: 500 }}
+              onClick={() =>
+                onReply({
+                  id: comment.id,
+                  author: authorName,
+                  text: comment.content,
+                  // A reply always lands at the thread root, so a reply to a reply
+                  // stays at one level. Replying to a reply tags its author, which
+                  // the backend turns into a mention notification; replying to a
+                  // top-level comment needs no tag.
+                  parentId: threadRootId,
+                  mentionUsername: isReply ? author.username : null,
+                })
+              }
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                color: v.ink3,
+                fontFamily: v.fontBody,
+                fontSize: 11.5,
+                fontWeight: 500,
+              }}
             >
               Reply
             </button>
@@ -323,7 +422,19 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
                 ref={commentMenuButtonRef}
                 type="button"
                 onClick={() => setCommentMenuOpen((open) => !open)}
-                style={{ background: 'none', border: 'none', padding: 0, marginTop: -5, cursor: 'pointer', color: v.ink3, fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, lineHeight: 1, letterSpacing: '0.02em' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  marginTop: -5,
+                  cursor: 'pointer',
+                  color: v.ink3,
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  lineHeight: 1,
+                  letterSpacing: '0.02em',
+                }}
               >
                 ...
               </button>
@@ -333,9 +444,28 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
             <button
               type="button"
               onClick={() => setShowReplies((value) => !value)}
-              style={{ background: 'none', border: 'none', padding: 0, marginTop: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: v.ink3, fontFamily: v.fontBody, fontSize: 12, fontWeight: 500 }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                marginTop: 5,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                color: v.ink3,
+                fontFamily: v.fontBody,
+                fontSize: 12,
+                fontWeight: 500,
+              }}
             >
-              <span style={{ display: 'inline-flex', transform: showReplies ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 160ms ease' }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  transform: showReplies ? 'rotate(90deg)' : 'rotate(0deg)',
+                  transition: 'transform 160ms ease',
+                }}
+              >
                 <LxIcon name="chevronRight" size={12} color={v.ink3} />
               </span>
               <span>{showReplies ? 'Hide replies' : `View replies (${comment.replyCount})`}</span>
@@ -348,7 +478,15 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
           aria-label={liked ? 'unlike comment' : 'like comment'}
           aria-pressed={liked}
           className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
-          style={{ position: 'absolute', top: 16, right: 0, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+          style={{
+            position: 'absolute',
+            top: 16,
+            right: 0,
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+          }}
         >
           <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
             <LxIcon name="heart" size={16} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
@@ -360,15 +498,31 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
         // spacing rather than a thread line.
         <div style={{ marginLeft: 20, marginTop: 4, display: 'flex', flexDirection: 'column' }}>
           {repliesLoading ? (
-            <div style={{ padding: '8px 0', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>loading replies...</div>
+            <div style={{ padding: '8px 0', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
+              loading replies...
+            </div>
           ) : (
             replies.map((reply) => (
-              <CommentRow key={reply.id} comment={reply} onReply={onReply} depth={1} rootId={comment.id} postId={postId} />
+              <CommentRow
+                key={reply.id}
+                comment={reply}
+                onReply={onReply}
+                depth={1}
+                rootId={comment.id}
+                postId={postId}
+              />
             ))
           )}
         </div>
       ) : null}
-      <LxDropdownMenu anchorRef={commentMenuButtonRef} open={commentMenuOpen} onClose={() => setCommentMenuOpen(false)} items={commentMenuItems} width={214} align="right" />
+      <LxDropdownMenu
+        anchorRef={commentMenuButtonRef}
+        open={commentMenuOpen}
+        onClose={() => setCommentMenuOpen(false)}
+        items={commentMenuItems}
+        width={214}
+        align="right"
+      />
 
       <ConfirmModal
         config={
@@ -465,7 +619,9 @@ export function PostDetailScreen({ overlay = false }) {
     return list.some((item) => getUserSummary(item, 'user').id === targetUserId);
   })();
 
-  const tags = post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((tag) => tag.slice(1)) : []);
+  const tags =
+    post.tags ||
+    (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((tag) => tag.slice(1)) : []);
   const mediaList = post.media || [];
   const mainMedia = mediaList[0] || null;
   // Two panes only when a media post is opened on a wide viewport: the media
@@ -478,7 +634,8 @@ export function PostDetailScreen({ overlay = false }) {
   // makes the whole popup that portrait's aspect ratio, so it is not stranded in
   // a wide dark pane. A landscape image keeps the roomier fixed frame. The ratio
   // is width over height, taken from the first media item, as the frame is.
-  const mediaAspect = mainMedia && mainMedia.width && mainMedia.height ? mainMedia.width / mainMedia.height : 1;
+  const mediaAspect =
+    mainMedia && mainMedia.width && mainMedia.height ? mainMedia.width / mainMedia.height : 1;
   const A = mediaAspect.toFixed(4);
   // The media pane takes the media's own width edge to edge, with no letterbox at the
   // sides. Its height follows the media's aspect ratio, capped so a tall portrait does
@@ -621,7 +778,10 @@ export function PostDetailScreen({ overlay = false }) {
           setReplyingTo(null);
           window.requestAnimationFrame(() => {
             if (commentsPaneRef.current) {
-              commentsPaneRef.current.scrollTo({ top: commentsPaneRef.current.scrollHeight, behavior: 'smooth' });
+              commentsPaneRef.current.scrollTo({
+                top: commentsPaneRef.current.scrollHeight,
+                behavior: 'smooth',
+              });
             }
           });
         },
@@ -644,8 +804,21 @@ export function PostDetailScreen({ overlay = false }) {
   const menuItems = useMemo(
     () => [
       { id: 'like', icon: 'heart', label: liked ? 'Unlike' : 'Like', onClick: handleLikeToggle },
-      { id: 'share', icon: 'share', label: 'Share', onClick: () => sharePost(postId, post.caption) },
-      { id: 'copy', icon: 'link', label: 'Copy link', onClick: () => copyPostLink(postId).then(() => toast('link copied')).catch(() => {}) },
+      {
+        id: 'share',
+        icon: 'share',
+        label: 'Share',
+        onClick: () => sharePost(postId, post.caption),
+      },
+      {
+        id: 'copy',
+        icon: 'link',
+        label: 'Copy link',
+        onClick: () =>
+          copyPostLink(postId)
+            .then(() => toast('link copied'))
+            .catch(() => {}),
+      },
       // Kept off the viewer's own post, where the server refuses the report with
       // REPORT_SELF_NOT_ALLOWED and the action could never succeed.
       ...(isSelf
@@ -678,7 +851,16 @@ export function PostDetailScreen({ overlay = false }) {
 
   if (isLoading) {
     return (
-      <div style={{ position: overlay ? 'fixed' : 'relative', inset: overlay ? 0 : 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', color: v.ink3 }}>
+      <div
+        style={{
+          position: overlay ? 'fixed' : 'relative',
+          inset: overlay ? 0 : 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: v.ink3,
+        }}
+      >
         loading post...
       </div>
     );
@@ -686,7 +868,18 @@ export function PostDetailScreen({ overlay = false }) {
 
   if (isError || !postId) {
     return (
-      <div style={{ position: overlay ? 'fixed' : 'relative', inset: overlay ? 0 : 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', color: v.error, flexDirection: 'column', gap: 8 }}>
+      <div
+        style={{
+          position: overlay ? 'fixed' : 'relative',
+          inset: overlay ? 0 : 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: v.error,
+          flexDirection: 'column',
+          gap: 8,
+        }}
+      >
         <LxIcon name="explore" size={32} color={v.error} />
         <div>post not found</div>
       </div>
@@ -714,11 +907,30 @@ export function PostDetailScreen({ overlay = false }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             onClick={() => targetUserId && navigate(routeTo.userProfile(targetUserId))}
-            style={{ fontFamily: v.fontBody, fontSize: 13.5, fontWeight: 600, color: v.ink, lineHeight: 1.15, cursor: targetUserId ? 'pointer' : 'default', display: 'inline-block' }}
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 13.5,
+              fontWeight: 600,
+              color: v.ink,
+              lineHeight: 1.15,
+              cursor: targetUserId ? 'pointer' : 'default',
+              display: 'inline-block',
+            }}
           >
             {authorName}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontFamily: v.fontMono, fontSize: 9.5, color: v.ink3, lineHeight: 1 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              marginTop: 2,
+              fontFamily: v.fontMono,
+              fontSize: 9.5,
+              color: v.ink3,
+              lineHeight: 1,
+            }}
+          >
             <span>{timeStr}</span>
             <span>ago</span>
           </div>
@@ -728,7 +940,18 @@ export function PostDetailScreen({ overlay = false }) {
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
           className="lx-header-icon-btn"
-          style={{ width: 24, height: 24, marginTop: 2, borderRadius: '50%', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{
+            width: 24,
+            height: 24,
+            marginTop: 2,
+            borderRadius: '50%',
+            border: 'none',
+            background: 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
         >
           <LxIcon name="more" size={14} color={v.ink3} />
         </button>
@@ -736,26 +959,57 @@ export function PostDetailScreen({ overlay = false }) {
           type="button"
           onClick={closePost}
           className="lx-header-icon-btn"
-          style={{ width: 24, height: 24, marginTop: 2, marginLeft: 2, borderRadius: '50%', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{
+            width: 24,
+            height: 24,
+            marginTop: 2,
+            marginLeft: 2,
+            borderRadius: '50%',
+            border: 'none',
+            background: 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
         >
           <LxIcon name="close" size={14} color={v.ink3} />
         </button>
       </div>
 
       <div style={{ padding: '0 14px 10px' }}>
-        <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, lineHeight: 1.42, color: v.ink, letterSpacing: '-0.01em' }}>
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 14,
+            fontWeight: 500,
+            lineHeight: 1.42,
+            color: v.ink,
+            letterSpacing: '-0.01em',
+          }}
+        >
           {post.caption}
         </div>
         {tags.length > 0 ? (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
             {tags.map((tag) => (
-              <LxTag key={tag} size="sm">#{tag}</LxTag>
+              <LxTag key={tag} size="sm">
+                #{tag}
+              </LxTag>
             ))}
           </div>
         ) : null}
       </div>
 
-      <div ref={commentsPaneRef} style={{ minHeight: 0, overflowY: 'auto', padding: '16px 16px 0', scrollBehavior: 'smooth' }}>
+      <div
+        ref={commentsPaneRef}
+        style={{
+          minHeight: 0,
+          overflowY: 'auto',
+          padding: '16px 16px 0',
+          scrollBehavior: 'smooth',
+        }}
+      >
         {/* In two panes the media lives in the fixed left pane and does not scroll.
             Stacked (narrow) and text posts keep it inline above the comments. */}
         {!twoPane && mediaList.length > 0 ? (
@@ -765,14 +1019,49 @@ export function PostDetailScreen({ overlay = false }) {
         ) : null}
 
         {commentsLoading ? (
-          <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>loading comments...</div>
+          <div
+            style={{
+              padding: 20,
+              textAlign: 'center',
+              fontFamily: v.fontMono,
+              fontSize: 12,
+              color: v.ink3,
+            }}
+          >
+            loading comments...
+          </div>
         ) : commentsError ? (
-          <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontBody, fontSize: 13, color: v.error }}>we couldn't load comments. try again.</div>
+          <div
+            style={{
+              padding: 20,
+              textAlign: 'center',
+              fontFamily: v.fontBody,
+              fontSize: 13,
+              color: v.error,
+            }}
+          >
+            we couldn't load comments. try again.
+          </div>
         ) : comments.length === 0 ? (
-          <div style={{ padding: 20, textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>no comments yet.</div>
+          <div
+            style={{
+              padding: 20,
+              textAlign: 'center',
+              fontFamily: v.fontMono,
+              fontSize: 12,
+              color: v.ink3,
+            }}
+          >
+            no comments yet.
+          </div>
         ) : (
           comments.map((comment) => (
-            <CommentRow key={comment.id} comment={comment} onReply={handleReplySelect} postId={postId} />
+            <CommentRow
+              key={comment.id}
+              comment={comment}
+              onReply={handleReplySelect}
+              postId={postId}
+            />
           ))
         )}
         {hasNextComments ? (
@@ -780,7 +1069,16 @@ export function PostDetailScreen({ overlay = false }) {
             type="button"
             onClick={() => fetchNextComments()}
             disabled={isFetchingNextComments}
-            style={{ width: '100%', background: 'none', border: 'none', padding: '12px 0', cursor: 'pointer', fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}
+            style={{
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              padding: '12px 0',
+              cursor: 'pointer',
+              fontFamily: v.fontMono,
+              fontSize: 11,
+              color: v.ink3,
+            }}
           >
             {isFetchingNextComments ? 'loading more...' : 'load more comments'}
           </button>
@@ -789,24 +1087,90 @@ export function PostDetailScreen({ overlay = false }) {
 
       <div style={{ borderTop: `1px solid ${v.borderSubtle}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '10px 16px 6px' }}>
-          <button type="button" onClick={handleLikeToggle} className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            type="button"
+            onClick={handleLikeToggle}
+            className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
             <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
               <LxIcon name="heart" size={22} color={liked ? HEART_COLOR : v.ink3} filled={liked} />
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 12, color: liked ? HEART_COLOR : v.ink3 }}>{likeCount}</span>
+            <span
+              style={{ fontFamily: v.fontMono, fontSize: 12, color: liked ? HEART_COLOR : v.ink3 }}
+            >
+              {likeCount}
+            </span>
           </button>
-          <button type="button" onClick={() => sharePost(postId, post.caption)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => sharePost(postId, post.caption)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
             <LxIcon name="share" size={20} color={v.ink3} />
           </button>
         </div>
 
         {replyingTo ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 14px 7px', borderBottom: `1px solid ${v.borderSubtle}`, background: 'color-mix(in srgb, var(--lx-accent) 14%, var(--lx-surface))', fontFamily: v.fontMono, fontSize: 11, color: v.accentText }}>
-            <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              padding: '8px 14px 7px',
+              borderBottom: `1px solid ${v.borderSubtle}`,
+              background: 'color-mix(in srgb, var(--lx-accent) 14%, var(--lx-surface))',
+              fontFamily: v.fontMono,
+              fontSize: 11,
+              color: v.accentText,
+            }}
+          >
+            <div
+              style={{
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
               <span style={{ marginRight: 6 }}>↩ replying to @{replyingTo.author}</span>
               <span style={{ color: v.ink2 }}>{replyingTo.text}</span>
             </div>
-            <button type="button" onClick={() => setReplyingTo(null)} style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.14)', border: 'none', color: v.ink3, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, lineHeight: 1 }}>
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                background: 'rgba(0,0,0,0.14)',
+                border: 'none',
+                color: v.ink3,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                fontSize: 11,
+                lineHeight: 1,
+              }}
+            >
               ×
             </button>
           </div>
@@ -815,7 +1179,17 @@ export function PostDetailScreen({ overlay = false }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px 12px' }}>
           <LxAvatar size={30} src={currentUser?.avatarUrl} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ minHeight: 40, borderRadius: 20, border: `1px solid ${v.border}`, background: 'transparent', display: 'flex', alignItems: 'center', padding: '4px 14px' }}>
+            <div
+              style={{
+                minHeight: 40,
+                borderRadius: 20,
+                border: `1px solid ${v.border}`,
+                background: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px 14px',
+              }}
+            >
               <textarea
                 ref={commentInputRef}
                 value={commentDraft}
@@ -825,7 +1199,21 @@ export function PostDetailScreen({ overlay = false }) {
                 placeholder={replyingTo ? `reply to @${replyingTo.author}...` : 'add a comment...'}
                 // A single line by default that grows with the text up to three
                 // lines, then scrolls. Long comments wrap instead of running off.
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: v.ink, fontFamily: v.fontBody, fontSize: 14, resize: 'none', lineHeight: '20px', maxHeight: 70, overflowY: 'auto', padding: '5px 0', display: 'block' }}
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: v.ink,
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  resize: 'none',
+                  lineHeight: '20px',
+                  maxHeight: 70,
+                  overflowY: 'auto',
+                  padding: '5px 0',
+                  display: 'block',
+                }}
                 onKeyDown={(event) => {
                   // Enter sends; Shift+Enter adds a line.
                   if (event.key === 'Enter' && !event.shiftKey) {
@@ -836,7 +1224,19 @@ export function PostDetailScreen({ overlay = false }) {
               />
             </div>
           </div>
-          <button type="button" onClick={handleCommentSubmit} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', opacity: commentDraft.trim() ? 1 : 0.5, display: 'flex', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={handleCommentSubmit}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              opacity: commentDraft.trim() ? 1 : 0.5,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
             <LxIcon name="send" size={18} color={v.accent} />
           </button>
         </div>
@@ -864,12 +1264,29 @@ export function PostDetailScreen({ overlay = false }) {
               side edges with no letterbox. The image keeps its true ratio (minAspect 0)
               and is centred vertically; when the popup is taller than the image, the
               column's own surface fills evenly above and below rather than boxing it. */}
-          <div style={{ width: mediaWidth, height: '100%', flexShrink: 0, background: v.base, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div
+            style={{
+              width: mediaWidth,
+              height: '100%',
+              flexShrink: 0,
+              background: v.base,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
             <div style={{ width: '100%', flexShrink: 0 }}>
               <PostMedia post={post} radius={0} minAspect={0} />
             </div>
           </div>
-          <div style={{ width: COMMENT_PANE_WIDTH, flexShrink: 0, borderLeft: `1px solid ${v.border}`, display: 'flex' }}>
+          <div
+            style={{
+              width: COMMENT_PANE_WIDTH,
+              flexShrink: 0,
+              borderLeft: `1px solid ${v.border}`,
+              display: 'flex',
+            }}
+          >
             {commentColumn}
           </div>
         </>
@@ -885,14 +1302,38 @@ export function PostDetailScreen({ overlay = false }) {
         // The scrim is stronger than before so the open post holds attention and
         // the feed behind stops competing, without hiding it entirely. See
         // docs/layout-overhaul/motion-vocabulary.md.
-        <div className="lx-scrim" style={{ position: 'fixed', inset: 0, zIndex: 1400, background: 'rgba(10, 8, 6, 0.62)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={closePost}>
-          <div className="lx-overlay-panel" onClick={(event) => event.stopPropagation()}>{container}</div>
+        <div
+          className="lx-scrim"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1400,
+            background: 'rgba(10, 8, 6, 0.62)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={closePost}
+        >
+          <div className="lx-overlay-panel" onClick={(event) => event.stopPropagation()}>
+            {container}
+          </div>
         </div>
       ) : (
         container
       )}
 
-      <LxDropdownMenu anchorRef={menuButtonRef} open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} width={182} zIndex={1605} />
+      <LxDropdownMenu
+        anchorRef={menuButtonRef}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={menuItems}
+        width={182}
+        zIndex={1605}
+      />
 
       <ConfirmModal
         config={
@@ -904,9 +1345,18 @@ export function PostDetailScreen({ overlay = false }) {
                 // earlier phase, so the migration must not reword it.
                 message: (
                   <>
-                    Are you sure you want to block <strong>{authorName}</strong>? They won&apos;t be able to find your profile, posts or story on Luvax.
+                    Are you sure you want to block <strong>{authorName}</strong>? They won&apos;t be
+                    able to find your profile, posts or story on Luvax.
                     {block.isError ? (
-                      <div role="alert" style={{ marginTop: 12, fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}>
+                      <div
+                        role="alert"
+                        style={{
+                          marginTop: 12,
+                          fontFamily: v.fontMono,
+                          fontSize: 11,
+                          color: v.errorText,
+                        }}
+                      >
                         couldn&apos;t block this account. try again.
                       </div>
                     ) : null}
@@ -940,13 +1390,29 @@ export function PostDetailScreen({ overlay = false }) {
           open={editSheetOpen}
           onClose={() => setEditSheetOpen(false)}
           title="edit post"
-          actions={<LxBtn variant="primary" onClick={handleEditSubmit}>save changes</LxBtn>}
+          actions={
+            <LxBtn variant="primary" onClick={handleEditSubmit}>
+              save changes
+            </LxBtn>
+          }
         >
           <textarea
             value={editCaption}
             onChange={(event) => setEditCaption(event.target.value)}
             placeholder="write a caption..."
-            style={{ width: '100%', minHeight: 120, fontFamily: v.fontBody, fontSize: 15, color: v.ink, border: `1px solid ${v.border}`, borderRadius: 8, padding: 12, resize: 'none', outline: 'none', background: v.base }}
+            style={{
+              width: '100%',
+              minHeight: 120,
+              fontFamily: v.fontBody,
+              fontSize: 15,
+              color: v.ink,
+              border: `1px solid ${v.border}`,
+              borderRadius: 8,
+              padding: 12,
+              resize: 'none',
+              outline: 'none',
+              background: v.base,
+            }}
           />
         </LxModal>
       ) : null}

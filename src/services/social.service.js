@@ -32,7 +32,10 @@ export const getFollowers = async (userId, cursor, limit = 20, signal) => {
   if (cursor) params.append('cursor', cursor);
   if (limit) params.append('limit', limit.toString());
 
-  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/users/${userId}/followers?${params.toString()}`, { signal });
+  const response = await axiosInstance.get(
+    `${SOCIAL_API_PATH}/users/${userId}/followers?${params.toString()}`,
+    { signal }
+  );
   return response.data;
 };
 
@@ -42,7 +45,10 @@ export const getFollowing = async (userId, cursor, limit = 20, signal) => {
   if (cursor) params.append('cursor', cursor);
   if (limit) params.append('limit', limit.toString());
 
-  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/users/${userId}/following?${params.toString()}`, { signal });
+  const response = await axiosInstance.get(
+    `${SOCIAL_API_PATH}/users/${userId}/following?${params.toString()}`,
+    { signal }
+  );
   return response.data;
 };
 
@@ -54,13 +60,17 @@ export const getPendingFollowRequests = async () => {
 
 // Approve follow request
 export const approveFollowRequest = async (requesterId) => {
-  const response = await axiosInstance.patch(`${SOCIAL_API_PATH}/follow-requests/${requesterId}/approve`);
+  const response = await axiosInstance.patch(
+    `${SOCIAL_API_PATH}/follow-requests/${requesterId}/approve`
+  );
   return response.data;
 };
 
 // Reject follow request
 export const rejectFollowRequest = async (requesterId) => {
-  const response = await axiosInstance.patch(`${SOCIAL_API_PATH}/follow-requests/${requesterId}/reject`);
+  const response = await axiosInstance.patch(
+    `${SOCIAL_API_PATH}/follow-requests/${requesterId}/reject`
+  );
   return response.data;
 };
 
@@ -70,6 +80,8 @@ export const getBlockedUsers = async (cursor, limit = 20, signal) => {
   if (cursor) params.append('cursor', cursor);
   if (limit) params.append('limit', limit.toString());
 
-  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/blocked?${params.toString()}`, { signal });
+  const response = await axiosInstance.get(`${SOCIAL_API_PATH}/blocked?${params.toString()}`, {
+    signal,
+  });
   return response.data;
 };

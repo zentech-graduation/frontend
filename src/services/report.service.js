@@ -32,14 +32,54 @@ export const REPORT_TYPES = {
  * words shown to the reader and the backend supplies the value put on the wire.
  */
 export const REPORT_REASONS = [
-  { id: 'spam', label: 'Spam', chipLabel: 'Spam', desc: 'Fake engagement, scams, repetitive posts' },
-  { id: 'nudity', label: 'Nudity or sexual content', chipLabel: 'Nudity', desc: 'Explicit or suggestive material' },
-  { id: 'violence', label: 'Violence or threats', chipLabel: 'Violence', desc: 'Graphic, dangerous, or threatening content' },
-  { id: 'hate_speech', label: 'Hate speech', chipLabel: 'Hate Speech', desc: 'Promotes discrimination or hostility' },
-  { id: 'harassment', label: 'Harassment or bullying', chipLabel: 'Harassment', desc: 'Targeting or intimidating individuals' },
-  { id: 'false_information', label: 'False information', chipLabel: 'False Information', desc: 'Misleading or unverified claims' },
-  { id: 'scam', label: 'Scam or fraud', chipLabel: 'Scam or Fraud', desc: 'Deceptive schemes or financial fraud' },
-  { id: 'other', label: 'Something else', chipLabel: 'Other', desc: "Doesn't fit the above categories" },
+  {
+    id: 'spam',
+    label: 'Spam',
+    chipLabel: 'Spam',
+    desc: 'Fake engagement, scams, repetitive posts',
+  },
+  {
+    id: 'nudity',
+    label: 'Nudity or sexual content',
+    chipLabel: 'Nudity',
+    desc: 'Explicit or suggestive material',
+  },
+  {
+    id: 'violence',
+    label: 'Violence or threats',
+    chipLabel: 'Violence',
+    desc: 'Graphic, dangerous, or threatening content',
+  },
+  {
+    id: 'hate_speech',
+    label: 'Hate speech',
+    chipLabel: 'Hate Speech',
+    desc: 'Promotes discrimination or hostility',
+  },
+  {
+    id: 'harassment',
+    label: 'Harassment or bullying',
+    chipLabel: 'Harassment',
+    desc: 'Targeting or intimidating individuals',
+  },
+  {
+    id: 'false_information',
+    label: 'False information',
+    chipLabel: 'False Information',
+    desc: 'Misleading or unverified claims',
+  },
+  {
+    id: 'scam',
+    label: 'Scam or fraud',
+    chipLabel: 'Scam or Fraud',
+    desc: 'Deceptive schemes or financial fraud',
+  },
+  {
+    id: 'other',
+    label: 'Something else',
+    chipLabel: 'Other',
+    desc: "Doesn't fit the above categories",
+  },
 ];
 
 /**

@@ -29,59 +29,121 @@ export function StoriesCarousel({ viewport }) {
   const others = hasOwnEntry ? tray.slice(1) : tray;
 
   return (
-    <div style={{
-      display: 'flex', gap: isTablet ? 12 : 16, overflowX: 'auto',
-      padding: isTablet ? '6px 2px 20px' : '8px 2px 24px',
-      flexShrink: 0, scrollbarWidth: 'none',
-      // Centre the avatars in the wider rail. When the set outgrows the rail it
-      // scrolls; new stories entering on the left stay reachable by scrolling.
-      justifyContent: 'safe center',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        gap: isTablet ? 12 : 16,
+        overflowX: 'auto',
+        padding: isTablet ? '6px 2px 20px' : '8px 2px 24px',
+        flexShrink: 0,
+        scrollbarWidth: 'none',
+        // Centre the avatars in the wider rail. When the set outgrows the rail it
+        // scrolls; new stories entering on the left stay reachable by scrolling.
+        justifyContent: 'safe center',
+      }}
+    >
       <button
-        onClick={() => hasOwnEntry
-          ? openOverlay(routeTo.storyView(tray[0].stories[0].id))
-          : openOverlay(ROUTES.STORY_COMPOSE)}
+        onClick={() =>
+          hasOwnEntry
+            ? openOverlay(routeTo.storyView(tray[0].stories[0].id))
+            : openOverlay(ROUTES.STORY_COMPOSE)
+        }
         style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
-          flexShrink: 0, padding: 0, position: 'relative',
-        }}>
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 7,
+          flexShrink: 0,
+          padding: 0,
+          position: 'relative',
+        }}
+      >
         {hasOwnEntry ? (
           <LxAvatar size={avatar} src={currentUser?.avatarUrl} hasStory viewed={false} />
         ) : (
-          <div style={{
-            width: ownRing, height: ownRing, borderRadius: '50%',
-            background: currentUser?.avatarUrl ? `url(${currentUser.avatarUrl}) center/cover no-repeat` : v.surface,
-            border: `1px solid ${v.borderStrong}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, position: 'relative',
-          }}>
+          <div
+            style={{
+              width: ownRing,
+              height: ownRing,
+              borderRadius: '50%',
+              background: currentUser?.avatarUrl
+                ? `url(${currentUser.avatarUrl}) center/cover no-repeat`
+                : v.surface,
+              border: `1px solid ${v.borderStrong}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              position: 'relative',
+            }}
+          >
             {currentUser?.avatarUrl ? (
-              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: v.black40 }} />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  background: v.black40,
+                }}
+              />
             ) : null}
-            <LxIcon name="plus" size={isTablet ? 20 : 22} color={currentUser?.avatarUrl ? v.white : v.ink2} style={{ position: 'relative' }} />
+            <LxIcon
+              name="plus"
+              size={isTablet ? 20 : 22}
+              color={currentUser?.avatarUrl ? v.white : v.ink2}
+              style={{ position: 'relative' }}
+            />
           </div>
         )}
-        <span style={{
-          fontFamily: v.fontBody, fontSize: isTablet ? 11 : 12, fontWeight: 500,
-          color: v.ink,
-          maxWidth: avatar + 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>your story</span>
+        <span
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: isTablet ? 11 : 12,
+            fontWeight: 500,
+            color: v.ink,
+            maxWidth: avatar + 16,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          your story
+        </span>
       </button>
       {others.map((entry) => (
-        <button key={entry.userId}
+        <button
+          key={entry.userId}
           onClick={() => openOverlay(routeTo.storyView(entry.stories[0].id))}
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
-            flexShrink: 0, padding: 0,
-          }}>
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 7,
+            flexShrink: 0,
+            padding: 0,
+          }}
+        >
           <LxAvatar size={avatar} src={entry.userAvatarUrl} hasStory viewed={!entry.hasUnseen} />
-          <span style={{
-            fontFamily: v.fontBody, fontSize: isTablet ? 11 : 12, fontWeight: 500,
-            color: entry.hasUnseen ? v.ink : v.ink3,
-            maxWidth: avatar + 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{entry.userDisplayName || entry.username}</span>
+          <span
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: isTablet ? 11 : 12,
+              fontWeight: 500,
+              color: entry.hasUnseen ? v.ink : v.ink3,
+              maxWidth: avatar + 16,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {entry.userDisplayName || entry.username}
+          </span>
         </button>
       ))}
     </div>
@@ -104,15 +166,15 @@ export function FeedScreen() {
   const { tweaks, viewport } = useLuvaxTweaks();
   const isMobile = viewport === 'mobile';
   const { ref, inView } = useInView();
-  const { 
-    data: feedResponse, 
-    isLoading, 
-    isError, 
-    fetchNextPage, 
-    hasNextPage, 
-    isFetchingNextPage 
+  const {
+    data: feedResponse,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useFeed();
-  
+
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -120,11 +182,22 @@ export function FeedScreen() {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Flatten the infinite paginated response
-  const posts = feedResponse?.pages?.flatMap(page => extractPageContent(page)) || [];
+  const posts = feedResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
   if (isLoading) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 40,
+          fontFamily: v.fontMono,
+          fontSize: 12,
+          color: v.ink3,
+        }}
+      >
         loading feed...
       </div>
     );
@@ -132,7 +205,18 @@ export function FeedScreen() {
 
   if (isError) {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, fontFamily: v.fontBody, fontSize: 14, color: v.error }}>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 40,
+          fontFamily: v.fontBody,
+          fontSize: 14,
+          color: v.error,
+        }}
+      >
         we couldn't load your feed. check your connection and try again.
       </div>
     );
@@ -144,7 +228,15 @@ export function FeedScreen() {
       // 48px 24px, title body 15 weight 500 in v.ink2, subtitle body 13 in
       // v.ink3. Only the copy is new, because the design defines no empty feed.
       <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-        <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 500, color: v.ink2, marginBottom: 4 }}>
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 15,
+            fontWeight: 500,
+            color: v.ink2,
+            marginBottom: 4,
+          }}
+        >
           your feed is quiet
         </div>
         <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
@@ -165,26 +257,64 @@ export function FeedScreen() {
   const betweenPosts = isMobile ? 22 : 56;
 
   return (
-    <div style={{
-      flex: 1,
-      padding: isMobile ? '8px 0 48px' : '20px 0 56px',
-    }}>
+    <div
+      style={{
+        flex: 1,
+        padding: isMobile ? '8px 0 48px' : '20px 0 56px',
+      }}
+    >
       {/* The story rail sits in a wider band than the post column below it. */}
-      <div style={{ width: '100%', maxWidth: isMobile ? '100%' : STORY_RAIL_WIDTH, margin: '0 auto', padding: isMobile ? '0 12px' : '0 8px' }}>
+      <div
+        style={{
+          width: '100%',
+          maxWidth: isMobile ? '100%' : STORY_RAIL_WIDTH,
+          margin: '0 auto',
+          padding: isMobile ? '0 12px' : '0 8px',
+        }}
+      >
         <StoriesCarousel viewport={viewport} />
       </div>
 
       <div style={{ width: '100%', maxWidth: isMobile ? '100%' : FEED_COLUMN, margin: '0 auto' }}>
-        <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', padding: isMobile ? '0 14px 16px' : '0 4px 16px' }}>today</div>
+        <div
+          style={{
+            fontFamily: v.fontMono,
+            fontSize: 10,
+            color: v.ink3,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            padding: isMobile ? '0 14px 16px' : '0 4px 16px',
+          }}
+        >
+          today
+        </div>
 
-        <div className="lx-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}>
-          {posts.map(p => (
-            <PostCard key={p.id} post={p} density={tweaks.density} showTags={tweaks.showTags} viewport={viewport} />
+        <div
+          className="lx-fade-in"
+          style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}
+        >
+          {posts.map((p) => (
+            <PostCard
+              key={p.id}
+              post={p}
+              density={tweaks.density}
+              showTags={tweaks.showTags}
+              viewport={viewport}
+            />
           ))}
         </div>
 
         {hasNextPage && (
-          <div ref={ref} style={{ padding: '28px 20px', textAlign: 'center', fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+          <div
+            ref={ref}
+            style={{
+              padding: '28px 20px',
+              textAlign: 'center',
+              fontFamily: v.fontMono,
+              fontSize: 12,
+              color: v.ink3,
+            }}
+          >
             {isFetchingNextPage ? 'loading more...' : 'scroll for more'}
           </div>
         )}

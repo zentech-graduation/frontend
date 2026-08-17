@@ -5,7 +5,7 @@ export function useViewport() {
   const get = () => {
     const w = window.innerWidth;
     if (w >= 1200) return 'desktop';
-    if (w >= 768)  return 'tablet';
+    if (w >= 768) return 'tablet';
     return 'mobile';
   };
   const [vp, setVp] = useState(get);

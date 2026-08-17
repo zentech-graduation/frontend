@@ -1,4 +1,10 @@
-import { Navigate, Outlet, ScrollRestoration, createBrowserRouter, useLocation } from 'react-router-dom';
+import {
+  Navigate,
+  Outlet,
+  ScrollRestoration,
+  createBrowserRouter,
+  useLocation,
+} from 'react-router-dom';
 
 import AuthSessionBootstrap from '@/components/common/AuthSessionBootstrap';
 import GuestRoute from '@/components/common/GuestRoute';

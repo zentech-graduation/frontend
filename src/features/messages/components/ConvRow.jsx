@@ -27,7 +27,16 @@ export function ConvRow({ thread, isActive, onSelect }) {
         <div style={{ fontFamily: v.fontBody, fontSize: 13.5, fontWeight: 700, color: v.ink }}>
           {thread.name}
         </div>
-        <div style={{ fontFamily: v.fontBody, fontSize: 11.5, color: thread.muted ? v.ink3 : v.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 11.5,
+            color: thread.muted ? v.ink3 : v.ink2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
           {thread.preview} · {thread.time}
         </div>
       </div>

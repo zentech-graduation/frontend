@@ -30,5 +30,5 @@ export const mediaService = {
   async getConstraints() {
     const response = await axiosClient.get(`${MEDIA_API_PATH}/constraints`);
     return response.data?.data || response.data;
-  }
+  },
 };

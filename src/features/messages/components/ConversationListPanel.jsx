@@ -70,7 +70,12 @@ export function ConversationListPanel({
         ) : null}
       </div>
 
-      <div style={{ padding: viewport === 'mobile' ? '9px 14px 10px' : '10px 16px 12px', borderBottom: `1px solid ${v.borderSubtle}` }}>
+      <div
+        style={{
+          padding: viewport === 'mobile' ? '9px 14px 10px' : '10px 16px 12px',
+          borderBottom: `1px solid ${v.borderSubtle}`,
+        }}
+      >
         <div
           style={{
             height: viewport === 'mobile' ? 32 : 34,
