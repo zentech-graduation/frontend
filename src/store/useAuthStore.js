@@ -56,6 +56,16 @@ const migrateLegacyPersistedTokens = () => {
   }
 };
 
+/**
+ * Normalises a token to either a non-blank string or null.
+ *
+ * Every setter derives `isAuthenticated` from the result of this rather than from its own raw
+ * argument. Deriving it from the argument let a blank token persist `isAuthenticated: true`
+ * alongside `accessToken: null`, and `isAuthenticated` is the half that reaches localStorage.
+ */
+const normalizeToken = (value) =>
+  typeof value === 'string' && value.trim() ? value : null;
+
 const initialState = {
   // Access token is in-memory only — never persisted to localStorage.
   accessToken: null,
@@ -74,24 +84,22 @@ export const useAuthStore = create(
     (set) => ({
       ...initialState,
 
-      setAuth: ({ accessToken, refreshToken, user }) =>
-        set({
-          accessToken: typeof accessToken === 'string' && accessToken.trim() ? accessToken : null,
+      setAuth: ({ accessToken, refreshToken, user }) => {
+        const nextAccessToken = normalizeToken(accessToken);
+
+        return set({
+          accessToken: nextAccessToken,
           // refreshToken stays in memory; not persisted (see partialize below).
-          refreshToken:
-            typeof refreshToken === 'string' && refreshToken.trim() ? refreshToken : null,
+          refreshToken: normalizeToken(refreshToken),
           user: user ?? null,
-          isAuthenticated: Boolean(accessToken),
-        }),
+          isAuthenticated: Boolean(nextAccessToken),
+        });
+      },
 
       setTokens: ({ accessToken, refreshToken }) =>
         set((state) => {
-          const nextAccessToken =
-            typeof accessToken === 'string' && accessToken.trim() ? accessToken : null;
-          const nextRefreshToken =
-            typeof refreshToken === 'string' && refreshToken.trim()
-              ? refreshToken
-              : state.refreshToken ?? null;
+          const nextAccessToken = normalizeToken(accessToken);
+          const nextRefreshToken = normalizeToken(refreshToken) ?? state.refreshToken ?? null;
 
           return {
             accessToken: nextAccessToken,
@@ -100,17 +108,18 @@ export const useAuthStore = create(
           };
         }),
 
-      setAccessToken: (accessToken) =>
-        set({
-          accessToken:
-            typeof accessToken === 'string' && accessToken.trim() ? accessToken : null,
-          isAuthenticated: Boolean(accessToken),
-        }),
+      setAccessToken: (accessToken) => {
+        const nextAccessToken = normalizeToken(accessToken);
+
+        return set({
+          accessToken: nextAccessToken,
+          isAuthenticated: Boolean(nextAccessToken),
+        });
+      },
 
       setRefreshToken: (refreshToken) =>
         set({
-          refreshToken:
-            typeof refreshToken === 'string' && refreshToken.trim() ? refreshToken : null,
+          refreshToken: normalizeToken(refreshToken),
         }),
 
       setUser: (user) =>
