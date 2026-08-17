@@ -1,6 +1,7 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
+import { axiosClient } from '@/api/axiosClient';
 import { useAuthStore } from '@/store/useAuthStore';
 
 /**
@@ -20,9 +21,27 @@ import { useAuthStore } from '@/store/useAuthStore';
 // See docs/realtime/realtime-contract.md section 1.
 const SOCKJS_ENDPOINT = '/ws/comments';
 
-// Browsers cannot set an Authorization header on a WebSocket upgrade, so the
-// access token rides as a query parameter. Same checks as the REST path.
-const TOKEN_PARAM = 'token';
+// Browsers cannot set an Authorization header on a WebSocket upgrade, so a credential has to ride
+// in the URL. It is a single-use ticket rather than the access token: query strings are logged by
+// default by proxies and CDNs, and a token left there outlives its own expiry in log storage. The
+// ticket is redeemed server-side, expires in 30 seconds, and cannot be replayed.
+const TICKET_PARAM = 'ticket';
+const TICKET_PATH = '/auth/ws-ticket';
+
+/**
+ * Obtains a handshake ticket, or null when one cannot be had.
+ *
+ * Silent on failure like everything else in this module: a live tier that cannot start must leave
+ * the screen exactly as it was.
+ */
+const fetchTicket = async () => {
+  try {
+    const response = await axiosClient.post(TICKET_PATH);
+    return response?.data?.data?.ticket ?? null;
+  } catch {
+    return null;
+  }
+};
 
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
@@ -149,11 +168,11 @@ const scheduleReconnect = () => {
       return;
     }
     teardownClient();
-    openClient();
+    void openClient();
   }, delay);
 };
 
-const openClient = () => {
+const openClient = async () => {
   if (client) {
     return client;
   }
@@ -162,16 +181,19 @@ const openClient = () => {
     return null;
   }
 
+  // Fetched before the client is built, because webSocketFactory is synchronous and a ticket is
+  // single-use: one ticket per client, and scheduleReconnect builds a fresh client each attempt.
+  const ticket = await fetchTicket();
+  if (!ticket) {
+    noteHandshakeFailure();
+    scheduleReconnect();
+    return null;
+  }
+
   const created = new Client({
-    // The factory runs again on every connection attempt, so the token is read
-    // fresh each time. Replaying the token a dead socket used would be refused
-    // at the handshake: a revoked or expired token is exactly why the server
-    // closed the socket in the first place.
-    webSocketFactory: () => {
-      const token = currentToken();
-      const url = token ? `${endpoint}?${TOKEN_PARAM}=${encodeURIComponent(token)}` : endpoint;
-      return new SockJS(url);
-    },
+    // One ticket per client. A reconnect tears the client down and builds another, which fetches
+    // its own ticket, so a redeemed ticket is never replayed at a second handshake.
+    webSocketFactory: () => new SockJS(`${endpoint}?${TICKET_PARAM}=${encodeURIComponent(ticket)}`),
     // stompjs's own reconnect is a fixed delay with no backoff, and mutating
     // reconnectDelay from inside onWebSocketClose does not change the retry it
     // has already scheduled. Observed against a server with the live tier
@@ -228,7 +250,7 @@ export const subscribeTopic = (destination, handler) => {
   }
   handlers.get(destination).add(handler);
 
-  openClient();
+  void openClient();
   bindSubscription(destination);
 
   let released = false;
