@@ -13,12 +13,12 @@ import { useAuthStore } from '@/store/useAuthStore';
 // where the tab actually goes.
 const PRIMARY_TABS = [
   { id: 'feed', path: ROUTES.FEED, icon: 'home', label: 'home' },
-  { id: 'explore', path: ROUTES.EXPLORE, icon: 'explore', label: 'explore' },
   // The messages interface is restored. It runs on its own presentation without
   // live data wiring yet, so the tab is enabled and reachable again.
-  { id: 'messages', path: ROUTES.MESSAGES, icon: 'chat', label: 'chats' },
+  { id: 'messages', path: ROUTES.MESSAGES, icon: 'message', label: 'message' },
   { id: 'compose', path: ROUTES.COMPOSE, icon: 'plus', label: 'post' },
-  { id: 'notifications', path: ROUTES.NOTIFICATIONS, icon: 'bell', label: 'activity' },
+  { id: 'explore', path: ROUTES.EXPLORE, icon: 'explore', label: 'search' },
+  { id: 'notifications', path: ROUTES.NOTIFICATIONS, icon: 'bell', label: 'notification' },
 ];
 
 const BOTTOM_TABS = [
@@ -371,36 +371,35 @@ export function LxRightRail({ compact = false }) {
   );
 }
 
-// ─── Mark (icon-only wordmark) ─────────────────────────────────────────────
-// The app has only ever had the "luvax" wordmark; the icon-only rail below
-// needs something that reads at 40px. Rather than invent new iconography,
-// this reuses the wordmark's own display face and weight - the same letter
-// the full logo already leads with - so it stays recognisably the same mark.
+// ─── Mark (icon-only) ───────────────────────────────────────────────────────
+// The favicon PNG is the only icon-only Luvax mark in the project - the app
+// otherwise only ever renders the "luvax" wordmark - so the rail reuses that
+// same asset rather than a typographic stand-in.
 function LxMark({ onClick }) {
   return (
     <button
       onClick={onClick}
       aria-label="luvax home"
       style={{
-        width: 40, height: 40, borderRadius: 12,
-        background: 'none', border: 'none', cursor: 'pointer',
+        width: 30, height: 30, borderRadius: 9,
+        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: v.fontDisplay, fontWeight: 700, fontSize: 22,
-        color: v.ink, letterSpacing: '-0.02em',
+        flexShrink: 0,
       }}
     >
-      L
+      <img src="/luvax-mark.png" alt="" width={22} height={22} style={{ display: 'block', borderRadius: 6 }} />
     </button>
   );
 }
 
 // ─── Left Sub-Nav Rail (desktop/tablet) ────────────────────────────────────
-// Instagram's left sidebar, reduced to icons only and shown as a stand-in for
-// the main bar: it appears exactly when useHideOnScroll has hidden the bar,
-// so navigation is never more than a glance to the left away, without a
-// second permanent nav competing with the top bar for the same space.
+// A subordinate stand-in for the main bar, not a second main nav: smaller
+// icons than the top bar's own, no divider against the content it floats
+// over, and the tab list vertically centered in the available height rather
+// than pinned under the mark. It appears exactly when useHideOnScroll has
+// hidden the top bar, so navigation is never more than a glance to the left
+// away.
 export function LxSideRail({ active, navigate, visible }) {
-  const currentUser = useAuthStore((state) => state.user);
   const { data: requestsResponse } = usePendingFollowRequests();
   const requests = extractPageContent(requestsResponse);
   const { data: unreadResponse } = useUnreadCount();
@@ -411,12 +410,11 @@ export function LxSideRail({ active, navigate, visible }) {
     <nav
       aria-hidden={!visible}
       style={{
-        position: 'fixed', top: 0, left: 0, bottom: 0, width: 72, zIndex: 100,
+        position: 'fixed', top: 0, left: 0, bottom: 0, width: 60, zIndex: 100,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: '14px 0 18px',
+        padding: '16px 0',
         background: 'var(--lx-glass-bg)',
         backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-        borderRight: `1px solid ${v.border}`,
         transform: visible ? 'translateX(0)' : 'translateX(-100%)',
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? 'auto' : 'none',
@@ -425,8 +423,8 @@ export function LxSideRail({ active, navigate, visible }) {
     >
       <LxMark onClick={() => navigate(ROUTES.FEED)} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 28 }}>
-        {PRIMARY_TABS.map((t) => {
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        {BOTTOM_TABS.map((t) => {
           const isActive = active === t.id;
           return (
             <button
@@ -436,7 +434,7 @@ export function LxSideRail({ active, navigate, visible }) {
               aria-label={t.label}
               className="lx-tab-btn"
               style={{
-                width: 44, height: 44, borderRadius: 12,
+                width: 34, height: 34, borderRadius: 9,
                 background: 'none', border: 'none',
                 cursor: t.disabled ? 'not-allowed' : 'pointer',
                 opacity: t.disabled ? 0.4 : 1,
@@ -446,13 +444,13 @@ export function LxSideRail({ active, navigate, visible }) {
             >
               <LxIcon
                 name={t.icon}
-                size={23}
+                size={18}
                 filled={isActive}
                 color={isActive ? v.accent : v.ink3}
-                stroke={isActive ? 1.8 : 1.5}
+                stroke={isActive ? 1.7 : 1.5}
               />
               {t.id === 'notifications' && hasNotifications && (
-                <span style={{ position: 'absolute', top: 8, right: 10, width: 7, height: 7, borderRadius: '50%', background: v.accent }} />
+                <span style={{ position: 'absolute', top: 6, right: 7, width: 6, height: 6, borderRadius: '50%', background: v.accent }} />
               )}
             </button>
           );
@@ -461,17 +459,26 @@ export function LxSideRail({ active, navigate, visible }) {
 
       <button
         onClick={() => navigate(ROUTES.SETTINGS)}
-        aria-label="settings"
-        className="lx-avatar-btn"
-        style={{ marginTop: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+        aria-label="profile settings"
+        className="lx-tab-btn"
+        style={{
+          width: 34, height: 34, borderRadius: 9,
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}
       >
-        <LxAvatar size={34} src={currentUser?.avatarUrl} />
+        <LxIcon name="settings" size={18} color={v.ink3} stroke={1.5} />
       </button>
     </nav>
   );
 }
 
 // ─── Floating Messages Button (desktop/tablet) ─────────────────────────────
+// A compact pill, not a circular icon button: Instagram's own floating
+// message entry point pairs a label with a send affordance rather than a
+// chat-bubble glyph, so this does the same instead of restating the rail's
+// own message icon.
 export function LxMessagesFab({ active, navigate, visible }) {
   if (active === 'messages') return null;
   return (
@@ -480,9 +487,9 @@ export function LxMessagesFab({ active, navigate, visible }) {
       aria-label="open messages"
       style={{
         position: 'fixed', bottom: 24, right: 24, zIndex: 100,
-        width: 52, height: 52, borderRadius: '50%',
+        height: 40, padding: '0 16px', borderRadius: 999,
         background: v.accent, border: 'none',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        display: 'flex', alignItems: 'center', gap: 8,
         boxShadow: `0 8px 24px ${v.shadow18}`,
         cursor: 'pointer',
         transform: visible ? 'scale(1)' : 'scale(0.7)',
@@ -491,7 +498,8 @@ export function LxMessagesFab({ active, navigate, visible }) {
         transition: 'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out)',
       }}
     >
-      <LxIcon name="chat" size={22} filled color={v.inkInverse} />
+      <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.inkInverse }}>message</span>
+      <LxIcon name="send" size={15} color={v.inkInverse} stroke={2} />
     </button>
   );
 }
