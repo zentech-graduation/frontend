@@ -556,7 +556,7 @@ export function LxMessagesFab({ active, navigate }) {
       aria-label="open messages"
       style={{
         position: 'fixed', bottom: 24, right: 24, zIndex: 100,
-        height: 34, padding: '0 14px', borderRadius: 8,
+        height: 34, padding: '0 14px', borderRadius: 999,
         background: 'var(--lx-glass-bg)',
         backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         border: `1px solid ${v.border}`,
