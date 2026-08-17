@@ -23,7 +23,7 @@ const PRIMARY_TABS = [
 
 const BOTTOM_TABS = [
   ...PRIMARY_TABS,
-  { id: 'profile', path: ROUTES.PROFILE, icon: 'profile', label: 'you' },
+  { id: 'profile', path: ROUTES.PROFILE, icon: 'profile', label: 'profile' },
 ];
 
 // Hide-on-scroll for the persistent app bar.
@@ -31,12 +31,27 @@ const BOTTOM_TABS = [
 // The design ships the CSS and gives the header the lx-bar hook, but never adds lx-bar-hidden, so
 // the trigger is a derivation rather than a port. It hides once the page is scrolled past the bar's
 // own height and the direction is downward, and reveals on any upward movement, so the bar is always
-// one small scroll-up away. The 6px delta ignores sub-pixel and momentum jitter that would otherwise
-// flicker the bar; the 56px floor is the bar height, so the bar never hides while still overlapping
-// the content it belongs to.
+// one small scroll-up away. The 6px delta ignores sub-pixel jitter that would otherwise flicker the
+// bar; the 56px floor is the bar height, so the bar never hides while still overlapping the content
+// it belongs to.
+//
+// Two more sources of flicker needed guarding against once the side rail and messages fab started
+// consuming this same signal:
+//
+// - A post/modal overlay locks body scroll by setting `document.body.style.overflow = 'hidden'`.
+//   That lock itself can shift `window.scrollY` (the scrollbar disappearing reflows layout), which
+//   the naive handler read as a real user scroll and used to flip the bar back in mid-overlay-open.
+//   While the lock is active, scroll deltas are only used to resync `lastY`, never to toggle
+//   visibility - so opening a post never moves the nav.
+// - Fast/flicked scrolling fires bursts of alternating-direction scroll events as momentum settles.
+//   A per-toggle cooldown means a flip only takes effect if the bar has been in its current state
+//   for at least COOLDOWN_MS, so a single flick reads as one clean transition instead of a stutter.
+const TOGGLE_COOLDOWN_MS = 220;
+
 function useHideOnScroll() {
   const [hidden, setHidden] = useState(false);
   const lastY = useRef(0);
+  const lastToggleAt = useRef(0);
 
   useEffect(() => {
     lastY.current = window.scrollY;
@@ -44,9 +59,23 @@ function useHideOnScroll() {
     const onScroll = () => {
       const y = window.scrollY;
       const delta = y - lastY.current;
+
+      if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
+        lastY.current = y;
+        return;
+      }
+
       if (Math.abs(delta) < 6) return;
       lastY.current = y;
-      setHidden(y > 56 && delta > 0);
+
+      const wantHidden = y > 56 && delta > 0;
+      setHidden((current) => {
+        if (wantHidden === current) return current;
+        const now = performance.now();
+        if (now - lastToggleAt.current < TOGGLE_COOLDOWN_MS) return current;
+        lastToggleAt.current = now;
+        return wantHidden;
+      });
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -392,40 +421,81 @@ function LxMark({ onClick }) {
   );
 }
 
+// The icon column sits at a fixed offset from the rail's left edge in both
+// states, so it never shifts horizontally when the rail expands - only the
+// label beside it grows in.
+const RAIL_COLLAPSED_W = 60;
+const RAIL_EXPANDED_W = 196;
+const RAIL_ICON_INSET = 13;
+
 // ─── Left Sub-Nav Rail (desktop/tablet) ────────────────────────────────────
 // A subordinate stand-in for the main bar, not a second main nav: smaller
 // icons than the top bar's own, no divider against the content it floats
 // over, and the tab list vertically centered in the available height rather
 // than pinned under the mark. It appears exactly when useHideOnScroll has
 // hidden the top bar, so navigation is never more than a glance to the left
-// away.
+// away. Hovering it expands the rail and reveals a text label per icon, the
+// same disclosure Instagram's own collapsed sidebar uses.
 export function LxSideRail({ active, navigate, visible }) {
+  const currentUser = useAuthStore((state) => state.user);
+  const [expanded, setExpanded] = useState(false);
   const { data: requestsResponse } = usePendingFollowRequests();
   const requests = extractPageContent(requestsResponse);
   const { data: unreadResponse } = useUnreadCount();
   const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
 
+  const rowStyle = (disabled) => ({
+    width: '100%', height: 34, borderRadius: 9,
+    background: 'none', border: 'none', paddingLeft: RAIL_ICON_INSET,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.4 : 1,
+    display: 'flex', alignItems: 'center', gap: 12,
+    position: 'relative', flexShrink: 0,
+  });
+
+  // maxWidth (not just opacity) has to collapse to 0 too: a nowrap label's
+  // intrinsic text width otherwise still competes for space in the flex row
+  // even while invisible, and the row is narrower than most labels, so the
+  // icon next to it gets squeezed down to zero width by the flex algorithm.
+  const labelStyle = (isActive) => ({
+    fontFamily: v.fontBody, fontSize: 13, fontWeight: 600,
+    color: isActive ? v.accent : v.ink3,
+    textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden',
+    maxWidth: expanded ? 120 : 0,
+    opacity: expanded ? 1 : 0,
+    transition: 'opacity 120ms ease-out, max-width 180ms var(--ease-out)',
+  });
+
+  const iconWrapStyle = { flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+
   return (
     <nav
       aria-hidden={!visible}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
       style={{
-        position: 'fixed', top: 0, left: 0, bottom: 0, width: 60, zIndex: 100,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        position: 'fixed', top: 0, left: 0, bottom: 0,
+        width: expanded ? RAIL_EXPANDED_W : RAIL_COLLAPSED_W,
+        zIndex: 100, overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', alignItems: 'stretch',
         padding: '16px 0',
         background: 'var(--lx-glass-bg)',
         backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         transform: visible ? 'translateX(0)' : 'translateX(-100%)',
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? 'auto' : 'none',
-        transition: 'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out)',
+        transition: 'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out), width 180ms var(--ease-out)',
       }}
     >
-      <LxMark onClick={() => navigate(ROUTES.FEED)} />
+      <div style={{ paddingLeft: RAIL_ICON_INSET, flexShrink: 0 }}>
+        <LxMark onClick={() => navigate(ROUTES.FEED)} />
+      </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
         {BOTTOM_TABS.map((t) => {
           const isActive = active === t.id;
+          const isProfile = t.id === 'profile';
           return (
             <button
               key={t.id}
@@ -433,24 +503,24 @@ export function LxSideRail({ active, navigate, visible }) {
               disabled={t.disabled}
               aria-label={t.label}
               className="lx-tab-btn"
-              style={{
-                width: 34, height: 34, borderRadius: 9,
-                background: 'none', border: 'none',
-                cursor: t.disabled ? 'not-allowed' : 'pointer',
-                opacity: t.disabled ? 0.4 : 1,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                position: 'relative',
-              }}
+              style={rowStyle(t.disabled)}
             >
-              <LxIcon
-                name={t.icon}
-                size={18}
-                filled={isActive}
-                color={isActive ? v.accent : v.ink3}
-                stroke={isActive ? 1.7 : 1.5}
-              />
+              <span style={iconWrapStyle}>
+                {isProfile ? (
+                  <LxAvatar size={20} src={currentUser?.avatarUrl} ring={isActive} />
+                ) : (
+                  <LxIcon
+                    name={t.icon}
+                    size={18}
+                    filled={isActive}
+                    color={isActive ? v.accent : v.ink3}
+                    stroke={isActive ? 1.7 : 1.5}
+                  />
+                )}
+              </span>
+              <span style={labelStyle(isActive)}>{t.label}</span>
               {t.id === 'notifications' && hasNotifications && (
-                <span style={{ position: 'absolute', top: 6, right: 7, width: 6, height: 6, borderRadius: '50%', background: v.accent }} />
+                <span style={{ position: 'absolute', top: 6, left: RAIL_ICON_INSET + 12, width: 6, height: 6, borderRadius: '50%', background: v.accent }} />
               )}
             </button>
           );
@@ -461,25 +531,24 @@ export function LxSideRail({ active, navigate, visible }) {
         onClick={() => navigate(ROUTES.SETTINGS)}
         aria-label="profile settings"
         className="lx-tab-btn"
-        style={{
-          width: 34, height: 34, borderRadius: 9,
-          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}
+        style={rowStyle(false)}
       >
-        <LxIcon name="settings" size={18} color={v.ink3} stroke={1.5} />
+        <span style={iconWrapStyle}>
+          <LxIcon name="settings" size={18} color={v.ink3} stroke={1.5} />
+        </span>
+        <span style={labelStyle(false)}>settings</span>
       </button>
     </nav>
   );
 }
 
 // ─── Floating Messages Button (desktop/tablet) ─────────────────────────────
-// A compact pill, not a circular icon button: Instagram's own floating
-// message entry point pairs a label with a send affordance rather than a
-// chat-bubble glyph, so this does the same instead of restating the rail's
-// own message icon.
-export function LxMessagesFab({ active, navigate, visible }) {
+// A quiet, slim rectangle - a border, not a filled pill - that stays put
+// regardless of scroll direction rather than tracking the top bar's own
+// hide/show, so it never itself becomes a second thing jumping around the
+// screen. Pairs a label with a send affordance rather than a chat-bubble
+// glyph, matching Instagram's own floating message entry point.
+export function LxMessagesFab({ active, navigate }) {
   if (active === 'messages') return null;
   return (
     <button
@@ -487,19 +556,16 @@ export function LxMessagesFab({ active, navigate, visible }) {
       aria-label="open messages"
       style={{
         position: 'fixed', bottom: 24, right: 24, zIndex: 100,
-        height: 40, padding: '0 16px', borderRadius: 999,
-        background: v.accent, border: 'none',
-        display: 'flex', alignItems: 'center', gap: 8,
-        boxShadow: `0 8px 24px ${v.shadow18}`,
+        height: 34, padding: '0 14px', borderRadius: 8,
+        background: 'var(--lx-glass-bg)',
+        backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+        border: `1px solid ${v.border}`,
+        display: 'flex', alignItems: 'center', gap: 7,
         cursor: 'pointer',
-        transform: visible ? 'scale(1)' : 'scale(0.7)',
-        opacity: visible ? 1 : 0,
-        pointerEvents: visible ? 'auto' : 'none',
-        transition: 'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out)',
       }}
     >
-      <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.inkInverse }}>message</span>
-      <LxIcon name="send" size={15} color={v.inkInverse} stroke={2} />
+      <span style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink2 }}>message</span>
+      <LxIcon name="send" size={13} color={v.ink2} stroke={2} />
     </button>
   );
 }
@@ -518,7 +584,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
       <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
         <LxSideRail active={screen} navigate={navigate} visible={barHidden} />
-        <LxMessagesFab active={screen} navigate={navigate} visible={barHidden} />
+        <LxMessagesFab active={screen} navigate={navigate} />
         <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: 1260, margin: '0 auto' }}>
           <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
           {/* Keyed by screen so a screen change fades in rather than cutting. */}
@@ -549,7 +615,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
       <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
         <LxSideRail active={screen} navigate={navigate} visible={barHidden} />
-        <LxMessagesFab active={screen} navigate={navigate} visible={barHidden} />
+        <LxMessagesFab active={screen} navigate={navigate} />
         <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: tabletShellWidth, margin: '0 auto' }}>
           <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
           <main key={screen} className="lx-fade-in" style={{

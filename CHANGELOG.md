@@ -7,8 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- On desktop and tablet, scrolling down reveals a slim icon rail on the left for quick navigation - home, message, new post, search, notifications, and your profile - with a settings shortcut at the bottom, mirroring when the top bar hides itself.
-- On desktop and tablet, a floating "message" button appears in the bottom-right corner whenever the top bar is hidden, taking you straight to your messages; it's hidden while you're already there.
+- On desktop and tablet, scrolling down reveals a slim icon rail on the left for quick navigation - home, message, new post, search, notifications, and your profile (shown as your own avatar) - with a settings shortcut at the bottom, mirroring when the top bar hides itself. Hovering the rail expands it and reveals a text label next to each icon.
+- On desktop and tablet, a subtle "message" button with a send icon sits fixed in the bottom-right corner and stays in place regardless of scroll direction, taking you straight to your messages; it's hidden while you're already there.
 
 ### Changed
 - The privacy and notifications settings are now real: private account, activity status, story replies, message requests, and each notification type save to your account instead of being fixed "coming soon" toggles. "Notify me about story views" has no setting to bind to yet and stays a placeholder.
@@ -44,6 +44,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The navigation bar stays visible on the messages screen.
 
 ### Fixed
+- Opening a post no longer snaps the top bar back into view when it was already tucked away from scrolling.
+- Scrolling quickly no longer makes the top bar and its side rail flicker back and forth.
 - The story viewer's next/previous buttons and side previews now line up with the card itself, instead of sitting visibly off-centre against it.
 - Your own avatar now shows consistently in the top bar and the comment box, matching your profile, instead of appearing as a blank placeholder in some places.
 - The profile "liked" tab now updates immediately when you like or unlike a post, instead of only after a page reload.
