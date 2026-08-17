@@ -113,10 +113,15 @@ export function SearchScreen() {
     return () => clearTimeout(timer);
   }, [input, query, searchParams, setSearchParams]);
 
-  // An address opened cold or edited by hand is authoritative over the field.
-  useEffect(() => {
+  // An address opened cold or edited by hand is authoritative over the field. Adjusted during
+  // render rather than in an effect, so the field is correct in the first pass instead of after a
+  // second commit. The trim comparison is preserved: it stops a trailing space the user just typed
+  // from being wiped by the debounced address update it triggered.
+  const [lastQuery, setLastQuery] = useState(query);
+  if (query !== lastQuery) {
+    setLastQuery(query);
     setInput((current) => (current.trim() === query ? current : query));
-  }, [query]);
+  }
 
   const selectTab = (id) => {
     const params = new URLSearchParams(searchParams);

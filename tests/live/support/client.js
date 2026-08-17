@@ -78,7 +78,8 @@ export async function assertStackReachable() {
     } catch (error) {
       throw new Error(
         `Live tests require the local stack. ${label} at ${url} is unreachable (${error.message}). ` +
-          `Start it with: cd backend && docker compose up -d && ./mvnw spring-boot:run`
+          `Start it with: cd backend && docker compose up -d && ./mvnw spring-boot:run`,
+        { cause: error }
       );
     }
   }

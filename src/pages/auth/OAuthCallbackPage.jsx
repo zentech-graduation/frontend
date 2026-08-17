@@ -44,6 +44,8 @@ export default function OAuthCallbackPage() {
       const hashParams = new URLSearchParams(rawHash.replace(/^#/, ''));
       if (hashParams.get('access_token') || hashParams.get('id_token')) {
         window.history.replaceState({}, document.title, window.location.pathname);
+        // Reads the URL fragment and rewrites history; both are browser state, not props.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setErrorMessage(
           'Implicit OAuth flow is not supported. Please contact support if this error persists.'
         );

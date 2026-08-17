@@ -58,6 +58,8 @@ export function ReportModal({ target, onClose }) {
   // reason and text would still be selected when the modal reopens.
   useEffect(() => {
     if (target) {
+      // Resets the form and the mutation object when a new report target opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStep(STEP_REASON);
       setReason(null);
       setDescription('');

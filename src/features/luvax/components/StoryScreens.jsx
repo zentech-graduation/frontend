@@ -375,6 +375,8 @@ export function StoryViewScreen({ viewport: vpProp }) {
   // fixed timer. Video stories are driven by the element's own playback via
   // onTimeUpdate/onEnded instead, so the bar tracks real duration exactly.
   useEffect(() => {
+    // Resets progress and drives an interval; image story progress is time-based.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgress(0);
     if (isVideo) return;
     const start = Date.now();
@@ -391,6 +393,8 @@ export function StoryViewScreen({ viewport: vpProp }) {
     // would otherwise fall through to next() before the video's duration is
     // known (onTimeUpdate can fire once with duration still NaN on mount).
     if (!isVideo || !(progress >= 100)) return;
+    // Advances the sequence from video playback progress reported by the media element.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     next();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress, isVideo]);

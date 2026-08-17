@@ -11,9 +11,15 @@ export function LxHeaderSearch({ navigate, viewport }) {
   const activeQuery = searchParams.get('q') || '';
   const [query, setQuery] = useState(activeQuery);
 
-  useEffect(() => {
+  // Adjusted during render rather than in an effect. The field is user-editable, so it cannot be
+  // derived outright, but resetting it from an effect meant every address change rendered twice:
+  // once with the stale term, then again after the effect committed. Comparing against the last
+  // address seen resets it before the browser paints, in one pass.
+  const [lastActiveQuery, setLastActiveQuery] = useState(activeQuery);
+  if (activeQuery !== lastActiveQuery) {
+    setLastActiveQuery(activeQuery);
     setQuery(activeQuery);
-  }, [activeQuery]);
+  }
 
   const openSearch = (nextQuery = query, focusSearch = true) => {
     const next = new URLSearchParams();

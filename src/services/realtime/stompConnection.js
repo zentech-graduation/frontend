@@ -33,6 +33,28 @@ const handlers = new Map();
 /** destination -> the live StompSubscription, present only while connected */
 const subscriptions = new Map();
 let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+
+// Failures here stay silent by design, which is right for a flaky network and wrong for an endpoint
+// that is not registered at all. Production ran for some time with the comment live flag off, so
+// this module retried forever against a 404 and nothing on either side said so. A development-only
+// warning after a few consecutive failures makes that visible during integration without changing
+// the silent contract that shipped code relies on.
+const HANDSHAKE_WARN_THRESHOLD = 3;
+let consecutiveHandshakeFailures = 0;
+
+const noteHandshakeFailure = () => {
+  consecutiveHandshakeFailures += 1;
+  if (import.meta.env.DEV && consecutiveHandshakeFailures === HANDSHAKE_WARN_THRESHOLD) {
+    console.warn(
+      `[realtime] ${HANDSHAKE_WARN_THRESHOLD} consecutive handshake failures against ` +
+        `${SOCKJS_ENDPOINT}. Check that app.comment.live.enabled is true on the backend.`
+    );
+  }
+};
+
+const noteHandshakeSuccess = () => {
+  consecutiveHandshakeFailures = 0;
+};
 let reconnectTimer = null;
 
 /**
@@ -163,6 +185,7 @@ const openClient = () => {
     heartbeatOutgoing: 0,
     onConnect: () => {
       reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+      noteHandshakeSuccess();
       for (const destination of handlers.keys()) {
         bindSubscription(destination);
       }
@@ -174,6 +197,7 @@ const openClient = () => {
         return;
       }
       subscriptions.clear();
+      noteHandshakeFailure();
       scheduleReconnect();
     },
     // stompjs surfaces protocol and socket errors here. They are swallowed: the

@@ -196,9 +196,13 @@ export function ExploreScreen() {
   const { ref, inView } = useInView();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExplore({ q: query });
 
-  useEffect(() => {
+  // Adjusted during render, not in an effect: the field is user-editable so it cannot be derived,
+  // but resetting it from an effect rendered the screen twice on every address change.
+  const [lastActiveQuery, setLastActiveQuery] = useState(activeQuery);
+  if (activeQuery !== lastActiveQuery) {
+    setLastActiveQuery(activeQuery);
     setQuery(activeQuery);
-  }, [activeQuery]);
+  }
 
   useEffect(() => {
     if (shouldFocusSearch) {

@@ -155,11 +155,13 @@ export const useAuthStore = create(
        * Persist only `user` and `isAuthenticated` to localStorage so the UI
        * can render an optimistic "logged-in" shell immediately on reload.
        * `accessToken` and `refreshToken` are intentionally excluded — they
-       * live in memory only. A full page reload will clear both tokens from
-       * memory, so a live session does NOT survive a reload; the user must
-       * sign in again. ProtectedRoute checks both flags (isAuthenticated + a
-       * live accessToken) together because one persisted flag is not enough
-       * to guarantee a working session.
+       * live in memory only. A reload does clear both from memory, but the
+       * session is not lost: the HttpOnly refresh cookie is replayed by the
+       * browser and AuthSessionBootstrap exchanges it for a fresh access token
+       * on mount. ProtectedRoute checks both flags (isAuthenticated + a live
+       * accessToken) together because the persisted flag alone is true during
+       * the window before that exchange completes, and is not evidence of a
+       * working session.
        */
       partialize: (state) => ({
         user: state.user,

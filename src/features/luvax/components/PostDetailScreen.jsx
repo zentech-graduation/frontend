@@ -149,6 +149,8 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
   // under a user who is already reading it.
   useEffect(() => {
     if (!deleteOpen) {
+      // Drives a timer that marks a pending estimate late; keyed to the dialogue lifecycle.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEstimateLate(false);
       return undefined;
     }
@@ -683,6 +685,8 @@ export function PostDetailScreen({ overlay = false }) {
   const saved = Boolean(post.isSaved);
 
   useEffect(() => {
+    // Clears user-entered draft and reply state when navigating to a different post.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setReplyingTo(null);
     setCommentDraft('');
   }, [postId]);

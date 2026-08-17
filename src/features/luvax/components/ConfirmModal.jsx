@@ -26,6 +26,8 @@ export function ConfirmModal({ config, onClose }) {
 
   useEffect(() => {
     if (!config) {
+      // Arms and disarms a timer; the delayed flag tracks elapsed time, not derived data.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDelayed(true);
       return undefined;
     }

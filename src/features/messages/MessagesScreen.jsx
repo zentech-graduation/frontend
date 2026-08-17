@@ -39,6 +39,8 @@ export function MessagesScreen() {
   useEffect(() => {
     if (!activeThreadId && filteredThreads[0]) {
       if (viewport !== 'mobile') {
+        // Reconciles the selected thread with the thread list after it changes.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setActiveThreadId(filteredThreads[0].id);
       }
     } else if (activeThreadId && !threads.some((thread) => thread.id === activeThreadId)) {
@@ -48,6 +50,8 @@ export function MessagesScreen() {
 
   useEffect(() => {
     if (viewport !== 'mobile' && !activeThreadId && threads[0]) {
+      // Selects a default thread once the viewport is wide enough to show one.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveThreadId(threads[0].id);
     }
   }, [viewport, activeThreadId, threads]);
@@ -114,6 +118,8 @@ export function MessagesScreen() {
 
   useEffect(() => {
     if (viewport !== 'mobile') {
+      // Bridges the shell compose and back actions onto window for the mobile pane.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setThreadOpen(true);
       setMobileInfoOpen(false);
     }

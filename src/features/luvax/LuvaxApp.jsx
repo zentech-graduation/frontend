@@ -110,6 +110,8 @@ export function LuvaxApp() {
 
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     if (localStorage.getItem('lxDarkManual') === null) {
+      // Synchronises with the OS colour-scheme media query and the stored manual override.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTweak('dark', media.matches);
     }
 
