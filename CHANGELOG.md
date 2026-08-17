@@ -6,7 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+- Patched high-severity advisories in the routing, HTTP client, and build tooling dependencies. The routing advisories included an open redirect reachable from ordinary link and navigation handling.
+
+### Fixed
+- Screens no longer call viewport and message-draft hooks conditionally. React identifies hooks by call order, so the previous arrangement could bind state to the wrong value once a screen was rendered both with and without a viewport prop, or once a message thread was opened and closed.
+- The search field and the explore search field now settle on the address bar's terms in a single render instead of showing the previous terms briefly first.
+- Lint no longer scans the build dependency cache, so it reports only real findings and finishes in seconds rather than minutes.
+- Corrected the session store's documentation, which stated that reloading the page ends the session. It does not: the session is restored from the refresh cookie on load.
+
+### Changed
+- Application screens and the signed-in shell are now downloaded on demand. A visitor on the sign-in page no longer downloads the composer, story viewer, and message pane before the form is usable; the initial download is roughly a third smaller.
+
+### Tests
+- Continuous integration now runs lint and unit tests in addition to the build.
+
 ### Added
+- Unit test coverage for the session store, the token refresh queue, and the route guards.
+- A live API test suite that verifies the backend contract against a running stack, including the real sign-up and email verification path.
+- A development-only warning when real-time updates fail to connect repeatedly, so a misconfigured endpoint is visible during integration instead of failing silently.
 - On desktop and tablet, scrolling down reveals a slim icon rail on the left for quick navigation - home, message, new post, search, notifications, and your profile (shown as your own avatar) - with a settings shortcut at the bottom, mirroring when the top bar hides itself. Hovering the rail expands it and reveals a text label next to each icon.
 - On desktop and tablet, a subtle "message" button with a send icon sits fixed in the bottom-right corner and stays in place regardless of scroll direction, taking you straight to your messages; it's hidden while you're already there.
 
