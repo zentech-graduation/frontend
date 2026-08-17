@@ -120,7 +120,7 @@ export function LxTopTabs({ active, navigate, compact = false }) {
 }
 
 // ─── Persistent App Bar ────────────────────────────────────────────────────
-export function LxAppBar({ screen, navigate, viewport }) {
+export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
   const currentUser = useAuthStore((state) => state.user);
   const isMainTab = ['feed', 'explore', 'messages', 'compose', 'notifications', 'profile'].includes(screen);
 
@@ -148,7 +148,7 @@ export function LxAppBar({ screen, navigate, viewport }) {
   const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
   const isMobile = viewport === 'mobile';
-  const barHidden = useHideOnScroll();
+  const barHidden = hidden;
 
   return (
     <header data-lx-bar="1" className={barHidden ? 'lx-bar lx-bar-hidden' : 'lx-bar'} style={{
@@ -371,15 +371,146 @@ export function LxRightRail({ compact = false }) {
   );
 }
 
+// ─── Mark (icon-only wordmark) ─────────────────────────────────────────────
+// The app has only ever had the "luvax" wordmark; the icon-only rail below
+// needs something that reads at 40px. Rather than invent new iconography,
+// this reuses the wordmark's own display face and weight - the same letter
+// the full logo already leads with - so it stays recognisably the same mark.
+function LxMark({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="luvax home"
+      style={{
+        width: 40, height: 40, borderRadius: 12,
+        background: 'none', border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: v.fontDisplay, fontWeight: 700, fontSize: 22,
+        color: v.ink, letterSpacing: '-0.02em',
+      }}
+    >
+      L
+    </button>
+  );
+}
+
+// ─── Left Sub-Nav Rail (desktop/tablet) ────────────────────────────────────
+// Instagram's left sidebar, reduced to icons only and shown as a stand-in for
+// the main bar: it appears exactly when useHideOnScroll has hidden the bar,
+// so navigation is never more than a glance to the left away, without a
+// second permanent nav competing with the top bar for the same space.
+export function LxSideRail({ active, navigate, visible }) {
+  const currentUser = useAuthStore((state) => state.user);
+  const { data: requestsResponse } = usePendingFollowRequests();
+  const requests = extractPageContent(requestsResponse);
+  const { data: unreadResponse } = useUnreadCount();
+  const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
+  const hasNotifications = requests.length > 0 || unreadCount > 0;
+
+  return (
+    <nav
+      aria-hidden={!visible}
+      style={{
+        position: 'fixed', top: 0, left: 0, bottom: 0, width: 72, zIndex: 100,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '14px 0 18px',
+        background: 'var(--lx-glass-bg)',
+        backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+        borderRight: `1px solid ${v.border}`,
+        transform: visible ? 'translateX(0)' : 'translateX(-100%)',
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+        transition: 'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out)',
+      }}
+    >
+      <LxMark onClick={() => navigate(ROUTES.FEED)} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 28 }}>
+        {PRIMARY_TABS.map((t) => {
+          const isActive = active === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => !t.disabled && navigate(t.path)}
+              disabled={t.disabled}
+              aria-label={t.label}
+              className="lx-tab-btn"
+              style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'none', border: 'none',
+                cursor: t.disabled ? 'not-allowed' : 'pointer',
+                opacity: t.disabled ? 0.4 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
+              }}
+            >
+              <LxIcon
+                name={t.icon}
+                size={23}
+                filled={isActive}
+                color={isActive ? v.accent : v.ink3}
+                stroke={isActive ? 1.8 : 1.5}
+              />
+              {t.id === 'notifications' && hasNotifications && (
+                <span style={{ position: 'absolute', top: 8, right: 10, width: 7, height: 7, borderRadius: '50%', background: v.accent }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        onClick={() => navigate(ROUTES.SETTINGS)}
+        aria-label="settings"
+        className="lx-avatar-btn"
+        style={{ marginTop: 'auto', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+      >
+        <LxAvatar size={34} src={currentUser?.avatarUrl} />
+      </button>
+    </nav>
+  );
+}
+
+// ─── Floating Messages Button (desktop/tablet) ─────────────────────────────
+export function LxMessagesFab({ active, navigate, visible }) {
+  if (active === 'messages') return null;
+  return (
+    <button
+      onClick={() => navigate(ROUTES.MESSAGES)}
+      aria-label="open messages"
+      style={{
+        position: 'fixed', bottom: 24, right: 24, zIndex: 100,
+        width: 52, height: 52, borderRadius: '50%',
+        background: v.accent, border: 'none',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: `0 8px 24px ${v.shadow18}`,
+        cursor: 'pointer',
+        transform: visible ? 'scale(1)' : 'scale(0.7)',
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+        transition: 'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out)',
+      }}
+    >
+      <LxIcon name="chat" size={22} filled color={v.inkInverse} />
+    </button>
+  );
+}
+
 // ─── App Shell ─────────────────────────────────────────────────────────────
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
   const vp = useViewport();
+  // Shared with LxAppBar (which hides on the same signal) so the rail and
+  // the floating messages button appear at exactly the moment the top bar
+  // disappears, rather than each tracking scroll independently.
+  const barHidden = useHideOnScroll();
 
   if (vp === 'desktop') {
     const LEFT_W = 280;
     return (
       <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
-        <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
+        <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
+        <LxSideRail active={screen} navigate={navigate} visible={barHidden} />
+        <LxMessagesFab active={screen} navigate={navigate} visible={barHidden} />
         <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: 1260, margin: '0 auto' }}>
           <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
           {/* Keyed by screen so a screen change fades in rather than cutting. */}
@@ -408,7 +539,9 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
     const tabletRightSpacer = isWideSettingsPane ? LEFT_W : 206;
     return (
       <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
-        <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
+        <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
+        <LxSideRail active={screen} navigate={navigate} visible={barHidden} />
+        <LxMessagesFab active={screen} navigate={navigate} visible={barHidden} />
         <div style={{ display: 'flex', flex: 1, justifyContent: 'center', alignItems: 'flex-start', width: '100%', maxWidth: tabletShellWidth, margin: '0 auto' }}>
           <div style={{ width: LEFT_W, flexShrink: 0 }} aria-hidden="true" />
           <main key={screen} className="lx-fade-in" style={{
@@ -429,7 +562,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
   // mobile
   return (
     <div style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}>
-      <LxAppBar screen={screen} navigate={navigate} viewport={vp} />
+      <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
       <main key={screen} className="lx-fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: 72 }}>
         {children}
       </main>
