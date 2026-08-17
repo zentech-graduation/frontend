@@ -393,6 +393,50 @@ button:disabled {
   }
 }
 
+/* Story media crossfades in on every story change, rather than cutting
+   straight to the next photo or frame. */
+.lx-story-fade-in {
+  animation: lx-story-fade-in var(--duration-normal) var(--ease-out);
+}
+
+@keyframes lx-story-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The big centred heart a double-tap pops over the media, in the manner of
+   Instagram: it appears already at full size and fades out as it settles,
+   rather than growing in. */
+.lx-story-heart-pop {
+  animation: lx-story-heart-pop 700ms var(--ease-out);
+}
+
+@keyframes lx-story-heart-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  30% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
 /* Overlay and modal entry: a small rise and scale so the eye follows the panel
    arriving rather than finding it already there. */
 @keyframes lx-overlay-in {

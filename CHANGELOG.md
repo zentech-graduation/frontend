@@ -10,8 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Stories are now real: the home rail, "your story," and the story viewer read and write actual story data instead of a fixed demo set. Creating a story uploads a real photo or video and an optional caption, exactly like a post; there is no text-only story, since the platform doesn't support one.
 - The story viewer now has visible previous/next buttons, alongside the existing tap zones, so you can move through a person's stories - and straight into the next person's - without closing and reopening the viewer.
 - On desktop, the story viewer shows the previous and next story as dimmed previews beside the main one, so its neighbours are visible without stepping through them.
-- You can like a story; the heart in the story viewer reflects and updates your like.
+- You can like a story from the heart in the viewer, which bumps the same way a post's like does; on mobile, double-tapping the story also likes it and pops a heart over the media, matching double-tap on a post.
 - You can reply to a story from the viewer. Sending shows a confirmation, but nothing is delivered yet - the messaging feature this depends on isn't built.
+- Clicking outside the story card - anywhere on the dimmed backdrop - closes the story viewer, the same as the close button.
 - Clicking a notification about a comment now opens the post it belongs to and scrolls to that comment, flashing it briefly, instead of opening the notifier's profile.
 - You can set a profile banner (cover image) from the edit screen, uploaded from your device or pasted as a URL and cleared the same way as the avatar; it shows across the top of your profile.
 - You can upload a profile avatar from your device, not only paste an image URL.
@@ -20,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A video now autoplays, muted, when it scrolls into view and pauses when it leaves; you unmute it yourself and that choice is kept.
 
 ### Changed
+- Moving between stories now crossfades the media instead of cutting straight to the next photo or frame.
 - The "new post" screen has a more inviting, less utilitarian layout: a larger add-media area, your real name and avatar, and a single hashtag indicator instead of two that said almost the same thing. What you can upload and how captions and hashtags work has not changed.
 - The post popup is a contained, responsive size: its media fills the pane to every edge with no letterbox in any orientation, sits centred in its column, and the popup reads as a long panel short of full screen so comments have room to read even under a wide landscape image.
 - The post popup's author and caption area is more compact with its divider lines removed, so more comments are visible while the comment box keeps its size.
@@ -36,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The navigation bar stays visible on the messages screen.
 
 ### Fixed
+- The story viewer's next/previous buttons and side previews now line up with the card itself, instead of sitting visibly off-centre against it.
 - Your own avatar now shows consistently in the top bar and the comment box, matching your profile, instead of appearing as a blank placeholder in some places.
 - The profile "liked" tab now updates immediately when you like or unlike a post, instead of only after a page reload.
 - Carousel navigation controls are lighter and clearly legible over dark images, and moving between carousel images now slides smoothly instead of switching abruptly.

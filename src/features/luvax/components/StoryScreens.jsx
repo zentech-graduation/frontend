@@ -115,59 +115,78 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
   const peekHeight = `calc(${cardHeight} * 0.78)`;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000,
-      background: v.black78,
-      backdropFilter: 'blur(14px)',
-      WebkitBackdropFilter: 'blur(14px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 24,
-    }}>
-      <button onClick={onClose} aria-label="close" style={{
-        position: 'absolute', top: 20, right: 20,
-        background: v.white12, border: 'none', cursor: 'pointer',
-        width: 38, height: 38, borderRadius: '50%',
+    // Clicking the backdrop closes the viewer; the content wrapper below
+    // stops that click from bubbling, so nothing inside - card, peeks,
+    // chevrons, reply bar, close button - closes it by accident.
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: v.black78,
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
+        padding: 24, cursor: 'pointer',
+      }}
+    >
+      <button
+        onClick={(event) => { event.stopPropagation(); onClose(); }}
+        aria-label="close"
+        style={{
+          position: 'absolute', top: 20, right: 20,
+          background: v.white12, border: 'none', cursor: 'pointer',
+          width: 38, height: 38, borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
         <LxIcon name="close" size={20} color={v.white} />
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-        {peeks ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
-              <StoryPeek side="left" item={peeks.prev} onClick={peeks.onPrev} height={peekHeight} />
-            </div>
-            <NavButton side="left" onClick={peeks.prev ? peeks.onPrev : null} />
-          </>
-        ) : null}
+      <div onClick={(event) => event.stopPropagation()} style={{ cursor: 'default' }}>
+        {/* flex-start, not center: each side box below is exactly cardHeight
+            tall and centers its own content within that, so every side lines
+            up against the card's own height - never against the taller
+            column the reply bar extends below it. */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18 }}>
+          {peeks ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
+                <StoryPeek side="left" item={peeks.prev} onClick={peeks.onPrev} height={peekHeight} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
+                <NavButton side="left" onClick={peeks.prev ? peeks.onPrev : null} />
+              </div>
+            </>
+          ) : null}
 
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-          height: cardHeight,
-        }}>
           <div style={{
-            width: cardWidth, height: '100%',
-            borderRadius: STORY_CARD_RADIUS, overflow: 'hidden', position: 'relative',
-            boxShadow: `0 32px 80px ${v.black55}, 0 0 0 1px ${v.white04}`,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
           }}>
-            {children}
+            <div style={{
+              width: cardWidth, height: cardHeight,
+              borderRadius: STORY_CARD_RADIUS, overflow: 'hidden', position: 'relative',
+              boxShadow: `0 32px 80px ${v.black55}, 0 0 0 1px ${v.white04}`,
+            }}>
+              {children}
+            </div>
+            {footer && (
+              <div style={{ width: cardWidth }}>
+                {footer}
+              </div>
+            )}
           </div>
-          {footer && (
-            <div style={{ width: cardWidth }}>
-              {footer}
-            </div>
-          )}
-        </div>
 
-        {peeks ? (
-          <>
-            <NavButton side="right" onClick={peeks.next ? peeks.onNext : null} />
-            <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
-              <StoryPeek side="right" item={peeks.next} onClick={peeks.onNext} height={peekHeight} />
-            </div>
-          </>
-        ) : null}
+          {peeks ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
+                <NavButton side="right" onClick={peeks.next ? peeks.onNext : null} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
+                <StoryPeek side="right" item={peeks.next} onClick={peeks.onNext} height={peekHeight} />
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -198,8 +217,11 @@ export function StoryViewScreen({ viewport: vpProp }) {
   const likeStory = useLikeStory();
   const [progress, setProgress] = useState(0);
   const [replyDraft, setReplyDraft] = useState('');
+  const [heartBurst, setHeartBurst] = useState(false);
+  const [showBigHeart, setShowBigHeart] = useState(false);
   const videoRef = useRef(null);
   const recordedRef = useRef(null);
+  const lastTapRef = useRef(0);
 
   const currentIndex = sequence.findIndex((item) => item.story.id === storyId);
   const current = currentIndex >= 0 ? sequence[currentIndex] : null;
@@ -276,6 +298,38 @@ export function StoryViewScreen({ viewport: vpProp }) {
 
   const authorName = entry.userDisplayName || entry.username;
 
+  const handleLikeToggle = () => {
+    setHeartBurst(false);
+    window.requestAnimationFrame(() => setHeartBurst(true));
+    likeStory.mutate({ storyId: story.id, liked: story.liked });
+  };
+
+  // Double-tap to like, in the manner of Instagram and matching the same
+  // convention as the post feed: a double-tap always likes and never
+  // unlikes, and replaying it on an already-liked story just replays the
+  // burst. Scoped to a centre zone, separate from the left/right tap zones
+  // that navigate, so a quick double-tap there can't also fire two
+  // navigations. Unlike the reply bar's heart button, this also pops the
+  // big centred heart over the media - the button click alone does not.
+  const handleCenterDoubleTap = () => {
+    if (vp !== 'mobile') return;
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      lastTapRef.current = 0;
+      if (!story.liked) {
+        likeStory.mutate({ storyId: story.id, liked: false });
+      }
+      setHeartBurst(false);
+      setShowBigHeart(false);
+      window.requestAnimationFrame(() => {
+        setHeartBurst(true);
+        setShowBigHeart(true);
+      });
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
   const card = (
     <div style={{
       position: 'absolute', inset: 0,
@@ -284,11 +338,13 @@ export function StoryViewScreen({ viewport: vpProp }) {
     }}>
       {isVideo ? (
         <video
+          key={story.id}
           ref={videoRef}
           src={story.media.cdnUrl}
           autoPlay
           playsInline
           muted={false}
+          className="lx-story-fade-in"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onTimeUpdate={(event) => {
             const el = event.currentTarget;
@@ -297,7 +353,13 @@ export function StoryViewScreen({ viewport: vpProp }) {
           onEnded={next}
         />
       ) : (
-        <img src={story.media.cdnUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <img
+          key={story.id}
+          src={story.media.cdnUrl}
+          alt=""
+          className="lx-story-fade-in"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
       )}
 
       {/* Progress bar: one segment per story this author currently has active. */}
@@ -333,15 +395,35 @@ export function StoryViewScreen({ viewport: vpProp }) {
       )}
 
       {/* Tap zones: the whole means of navigation on mobile, and a larger
-          touch target than the desktop chevrons need no precise aim to hit. */}
+          touch target than the desktop chevrons need no precise aim to hit.
+          The centre strip between them is reserved for double-tap-to-like,
+          so a quick double-tap there can't also fire two navigations. */}
       <button onClick={prev} style={{
         position: 'absolute', left: 0, top: 60, bottom: 80, width: '30%',
         background: 'transparent', border: 'none', cursor: 'pointer',
       }} aria-label="previous" />
+      <button onClick={handleCenterDoubleTap} style={{
+        position: 'absolute', left: '30%', top: 60, bottom: 80, width: '40%',
+        background: 'transparent', border: 'none', cursor: 'default',
+      }} aria-label="story media" />
       <button onClick={next} style={{
         position: 'absolute', right: 0, top: 60, bottom: 80, width: '30%',
         background: 'transparent', border: 'none', cursor: 'pointer',
       }} aria-label="next" />
+
+      {showBigHeart && (
+        <div
+          key={`heart-${story.id}`}
+          className="lx-story-heart-pop"
+          onAnimationEnd={() => setShowBigHeart(false)}
+          style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+          }}
+        >
+          <LxIcon name="heart" size={92} color={HEART_COLOR} filled />
+        </div>
+      )}
 
       {vp === 'mobile' && (currentIndex > 0 || currentIndex < sequence.length - 1) ? (
         <>
@@ -367,10 +449,6 @@ export function StoryViewScreen({ viewport: vpProp }) {
       ) : null}
     </div>
   );
-
-  const handleLikeToggle = () => {
-    likeStory.mutate({ storyId: story.id, liked: story.liked });
-  };
 
   const handleReplySend = () => {
     const text = replyDraft.trim();
@@ -406,13 +484,16 @@ export function StoryViewScreen({ viewport: vpProp }) {
       <button
         onClick={handleLikeToggle}
         aria-label={story.liked ? 'unlike' : 'like'}
+        className={`lx-heart-button ${heartBurst ? 'is-liked' : ''}`}
         style={{
           width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
           background: v.white08, border: `1px solid ${v.white18}`, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
-        <LxIcon name="heart" size={18} color={story.liked ? HEART_COLOR : v.white} filled={story.liked} />
+        <span className="lx-heart-icon" style={{ display: 'inline-flex' }}>
+          <LxIcon name="heart" size={18} color={story.liked ? HEART_COLOR : v.white} filled={story.liked} />
+        </span>
       </button>
       <button
         onClick={handleReplySend}
