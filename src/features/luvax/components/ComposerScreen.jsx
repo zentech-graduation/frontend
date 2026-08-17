@@ -5,6 +5,7 @@ import { v } from '@/config/tokens';
 import { LxAvatar, LxDivider, LxIcon, LxTag } from './primitives';
 import { ComposerAttachments } from './ComposerAttachments';
 import { useCreatePost } from '../hooks/usePosts';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useMediaConstraints } from '../hooks/useMediaConstraints';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
@@ -32,6 +33,7 @@ const SUBMIT_LABEL = {
 export function ComposerScreen() {
   const navigate = useNavigate();
   const { viewport } = useLuvaxTweaks();
+  const currentUser = useAuthStore((state) => state.user);
   const [caption, setCaption] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [items, setItems] = useState([]);
@@ -229,12 +231,10 @@ export function ComposerScreen() {
   const submitLabel =
     postType === 'CAROUSEL' ? `post carousel of ${items.length}` : SUBMIT_LABEL[postType];
 
-  const isDesktop = viewport === 'desktop';
   const isTablet = viewport === 'tablet';
   const tabletLeftLineInset = 150;
   const tabletBodyPadLeft = 166;
   const tabletBodyPadRight = 24;
-  const contentLeftInset = isDesktop ? 50 : isTablet ? tabletBodyPadLeft : 48;
   const helperText = buildHelperText(constraints);
   const canAttachMore = items.length < MAX_CAROUSEL_ITEMS;
 
@@ -266,7 +266,7 @@ export function ComposerScreen() {
           position: 'relative',
         }}
       >
-        <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 500, color: v.ink2 }}>new post</span>
+        <span style={{ fontFamily: v.fontDisplay, fontSize: 16, fontWeight: 600, color: v.ink, letterSpacing: '-0.01em' }}>new post</span>
         <button
           onClick={handlePost}
           disabled={isActionDisabled}
@@ -319,9 +319,11 @@ export function ComposerScreen() {
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
         <div style={{ display: 'flex', gap: 12, padding: isTablet ? `20px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px` : '20px 16px 0' }}>
-          <LxAvatar size={36} idx={0} />
+          <LxAvatar size={38} src={currentUser?.avatarUrl} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, marginBottom: 8 }}>you</div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, marginBottom: 10 }}>
+              {currentUser?.displayName || currentUser?.username || 'you'}
+            </div>
 
             <input
               type="file"
@@ -344,24 +346,34 @@ export function ComposerScreen() {
                 onClick={() => fileInputRef.current?.click()}
                 style={{
                   width: '100%',
-                  height: 160,
+                  height: 220,
                   background: v.surfaceSunken,
-                  borderRadius: 12,
-                  border: `1px dashed ${v.border}`,
+                  borderRadius: 16,
+                  border: `1.5px dashed ${v.border}`,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8,
+                  gap: 14,
                   cursor: 'pointer',
-                  marginBottom: 14,
+                  marginBottom: 16,
                   position: 'relative',
                   overflow: 'hidden',
+                  transition: 'border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out)',
                 }}
+                onMouseEnter={(event) => { event.currentTarget.style.borderColor = v.accent; }}
+                onMouseLeave={(event) => { event.currentTarget.style.borderColor = v.border; }}
               >
-                <LxIcon name="image" size={36} color={v.ink3} />
-                <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>tap to add photos or video</span>
-                <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, textAlign: 'center', padding: '0 12px' }}>{helperText}</span>
+                <div style={{
+                  width: 56, height: 56, borderRadius: '50%',
+                  background: v.surface, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <LxIcon name="image" size={26} color={v.ink2} />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>add photos or a video</div>
+                  <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 6, padding: '0 12px' }}>{helperText}</div>
+                </div>
               </div>
             ) : (
               // Derived, not from the design: with attachments present the
@@ -416,27 +428,10 @@ export function ComposerScreen() {
           </div>
         </div>
 
-        <div
-          style={{
-            padding: isTablet ? `8px ${tabletBodyPadRight}px 4px ${contentLeftInset}px` : '8px 16px 4px',
-            marginLeft: isTablet ? 0 : contentLeftInset,
-          }}
-        >
-          {/* The suggested tag chips that used to follow this label were a
-              hardcoded list presented as though the server had suggested them.
-              Nothing suggests tags, so there is nothing to offer here. Tags
-              typed into the caption still count, which is what this label
-              reports. The label keeps no bottom margin: it is now the last
-              thing in the row, and the margin reserved space for chips that can
-              no longer appear. */}
-          <div style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <LxIcon name="hash" size={12} color={v.ink3} />
-            hashtags {allTags.length > 0 ? <span style={{ color: v.accentText, marginLeft: 4 }}>({allTags.length})</span> : null}
-          </div>
-        </div>
-
         <LxDivider mx={isTablet ? tabletLeftLineInset : 0} />
 
+        {/* Tags typed into the caption count automatically; there is no
+            separate tag-selection step, so one row reports the whole state. */}
         <div
           style={{
             display: 'flex',
@@ -445,9 +440,9 @@ export function ComposerScreen() {
             padding: isTablet ? `14px ${tabletBodyPadRight}px 14px ${tabletBodyPadLeft}px` : '14px 16px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
-            <LxIcon name="hash" size={13} color={v.ink3} />
-            <span>auto-tagged: {captionTags.length}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: v.fontMono, fontSize: 11, color: allTags.length > 0 ? v.accentText : v.ink3 }}>
+            <LxIcon name="hash" size={13} color={allTags.length > 0 ? 'currentColor' : v.ink3} />
+            <span>{allTags.length > 0 ? `${allTags.length} hashtag${allTags.length > 1 ? 's' : ''}` : 'no hashtags yet'}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {caption.length > 0 ? (
