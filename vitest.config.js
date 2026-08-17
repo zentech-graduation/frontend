@@ -9,6 +9,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // makes it safe as the continuous integration gate. The live suite has its own config.
 export default defineConfig({
   plugins: [react()],
+  // Source files use JSX without importing React, so the automatic runtime has to be
+  // explicit here: the test transform does not inherit it from the app build config.
+  esbuild: { jsx: 'automatic' },
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },
   test: {
     environment: 'jsdom',
