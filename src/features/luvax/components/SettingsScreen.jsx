@@ -9,6 +9,8 @@ import { clearAuthAndRedirect } from '@/api/axiosClient';
 import { extractPageContent } from '@/utils/helpers';
 import { useBlockedUsers } from '../hooks/useSocial';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
+import { useMyProfile, useUpdateMyProfile } from '../hooks/useUsers';
+import { useMySettings, useUpdateMySettings } from '../hooks/useSettings';
 
 // ─── Toggle ─────────────────────────────────────────────────────────────────
 function Toggle({ on, onChange, disabled = false }) {
@@ -92,6 +94,17 @@ export function SettingsScreen() {
   const { data: blockedResponse } = useBlockedUsers();
   const blocks = extractPageContent(blockedResponse);
 
+  // The public/list shapes omit or restrict isPrivate, so the self view is
+  // the only source for it; the auth store's session user is deliberately
+  // never widened to carry it (see LuvaxApp's own avatar/banner-only merge).
+  const { data: myProfileResponse } = useMyProfile();
+  const myProfile = myProfileResponse?.data || myProfileResponse;
+  const updateProfile = useUpdateMyProfile();
+
+  const { data: settingsResponse } = useMySettings();
+  const settings = settingsResponse?.data || settingsResponse;
+  const updateSettings = useUpdateMySettings();
+
   const handleDarkModeToggle = (value) => {
     localStorage.setItem('lxDarkManual', '1');
     if (setTweak) {
@@ -127,37 +140,109 @@ export function SettingsScreen() {
         />
 
         {/* Privacy */}
-        <SectionHeader note="coming soon">privacy</SectionHeader>
+        <SectionHeader>privacy</SectionHeader>
         <SettingsRow
           label="private account"
           sub="only approved followers can see your posts"
-          control={<Toggle on={false} onChange={() => {}} disabled />}
+          control={
+            <Toggle
+              on={Boolean(myProfile?.isPrivate)}
+              onChange={(value) => updateProfile.mutate({ isPrivate: value })}
+              disabled={!myProfile}
+            />
+          }
         />
         <SettingsRow
           label="show activity status"
           sub="let people see when you were last active"
-          control={<Toggle on={true} onChange={() => {}} disabled />}
+          control={
+            <Toggle
+              on={settings ? Boolean(settings.showActivityStatus) : true}
+              onChange={(value) => updateSettings.mutate({ showActivityStatus: value })}
+              disabled={!settings}
+            />
+          }
         />
         <SettingsRow
           label="allow story replies"
           sub="people can dm you in response to stories"
-          control={<Toggle on={true} onChange={() => {}} disabled />}
+          control={
+            <Toggle
+              on={settings ? Boolean(settings.allowStoryReplies) : true}
+              onChange={(value) => updateSettings.mutate({ allowStoryReplies: value })}
+              disabled={!settings}
+            />
+          }
         />
         <SettingsRow
           label="allow message requests"
           sub="people you don't follow can dm you"
-          control={<Toggle on={true} onChange={() => {}} disabled />}
+          control={
+            <Toggle
+              on={settings ? Boolean(settings.allowMessageRequests) : true}
+              onChange={(value) => updateSettings.mutate({ allowMessageRequests: value })}
+              disabled={!settings}
+            />
+          }
         />
         <SettingsRow label="blocked users" sub={`${blocks.length} blocked`} control={<LxIcon name="chevronRight" size={16} color={v.ink3} />} onClick={() => navigate(ROUTES.BLOCKED_USERS)} />
 
         {/* Notifications */}
-        <SectionHeader note="coming soon">notifications</SectionHeader>
-        <SettingsRow label="likes" control={<Toggle on={true} onChange={() => {}} disabled />} />
-        <SettingsRow label="comments & replies" control={<Toggle on={true} onChange={() => {}} disabled />} />
-        <SettingsRow label="new followers" control={<Toggle on={true} onChange={() => {}} disabled />} />
-        <SettingsRow label="mentions" control={<Toggle on={true} onChange={() => {}} disabled />} />
-        <SettingsRow label="story views" control={<Toggle on={false} onChange={() => {}} disabled />} />
-        <SettingsRow label="messages" control={<Toggle on={true} onChange={() => {}} disabled />} />
+        <SectionHeader>notifications</SectionHeader>
+        <SettingsRow
+          label="likes"
+          control={
+            <Toggle
+              on={settings ? Boolean(settings.notifyLikes) : true}
+              onChange={(value) => updateSettings.mutate({ notifyLikes: value })}
+              disabled={!settings}
+            />
+          }
+        />
+        <SettingsRow
+          label="comments & replies"
+          control={
+            <Toggle
+              on={settings ? Boolean(settings.notifyComments) : true}
+              onChange={(value) => updateSettings.mutate({ notifyComments: value })}
+              disabled={!settings}
+            />
+          }
+        />
+        <SettingsRow
+          label="new followers"
+          control={
+            <Toggle
+              on={settings ? Boolean(settings.notifyFollows) : true}
+              onChange={(value) => updateSettings.mutate({ notifyFollows: value })}
+              disabled={!settings}
+            />
+          }
+        />
+        <SettingsRow
+          label="mentions"
+          control={
+            <Toggle
+              on={settings ? Boolean(settings.notifyMentions) : true}
+              onChange={(value) => updateSettings.mutate({ notifyMentions: value })}
+              disabled={!settings}
+            />
+          }
+        />
+        {/* Story views has no backend field to bind to - notify_* covers
+            likes/comments/follows/mentions/messages only - so it stays a
+            placeholder rather than wiring to something that doesn't exist. */}
+        <SettingsRow label="story views" sub="coming soon" control={<Toggle on={false} onChange={() => {}} disabled />} />
+        <SettingsRow
+          label="messages"
+          control={
+            <Toggle
+              on={settings ? Boolean(settings.notifyMessages) : true}
+              onChange={(value) => updateSettings.mutate({ notifyMessages: value })}
+              disabled={!settings}
+            />
+          }
+        />
 
         {/* Support */}
         <SectionHeader>support</SectionHeader>
