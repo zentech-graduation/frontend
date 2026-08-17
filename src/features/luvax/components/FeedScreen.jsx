@@ -5,21 +5,29 @@ import { v } from '@/config/tokens';
 import { extractPageContent } from '@/utils/helpers';
 import { LxIcon, LxAvatar, LxTag, LxBtn } from './primitives';
 import { useFeed } from '../hooks/usePosts';
+import { useStoryFeed } from '../hooks/useStories';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
-import { STORIES } from '../constants/data';
+import { useAuthStore } from '@/store/useAuthStore';
 import { ROUTES, routeTo } from '@/config/constants';
 
 // ─── Stories Carousel ──────────────────────────────────────────────────────
-// Restored on the owner's direction. The rail sits at the top of the feed, as it
-// does on Instagram, and runs on its presentation data without live wiring yet.
+// The rail sits at the top of the feed, as it does on Instagram. Backed by the
+// real story tray: the viewer's own entry is pinned first by the API when they
+// have an active story, otherwise a plain "add story" ring opens the composer.
 export function StoriesCarousel({ viewport }) {
   const openOverlay = useOverlayNavigate();
+  const currentUser = useAuthStore((state) => state.user);
+  const { tray } = useStoryFeed();
   const isTablet = viewport === 'tablet';
   // Larger avatars and a taller rail for presence, trimmed about 12% from the
   // previous size on the owner's note that they read a touch too big.
   const avatar = isTablet ? 51 : 58;
   const ownRing = avatar + 6;
+
+  const hasOwnEntry = tray.length > 0 && tray[0].userId === currentUser?.id;
+  const others = hasOwnEntry ? tray.slice(1) : tray;
+
   return (
     <div style={{
       display: 'flex', gap: isTablet ? 12 : 16, overflowX: 'auto',
@@ -29,31 +37,51 @@ export function StoriesCarousel({ viewport }) {
       // scrolls; new stories entering on the left stay reachable by scrolling.
       justifyContent: 'safe center',
     }}>
-      {STORIES.map(s => (
-        <button key={s.id}
-          onClick={() => s.isOwn ? openOverlay(ROUTES.STORY_COMPOSE) : openOverlay(routeTo.storyView(s.id))}
+      <button
+        onClick={() => hasOwnEntry
+          ? openOverlay(routeTo.storyView(tray[0].stories[0].id))
+          : openOverlay(ROUTES.STORY_COMPOSE)}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
+          flexShrink: 0, padding: 0, position: 'relative',
+        }}>
+        {hasOwnEntry ? (
+          <LxAvatar size={avatar} src={currentUser?.avatarUrl} hasStory viewed={false} />
+        ) : (
+          <div style={{
+            width: ownRing, height: ownRing, borderRadius: '50%',
+            background: currentUser?.avatarUrl ? `url(${currentUser.avatarUrl}) center/cover no-repeat` : v.surface,
+            border: `1px solid ${v.borderStrong}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, position: 'relative',
+          }}>
+            {currentUser?.avatarUrl ? (
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: v.black40 }} />
+            ) : null}
+            <LxIcon name="plus" size={isTablet ? 20 : 22} color={currentUser?.avatarUrl ? v.white : v.ink2} style={{ position: 'relative' }} />
+          </div>
+        )}
+        <span style={{
+          fontFamily: v.fontBody, fontSize: isTablet ? 11 : 12, fontWeight: 500,
+          color: v.ink,
+          maxWidth: avatar + 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>your story</span>
+      </button>
+      {others.map((entry) => (
+        <button key={entry.userId}
+          onClick={() => openOverlay(routeTo.storyView(entry.stories[0].id))}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7,
             flexShrink: 0, padding: 0,
           }}>
-          {s.isOwn ? (
-            <div style={{
-              width: ownRing, height: ownRing, borderRadius: '50%',
-              background: v.surface, border: `1px solid ${v.borderStrong}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <LxIcon name="plus" size={isTablet ? 20 : 22} color={v.ink2} />
-            </div>
-          ) : (
-            <LxAvatar size={avatar} idx={s.idx} hasStory viewed={s.viewed} />
-          )}
+          <LxAvatar size={avatar} src={entry.userAvatarUrl} hasStory viewed={!entry.hasUnseen} />
           <span style={{
             fontFamily: v.fontBody, fontSize: isTablet ? 11 : 12, fontWeight: 500,
-            color: s.viewed ? v.ink3 : v.ink,
+            color: entry.hasUnseen ? v.ink : v.ink3,
             maxWidth: avatar + 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{s.author}</span>
+          }}>{entry.userDisplayName || entry.username}</span>
         </button>
       ))}
     </div>
