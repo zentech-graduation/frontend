@@ -6,7 +6,12 @@ import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
-  { ignores: ['dist', 'node_modules', 'build'] },
+  // .vite-cache is where vite.config.js relocates Vite's cacheDir. Without it here, `eslint .`
+  // walked the 18 pre-bundled dependency files under .vite-cache/deps - react-dom at 820 kB,
+  // react-router-dom at 398 kB, and the rest - and reported formatting violations on every line of
+  // generated vendor code: 54,518 findings on top of the 1,278 real ones, and over five minutes to
+  // run. That made the lint script unusable as a gate, which is why it was never wired into CI.
+  { ignores: ['dist', 'node_modules', 'build', '.vite-cache', 'coverage'] },
 
   // Base JS rules
   {
