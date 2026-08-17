@@ -41,9 +41,31 @@ export const deleteStory = async (storyId) => {
   return response.data;
 };
 
+/**
+ * Likes a story. Self-like is permitted.
+ * @param {string} storyId
+ * @returns {Promise<Object>} The ApiResponse envelope wrapping the like action outcome.
+ */
+export const likeStory = async (storyId) => {
+  const response = await axiosInstance.post(`${STORY_API_PATH}/${storyId}/likes`);
+  return response.data;
+};
+
+/**
+ * Removes the authenticated user's like from a story.
+ * @param {string} storyId
+ * @returns {Promise<Object>} The ApiResponse envelope wrapping the like action outcome.
+ */
+export const unlikeStory = async (storyId) => {
+  const response = await axiosInstance.delete(`${STORY_API_PATH}/${storyId}/likes`);
+  return response.data;
+};
+
 export const storyService = {
   createStory,
   getStoryFeed,
   recordStoryView,
   deleteStory,
+  likeStory,
+  unlikeStory,
 };

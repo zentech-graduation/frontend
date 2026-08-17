@@ -3,16 +3,19 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar } from './primitives';
-import { useStoryFeed, useCreateStory, useRecordStoryView } from '../hooks/useStories';
+import { useStoryFeed, useCreateStory, useRecordStoryView, useLikeStory } from '../hooks/useStories';
 import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useMediaConstraints } from '../hooks/useMediaConstraints';
 import { useAuthStore } from '@/store/useAuthStore';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { buildAcceptAttribute, validateFile, validateDuration } from '../utils/composerMedia';
+import { formatRelativeTime } from '../hooks/useRelativeTime';
+import { toast } from './Toast';
 
 const STORY_CARD_RADIUS = 18;
 const STORY_RATIO = 9 / 16;
 const IMAGE_STORY_DURATION_MS = 5000;
+const HEART_COLOR = 'var(--lx-error)';
 
 // Light frosted chips, matching the post-media carousel controls: legible over
 // any image without a dark scrim that competes with the photo underneath.
@@ -20,8 +23,67 @@ const CONTROL_BG = 'rgba(255,255,255,0.9)';
 const CONTROL_FG = '#1c1a17';
 const CONTROL_SHADOW = '0 1px 5px rgba(0,0,0,0.3)';
 
+// A peek shows the immediate neighbour in the sequence - the previous or next
+// story that a chevron click, or clicking the peek itself, would jump to. A
+// missing neighbour still reserves its column's width (as a CSS calc, since
+// height arrives as one too), so the main card never shifts sideways as the
+// viewer approaches either end of the sequence.
+function StoryPeek({ side, item, onClick, height }) {
+  const width = `calc(${height} * ${STORY_RATIO})`;
+  if (!item) return <div style={{ width, flexShrink: 0 }} aria-hidden="true" />;
+  const { story, entry } = item;
+  const isVideo = story.media?.mediaType?.toUpperCase() === 'VIDEO';
+  return (
+    <button
+      onClick={onClick}
+      aria-label={`${side === 'left' ? 'previous' : 'next'}: ${entry.userDisplayName || entry.username}'s story`}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+        background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0,
+      }}
+    >
+      <div style={{
+        width, height, borderRadius: STORY_CARD_RADIUS - 4, overflow: 'hidden',
+        position: 'relative', opacity: 0.7,
+      }}>
+        {isVideo ? (
+          <video src={story.media.cdnUrl} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <img src={story.media.cdnUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        )}
+        <div style={{ position: 'absolute', inset: 0, background: v.black40 }} />
+      </div>
+      <span style={{ fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.white70, maxWidth: width }}>
+        {entry.userDisplayName || entry.username}
+      </span>
+    </button>
+  );
+}
+
+function NavButton({ side, onClick }) {
+  if (!onClick) return null;
+  return (
+    <button
+      onClick={(event) => { event.stopPropagation(); onClick(); }}
+      aria-label={side === 'left' ? 'previous story' : 'next story'}
+      style={{
+        width: 34, height: 34, borderRadius: 999, border: 'none', flexShrink: 0,
+        background: CONTROL_BG, boxShadow: CONTROL_SHADOW,
+        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 0,
+      }}
+    >
+      <LxIcon name={side === 'left' ? 'chevronLeft' : 'chevronRight'} size={18} color={CONTROL_FG} />
+    </button>
+  );
+}
+
 // ─── Story Stage (shared chrome) ───────────────────────────────────────────
-function StoryStage({ children, onClose, footer, viewport, scale = 1 }) {
+// peeks, when given, render the previous/next story as dimmed side panels
+// with a chevron in the gap between each and the main card, matching the
+// desktop reference: a contained card with its neighbours visible at a
+// glance, rather than a near-fullscreen card with nothing around it.
+function StoryStage({ children, onClose, footer, viewport, peeks }) {
   const isMobile = viewport === 'mobile';
 
   if (isMobile) {
@@ -46,10 +108,11 @@ function StoryStage({ children, onClose, footer, viewport, scale = 1 }) {
     );
   }
 
-  // Scaled up on the owner's request, for a more detailed view, while staying
-  // short of full screen so the overlay still reads as a card over the feed.
-  const cardHeight = `min(${90 * scale}vh, ${860 * scale}px)`;
+  // Contained, not near-fullscreen, so the peeks and chevrons around it have
+  // room to read as their own elements rather than crowding the card's edge.
+  const cardHeight = 'min(80vh, 760px)';
   const cardWidth  = `calc(${cardHeight} * ${STORY_RATIO})`;
+  const peekHeight = `calc(${cardHeight} * 0.78)`;
 
   return (
     <div style={{
@@ -69,45 +132,44 @@ function StoryStage({ children, onClose, footer, viewport, scale = 1 }) {
         <LxIcon name="close" size={20} color={v.white} />
       </button>
 
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
-        height: cardHeight,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+        {peeks ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
+              <StoryPeek side="left" item={peeks.prev} onClick={peeks.onPrev} height={peekHeight} />
+            </div>
+            <NavButton side="left" onClick={peeks.prev ? peeks.onPrev : null} />
+          </>
+        ) : null}
+
         <div style={{
-          width: cardWidth, height: '100%',
-          borderRadius: STORY_CARD_RADIUS, overflow: 'hidden', position: 'relative',
-          boxShadow: `0 32px 80px ${v.black55}, 0 0 0 1px ${v.white04}`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+          height: cardHeight,
         }}>
-          {children}
-        </div>
-        {footer && (
-          <div style={{ width: cardWidth }}>
-            {footer}
+          <div style={{
+            width: cardWidth, height: '100%',
+            borderRadius: STORY_CARD_RADIUS, overflow: 'hidden', position: 'relative',
+            boxShadow: `0 32px 80px ${v.black55}, 0 0 0 1px ${v.white04}`,
+          }}>
+            {children}
           </div>
-        )}
+          {footer && (
+            <div style={{ width: cardWidth }}>
+              {footer}
+            </div>
+          )}
+        </div>
+
+        {peeks ? (
+          <>
+            <NavButton side="right" onClick={peeks.next ? peeks.onNext : null} />
+            <div style={{ display: 'flex', alignItems: 'center', height: cardHeight }}>
+              <StoryPeek side="right" item={peeks.next} onClick={peeks.onNext} height={peekHeight} />
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
-  );
-}
-
-function NavButton({ side, onClick, viewport }) {
-  if (!onClick) return null;
-  const isMobile = viewport === 'mobile';
-  return (
-    <button
-      onClick={(event) => { event.stopPropagation(); onClick(); }}
-      aria-label={side === 'left' ? 'previous story' : 'next story'}
-      style={{
-        position: 'absolute', top: '50%', [side]: isMobile ? 10 : -18,
-        transform: 'translateY(-50%)',
-        width: 34, height: 34, borderRadius: 999, border: 'none',
-        background: CONTROL_BG, boxShadow: CONTROL_SHADOW,
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 0, zIndex: 6,
-      }}
-    >
-      <LxIcon name={side === 'left' ? 'chevronLeft' : 'chevronRight'} size={18} color={CONTROL_FG} />
-    </button>
   );
 }
 
@@ -133,7 +195,9 @@ export function StoryViewScreen({ viewport: vpProp }) {
   const currentUser = useAuthStore((state) => state.user);
   const sequence = useFlatStorySequence();
   const recordView = useRecordStoryView();
+  const likeStory = useLikeStory();
   const [progress, setProgress] = useState(0);
+  const [replyDraft, setReplyDraft] = useState('');
   const videoRef = useRef(null);
   const recordedRef = useRef(null);
 
@@ -198,7 +262,10 @@ export function StoryViewScreen({ viewport: vpProp }) {
   }, [story?.id, isVideo]);
 
   useEffect(() => {
-    if (!isVideo || progress < 100) return;
+    // NaN-safe by construction: progress < 100 is false for NaN too, which
+    // would otherwise fall through to next() before the video's duration is
+    // known (onTimeUpdate can fire once with duration still NaN on mount).
+    if (!isVideo || !(progress >= 100)) return;
     next();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress, isVideo]);
@@ -253,6 +320,7 @@ export function StoryViewScreen({ viewport: vpProp }) {
       }}>
         <LxAvatar size={30} src={entry.userAvatarUrl} />
         <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.white, textShadow: `0 1px 6px ${v.black40}` }}>{authorName}</span>
+        <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.white70, textShadow: `0 1px 6px ${v.black40}` }}>{formatRelativeTime(story.createdAt)}</span>
       </div>
 
       {/* Caption */}
@@ -264,8 +332,8 @@ export function StoryViewScreen({ viewport: vpProp }) {
         }}>{story.caption}</div>
       )}
 
-      {/* Tap zones, kept alongside the explicit nav buttons below as a larger
-          touch target that needs no precise aim. */}
+      {/* Tap zones: the whole means of navigation on mobile, and a larger
+          touch target than the desktop chevrons need no precise aim to hit. */}
       <button onClick={prev} style={{
         position: 'absolute', left: 0, top: 60, bottom: 80, width: '30%',
         background: 'transparent', border: 'none', cursor: 'pointer',
@@ -275,13 +343,103 @@ export function StoryViewScreen({ viewport: vpProp }) {
         background: 'transparent', border: 'none', cursor: 'pointer',
       }} aria-label="next" />
 
-      <NavButton side="left" viewport={vp} onClick={currentIndex > 0 ? prev : null} />
-      <NavButton side="right" viewport={vp} onClick={next} />
+      {vp === 'mobile' && (currentIndex > 0 || currentIndex < sequence.length - 1) ? (
+        <>
+          {currentIndex > 0 && (
+            <button onClick={prev} aria-label="previous story" style={{
+              position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)',
+              width: 34, height: 34, borderRadius: 999, border: 'none',
+              background: CONTROL_BG, boxShadow: CONTROL_SHADOW, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, zIndex: 5,
+            }}>
+              <LxIcon name="chevronLeft" size={18} color={CONTROL_FG} />
+            </button>
+          )}
+          <button onClick={next} aria-label="next story" style={{
+            position: 'absolute', top: '50%', right: 10, transform: 'translateY(-50%)',
+            width: 34, height: 34, borderRadius: 999, border: 'none',
+            background: CONTROL_BG, boxShadow: CONTROL_SHADOW, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, zIndex: 5,
+          }}>
+            <LxIcon name="chevronRight" size={18} color={CONTROL_FG} />
+          </button>
+        </>
+      ) : null}
     </div>
   );
 
+  const handleLikeToggle = () => {
+    likeStory.mutate({ storyId: story.id, liked: story.liked });
+  };
+
+  const handleReplySend = () => {
+    const text = replyDraft.trim();
+    if (!text) return;
+    setReplyDraft('');
+    // Messaging is not built yet, so a reply cannot actually be delivered.
+    // This stands in for the real flow: it clears the field and confirms,
+    // exactly as a sent reply would, without pretending to persist anything.
+    toast(`sent to ${authorName} — demo only, messaging isn't built yet`);
+  };
+
+  const replyBar = (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: vp === 'mobile' ? '12px 16px 18px' : 0,
+      background: vp === 'mobile' ? v.black : 'transparent',
+    }}>
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center',
+        background: v.white08, border: `1px solid ${v.white18}`, borderRadius: 999, padding: '9px 16px',
+      }}>
+        <input
+          value={replyDraft}
+          onChange={(event) => setReplyDraft(event.target.value.slice(0, CHAR_LIMITS.message))}
+          onKeyDown={(event) => { if (event.key === 'Enter') handleReplySend(); }}
+          placeholder={`reply to ${authorName}...`}
+          style={{
+            flex: 1, fontFamily: v.fontBody, fontSize: 13.5, color: v.white,
+            background: 'transparent', border: 'none', outline: 'none',
+          }}
+        />
+      </div>
+      <button
+        onClick={handleLikeToggle}
+        aria-label={story.liked ? 'unlike' : 'like'}
+        style={{
+          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+          background: v.white08, border: `1px solid ${v.white18}`, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <LxIcon name="heart" size={18} color={story.liked ? HEART_COLOR : v.white} filled={story.liked} />
+      </button>
+      <button
+        onClick={handleReplySend}
+        disabled={!replyDraft.trim()}
+        aria-label="send reply"
+        style={{
+          width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+          background: v.white08, border: `1px solid ${v.white18}`,
+          cursor: replyDraft.trim() ? 'pointer' : 'default', opacity: replyDraft.trim() ? 1 : 0.5,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <LxIcon name="send" size={18} color={v.white} />
+      </button>
+    </div>
+  );
+
+  const prevItem = currentIndex > 0 ? sequence[currentIndex - 1] : null;
+  const nextItem = currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
+
   return (
-    <StoryStage viewport={vp} onClose={close} scale={1.1}>
+    <StoryStage
+      viewport={vp}
+      onClose={close}
+      footer={replyBar}
+      peeks={vp === 'mobile' ? null : { prev: prevItem, next: nextItem, onPrev: prev, onNext: next }}
+    >
       {card}
     </StoryStage>
   );

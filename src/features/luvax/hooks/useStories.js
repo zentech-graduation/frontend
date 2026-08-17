@@ -38,3 +38,46 @@ export const useRecordStoryView = () => {
     mutationFn: (storyId) => storyService.recordStoryView(storyId),
   });
 };
+
+/**
+ * Rewrites one story, wherever it sits in the tray, in place.
+ *
+ * The tray is the only cache stories live in - the viewer reads the same
+ * `storyFeed` query the rail does - so a single tree walk is enough to reach
+ * every rendering of a story at once.
+ */
+const patchCachedStory = (queryClient, storyId, patch) => {
+  const previous = queryClient.getQueryData(storyFeedKey);
+  // The cache holds the raw ApiResponse envelope, not the array useStoryFeed
+  // unwraps it to, so the tray lives at envelope.data.
+  queryClient.setQueryData(storyFeedKey, (envelope) => {
+    if (!envelope?.data) return envelope;
+    return {
+      ...envelope,
+      data: envelope.data.map((entry) => ({
+        ...entry,
+        stories: entry.stories.map((story) =>
+          story.id === storyId ? { ...story, ...patch } : story,
+        ),
+      })),
+    };
+  });
+  return () => queryClient.setQueryData(storyFeedKey, previous);
+};
+
+export const useLikeStory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ storyId, liked }) =>
+      liked ? storyService.unlikeStory(storyId) : storyService.likeStory(storyId),
+    onMutate: async ({ storyId, liked }) => {
+      await queryClient.cancelQueries({ queryKey: storyFeedKey });
+      const restore = patchCachedStory(queryClient, storyId, { liked: !liked });
+      return { restore };
+    },
+    onError: (_error, _variables, context) => {
+      context?.restore?.();
+    },
+  });
+};

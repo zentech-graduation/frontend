@@ -8,7 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - Stories are now real: the home rail, "your story," and the story viewer read and write actual story data instead of a fixed demo set. Creating a story uploads a real photo or video and an optional caption, exactly like a post; there is no text-only story, since the platform doesn't support one.
-- The story viewer now has visible previous/next buttons, alongside the existing tap zones, so you can move through a person's stories - and straight into the next person's - without closing and reopening the viewer. It's also a larger, more detailed overlay.
+- The story viewer now has visible previous/next buttons, alongside the existing tap zones, so you can move through a person's stories - and straight into the next person's - without closing and reopening the viewer.
+- On desktop, the story viewer shows the previous and next story as dimmed previews beside the main one, so its neighbours are visible without stepping through them.
+- You can like a story; the heart in the story viewer reflects and updates your like.
+- You can reply to a story from the viewer. Sending shows a confirmation, but nothing is delivered yet - the messaging feature this depends on isn't built.
 - Clicking a notification about a comment now opens the post it belongs to and scrolls to that comment, flashing it briefly, instead of opening the notifier's profile.
 - You can set a profile banner (cover image) from the edit screen, uploaded from your device or pasted as a URL and cleared the same way as the avatar; it shows across the top of your profile.
 - You can upload a profile avatar from your device, not only paste an image URL.
