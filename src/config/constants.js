@@ -103,5 +103,6 @@ export const CHAR_LIMITS = {
   locationName: 255,
   reportDescription: 2000,
   message: 4000,
+  nickname: 50,
   search: 100,
 };

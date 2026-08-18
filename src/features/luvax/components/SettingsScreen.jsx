@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { ROUTES } from '@/config/constants';
 import { LxIcon, LxBtn } from './primitives';
+import { LxToggle } from '@/components/ui/lx-toggle';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authApi } from '@/api/authApi';
@@ -11,48 +12,6 @@ import { useBlockedUsers } from '../hooks/useSocial';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { useMyProfile, useUpdateMyProfile } from '../hooks/useUsers';
 import { useMySettings, useUpdateMySettings } from '../hooks/useSettings';
-
-// ─── Toggle ─────────────────────────────────────────────────────────────────
-function Toggle({ on, onChange, disabled = false }) {
-  return (
-    <button
-      disabled={disabled}
-      onClick={
-        disabled
-          ? undefined
-          : (e) => {
-              e.stopPropagation();
-              onChange(!on);
-            }
-      }
-      style={{
-        width: 38,
-        height: 22,
-        borderRadius: 999,
-        background: on ? v.accent : v.surfaceRaised,
-        border: 'none',
-        position: 'relative',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.5 : 1,
-        transition: 'background 150ms ease-out',
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          top: 2,
-          left: on ? 18 : 2,
-          width: 18,
-          height: 18,
-          borderRadius: '50%',
-          background: v.white,
-          transition: 'left 150ms ease-out',
-          boxShadow: `0 1px 3px ${v.shadow18}`,
-        }}
-      />
-    </button>
-  );
-}
 
 // ─── Section Header ─────────────────────────────────────────────────────────
 function SectionHeader({ children, note }) {
@@ -180,7 +139,7 @@ export function SettingsScreen() {
         <SettingsRow
           label="dark mode"
           sub="follows system · toggle to override"
-          control={<Toggle on={Boolean(tweaks?.dark)} onChange={handleDarkModeToggle} />}
+          control={<LxToggle on={Boolean(tweaks?.dark)} onChange={handleDarkModeToggle} />}
         />
 
         {/* Privacy */}
@@ -189,7 +148,7 @@ export function SettingsScreen() {
           label="private account"
           sub="only approved followers can see your posts"
           control={
-            <Toggle
+            <LxToggle
               on={Boolean(myProfile?.isPrivate)}
               onChange={(value) => updateProfile.mutate({ isPrivate: value })}
               disabled={!myProfile}
@@ -200,7 +159,7 @@ export function SettingsScreen() {
           label="show activity status"
           sub="let people see when you were last active"
           control={
-            <Toggle
+            <LxToggle
               on={settings ? Boolean(settings.showActivityStatus) : true}
               onChange={(value) => updateSettings.mutate({ showActivityStatus: value })}
               disabled={!settings}
@@ -211,7 +170,7 @@ export function SettingsScreen() {
           label="allow story replies"
           sub="people can dm you in response to stories"
           control={
-            <Toggle
+            <LxToggle
               on={settings ? Boolean(settings.allowStoryReplies) : true}
               onChange={(value) => updateSettings.mutate({ allowStoryReplies: value })}
               disabled={!settings}
@@ -222,7 +181,7 @@ export function SettingsScreen() {
           label="allow message requests"
           sub="people you don't follow can dm you"
           control={
-            <Toggle
+            <LxToggle
               on={settings ? Boolean(settings.allowMessageRequests) : true}
               onChange={(value) => updateSettings.mutate({ allowMessageRequests: value })}
               disabled={!settings}
@@ -241,7 +200,7 @@ export function SettingsScreen() {
         <SettingsRow
           label="likes"
           control={
-            <Toggle
+            <LxToggle
               on={settings ? Boolean(settings.notifyLikes) : true}
               onChange={(value) => updateSettings.mutate({ notifyLikes: value })}
               disabled={!settings}
@@ -251,7 +210,7 @@ export function SettingsScreen() {
         <SettingsRow
           label="comments & replies"
           control={
-            <Toggle
+            <LxToggle
               on={settings ? Boolean(settings.notifyComments) : true}
               onChange={(value) => updateSettings.mutate({ notifyComments: value })}
               disabled={!settings}
@@ -261,7 +220,7 @@ export function SettingsScreen() {
         <SettingsRow
           label="new followers"
           control={
-            <Toggle
+            <LxToggle
               on={settings ? Boolean(settings.notifyFollows) : true}
               onChange={(value) => updateSettings.mutate({ notifyFollows: value })}
               disabled={!settings}
@@ -271,7 +230,7 @@ export function SettingsScreen() {
         <SettingsRow
           label="mentions"
           control={
-            <Toggle
+            <LxToggle
               on={settings ? Boolean(settings.notifyMentions) : true}
               onChange={(value) => updateSettings.mutate({ notifyMentions: value })}
               disabled={!settings}
@@ -284,12 +243,12 @@ export function SettingsScreen() {
         <SettingsRow
           label="story views"
           sub="coming soon"
-          control={<Toggle on={false} onChange={() => {}} disabled />}
+          control={<LxToggle on={false} onChange={() => {}} disabled />}
         />
         <SettingsRow
           label="messages"
           control={
-            <Toggle
+            <LxToggle
               on={settings ? Boolean(settings.notifyMessages) : true}
               onChange={(value) => updateSettings.mutate({ notifyMessages: value })}
               disabled={!settings}
@@ -315,9 +274,11 @@ export function SettingsScreen() {
           onClick={() => {}}
         />
 
-        {/* Danger */}
+        {/* Danger - set apart from the ordinary settings above by a rule, not just extra
+            padding, so sign-out and delete-account don't read as one more row in the same list. */}
+        <div style={{ margin: '24px 16px 0', borderTop: `1px solid ${v.border}` }} />
         <div
-          style={{ padding: '32px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}
+          style={{ padding: '20px 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}
         >
           <button
             onClick={handleSignOut}

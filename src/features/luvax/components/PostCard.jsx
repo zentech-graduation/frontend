@@ -18,7 +18,7 @@ import {
   LxTag,
 } from './primitives';
 import { PostMedia } from './PostMedia';
-import { ConfirmModal } from './ConfirmModal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';

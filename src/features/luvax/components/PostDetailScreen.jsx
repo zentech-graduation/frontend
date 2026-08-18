@@ -34,14 +34,12 @@ import { useViewport } from '../hooks/useViewport';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { ReportModal } from './ReportModal';
 import { toast } from './Toast';
-import { ConfirmModal } from './ConfirmModal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
-import { routeTo } from '@/config/constants';
+import { routeTo, CHAR_LIMITS } from '@/config/constants';
 
 const HEART_COLOR = 'var(--lx-error)';
-// Mirrors the backend's @Size(max = 2200) on the comment body. The client stops
-// at the same number rather than inventing a limit of its own.
-const COMMENT_MAX_LENGTH = 2200;
+const COMMENT_MAX_LENGTH = CHAR_LIMITS.comment;
 
 // Threads are two levels, like Instagram. A top-level comment sits at depth 0;
 // every reply, including a reply to a reply, sits at depth 1 under the same

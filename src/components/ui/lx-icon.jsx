@@ -185,6 +185,21 @@ const ICONS = {
       <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
     </>
   ),
+  // A thumbtack, not a map marker: a pin cap and a body that tapers to a point, with a short
+  // stick below showing it pushed into a surface - the "pin this chat" metaphor, not "location."
+  pin: (
+    <>
+      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+      <line x1="12" y1="17" x2="12" y2="22" />
+    </>
+  ),
+  bellOff: (
+    <>
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      <line x1="3" y1="3" x2="21" y2="21" />
+    </>
+  ),
 };
 
 // Filled variants are distinct artwork, not the outline paths with a fill added. Each shape sets
@@ -246,6 +261,26 @@ const ICONS_FILLED = {
   ),
   bookmark: (
     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" stroke="none" />
+  ),
+  play: <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />,
+  pin: (
+    <>
+      <path
+        d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"
+        fill="currentColor"
+        stroke="none"
+      />
+      <line
+        x1="12"
+        y1="17"
+        x2="12"
+        y2="22"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+    </>
   ),
 };
 

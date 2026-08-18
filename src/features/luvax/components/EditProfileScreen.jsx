@@ -6,20 +6,25 @@ import { LxBtn } from './primitives';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUpdateMyProfile } from '../hooks/useUsers';
 import { useMediaUpload } from '../hooks/useMediaUpload';
+import { editProfileSchema } from '../utils/profileSchemas';
 
-function fieldStyle() {
+function fieldStyle(isError = false) {
   return {
     width: '100%',
     fontFamily: v.fontBody,
     fontSize: 15,
     color: v.ink,
     background: v.surfaceSunken,
-    border: `1px solid ${v.border}`,
+    border: `1px solid ${isError ? v.error : v.border}`,
     borderRadius: 8,
     padding: '11px 14px',
     outline: 'none',
     boxSizing: 'border-box',
   };
+}
+
+function fieldErrorStyle() {
+  return { fontFamily: v.fontBody, fontSize: 12, color: v.error, marginTop: 6 };
 }
 
 export function EditProfileScreen() {
@@ -36,12 +41,16 @@ export function EditProfileScreen() {
     bannerUrl: user?.bannerUrl || '',
   });
   const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const { uploadMedia, isUploading } = useMediaUpload();
   const [uploadingField, setUploadingField] = useState(null);
   const fileInputRef = useRef(null);
   const bannerInputRef = useRef(null);
 
-  const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+  const update = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    if (fieldErrors[key]) setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
 
   // The avatar and banner both go through the same pre-signed upload as post
   // media; the returned CDN URL is saved as avatarUrl or bannerUrl respectively.
@@ -71,6 +80,22 @@ export function EditProfileScreen() {
 
   const handleSave = () => {
     setFormError('');
+
+    const result = editProfileSchema.safeParse({
+      username: form.username,
+      displayName: form.displayName,
+      bio: form.bio,
+    });
+    if (!result.success) {
+      const nextFieldErrors = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0];
+        if (!nextFieldErrors[field]) nextFieldErrors[field] = issue.message;
+      }
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
+    setFieldErrors({});
 
     updateProfile.mutate(
       {
@@ -284,8 +309,11 @@ export function EditProfileScreen() {
             onChange={(e) => update('displayName', e.target.value)}
             maxLength={CHAR_LIMITS.displayName}
             placeholder="your name"
-            style={fieldStyle()}
+            style={fieldStyle(Boolean(fieldErrors.displayName))}
           />
+          {fieldErrors.displayName ? (
+            <div style={fieldErrorStyle()}>{fieldErrors.displayName}</div>
+          ) : null}
         </div>
 
         <div>
@@ -307,8 +335,11 @@ export function EditProfileScreen() {
             onChange={(e) => update('username', e.target.value.toLowerCase())}
             maxLength={CHAR_LIMITS.username}
             placeholder="your.handle"
-            style={fieldStyle()}
+            style={fieldStyle(Boolean(fieldErrors.username))}
           />
+          {fieldErrors.username ? (
+            <div style={fieldErrorStyle()}>{fieldErrors.username}</div>
+          ) : null}
         </div>
 
         <div>
@@ -327,10 +358,16 @@ export function EditProfileScreen() {
           </label>
           <textarea
             value={form.bio}
-            onChange={(e) => update('bio', e.target.value.slice(0, 160))}
+            onChange={(e) => update('bio', e.target.value.slice(0, CHAR_LIMITS.bio))}
             placeholder="say something real..."
-            style={{ ...fieldStyle(), resize: 'none', minHeight: 96, lineHeight: 1.5 }}
+            style={{
+              ...fieldStyle(Boolean(fieldErrors.bio)),
+              resize: 'none',
+              minHeight: 96,
+              lineHeight: 1.5,
+            }}
           />
+          {fieldErrors.bio ? <div style={fieldErrorStyle()}>{fieldErrors.bio}</div> : null}
           <div
             style={{
               fontFamily: v.fontMono,
@@ -340,7 +377,7 @@ export function EditProfileScreen() {
               textAlign: 'right',
             }}
           >
-            {160 - form.bio.length}
+            {CHAR_LIMITS.bio - form.bio.length}
           </div>
         </div>
 

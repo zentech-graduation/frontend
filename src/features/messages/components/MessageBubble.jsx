@@ -3,7 +3,16 @@ import { v } from '@/config/tokens';
 import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { copyToClipboard } from '@/utils/helpers';
+import { bubbleCornerRadius } from '../utils/bubbleShape';
+import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
+
+const AVATAR_SIZE = 21;
+// Extends the hover/click target a few pixels past the bubble itself in every direction, so the
+// actions button appears from a hover anywhere near the message rather than only on the bubble's
+// exact pixels. The padding is cancelled by an equal negative margin, so neighbouring rows and the
+// list's own gap do not move.
+const HIT_PADDING = 7;
 
 export function MessageBubble({
   message,
@@ -115,23 +124,70 @@ export function MessageBubble({
     maxWidth:
       message.kind === 'post' || message.kind === 'file'
         ? isMobile
-          ? 228
-          : 292
+          ? 196
+          : 248
         : isMine
           ? isMobile
-            ? 'min(100%, 286px)'
-            : 520
+            ? 'min(100%, 264px)'
+            : 440
           : isMobile
-            ? 'min(100%, 244px)'
-            : 340,
-    borderRadius: 18,
-    padding: message.kind === 'deleted' ? '12px 16px' : '14px 16px',
+            ? 'min(100%, 224px)'
+            : 300,
+    // Deleted (tombstone) bubbles stay uniformly rounded - they are never part of a same-sender
+    // run's visual continuity, just a standalone notice - everything else follows the bubble's
+    // position within its run.
+    borderRadius:
+      message.kind === 'deleted'
+        ? 15
+        : bubbleCornerRadius({
+            isMine,
+            isFirstInRun: message.isFirstInRun,
+            isLastInRun: message.isLastInRun,
+          }),
+    padding: message.kind === 'deleted' ? '9px 13px' : '9px 13px',
     fontFamily: v.fontBody,
-    fontSize: 15,
-    lineHeight: 1.45,
+    fontSize: 13.5,
+    lineHeight: 1.42,
     position: 'relative',
     wordBreak: 'break-word',
     overflowWrap: 'anywhere',
+  };
+
+  // The other party's avatar sits at the bottom of their last bubble in a run, echoing how most
+  // chat UIs collapse a burst of consecutive messages down to one identity marker. The viewer's
+  // own messages never carry one - the reader already knows who those are. Mobile drops the column
+  // entirely per the design brief, rather than just hiding the image inside it.
+  const avatarSlot =
+    isMobile || isMine ? null : message.showAvatar ? (
+      <AvatarVisual
+        thread={{ avatarUrl: message.senderAvatarUrl, name: message.senderName }}
+        size={AVATAR_SIZE}
+      />
+    ) : (
+      <div style={{ width: AVATAR_SIZE, flexShrink: 0 }} aria-hidden="true" />
+    );
+
+  const menuButtonStyle = {
+    width: 20,
+    height: 20,
+    borderRadius: '50%',
+    border: 'none',
+    background: 'transparent',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    opacity: 0.82,
+    padding: 0,
+    flexShrink: 0,
+  };
+
+  // The padding/negative-margin pair widens the hover and tap target past the bubble's own edges
+  // without shifting this row's siblings apart - hovering "near" a message reveals its actions, not
+  // only a precise hover on the bubble pixels themselves.
+  const hitAreaStyle = {
+    padding: HIT_PADDING,
+    margin: -HIT_PADDING,
   };
 
   if (message.kind === 'deleted') {
@@ -142,7 +198,6 @@ export function MessageBubble({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-end',
-          gap: 4,
         }}
       >
         <div
@@ -156,171 +211,113 @@ export function MessageBubble({
         >
           {message.text}
         </div>
-        <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
       </div>
     );
   }
 
-  if (message.kind === 'file') {
+  if (message.kind === 'file' || message.kind === 'post') {
+    const isFile = message.kind === 'file';
     return (
       <div
-        style={{ display: 'flex', flexDirection: 'column', gap: 4 }}
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: 6,
+          flexDirection: isMine ? 'row-reverse' : 'row',
+          ...hitAreaStyle,
+        }}
         onMouseEnter={handleHoverStart}
         onMouseLeave={handleHoverEnd}
         onPointerEnter={handleHoverStart}
         onPointerLeave={handleHoverEnd}
       >
+        {avatarSlot}
         <div
           ref={bubbleRowRef}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-          onMouseMove={handleHoverStart}
-          onPointerMove={handleHoverStart}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            flexDirection: isMine ? 'row-reverse' : 'row',
+          }}
           onPointerDown={handleBubbleInteraction}
+          onClick={handleTouchMenuToggle}
         >
-          <div
-            style={{
-              ...bubbleBase,
-              background: v.surface,
-              border: `1px solid ${v.border}`,
-              padding: 12,
-            }}
-          >
+          {isFile ? (
+            // A real photo or video is the bubble - no surrounding card, border, or padding
+            // framing it. Chrome around a thumbnail read as over-designed next to a plain photo.
             <MediaPlaceholder
-              item={{ label: message.text }}
+              item={
+                message.media ? { ...message.media, label: message.text } : { label: message.text }
+              }
               large
-              onClick={() => onPreviewMedia({ label: message.text })}
+              onClick={() => onPreviewMedia(message.media || { label: message.text })}
             />
-          </div>
-          {showActions ? (
-            <button
-              ref={menuButtonRef}
-              type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label="message actions"
+          ) : (
+            <div
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                border: 'none',
-                background: 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                opacity: 0.82,
-                padding: 0,
-                flexShrink: 0,
+                ...bubbleBase,
+                background: isMine ? activeThread.accent || v.accentDim : v.surface,
+                border: isMine ? 'none' : `1px solid ${v.border}`,
+                padding: 9,
               }}
             >
-              <LxIcon name="more" size={11} color={v.ink3} />
-            </button>
-          ) : null}
-        </div>
-        <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
-        <LxDropdownMenu
-          anchorRef={menuButtonRef}
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          items={menuItems}
-          width={182}
-        />
-      </div>
-    );
-  }
-
-  if (message.kind === 'post') {
-    return (
-      <div
-        style={{ display: 'flex', flexDirection: 'column', gap: 4 }}
-        onMouseEnter={handleHoverStart}
-        onMouseLeave={handleHoverEnd}
-        onPointerEnter={handleHoverStart}
-        onPointerLeave={handleHoverEnd}
-      >
-        <div
-          ref={bubbleRowRef}
-          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-          onMouseMove={handleHoverStart}
-          onPointerMove={handleHoverStart}
-          onPointerDown={handleBubbleInteraction}
-        >
-          <div
-            style={{
-              ...bubbleBase,
-              background: v.surface,
-              border: `1px solid ${v.border}`,
-              padding: 12,
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <MediaPlaceholder
-                item={{ label: message.handle }}
-                onClick={() => onPreviewMedia({ label: message.title })}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontFamily: v.fontMono, fontSize: 11, color: v.accent }}>
-                  {message.handle}
-                </div>
-                <div style={{ color: v.ink, fontSize: 14 }}>{message.title}</div>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 8,
-                    fontFamily: v.fontMono,
-                    fontSize: 11,
-                    color: v.ink3,
-                  }}
-                >
-                  <span>{message.meta}</span>
-                  <button
-                    type="button"
-                    onClick={() => onPreviewMedia({ label: message.title })}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                <MediaPlaceholder
+                  item={{ label: message.handle }}
+                  onClick={() => onPreviewMedia({ label: message.title })}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.accent }}>
+                    {message.handle}
+                  </div>
+                  <div style={{ color: v.ink, fontSize: 12.5 }}>{message.title}</div>
+                  <div
                     style={{
-                      background: 'none',
-                      border: 'none',
+                      display: 'flex',
+                      gap: 7,
+                      fontFamily: v.fontMono,
+                      fontSize: 10,
                       color: v.ink3,
-                      cursor: 'pointer',
-                      padding: 0,
                     }}
                   >
-                    view
-                  </button>
+                    <span>{message.meta}</span>
+                    <button
+                      type="button"
+                      onClick={() => onPreviewMedia({ label: message.title })}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: v.ink3,
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      view
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
           {showActions ? (
             <button
               ref={menuButtonRef}
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
               aria-label="message actions"
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: '50%',
-                border: 'none',
-                background: 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                opacity: 0.82,
-                padding: 0,
-                flexShrink: 0,
-              }}
+              style={menuButtonStyle}
             >
-              <LxIcon name="more" size={11} color={v.ink3} />
+              <LxIcon name="more" size={10} color={v.ink3} />
             </button>
           ) : null}
         </div>
-        <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
         <LxDropdownMenu
           anchorRef={menuButtonRef}
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
           items={menuItems}
-          width={182}
+          width={172}
         />
       </div>
     );
@@ -335,21 +332,21 @@ export function MessageBubble({
       style={{
         alignSelf: isMine ? 'flex-end' : 'flex-start',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: isMine ? 'flex-end' : 'flex-start',
-        gap: 4,
+        alignItems: 'flex-end',
+        gap: 6,
+        flexDirection: isMine ? 'row-reverse' : 'row',
+        ...hitAreaStyle,
       }}
     >
+      {avatarSlot}
       <div
         ref={bubbleRowRef}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 6,
           flexDirection: isMine ? 'row-reverse' : 'row',
         }}
-        onMouseMove={handleHoverStart}
-        onPointerMove={handleHoverStart}
         onPointerDown={handleBubbleInteraction}
         onClick={handleTouchMenuToggle}
       >
@@ -359,15 +356,15 @@ export function MessageBubble({
             background: isMine ? activeThread.accent || v.accentDim : v.surface,
             color: v.ink,
             border: isMine ? 'none' : `1px solid ${v.border}`,
-            minWidth: isMobile ? 0 : 94,
+            minWidth: isMobile ? 0 : 76,
             width: isMobile ? '100%' : 'auto',
           }}
         >
           {message.kind === 'reply' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, color: v.ink2 }}>
-                <span style={{ fontFamily: v.fontMono, fontSize: 11 }}>↳ {message.replyTo}</span>
-                <span style={{ fontSize: 13 }}>{message.replyText}</span>
+                <span style={{ fontFamily: v.fontMono, fontSize: 10 }}>↳ {message.replyTo}</span>
+                <span style={{ fontSize: 11.5 }}>{message.replyText}</span>
               </div>
               <strong style={{ fontWeight: 600 }}>{message.text}</strong>
             </div>
@@ -381,32 +378,18 @@ export function MessageBubble({
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
             aria-label="message actions"
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              border: 'none',
-              background: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              opacity: 0.82,
-              padding: 0,
-              flexShrink: 0,
-            }}
+            style={menuButtonStyle}
           >
-            <LxIcon name="more" size={11} color={isMine ? v.ink2 : v.ink3} />
+            <LxIcon name="more" size={10} color={isMine ? v.ink2 : v.ink3} />
           </button>
         ) : null}
       </div>
-      <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{message.time}</span>
       <LxDropdownMenu
         anchorRef={menuButtonRef}
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         items={menuItems}
-        width={182}
+        width={172}
       />
     </div>
   );

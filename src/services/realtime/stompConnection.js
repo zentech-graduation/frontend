@@ -19,7 +19,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 // SockJS is mandatory. The server registers both endpoints with withSockJS() and
 // refuses a raw WebSocket upgrade with 400, before the auth interceptor runs.
 // See docs/realtime/realtime-contract.md section 1.
-const SOCKJS_ENDPOINT = '/ws/comments';
+export const COMMENT_ENDPOINT = '/ws/comments';
+export const MESSAGE_ENDPOINT = '/ws/messages';
 
 // Browsers cannot set an Authorization header on a WebSocket upgrade, so a credential has to ride
 // in the URL. It is a single-use ticket rather than the access token: query strings are logged by
@@ -46,12 +47,32 @@ const fetchTicket = async () => {
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 
-let client = null;
-/** destination -> Set of handler functions */
-const handlers = new Map();
-/** destination -> the live StompSubscription, present only while connected */
-const subscriptions = new Map();
-let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+/**
+ * One connection record per SockJS endpoint.
+ *
+ * The server registers each live endpoint behind its own flag, so a single shared client would tie
+ * one feature's delivery to another feature's configuration: turning comment live delivery off
+ * would silently stop messages. Each endpoint therefore owns its client, its handler registry, and
+ * its own backoff.
+ */
+const connections = new Map();
+
+const connectionFor = (endpointPath) => {
+  if (!connections.has(endpointPath)) {
+    connections.set(endpointPath, {
+      endpointPath,
+      client: null,
+      /** destination -> Set of handler functions */
+      handlers: new Map(),
+      /** destination -> the live StompSubscription, present only while connected */
+      subscriptions: new Map(),
+      reconnectDelay: INITIAL_RECONNECT_DELAY_MS,
+      reconnectTimer: null,
+      consecutiveHandshakeFailures: 0,
+    });
+  }
+  return connections.get(endpointPath);
+};
 
 // Failures here stay silent by design, which is right for a flaky network and wrong for an endpoint
 // that is not registered at all. Production ran for some time with the comment live flag off, so
@@ -59,22 +80,20 @@ let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
 // warning after a few consecutive failures makes that visible during integration without changing
 // the silent contract that shipped code relies on.
 const HANDSHAKE_WARN_THRESHOLD = 3;
-let consecutiveHandshakeFailures = 0;
 
-const noteHandshakeFailure = () => {
-  consecutiveHandshakeFailures += 1;
-  if (import.meta.env.DEV && consecutiveHandshakeFailures === HANDSHAKE_WARN_THRESHOLD) {
+const noteHandshakeFailure = (conn) => {
+  conn.consecutiveHandshakeFailures += 1;
+  if (import.meta.env.DEV && conn.consecutiveHandshakeFailures === HANDSHAKE_WARN_THRESHOLD) {
     console.warn(
       `[realtime] ${HANDSHAKE_WARN_THRESHOLD} consecutive handshake failures against ` +
-        `${SOCKJS_ENDPOINT}. Check that app.comment.live.enabled is true on the backend.`
+        `${conn.endpointPath}. Check that the matching live flag is enabled on the backend.`
     );
   }
 };
 
-const noteHandshakeSuccess = () => {
-  consecutiveHandshakeFailures = 0;
+const noteHandshakeSuccess = (conn) => {
+  conn.consecutiveHandshakeFailures = 0;
 };
-let reconnectTimer = null;
 
 /**
  * Derives the server origin from the configured API base URL.
@@ -84,10 +103,10 @@ let reconnectTimer = null;
  * The origin is never hardcoded; it comes from VITE_API_URL like every other
  * server address in the application.
  */
-const resolveEndpoint = () => {
+const resolveEndpoint = (endpointPath) => {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
   try {
-    return new URL(SOCKJS_ENDPOINT, new URL(apiUrl).origin).toString();
+    return new URL(endpointPath, new URL(apiUrl).origin).toString();
   } catch {
     return null;
   }
@@ -95,18 +114,18 @@ const resolveEndpoint = () => {
 
 const currentToken = () => useAuthStore.getState().accessToken;
 
-const cancelReconnect = () => {
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
+const cancelReconnect = (conn) => {
+  if (conn.reconnectTimer) {
+    clearTimeout(conn.reconnectTimer);
+    conn.reconnectTimer = null;
   }
 };
 
-const bindSubscription = (destination) => {
-  if (!client?.connected || subscriptions.has(destination)) {
+const bindSubscription = (conn, destination) => {
+  if (!conn.client?.connected || conn.subscriptions.has(destination)) {
     return;
   }
-  const subscription = client.subscribe(destination, (message) => {
+  const subscription = conn.client.subscribe(destination, (message) => {
     let payload;
     try {
       payload = JSON.parse(message.body);
@@ -115,7 +134,7 @@ const bindSubscription = (destination) => {
       // the source of truth, so a lost frame costs freshness and nothing else.
       return;
     }
-    for (const handler of handlers.get(destination) ?? []) {
+    for (const handler of conn.handlers.get(destination) ?? []) {
       try {
         handler(payload);
       } catch {
@@ -123,17 +142,17 @@ const bindSubscription = (destination) => {
       }
     }
   });
-  subscriptions.set(destination, subscription);
+  conn.subscriptions.set(destination, subscription);
 };
 
 /** Drops the current client without touching the handler registry. */
-const teardownClient = () => {
-  subscriptions.clear();
-  if (!client) {
+const teardownClient = (conn) => {
+  conn.subscriptions.clear();
+  if (!conn.client) {
     return;
   }
-  const stale = client;
-  client = null;
+  const stale = conn.client;
+  conn.client = null;
   try {
     stale.deactivate();
   } catch {
@@ -153,30 +172,30 @@ const teardownClient = () => {
  * considers itself active ignores activate(), so reusing the instance retries
  * once and then silently stops.
  */
-const scheduleReconnect = () => {
-  cancelReconnect();
+const scheduleReconnect = (conn) => {
+  cancelReconnect(conn);
   // Nothing to reconnect for once the last subscriber has gone, and nothing to
   // reconnect with once the session has ended.
-  if (handlers.size === 0 || !currentToken()) {
+  if (conn.handlers.size === 0 || !currentToken()) {
     return;
   }
-  const delay = reconnectDelay;
-  reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
-  reconnectTimer = setTimeout(() => {
-    reconnectTimer = null;
-    if (handlers.size === 0 || !currentToken()) {
+  const delay = conn.reconnectDelay;
+  conn.reconnectDelay = Math.min(conn.reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
+  conn.reconnectTimer = setTimeout(() => {
+    conn.reconnectTimer = null;
+    if (conn.handlers.size === 0 || !currentToken()) {
       return;
     }
-    teardownClient();
-    void openClient();
+    teardownClient(conn);
+    void openClient(conn);
   }, delay);
 };
 
-const openClient = async () => {
-  if (client) {
-    return client;
+const openClient = async (conn) => {
+  if (conn.client) {
+    return conn.client;
   }
-  const endpoint = resolveEndpoint();
+  const endpoint = resolveEndpoint(conn.endpointPath);
   if (!endpoint) {
     return null;
   }
@@ -185,8 +204,8 @@ const openClient = async () => {
   // single-use: one ticket per client, and scheduleReconnect builds a fresh client each attempt.
   const ticket = await fetchTicket();
   if (!ticket) {
-    noteHandshakeFailure();
-    scheduleReconnect();
+    noteHandshakeFailure(conn);
+    scheduleReconnect(conn);
     return null;
   }
 
@@ -206,21 +225,21 @@ const openClient = async () => {
     heartbeatIncoming: 0,
     heartbeatOutgoing: 0,
     onConnect: () => {
-      reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
-      noteHandshakeSuccess();
-      for (const destination of handlers.keys()) {
-        bindSubscription(destination);
+      conn.reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+      noteHandshakeSuccess(conn);
+      for (const destination of conn.handlers.keys()) {
+        bindSubscription(conn, destination);
       }
     },
     onWebSocketClose: () => {
       // A close from a client we have already replaced must not queue a second
       // reconnect alongside the one its replacement is running.
-      if (client !== created) {
+      if (conn.client !== created) {
         return;
       }
-      subscriptions.clear();
-      noteHandshakeFailure();
-      scheduleReconnect();
+      conn.subscriptions.clear();
+      noteHandshakeFailure(conn);
+      scheduleReconnect(conn);
     },
     // stompjs surfaces protocol and socket errors here. They are swallowed: the
     // live tier degrades, the screen does not.
@@ -228,30 +247,37 @@ const openClient = async () => {
     onWebSocketError: () => {},
   });
 
-  client = created;
+  conn.client = created;
   created.activate();
   return created;
 };
 
 /**
- * Subscribes to a STOMP destination over the shared connection.
+ * Subscribes to a STOMP destination.
+ *
+ * The endpoint is the transport; the destination is what the server authorizes. They are separate
+ * arguments because each live endpoint is registered behind its own backend flag, so a feature
+ * must open the transport its own flag controls rather than borrow another feature's.
  *
  * @param {string} destination fully qualified topic, e.g. `/topic/comments.{id}.events`
  * @param {(payload: {eventType: string, data: object}) => void} handler
+ * @param {{endpoint?: string}} [options] SockJS endpoint path; defaults to the comment tier
  * @returns {() => void} unsubscribe; releases the connection when it was the last subscriber
  */
-export const subscribeTopic = (destination, handler) => {
+export const subscribeTopic = (destination, handler, { endpoint = COMMENT_ENDPOINT } = {}) => {
   if (!destination || typeof handler !== 'function' || !currentToken()) {
     return () => {};
   }
 
-  if (!handlers.has(destination)) {
-    handlers.set(destination, new Set());
-  }
-  handlers.get(destination).add(handler);
+  const conn = connectionFor(endpoint);
 
-  void openClient();
-  bindSubscription(destination);
+  if (!conn.handlers.has(destination)) {
+    conn.handlers.set(destination, new Set());
+  }
+  conn.handlers.get(destination).add(handler);
+
+  void openClient(conn);
+  bindSubscription(conn, destination);
 
   let released = false;
   return () => {
@@ -260,51 +286,60 @@ export const subscribeTopic = (destination, handler) => {
     }
     released = true;
 
-    const set = handlers.get(destination);
+    const set = conn.handlers.get(destination);
     set?.delete(handler);
     if (set && set.size === 0) {
-      handlers.delete(destination);
+      conn.handlers.delete(destination);
       try {
-        subscriptions.get(destination)?.unsubscribe();
+        conn.subscriptions.get(destination)?.unsubscribe();
       } catch {
         // The socket may already be gone; the registry entry still goes.
       }
-      subscriptions.delete(destination);
+      conn.subscriptions.delete(destination);
     }
-    if (handlers.size === 0) {
-      closeConnection();
+    if (conn.handlers.size === 0) {
+      closeConnection(endpoint);
     }
   };
 };
 
 /**
- * Tears the connection down unconditionally.
+ * Tears connections down unconditionally.
  *
- * Called on sign-out: a signed-out browser must not hold a live authenticated
- * socket, and the server would otherwise keep it until the revocation sweep
- * notices, up to 30 seconds later.
+ * Called on sign-out: a signed-out browser must not hold a live authenticated socket, and the
+ * server would otherwise keep it until the revocation sweep notices, up to 30 seconds later.
+ * With no argument every endpoint is closed, which is what sign-out wants.
+ *
+ * @param {string} [endpoint] close only this endpoint; omit to close all
  */
-export const closeConnection = () => {
-  cancelReconnect();
-  reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
-  for (const subscription of subscriptions.values()) {
-    try {
-      subscription.unsubscribe();
-    } catch {
-      // Already gone with the socket.
+export const closeConnection = (endpoint) => {
+  const targets = endpoint
+    ? [connections.get(endpoint)].filter(Boolean)
+    : [...connections.values()];
+
+  for (const conn of targets) {
+    cancelReconnect(conn);
+    conn.reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+    conn.consecutiveHandshakeFailures = 0;
+    for (const subscription of conn.subscriptions.values()) {
+      try {
+        subscription.unsubscribe();
+      } catch {
+        // The socket may already be gone; the registry entry still goes.
+      }
     }
+    conn.subscriptions.clear();
+    conn.handlers.clear();
+    teardownClient(conn);
   }
-  handlers.clear();
-  teardownClient();
 };
 
-// Sign-out is observed here rather than by calling into this module from the
-// auth store, because the store cannot import this file: this file imports the
-// store, and the cycle would leave one of them half-initialised at load time.
-// Watching the token also covers a session cleared by anything other than the
-// sign-out button, such as a failed refresh.
+// A signed-out browser must not keep an authenticated socket open, and until now nothing called
+// closeConnection despite its documentation claiming otherwise. The teardown is driven from here
+// rather than from the store's logout action because this module already depends on the store, and
+// the reverse edge would be an import cycle.
 useAuthStore.subscribe((state, previous) => {
-  if (previous?.accessToken && !state.accessToken) {
+  if (previous?.isAuthenticated && !state.isAuthenticated) {
     closeConnection();
   }
 });

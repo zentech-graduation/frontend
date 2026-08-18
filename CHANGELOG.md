@@ -6,23 +6,86 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Extracted the username and display-name validation rules shared by registration and profile editing into a common module, so both stay in sync with the backend by construction instead of by convention.
+
+### Added
+- The chat info panel now has a "set nickname / report / block / delete chat" action list at the bottom, matching what was already available from the conversation list's "..." menu.
+- The conversation list's "..." menu now shows a dividing line between everyday actions and destructive ones (report, block, delete).
+- The message lightbox now crossfades between photos and videos when stepping through a multi-item album instead of cutting to the next one instantly.
+- Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
+
+### Fixed
+- The bio field on the edit-profile screen now allows the full 500 characters the server accepts, instead of cutting off at 160.
+- The message nickname prompt and a post's comment length limit now read from the same shared constant the rest of the app uses, instead of separate hardcoded numbers that happened to match it.
+- A conversation row's content no longer sits shifted toward the top of the row with empty space below it.
+- Hovering the side rail and moving down to click a lower tab no longer occasionally collapses the rail out from under the cursor before the click lands.
+- Photos and videos opened from a chat no longer render larger than the screen and get cut off. The app's UI-scale setting was inflating anything sized in viewport units past the visible screen.
+- A multi-photo album you send now lines up on your own side of the conversation instead of always sitting flush against the left edge.
+- Pages other than messages no longer become spuriously scrollable, which was also the root cause of the side rail seeming to glitch or get pushed down after hovering it and moving toward a lower tab.
+
+### Changed
+- Editing your profile now validates the display name, username, and bio against the same rules the server enforces before saving, and points out which field needs fixing instead of only reporting a server error after the fact.
+- The chat info panel's header now reads "Mute notification" with a toggle switch instead of a plain "chat info" title, and the divider between the avatar and the shared-media section is gone for a more seamless look. Scrolling the panel now only scrolls the shared-media list; the header and action list stay in place.
+- Side rail icons are slightly larger and now sit centered in the collapsed rail instead of a little left of center.
+- Consecutive messages from the same person now read as one continuous shape: the outer end of a run of bubbles stays rounded while the corners facing a neighboring message in the run flatten, instead of every bubble having identical rounded corners.
+- The "pin chat" icon is now a thumbtack instead of a map-marker shape.
+
 ### Security
 - Patched high-severity advisories in the routing, HTTP client, and build tooling dependencies. The routing advisories included an open redirect reachable from ordinary link and navigation handling.
 - The real-time connection now authenticates with a single-use ticket instead of carrying the access token in the address, which kept a valid credential in server access logs long after it expired.
 
 ### Fixed
+- Sending several photos or videos with a caption in one go now sends them in the order they were picked, with the caption always landing last. The upload for each attachment was awaited but the send itself was not, so the requests raced each other over the network and could land in any order, including the caption arriving in the middle of the photos.
+- The messages screen no longer shows two independent vertical scrollbars. The app's root zoom scale was inflating a `100vh`-based height past the real viewport, which grew the whole page under the screen's own internally-scrolling panel.
+- "Report" in a conversation's menu is now shown in red like "Delete" and "Block", instead of reading as a neutral action.
+- "Mark as unread" now has a visible effect even when you sent the conversation's own newest messages, and a chat you marked unread now correctly offers "Mark as read" the next time you open its menu.
+- The message composer's attach and send buttons now stay pinned to the bottom of the input as it grows with a longer draft, instead of drifting toward the middle of the pill.
+- Hovering a chat bubble to reveal reply/copy/delete now responds to a hover anywhere near the message, not only a precise hover on the bubble's own pixels.
+- The options menu on someone else's profile now opens where its button is instead of off-screen. A `transform` on the button row broke the menu's fixed-position math once the app's root zoom multiplied the offset a second time.
+- Opening a conversation's info panel no longer fails. The shared-media grid now shows the real attachments from the history loaded so far, and says so when there are none.
+- A group conversation's header no longer renders its member count as though it were a username handle.
 - Screens no longer call viewport and message-draft hooks conditionally. React identifies hooks by call order, so the previous arrangement could bind state to the wrong value once a screen was rendered both with and without a viewport prop, or once a message thread was opened and closed.
 - The search field and the explore search field now settle on the address bar's terms in a single render instead of showing the previous terms briefly first.
 - Lint no longer scans the build dependency cache, so it reports only real findings and finishes in seconds rather than minutes.
 - Corrected the session store's documentation, which stated that reloading the page ends the session. It does not: the session is restored from the refresh cookie on load.
 
+### Removed
+- Group conversations. Messaging is one to one.
+- The floating "message" button on desktop and tablet, now redundant with the always-visible side rail's own message icon.
+- The separate "compose" flow (the messages list's pencil button and its person-search picker) and the top bar's mobile "new message" button. Starting a conversation now happens from a person's profile only; nothing is created until you actually send something.
+- The top bar on desktop and tablet. It fully duplicated the side rail's own navigation, search, and profile links.
+
 ### Changed
+- The chat info panel (participant details, shared media) is now hidden by default on every viewport and opens as an overlay from the info button, instead of permanently occupying a column of the messages screen.
+- Photo and video messages render as a plain thumbnail with no card border or rounding around it, and open in a borderless full-screen viewer that closes on a click outside the media instead of a close button.
+- Chat timestamps are now separator rows between clusters of messages instead of text under every bubble, matching how Instagram groups a burst of messages by time.
+- The messaging screen (bubbles, avatars, icons, and list rows) is noticeably smaller and denser; it no longer reads as oversized on a wide display.
+- The side rail is the only navigation on desktop and tablet now, and stays on screen at all times; mobile keeps a minimal top bar for back navigation, the page title, and notifications. Side rail and bottom nav icons highlight on hover.
+- The message composer's attachment, text field, and send buttons are now the same height and vertically aligned, and the send button dims until there is a message to send. Its placeholder reads "Message..." instead of "say something real...".
+- New messages now appear below older ones instead of above them, so a conversation reads top to bottom.
+- Vertical spacing between message bubbles is tighter.
+- Two or more photos or videos sent close together by the same person now group into one album tile - up to four visible, a "+N" overlay for more - instead of a stack of separate bubbles. Opening any tile steps through the rest of the album with next/previous, the same way the post viewer does.
+- A single photo or video message keeps its own aspect ratio inside a capped box instead of being cropped to a fixed square. Video and GIF messages show a duration badge and a play icon rather than playing inline in the thread.
 - Application screens and the signed-in shell are now downloaded on demand. A visitor on the sign-in page no longer downloads the composer, story viewer, and message pane before the form is usable; the initial download is roughly a third smaller.
 
 ### Tests
 - Continuous integration now runs lint and unit tests in addition to the build.
 
 ### Added
+- A conversation can now be pinned to the top of your list, muted, or given a private nickname that only you see, all from the same "..." menu.
+- Every conversation now has a "..." menu: mark as read or unread, delete the chat from your own inbox, report the other person, or block them.
+- Chat now stages picked images and videos as a removable preview strip before sending, and lets you attach several files plus a caption in one send.
+- A "message" button now sits next to "follow" on everyone else's profile, opening a direct conversation with them.
+- Chat now supports sending images, videos, and GIFs from the attachment button, and shows the real image or video inline instead of a generic file icon.
+- Chat bubbles now show the other person's avatar and collapse the timestamp across a run of messages sent within ten minutes of each other, instead of stamping every single bubble.
+- Messages now opens with the people you and they follow each other with, each one ready to write to and greeted by "You're now friends. Say hi!" until somebody says something.
+- Direct messages are real. The conversation list, message history, sending, and deleting now read and write actual conversations instead of a fixed demo set.
+- A message can hold up to 10 attachments; picking more, or a file the server would reject, is stopped before upload with an explanation instead of failing later.
+- Unread counts per conversation and on the shell's message badge, cleared when you open the conversation.
+- Group conversations: see who is in a group, rename it, add people by searching for them, remove a member, and leave. Renaming, adding, and removing are offered only to group admins, matching what the server allows.
+- New messages appear while a conversation is open, without a refresh.
+- Attachments on a message are shown with the message rather than as a generic "sent an attachment" line.
 - Unit test coverage for the session store, the token refresh queue, and the route guards.
 - A live API test suite that verifies the backend contract against a running stack, including the real sign-up and email verification path.
 - A development-only warning when real-time updates fail to connect repeatedly, so a misconfigured endpoint is visible during integration instead of failing silently.
@@ -35,7 +98,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The story viewer now has visible previous/next buttons, alongside the existing tap zones, so you can move through a person's stories - and straight into the next person's - without closing and reopening the viewer.
 - On desktop, the story viewer shows the previous and next story as dimmed previews beside the main one, so its neighbours are visible without stepping through them.
 - You can like a story from the heart in the viewer, which bumps the same way a post's like does; on mobile, double-tapping the story also likes it and pops a heart over the media, matching double-tap on a post.
-- You can reply to a story from the viewer. Sending shows a confirmation, but nothing is delivered yet - the messaging feature this depends on isn't built.
+- You can reply to a story from the viewer. The reply is delivered as a direct message to the story's author, carrying the story it answers, the way Instagram does it.
 - Clicking outside the story card - anywhere on the dimmed backdrop - closes the story viewer, the same as the close button.
 - Clicking a notification about a comment now opens the post it belongs to and scrolls to that comment, flashing it briefly, instead of opening the notifier's profile.
 - You can set a profile banner (cover image) from the edit screen, uploaded from your device or pasted as a URL and cleared the same way as the avatar; it shows across the top of your profile.

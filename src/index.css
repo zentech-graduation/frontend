@@ -246,6 +246,10 @@ button:disabled {
   cursor: default;
 }
 
+.lx-tab-btn {
+  background: none;
+}
+
 .lx-tab-btn,
 .lx-header-icon-btn,
 .lx-avatar-btn,
@@ -278,6 +282,7 @@ button:disabled {
 
 .lx-tab-btn:hover {
   color: var(--lx-ink-2);
+  background: var(--lx-surface);
 }
 
 .lx-header-icon-btn:hover {
@@ -406,6 +411,13 @@ button:disabled {
   to {
     opacity: 1;
   }
+}
+
+/* The message lightbox crossfades between items on next/prev, the same treatment as story media,
+   instead of the next photo cutting in instantly. Keyed by asset id so React remounts (and thus
+   replays this animation) on every step, not just the first open. */
+.lx-lightbox-media {
+  animation: lx-story-fade-in var(--duration-normal) var(--ease-out);
 }
 
 /* The big centred heart a double-tap pops over the media, in the manner of
@@ -745,15 +757,3 @@ select:focus-visible {
   }
 }
 
-/* Persistent app bar hide-on-scroll.
-   The transition, the transform and the opacity are the design's values verbatim. The design
-   defines these rules and gives the header the lx-bar hook, but never adds lx-bar-hidden itself,
-   so the trigger below is a derivation rather than a port. */
-header.lx-bar {
-  transition: transform 220ms ease, opacity 220ms ease;
-}
-
-header.lx-bar.lx-bar-hidden {
-  transform: translateY(-100%);
-  opacity: 0;
-}

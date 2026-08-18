@@ -1,7 +1,130 @@
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 
+// A single-photo bubble is capped to this box rather than forced into a fixed square: the media
+// keeps its own shape (a portrait photo stays tall, a landscape one stays wide) instead of being
+// cropped to fit, while the cap keeps a very large or very extreme-ratio image from dominating or
+// overflowing the thread.
+const MAX_BUBBLE_WIDTH = 280;
+const MAX_BUBBLE_HEIGHT = 340;
+// Ratio is clamped rather than used raw: an unclamped panorama or a very tall screenshot would
+// still overflow one of the two caps above by shrinking the other dimension to almost nothing.
+const MIN_RATIO = 0.55;
+const MAX_RATIO = 1.7;
+
+const formatDuration = (seconds) => {
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  const whole = Math.round(seconds);
+  const mins = Math.floor(whole / 60);
+  const secs = whole % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+};
+
+function DurationBadge({ seconds }) {
+  const label = formatDuration(seconds);
+  if (!label) return null;
+  return (
+    <span
+      style={{
+        position: 'absolute',
+        bottom: 6,
+        right: 6,
+        padding: '1px 5px',
+        borderRadius: 5,
+        background: 'rgba(0,0,0,0.55)',
+        color: '#fff',
+        fontFamily: v.fontMono,
+        fontSize: 9.5,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+/**
+ * A message attachment.
+ *
+ * Renders the real image or video when the server resolved one (`item.cdnUrl`), as a plain
+ * thumbnail with no card chrome around it - a photo message reads as a photo, not a bordered tile
+ * framing one. Shared posts and stories carry no direct media of their own here, so those fall
+ * back to a labelled placeholder rather than an empty box, and keep the frame since there is no
+ * photo underneath it to speak for itself.
+ *
+ * `large` (a standalone bubble, not an album grid cell) keeps the media's own aspect ratio inside
+ * a capped box instead of force-cropping it to a square - a grid cell still crops to a square,
+ * which is what makes a grid of mixed-shape photos read as a grid.
+ */
 export function MediaPlaceholder({ item, large = false, onClick }) {
+  const isVideo = (item?.mediaType || '').toUpperCase() === 'VIDEO';
+
+  if (item?.cdnUrl) {
+    const ratio =
+      large && item.width && item.height
+        ? Math.max(MIN_RATIO, Math.min(MAX_RATIO, item.width / item.height))
+        : null;
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          width: large ? '100%' : '100%',
+          maxWidth: large ? MAX_BUBBLE_WIDTH : '100%',
+          maxHeight: large ? MAX_BUBBLE_HEIGHT : undefined,
+          aspectRatio: large ? (ratio ?? '4 / 3') : '1 / 1',
+          border: 'none',
+          background: v.surface,
+          overflow: 'hidden',
+          cursor: 'pointer',
+          padding: 0,
+          display: 'block',
+          position: 'relative',
+        }}
+      >
+        {isVideo ? (
+          <video
+            src={item.cdnUrl}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              objectFit: large ? 'contain' : 'cover',
+            }}
+            muted
+            playsInline
+          />
+        ) : (
+          <img
+            src={item.cdnUrl}
+            alt=""
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              objectFit: large ? 'contain' : 'cover',
+            }}
+          />
+        )}
+        {isVideo ? (
+          <span
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,0.18)',
+            }}
+          >
+            <LxIcon name="play" filled size={large ? 26 : 16} color="#fff" />
+          </span>
+        ) : null}
+        {isVideo ? <DurationBadge seconds={item.duration} /> : null}
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"

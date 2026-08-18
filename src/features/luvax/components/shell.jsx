@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { v } from '@/config/tokens';
 import { ROUTES } from '@/config/constants';
 import { extractPageContent } from '@/utils/helpers';
@@ -6,7 +6,6 @@ import { useViewport } from '../hooks/useViewport';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
-import { LxHeaderSearch } from '@/features/search/components/LxHeaderSearch';
 import { useAuthStore } from '@/store/useAuthStore';
 
 // `id` still identifies the active tab for the shell's own styling; `path` is
@@ -26,176 +25,13 @@ const BOTTOM_TABS = [
   { id: 'profile', path: ROUTES.PROFILE, icon: 'profile', label: 'profile' },
 ];
 
-// Hide-on-scroll for the persistent app bar.
-//
-// The design ships the CSS and gives the header the lx-bar hook, but never adds lx-bar-hidden, so
-// the trigger is a derivation rather than a port. It hides once the page is scrolled past the bar's
-// own height and the direction is downward, and reveals on any upward movement, so the bar is always
-// one small scroll-up away. The 6px delta ignores sub-pixel jitter that would otherwise flicker the
-// bar; the 56px floor is the bar height, so the bar never hides while still overlapping the content
-// it belongs to.
-//
-// Two more sources of flicker needed guarding against once the side rail and messages fab started
-// consuming this same signal:
-//
-// - A post/modal overlay locks body scroll by setting `document.body.style.overflow = 'hidden'`.
-//   That lock itself can shift `window.scrollY` (the scrollbar disappearing reflows layout), which
-//   the naive handler read as a real user scroll and used to flip the bar back in mid-overlay-open.
-//   While the lock is active, scroll deltas are only used to resync `lastY`, never to toggle
-//   visibility - so opening a post never moves the nav.
-// - Fast/flicked scrolling fires bursts of alternating-direction scroll events as momentum settles.
-//   A per-toggle cooldown means a flip only takes effect if the bar has been in its current state
-//   for at least COOLDOWN_MS, so a single flick reads as one clean transition instead of a stutter.
-const TOGGLE_COOLDOWN_MS = 220;
-
-function useHideOnScroll() {
-  const [hidden, setHidden] = useState(false);
-  const lastY = useRef(0);
-  const lastToggleAt = useRef(0);
-
-  useEffect(() => {
-    lastY.current = window.scrollY;
-
-    const onScroll = () => {
-      const y = window.scrollY;
-      const delta = y - lastY.current;
-
-      if (typeof document !== 'undefined' && document.body.style.overflow === 'hidden') {
-        lastY.current = y;
-        return;
-      }
-
-      if (Math.abs(delta) < 6) return;
-      lastY.current = y;
-
-      const wantHidden = y > 56 && delta > 0;
-      setHidden((current) => {
-        if (wantHidden === current) return current;
-        const now = performance.now();
-        if (now - lastToggleAt.current < TOGGLE_COOLDOWN_MS) return current;
-        lastToggleAt.current = now;
-        return wantHidden;
-      });
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  return hidden;
-}
-
-// ─── Top Tab Strip ─────────────────────────────────────────────────────────
-export function LxTopTabs({ active, navigate, compact = false }) {
-  const tabs = PRIMARY_TABS;
-
-  const { data: requestsResponse } = usePendingFollowRequests();
-  const requests = extractPageContent(requestsResponse);
-  const { data: unreadResponse } = useUnreadCount();
-  const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
-  const hasNotifications = requests.length > 0 || unreadCount > 0;
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'stretch',
-        height: compact ? 52 : 56,
-        gap: compact ? 38 : 4,
-        flex: compact ? '0 0 auto' : 1,
-        justifyContent: 'center',
-        width: compact ? '100%' : undefined,
-        maxWidth: compact ? 300 : 560,
-        margin: compact ? '0 0 0 130px' : undefined,
-      }}
-    >
-      {tabs.map((t) => {
-        const isActive = active === t.id;
-        return (
-          <button
-            key={t.id}
-            onClick={() => !t.disabled && navigate(t.path)}
-            disabled={t.disabled}
-            aria-disabled={t.disabled || undefined}
-            title={t.disabled ? `${t.label} are not part of this build` : undefined}
-            className="lx-tab-btn"
-            style={{
-              flex: compact ? '0 0 auto' : 1,
-              width: compact ? 40 : undefined,
-              minWidth: compact ? 40 : undefined,
-              maxWidth: compact ? undefined : 110,
-              background: 'none',
-              border: 'none',
-              cursor: t.disabled ? 'not-allowed' : 'pointer',
-              opacity: t.disabled ? 0.4 : 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: compact ? 'flex-start' : 'center',
-              gap: compact ? undefined : 2,
-              paddingTop: compact ? 11 : undefined,
-              position: 'relative',
-              color: isActive ? v.accent : v.ink3,
-              transition: 'color 150ms ease-out',
-            }}
-          >
-            <span
-              style={{
-                display: 'inline-flex',
-                filter: 'none',
-              }}
-            >
-              <LxIcon
-                name={t.icon}
-                size={compact ? 21 : 22}
-                filled={isActive}
-                color={isActive ? v.accent : v.ink3}
-                stroke={isActive ? 1.8 : 1.5}
-              />
-            </span>
-            {/* The design draws no active underline, so desktop no longer has one. Tablet keeps it:
-                the tablet layout is the frontend's own and is deliberately left as it was. */}
-            {compact ? (
-              <span
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 10,
-                  height: 1.5,
-                  borderRadius: 999,
-                  background: isActive ? 'rgba(200, 169, 126, 0.78)' : 'transparent',
-                  opacity: isActive ? 0.45 : 0,
-                }}
-              />
-            ) : null}
-            {t.id === 'notifications' && hasNotifications && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: compact ? 12 : 11,
-                  right: compact ? 5 : 9,
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: v.accent,
-                }}
-              />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Persistent App Bar ────────────────────────────────────────────────────
-export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
-  const currentUser = useAuthStore((state) => state.user);
-  const isMainTab = ['feed', 'explore', 'messages', 'compose', 'notifications', 'profile'].includes(
-    screen
-  );
-
+// ─── Persistent App Bar (mobile only) ──────────────────────────────────────
+// Desktop and tablet render no top bar at all: the side rail already carries every
+// destination this bar used to duplicate (nav tabs, search, profile), so a second copy of
+// the same nav only cost vertical space without adding a route. Mobile keeps this bar
+// because it has no side rail - it is the only place carrying the back button for a
+// subpage, the current page's title, and the notification bell.
+export function LxAppBar({ screen, navigate }) {
   const subpages = {
     post: 'post',
     settings: 'settings',
@@ -205,32 +41,22 @@ export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
   };
   const isSubpage = Boolean(subpages[screen]);
   const subpageLabel = subpages[screen];
-  const mobileMsgBack = screen === 'messages' && viewport === 'mobile' && false;
-  const showBackHeader = isSubpage || mobileMsgBack;
-
-  const isDesktop = viewport === 'desktop';
-  const isTablet = viewport === 'tablet';
-  const isWide = isDesktop || isTablet;
-  const innerMaxWidth = isDesktop ? 1260 : isTablet ? 948 : '100%';
-  const sideWidth = isDesktop ? 280 : isTablet ? 244 : 'auto';
 
   const { data: requestsResponse } = usePendingFollowRequests();
   const requests = extractPageContent(requestsResponse);
   const { data: unreadResponse } = useUnreadCount();
   const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
-  const isMobile = viewport === 'mobile';
-  const barHidden = hidden;
 
   return (
     <header
       data-lx-bar="1"
-      className={barHidden ? 'lx-bar lx-bar-hidden' : 'lx-bar'}
+      className="lx-bar"
       style={{
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        height: isTablet ? 52 : 56,
+        height: 56,
         flexShrink: 0,
         display: 'flex',
         justifyContent: 'center',
@@ -243,31 +69,15 @@ export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
       <div
         style={{
           width: '100%',
-          maxWidth: innerMaxWidth,
+          maxWidth: '100%',
           display: 'grid',
-          gridTemplateColumns: isDesktop
-            ? '244px minmax(596px, 1fr) 276px'
-            : isTablet
-              ? '82px minmax(0, 1fr) 244px'
-              : 'auto 1fr auto',
+          gridTemplateColumns: 'auto 1fr auto',
           alignItems: 'stretch',
-          padding: isMobile ? '0 12px' : isTablet ? '0 6px' : '0 16px',
-          gap: isMobile ? 0 : isTablet ? 10 : 12,
+          padding: '0 12px',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: isWide ? (showBackHeader ? 'center' : 'flex-start') : 'flex-start',
-            gap: 12,
-            flexShrink: 0,
-            width: isWide ? '100%' : sideWidth,
-            minWidth: viewport === 'mobile' ? 'auto' : viewport === 'tablet' ? 82 : undefined,
-            paddingLeft: isDesktop && !showBackHeader ? 4 : 0,
-          }}
-        >
-          {showBackHeader ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          {isSubpage ? (
             <>
               <button
                 onClick={() => navigate(-1)}
@@ -284,48 +94,25 @@ export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
                 <LxIcon name="back" size={20} color={v.ink} />
               </button>
               <span style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 600, color: v.ink }}>
-                {mobileMsgBack ? 'chats' : subpageLabel}
+                {subpageLabel}
               </span>
             </>
-          ) : isMobile ? (
-            screen === 'messages' ? (
-              <div style={{ width: 24, height: 24 }} />
-            ) : (
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.COMPOSE)}
-                aria-label="open composer"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 4,
-                  marginLeft: -4,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <LxIcon name="plus" size={22} color={v.ink} />
-              </button>
-            )
           ) : (
             <button
-              onClick={() => navigate(ROUTES.FEED)}
+              type="button"
+              onClick={() => navigate(ROUTES.COMPOSE)}
+              aria-label="open composer"
               style={{
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                padding: 0,
-                marginLeft: isTablet ? -10 : 0,
-                fontFamily: v.fontDisplay,
-                fontSize: isTablet ? 21 : 22,
-                fontWeight: 700,
-                color: v.ink,
-                letterSpacing: isTablet ? '-0.045em' : '-0.03em',
-                lineHeight: 1,
+                padding: 4,
+                marginLeft: -4,
+                display: 'flex',
+                alignItems: 'center',
               }}
             >
-              luvax
+              <LxIcon name="plus" size={22} color={v.ink} />
             </button>
           )}
         </div>
@@ -334,18 +121,12 @@ export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
           style={{
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'stretch',
-            pointerEvents: isMobile && !showBackHeader ? 'none' : 'auto',
+            alignItems: 'center',
+            pointerEvents: isSubpage ? 'auto' : 'none',
             minWidth: 0,
           }}
         >
-          {/* The nav stays visible on every wide screen except the settings-area
-              subpages, which keep their back header. Messages shows it too, so the
-              bar never vanishes when moving into chats. */}
-          {isWide && !showBackHeader ? (
-            <LxTopTabs active={screen} navigate={navigate} compact={isTablet} />
-          ) : null}
-          {isMobile && !showBackHeader ? (
+          {!isSubpage ? (
             <button
               type="button"
               onClick={() => navigate(screen === 'messages' ? ROUTES.MESSAGES : ROUTES.FEED)}
@@ -372,55 +153,13 @@ export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? 0 : isTablet ? 4 : 10,
             flexShrink: 0,
-            width: isWide ? '100%' : sideWidth,
-            minWidth: viewport === 'mobile' ? 'auto' : viewport === 'tablet' ? 244 : undefined,
             justifyContent: 'flex-end',
-            paddingRight: isDesktop ? 52 : isTablet ? 0 : 0,
           }}
         >
-          {isWide && !showBackHeader ? (
-            <LxHeaderSearch navigate={navigate} viewport={viewport} screen={screen} />
-          ) : null}
-          {screen === 'messages' && isMobile ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (
-                  typeof window !== 'undefined' &&
-                  typeof window.__lxMessagesCompose === 'function'
-                ) {
-                  window.__lxMessagesCompose();
-                }
-              }}
-              aria-label="new message"
-              className="lx-header-icon-btn"
-              style={{
-                background: 'transparent',
-                border: `1px solid ${v.border}`,
-                borderRadius: '999px',
-                width: 32,
-                minWidth: 32,
-                height: 32,
-                aspectRatio: '1 / 1',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                boxShadow: 'none',
-                padding: 0,
-                flexShrink: 0,
-                marginRight: 2,
-              }}
-            >
-              <LxIcon name="edit" size={13} color={v.ink2} />
-            </button>
-          ) : isMobile && screen !== 'messages' ? (
-            // The header bell is kept only on mobile, where the top bar carries no
-            // nav tabs. On a wide viewport it duplicated the nav's activity tab
-            // sitting right beside it, so it is removed there.
+          {isSubpage ? (
+            <div style={{ width: 24, height: 24 }} />
+          ) : (
             <button
               onClick={() => navigate(ROUTES.NOTIFICATIONS)}
               className="lx-header-icon-btn"
@@ -458,23 +197,7 @@ export function LxAppBar({ screen, navigate, viewport, hidden = false }) {
                 />
               )}
             </button>
-          ) : isMobile ? (
-            <div style={{ width: 24, height: 24 }} />
-          ) : null}
-          {!isMobile && (screen !== 'messages' || isTablet || isDesktop) ? (
-            <button
-              onClick={() => navigate(ROUTES.PROFILE)}
-              className="lx-avatar-btn"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-            >
-              <LxAvatar
-                size={isTablet ? 30 : 32}
-                idx={0}
-                src={currentUser?.avatarUrl}
-                ring={screen === 'profile'}
-              />
-            </button>
-          ) : null}
+          )}
         </div>
       </div>
     </header>
@@ -527,7 +250,6 @@ export function LxBottomNav({ active, navigate }) {
               justifyContent: 'center',
               gap: 2,
               height: 56,
-              background: 'none',
               border: 'none',
               cursor: t.disabled ? 'not-allowed' : 'pointer',
               opacity: t.disabled ? 0.4 : 1,
@@ -631,9 +353,12 @@ export function LxRightRail({ compact = false }) {
         flexDirection: 'column',
         gap: 24,
         position: 'sticky',
-        top: 56,
+        top: 0,
         alignSelf: 'flex-start',
-        maxHeight: 'calc(100vh - 56px)',
+        // vh is computed against the true viewport, unadjusted for the root's zoom scale, so a
+        // raw 100vh here rendered taller than the real viewport and could push part of the rail
+        // out of view. Dividing by --lx-scale cancels the zoom multiplication back out.
+        maxHeight: 'calc(100vh / var(--lx-scale))',
         overflowY: 'auto',
       }}
     >
@@ -681,20 +406,22 @@ function LxMark({ onClick }) {
 
 // The icon column sits at a fixed offset from the rail's left edge in both
 // states, so it never shifts horizontally when the rail expands - only the
-// label beside it grows in.
-const RAIL_COLLAPSED_W = 60;
+// label beside it grows in. The inset centers a 20px icon in the collapsed
+// rail's 60px width.
+export const RAIL_COLLAPSED_W = 60;
 const RAIL_EXPANDED_W = 196;
-const RAIL_ICON_INSET = 13;
+const RAIL_ICON_INSET = 20;
+const RAIL_ICON_SIZE = 20;
 
 // ─── Left Sub-Nav Rail (desktop/tablet) ────────────────────────────────────
-// A subordinate stand-in for the main bar, not a second main nav: smaller
-// icons than the top bar's own, no divider against the content it floats
-// over, and the tab list vertically centered in the available height rather
-// than pinned under the mark. It appears exactly when useHideOnScroll has
-// hidden the top bar, so navigation is never more than a glance to the left
-// away. Hovering it expands the rail and reveals a text label per icon, the
-// same disclosure Instagram's own collapsed sidebar uses.
-export function LxSideRail({ active, navigate, visible }) {
+// The primary nav on desktop and tablet: it is always on screen rather than a
+// stand-in that appears only when something else disappears, matching the
+// smaller icon-only sidebar Instagram itself keeps visible at all times.
+// `position: fixed` keeps it out of the page's own flex flow, so hovering it
+// open overlays the interface instead of shifting the app's layout. Hovering
+// expands the rail and reveals a text label per icon, the same disclosure
+// Instagram's own collapsed sidebar uses.
+export function LxSideRail({ active, navigate, visible = true }) {
   const currentUser = useAuthStore((state) => state.user);
   const [expanded, setExpanded] = useState(false);
   const { data: requestsResponse } = usePendingFollowRequests();
@@ -707,7 +434,6 @@ export function LxSideRail({ active, navigate, visible }) {
     width: '100%',
     height: 34,
     borderRadius: 9,
-    background: 'none',
     border: 'none',
     paddingLeft: RAIL_ICON_INSET,
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -766,8 +492,12 @@ export function LxSideRail({ active, navigate, visible }) {
         transform: visible ? 'translateX(0)' : 'translateX(-100%)',
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? 'auto' : 'none',
+        // width is deliberately not transitioned: it is also this element's own hover hit-test
+        // box, and animating it let a real mouse's path cross a not-yet-grown edge mid-transition,
+        // firing a spurious mouseleave that collapsed the rail out from under the cursor. Snapping
+        // it instantly removes that race; the label still reveals smoothly via its own transition.
         transition:
-          'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out), width 180ms var(--ease-out)',
+          'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out)',
       }}
     >
       <div style={{ paddingLeft: RAIL_ICON_INSET, flexShrink: 0 }}>
@@ -797,11 +527,11 @@ export function LxSideRail({ active, navigate, visible }) {
             >
               <span style={iconWrapStyle}>
                 {isProfile ? (
-                  <LxAvatar size={20} src={currentUser?.avatarUrl} ring={isActive} />
+                  <LxAvatar size={RAIL_ICON_SIZE} src={currentUser?.avatarUrl} ring={isActive} />
                 ) : (
                   <LxIcon
                     name={t.icon}
-                    size={18}
+                    size={RAIL_ICON_SIZE}
                     filled={isActive}
                     color={isActive ? v.accent : v.ink3}
                     stroke={isActive ? 1.7 : 1.5}
@@ -834,7 +564,7 @@ export function LxSideRail({ active, navigate, visible }) {
         style={rowStyle(false)}
       >
         <span style={iconWrapStyle}>
-          <LxIcon name="settings" size={18} color={v.ink3} stroke={1.5} />
+          <LxIcon name="settings" size={RAIL_ICON_SIZE} color={v.ink3} stroke={1.5} />
         </span>
         <span style={labelStyle(false)}>settings</span>
       </button>
@@ -842,61 +572,18 @@ export function LxSideRail({ active, navigate, visible }) {
   );
 }
 
-// ─── Floating Messages Button (desktop/tablet) ─────────────────────────────
-// A quiet, slim rectangle - a border, not a filled pill - that stays put
-// regardless of scroll direction rather than tracking the top bar's own
-// hide/show, so it never itself becomes a second thing jumping around the
-// screen. Pairs a label with a send affordance rather than a chat-bubble
-// glyph, matching Instagram's own floating message entry point.
-export function LxMessagesFab({ active, navigate }) {
-  if (active === 'messages') return null;
-  return (
-    <button
-      onClick={() => navigate(ROUTES.MESSAGES)}
-      aria-label="open messages"
-      style={{
-        position: 'fixed',
-        bottom: 24,
-        right: 24,
-        zIndex: 100,
-        height: 34,
-        padding: '0 14px',
-        borderRadius: 999,
-        background: 'var(--lx-glass-bg)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        border: `1px solid ${v.border}`,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 7,
-        cursor: 'pointer',
-      }}
-    >
-      <span style={{ fontFamily: v.fontBody, fontSize: 12.5, fontWeight: 600, color: v.ink2 }}>
-        message
-      </span>
-      <LxIcon name="send" size={13} color={v.ink2} stroke={2} />
-    </button>
-  );
-}
-
 // ─── App Shell ─────────────────────────────────────────────────────────────
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
   const vp = useViewport();
-  // Shared with LxAppBar (which hides on the same signal) so the rail and
-  // the floating messages button appear at exactly the moment the top bar
-  // disappears, rather than each tracking scroll independently.
-  const barHidden = useHideOnScroll();
 
   if (vp === 'desktop') {
     const LEFT_W = 280;
     return (
-      <div
-        style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
-      >
-        <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
-        <LxSideRail active={screen} navigate={navigate} visible={barHidden} />
-        <LxMessagesFab active={screen} navigate={navigate} />
+      // No min-height: 100vh here - it would carry the same zoom-vs-vh mismatch <main> below
+      // has to correct for, and nothing in this row needs it: the rail is fixed-positioned and
+      // <main> establishes the page's real height on its own.
+      <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
+        <LxSideRail active={screen} navigate={navigate} />
         <div
           style={{
             display: 'flex',
@@ -919,7 +606,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
               minWidth: 0,
               // No column rules. The feed is one continuous surface on the page
               // background, so the borders that boxed the centre column are gone.
-              minHeight: 'calc(100vh - 56px)',
+              minHeight: 'calc(100vh / var(--lx-scale))',
               display: 'flex',
               flexDirection: 'column',
               background: v.base,
@@ -943,12 +630,9 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
     const tabletShellWidth = screen === 'compose' ? 1090 : isWideSettingsPane ? 1010 : 910;
     const tabletRightSpacer = isWideSettingsPane ? LEFT_W : 206;
     return (
-      <div
-        style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
-      >
-        <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
-        <LxSideRail active={screen} navigate={navigate} visible={barHidden} />
-        <LxMessagesFab active={screen} navigate={navigate} />
+      // No min-height: 100vh here - see the desktop branch above for why.
+      <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
+        <LxSideRail active={screen} navigate={navigate} />
         <div
           style={{
             display: 'flex',
@@ -969,7 +653,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
               flexShrink: 0,
               minWidth: 0,
               // Column rules removed to match the desktop feed's continuous surface.
-              minHeight: 'calc(100vh - 56px)',
+              minHeight: 'calc(100vh / var(--lx-scale))',
               display: 'flex',
               flexDirection: 'column',
               background: v.base,
@@ -989,10 +673,17 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
 
   // mobile
   return (
+    // <main> below is flex: 1, which needs a definite parent height to distribute against, so
+    // (unlike the desktop/tablet branches) this wrapper keeps a real min-height - zoom-corrected.
     <div
-      style={{ minHeight: '100vh', background: v.base, display: 'flex', flexDirection: 'column' }}
+      style={{
+        minHeight: 'calc(100vh / var(--lx-scale))',
+        background: v.base,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
-      <LxAppBar screen={screen} navigate={navigate} viewport={vp} hidden={barHidden} />
+      <LxAppBar screen={screen} navigate={navigate} />
       <main
         key={screen}
         className="lx-fade-in"

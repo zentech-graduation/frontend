@@ -15,7 +15,7 @@ import { useFollow, useUnfollow, useBlock, useUnblock, useBlockedUsers } from '.
 import { useDrainEmptyPages } from '../hooks/useDrainEmptyPages';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { BlockConfirmDialog } from './BlockConfirmDialog';
-import { ConfirmModal } from './ConfirmModal';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { FollowListModal } from './FollowListModal';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { ROUTES, routeTo } from '@/config/constants';
@@ -517,6 +517,22 @@ export function ProfileScreen() {
                   {followLabel}
                 </LxBtn>
               )}
+              {!isBlocking && (
+                <LxBtn
+                  variant="secondary"
+                  size="sm"
+                  style={{
+                    minWidth: 62,
+                    height: 30,
+                    padding: '0 14px',
+                    fontSize: 13,
+                    borderRadius: 999,
+                  }}
+                  onClick={() => navigate(ROUTES.MESSAGES, { state: { openWithUserId: user.id } })}
+                >
+                  message
+                </LxBtn>
+              )}
               <button
                 ref={menuAnchor}
                 aria-label={`more options for @${handle}`}
@@ -536,14 +552,20 @@ export function ProfileScreen() {
               >
                 <LxIcon name="more" size={16} color={v.ink2} />
               </button>
-              <LxDropdownMenu
-                anchorRef={menuAnchor}
-                open={menuOpen}
-                onClose={() => setMenuOpen(false)}
-                items={menuItems}
-                align="right"
-              />
             </div>
+          )}
+          {/* Rendered outside the button row on purpose: that row carries a `transform` for a
+              pixel nudge, and a `transform` on any ancestor becomes the containing block for a
+              `position: fixed` descendant, which broke this menu's fixed-position math under the
+              app's root zoom and left it rendering off-screen. */}
+          {!isSelf && !isBlocking && (
+            <LxDropdownMenu
+              anchorRef={menuAnchor}
+              open={menuOpen}
+              onClose={() => setMenuOpen(false)}
+              items={menuItems}
+              align="right"
+            />
           )}
           {isSelf && (
             <LxBtn

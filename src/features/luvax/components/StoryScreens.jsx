@@ -12,6 +12,7 @@ import {
 import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useMediaConstraints } from '../hooks/useMediaConstraints';
 import { useAuthStore } from '@/store/useAuthStore';
+import { messageService } from '@/services/message.service';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { buildAcceptAttribute, validateFile, validateDuration } from '../utils/composerMedia';
 import { formatRelativeTime } from '../hooks/useRelativeTime';
@@ -679,14 +680,26 @@ export function StoryViewScreen({ viewport: vpProp }) {
     </div>
   );
 
-  const handleReplySend = () => {
+  const handleReplySend = async () => {
     const text = replyDraft.trim();
-    if (!text) return;
+    if (!text || !entry?.userId) return;
     setReplyDraft('');
-    // Messaging is not built yet, so a reply cannot actually be delivered.
-    // This stands in for the real flow: it clears the field and confirms,
-    // exactly as a sent reply would, without pretending to persist anything.
-    toast(`sent to ${authorName} — demo only, messaging isn't built yet`);
+
+    try {
+      // Resolve-or-create: a direct-conversation pair key means replying to the same author twice
+      // reuses the existing thread rather than forking it.
+      const conversation = await messageService.createDirect(entry.userId);
+      await messageService.sendMessage(conversation.data.id, {
+        messageType: 'story_share',
+        content: text,
+        sharedStoryId: story.id,
+      });
+      toast(`sent to ${authorName}`);
+    } catch (error) {
+      // The reply bar is a side affordance on a viewer. A failed send must not close it or take
+      // the story down with it, so the draft is reported rather than thrown.
+      toast(error?.message || 'could not send your reply');
+    }
   };
 
   const replyBar = (
