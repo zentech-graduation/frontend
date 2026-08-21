@@ -18,6 +18,11 @@ const unwrap = (response) => response?.data?.data;
 // stripped before the request, which the admin endpoints enforce with 400 and
 // which is applied to the report endpoints too as a defensive habit.
 const REPORTS_QUERY_KEYS = ['status', 'reportType', 'cursor', 'limit'];
+// Violations and per-account content take only keyset paging parameters.
+const CURSOR_QUERY_KEYS = ['cursor', 'limit'];
+// The action log declares exactly these four; there is no date range and no
+// target filter (see discipline-contract-verification.md 4.4.2).
+const ACTIONS_QUERY_KEYS = ['adminId', 'actionType', 'cursor', 'limit'];
 
 export const adminApi = {
   /** The one-hour-cached vocabulary lists (report reasons, moderation actions). */
@@ -141,6 +146,82 @@ export const adminApi = {
       `/admin/comments/${commentId}/restore`,
       buildBody({ reason, reportId })
     );
+    return unwrap(res);
+  },
+
+  /**
+   * One page of an account's violation history. The result set differs by role:
+   * a moderator sees warnings only, an administrator sees warnings and strikes.
+   * Rows are a discriminated union on `kind`; the cursor is scoped to the role
+   * variant, so replaying it across roles returns INVALID_CURSOR.
+   */
+  async getViolations({ userId, cursor, limit } = {}) {
+    const params = pickParams({ cursor, limit }, CURSOR_QUERY_KEYS);
+    const res = await axiosClient.get(`/admin/violations/for-user/${userId}`, { params });
+    return unwrap(res);
+  },
+
+  /**
+   * Issue a warning against an account. The body is exactly `reasonKey` (a key
+   * from the report-reason vocabulary) and `note` (required, non-blank, ≤2000).
+   * A third active warning auto-issues a strike, reflected in the response's
+   * `strikeIssued`, `strike`, and `resultingStatus`.
+   */
+  async warnUser(userId, { reasonKey, note }) {
+    const res = await axiosClient.post(
+      `/admin/warnings/for-user/${userId}`,
+      buildBody({ reasonKey, note })
+    );
+    return unwrap(res);
+  },
+
+  /** Revoke a warning. Administrator only; a moderator receives 403. */
+  async revokeWarning(warningId, { reason, reportId }) {
+    const res = await axiosClient.delete(`/admin/warnings/${warningId}`, {
+      data: buildBody({ reason, reportId }),
+    });
+    return unwrap(res);
+  },
+
+  /** Revoke a strike. Administrator only; a moderator receives 403. */
+  async revokeStrike(strikeId, { reason, reportId }) {
+    const res = await axiosClient.delete(`/admin/strikes/${strikeId}`, {
+      data: buildBody({ reason, reportId }),
+    });
+    return unwrap(res);
+  },
+
+  /** One page of an account's posts. Both roles may call. */
+  async getUserPosts({ userId, cursor, limit } = {}) {
+    const params = pickParams({ cursor, limit }, CURSOR_QUERY_KEYS);
+    const res = await axiosClient.get(`/admin/content/for-user/${userId}/posts`, { params });
+    return unwrap(res);
+  },
+
+  /** One page of an account's comments. Both roles may call. */
+  async getUserComments({ userId, cursor, limit } = {}) {
+    const params = pickParams({ cursor, limit }, CURSOR_QUERY_KEYS);
+    const res = await axiosClient.get(`/admin/content/for-user/${userId}/comments`, { params });
+    return unwrap(res);
+  },
+
+  /**
+   * One page of the moderation action log. A moderator sees only its own
+   * actions; an administrator sees all. Rows never carry `metadata`. The only
+   * declared filters are `adminId` and `actionType`.
+   */
+  async getActions({ adminId, actionType, cursor, limit } = {}) {
+    const params = pickParams({ adminId, actionType, cursor, limit }, ACTIONS_QUERY_KEYS);
+    const res = await axiosClient.get('/admin/actions', { params });
+    return unwrap(res);
+  },
+
+  /**
+   * A single action, the only place `metadata` exists. A moderator receives 404
+   * for an action it did not perform.
+   */
+  async getAction(actionId) {
+    const res = await axiosClient.get(`/admin/actions/${actionId}`);
     return unwrap(res);
   },
 };

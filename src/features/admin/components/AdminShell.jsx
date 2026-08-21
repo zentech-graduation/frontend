@@ -33,7 +33,10 @@ import { PANEL_CSS } from './panelStyles';
 const NAV_SECTIONS = [
   {
     heading: 'moderation',
-    items: [{ key: 'reports', label: 'reports', icon: 'flag', to: ROUTES.ADMIN_REPORTS, roles: [ROLES.MODERATOR, ROLES.ADMIN] }],
+    items: [
+      { key: 'reports', label: 'reports', icon: 'flag', to: ROUTES.ADMIN_REPORTS, roles: [ROLES.MODERATOR, ROLES.ADMIN] },
+      { key: 'actions', label: 'actions', icon: 'clock', to: ROUTES.ADMIN_ACTIONS, roles: [ROLES.MODERATOR, ROLES.ADMIN] },
+    ],
   },
   {
     heading: 'administration',

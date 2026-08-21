@@ -55,6 +55,12 @@ export function useVocabularies() {
       // as unavailable and unselectable rather than hidden.
       reasonEnabled: (key) => reasonMap.get(key)?.isEnabled ?? true,
       actionLabel: (key) => actionMap.get(key)?.displayName ?? key,
+      // Whether an action type exists in the moderation-action vocabulary. An
+      // observed type absent from it renders as its raw key with a marker rather
+      // than blank, and is recorded as a finding. Reported as unknown only once
+      // the vocabulary has actually loaded, so a slow fetch never mislabels a
+      // known type.
+      actionKnown: (key) => (query.isSuccess ? actionMap.has(key) : true),
     };
   }, [data, query.isLoading, query.isError]);
 }
