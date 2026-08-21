@@ -6,7 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- An administrative and moderation panel at /admin where moderators and administrators review reported content, with a filterable report queue, a report detail that shows the reported post, comment, or account, and actions to mark a report reviewing, escalate, resolve, dismiss, or remove and restore content, each behind a confirmation that records a reason.
+- Administrators get an escalated-report queue with a live count that moderators cannot reach.
+
 ### Changed
+- After signing in, moderators and administrators now land on the panel while everyone else lands on the application.
 - Extracted the username and display-name validation rules shared by registration and profile editing into a common module, so both stay in sync with the backend by construction instead of by convention.
 
 ### Added
