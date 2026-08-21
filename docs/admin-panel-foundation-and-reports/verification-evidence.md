@@ -62,16 +62,30 @@ Neither tree leaked into the other.
 
 ## Other checks
 
-31. Every modal closed on Escape, confirmed on the reason dialogue.
+31. Every modal closed on Escape, confirmed on the reason dialogue, including under the reduced-motion emulation in check 35 below.
 32. A vocabulary entry disabled in the database (`spam`) still rendered its display name "Spam" on an existing report after a reload, rather than vanishing or showing the raw key.
 33. The user-facing application still works after this phase: signing in as an ordinary user landed on `/app`, the feed loaded, opening a post worked, and posting a comment succeeded and appeared.
 34. No raw hex colour value exists in the code this phase added, confirmed by searching the panel source.
 
-## What could not be verified, and why
+## Reduced motion (Definition of Done item 28)
 
-Reduced-motion (Definition of Done item 28): the panel adds no motion that bypasses the global stylesheet's `prefers-reduced-motion` rule, since every duration references a token or a hardcoded transition that the global rule overrides with `!important`.
-The available browser tooling could not toggle the emulated operating-system preference, so the neutralised-motion state was verified by inspection of the mechanism rather than by observing the emulated preference.
-The panel's layout and content do not depend on animation, so its rendering is unaffected either way.
+35. Exercised through Playwright's media emulation (`page.emulateMedia({ reducedMotion: 'reduce' })`), confirmed active via `window.matchMedia('(prefers-reduced-motion: reduce)').matches === true`, and confirmed it survived navigation within the session.
+Driven the report queue and the report detail screen under the emulated preference, including opening the reason-confirm dialogue on a removed-post control (`screens/report-detail-reduced-motion.png`) and closing it with Escape, which still worked (check 31).
+Every element in the panel that carries a duration was measured with `getComputedStyle` while the preference was active: the navigation link and sign-out button transitions (`transition: background var(--duration-fast) ...` in `panelStyles.js`), the table row hover transition (inline, in `RecordTable.jsx`), and the loading-skeleton fade (inline `animation: lx-fade-in ...`, in `ListStates.jsx`).
+All four resolved to a computed `1e-6s` (0.001ms) duration, matching the global stylesheet's `prefers-reduced-motion` rule (`src/index.css` lines 594-603), which sets `animation-duration`, `animation-iteration-count`, and `transition-duration` to `0.001ms !important` on every element.
+An author-stylesheet `!important` declaration overrides an inline style without `!important` even though inline styles normally have higher specificity, which is why the global rule reaches the panel's inline durations; this was confirmed directly by constructing a test element carrying the exact inline `animation` and `transition` declarations used in the panel and reading its computed style under the emulated preference.
+No element in the panel animates under the reduced-motion preference.
+The reason-confirm dialogue's 500 millisecond arming delay is unaffected, and correctly so: it is a functional debounce against a mistaken double-click on a destructive action, timed in JavaScript rather than expressed as CSS motion, not a decorative animation the reduced-motion preference is meant to suppress.
+
+## Close-out delta
+
+36. The moderator's status filter offers exactly two options, `all`, `pending`, `reviewing`; the administrator's offers five, `all`, `pending`, `reviewing`, `resolved`, `dismissed`, `escalated`.
+Confirmed by reading the rendered filter bar text in both sessions (`screens/report-queue-filters-moderator-01.png` for the moderator; the administrator's five-option bar was read from the DOM in the same session used for check 6).
+37. A moderator escalated a report (`d52c5431-...`), then found it absent from the queue under every status the moderator's filter offers, under a direct navigation to `?status=escalated` even though the UI no longer offers that chip, and under no status filter at all; the last two were confirmed empty both in the rendered table (zero rows) and at the network level (`GET /api/v1/reports?status=escalated&limit=20` returned `200` with an empty `content`).
+The report remained readable at its own URL, with the moderator's normal escalated-report controls (no resolve or dismiss, a content control present).
+`GET /api/v1/admin/actions?actionType=escalate_report` as the same moderator returned exactly the one action, and its `reportId` field already carried the report's id, confirming the audit row needs no backend change to support a future link back to the report.
+
+## What could not be verified, and why
 
 The administrator escalated-count poll interval (Definition of Done item 7, "roughly two requests over two minutes"): the poll was observed firing on its 60-second interval and gated on role, but a full two-minute count was not timed; the gating and the interval were confirmed rather than the exact two-minute total.
 

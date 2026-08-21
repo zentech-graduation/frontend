@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Administrators get an escalated-report queue with a live count that moderators cannot reach.
 
 ### Changed
+- The report queue's status filter now offers moderators only "pending" and "reviewing", since a moderator's queue never contains a report in any other status.
 - After signing in, moderators and administrators now land on the panel while everyone else lands on the application.
 - Extracted the username and display-name validation rules shared by registration and profile editing into a common module, so both stay in sync with the backend by construction instead of by convention.
 
