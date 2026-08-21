@@ -67,7 +67,12 @@ function TargetRegion({ target, isLoading, isError }) {
           {target.reportType}
         </span>
         {target.status ? <StatusBadge status={target.status} size="sm" /> : null}
-        {target.removed ? <StatusBadge status="removed" size="sm" /> : null}
+        {/* The removed flag is always rendered, but only as its own badge when
+            the lifecycle status does not already convey it, so a removed post
+            does not show "removed" twice. */}
+        {target.removed && target.status !== 'removed' ? (
+          <StatusBadge status="removed" size="sm" />
+        ) : null}
       </div>
 
       <Field label="owner">
