@@ -1,0 +1,476 @@
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+
+import { v } from '@/config/tokens';
+import { ROUTES } from '@/config/constants';
+import { isAdminRole } from '@/config/roles';
+import { useAuthStore } from '@/store/useAuthStore';
+import { LxIcon } from '@/components/ui/lx-icon';
+import { LxBtn } from '@/features/luvax/components/primitives';
+import { toast } from '@/features/luvax/components/Toast';
+
+import { PageHeader, PanelCard } from '../components/PanelPage';
+import { StatusBadge } from '../components/StatusBadge';
+import { LocalTime } from '../components/LocalTime';
+import { ReporterName } from '../components/ReporterName';
+import { ReasonConfirmDialog } from '../components/ReasonConfirmDialog';
+import { FailedState } from '../components/ListStates';
+import { NotAvailable } from '../components/NotAvailable';
+import { useReportDetail, useReportTarget } from '../hooks/useReportDetail';
+import { useReportActions } from '../hooks/useReportActions';
+import { useVocabularies } from '../hooks/useVocabularies';
+import { describeError, getErrorCode } from '../lib/errors';
+import { ACTIONABLE_TARGET_TYPES } from '../lib/reportSchema';
+
+const Field = ({ label, children }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <span
+      style={{
+        fontFamily: v.fontMono,
+        fontSize: 10,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: v.ink3,
+      }}
+    >
+      {label}
+    </span>
+    <span style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink }}>{children}</span>
+  </div>
+);
+
+function TargetRegion({ target, isLoading, isError }) {
+  if (isLoading) {
+    return <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>loading content...</div>;
+  }
+  if (isError || !target) {
+    return <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>the reported content could not be loaded.</div>;
+  }
+
+  const isUser = target.reportType === 'user';
+  const isReadOnlyType = target.reportType === 'story' || target.reportType === 'message';
+  const hasText = typeof target.text === 'string' && target.text.length > 0;
+  const media = Array.isArray(target.mediaUrls) ? target.mediaUrls : [];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span
+          style={{
+            fontFamily: v.fontMono,
+            fontSize: 11,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            color: v.ink2,
+          }}
+        >
+          {target.reportType}
+        </span>
+        {target.status ? <StatusBadge status={target.status} size="sm" /> : null}
+        {/* The removed flag is always rendered, but only as its own badge when
+            the lifecycle status does not already convey it, so a removed post
+            does not show "removed" twice. */}
+        {target.removed && target.status !== 'removed' ? (
+          <StatusBadge status="removed" size="sm" />
+        ) : null}
+      </div>
+
+      <Field label="owner">
+        {target.ownerUsername ? (
+          `@${target.ownerUsername}`
+        ) : (
+          <span style={{ fontFamily: v.fontMono, color: v.ink3 }} title={target.ownerId ?? ''}>
+            {target.ownerId ? target.ownerId.slice(0, 8) : 'unknown'}
+          </span>
+        )}
+      </Field>
+
+      {/* A user target has no text; render no empty content block where text would be. */}
+      {!isUser && hasText ? (
+        <div
+          style={{
+            background: v.surfaceSunken,
+            border: `1px solid ${v.border}`,
+            borderRadius: 10,
+            padding: '12px 14px',
+            fontFamily: v.fontBody,
+            fontSize: 14,
+            color: v.ink,
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.5,
+          }}
+        >
+          {target.text}
+        </div>
+      ) : null}
+
+      {media.length > 0 ? (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {media.map((url) => (
+            <img
+              key={url}
+              src={url}
+              alt="reported media"
+              style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 8, border: `1px solid ${v.border}` }}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      {isReadOnlyType ? (
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: 'flex-start',
+            background: v.warningDim,
+            borderRadius: 10,
+            padding: '10px 12px',
+          }}
+        >
+          <LxIcon name="alert" size={16} color={v.warningText} />
+          <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.warningText }}>
+            a {target.reportType} cannot be taken down from this panel. the available actions are
+            resolve, dismiss, and escalate.
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function ReportDetailScreen() {
+  const { reportId } = useParams();
+  const role = useAuthStore((state) => state.role);
+  const isAdmin = isAdminRole(role);
+  const { reasonLabel } = useVocabularies();
+
+  const { report, isLoading, isError, error, refetch } = useReportDetail(reportId);
+  const { target, isLoading: targetLoading, isError: targetError } = useReportTarget(reportId);
+  const actions = useReportActions(reportId);
+
+  const [activeAction, setActiveAction] = useState(null);
+  const [serverError, setServerError] = useState(null);
+
+  const closeDialog = () => {
+    setActiveAction(null);
+    setServerError(null);
+  };
+
+  const handleActionError = (err, { keepOpenOnField = true } = {}) => {
+    const described = describeError(err);
+    if (described.isConflict) {
+      toast('another reviewer already handled this. refreshing.');
+      refetch();
+      closeDialog();
+      return;
+    }
+    if (described.kind === 'field' && keepOpenOnField) {
+      setServerError(described.fields?.reason || described.message);
+      return;
+    }
+    if (described.kind === 'page') {
+      toast(described.message);
+      refetch();
+      closeDialog();
+      return;
+    }
+    if (described.kind !== 'silent') {
+      toast(described.message);
+    }
+    closeDialog();
+  };
+
+  // Report load states. A 404 for a moderator on a closed report, or after
+  // another reviewer resolved it, renders as a calm not-found rather than an
+  // error dialogue.
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader title="report" />
+        <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 14, padding: 24 }}>loading report...</div>
+      </div>
+    );
+  }
+  if (isError && getErrorCode(error) === 'REPORT_NOT_FOUND') {
+    return (
+      <div>
+        <PageHeader title="report" />
+        <NotAvailable
+          title="report not available"
+          message="this report was not found, or it has been closed and is no longer open for review."
+        />
+      </div>
+    );
+  }
+  if (isError || !report) {
+    return (
+      <div>
+        <PageHeader title="report" />
+        <FailedState message={error?.message} onRetry={refetch} />
+      </div>
+    );
+  }
+
+  const status = report.status;
+  const targetType = target?.reportType;
+  const isActionableTarget = target && ACTIONABLE_TARGET_TYPES.has(targetType);
+
+  // Conditional controls: render, never disable-and-403.
+  const canMarkReviewing = status === 'pending';
+  const canEscalate = status === 'pending' || status === 'reviewing';
+  const canResolveDismiss = status !== 'escalated' || isAdmin;
+  const canRemove = isActionableTarget && target.removed === false;
+  const canRestore = isActionableTarget && target.removed === true;
+
+  const anyControl = canMarkReviewing || canEscalate || canResolveDismiss || canRemove || canRestore;
+
+  const openReason = (config) => {
+    setServerError(null);
+    setActiveAction(config);
+  };
+
+  const dialogBusy = activeAction?.mutation?.isPending ?? false;
+
+  const runMarkReviewing = () => {
+    actions.markReviewing.mutate(undefined, {
+      onSuccess: () => toast('marked as reviewing'),
+      onError: (err) => handleActionError(err, { keepOpenOnField: false }),
+    });
+  };
+
+  const contentActionInFlight = actions.removeContent.isPending || actions.restoreContent.isPending;
+
+  return (
+    <div>
+      <PageHeader
+        title="report"
+        subtitle={`report ${reportId?.slice(0, 8)}`}
+        right={
+          <Link
+            to={ROUTES.ADMIN_REPORTS}
+            style={{ fontFamily: v.fontBody, fontSize: 14, color: v.accentText, textDecoration: 'none' }}
+          >
+            back to reports
+          </Link>
+        }
+      />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 0 }}>
+        <PanelCard title="report">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+            <Field label="reason">{reasonLabel(report.reportReason)}</Field>
+            <Field label="status">
+              <StatusBadge status={report.status} />
+            </Field>
+            <Field label="type">{report.reportType}</Field>
+            <Field label="reporter">
+              <ReporterName userId={report.reporterId} prefix="@" />
+            </Field>
+            <Field label="reported">
+              <LocalTime value={report.createdAt} />
+            </Field>
+            {report.reviewedAt ? (
+              <Field label="reviewed">
+                <LocalTime value={report.reviewedAt} />
+              </Field>
+            ) : null}
+          </div>
+          {report.description ? (
+            <div style={{ marginTop: 16 }}>
+              <Field label="reporter note">
+                <span style={{ whiteSpace: 'pre-wrap', color: v.ink2 }}>{report.description}</span>
+              </Field>
+            </div>
+          ) : null}
+          {report.resolutionNote ? (
+            <div style={{ marginTop: 16 }}>
+              <Field label="resolution note">
+                <span style={{ whiteSpace: 'pre-wrap', color: v.ink2 }}>{report.resolutionNote}</span>
+              </Field>
+            </div>
+          ) : null}
+        </PanelCard>
+
+        <PanelCard title="reported content">
+          <TargetRegion target={target} isLoading={targetLoading} isError={targetError} />
+        </PanelCard>
+
+        {anyControl ? (
+          <PanelCard title="actions">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {canMarkReviewing ? (
+                <LxBtn
+                  variant="secondary"
+                  onClick={runMarkReviewing}
+                  disabled={actions.markReviewing.isPending}
+                >
+                  mark as reviewing
+                </LxBtn>
+              ) : null}
+
+              {canEscalate ? (
+                <LxBtn
+                  variant="secondary"
+                  onClick={() =>
+                    openReason({
+                      key: 'escalate',
+                      title: 'escalate report',
+                      description: 'this report will be handed to an administrator to close.',
+                      confirmLabel: 'escalate',
+                      tone: 'primary',
+                      mutation: actions.escalate,
+                      run: (reason) =>
+                        actions.escalate.mutate(reason, {
+                          onSuccess: () => {
+                            toast('report escalated');
+                            closeDialog();
+                          },
+                          onError: handleActionError,
+                        }),
+                    })
+                  }
+                >
+                  escalate
+                </LxBtn>
+              ) : null}
+
+              {canResolveDismiss ? (
+                <>
+                  <LxBtn
+                    variant="primary"
+                    onClick={() =>
+                      openReason({
+                        key: 'resolve',
+                        title: 'resolve report',
+                        description: 'mark this report as resolved. the reason is recorded.',
+                        confirmLabel: 'resolve',
+                        tone: 'primary',
+                        mutation: actions.resolve,
+                        run: (reason) =>
+                          actions.resolve.mutate(reason, {
+                            onSuccess: () => {
+                              toast('report resolved');
+                              closeDialog();
+                            },
+                            onError: handleActionError,
+                          }),
+                      })
+                    }
+                  >
+                    resolve
+                  </LxBtn>
+                  <LxBtn
+                    variant="ghost"
+                    onClick={() =>
+                      openReason({
+                        key: 'dismiss',
+                        title: 'dismiss report',
+                        description: 'dismiss this report as no violation. the reason is recorded.',
+                        confirmLabel: 'dismiss',
+                        tone: 'primary',
+                        mutation: actions.dismiss,
+                        run: (reason) =>
+                          actions.dismiss.mutate(reason, {
+                            onSuccess: () => {
+                              toast('report dismissed');
+                              closeDialog();
+                            },
+                            onError: handleActionError,
+                          }),
+                      })
+                    }
+                  >
+                    dismiss
+                  </LxBtn>
+                </>
+              ) : null}
+
+              {canRemove ? (
+                <LxBtn
+                  variant="danger"
+                  disabled={contentActionInFlight}
+                  onClick={() =>
+                    openReason({
+                      key: 'remove',
+                      title: `remove ${targetType}`,
+                      description: `take down this ${targetType}. the reason is recorded.`,
+                      confirmLabel: 'remove',
+                      tone: 'danger',
+                      mutation: actions.removeContent,
+                      run: (reason) =>
+                        actions.removeContent.mutate(
+                          { targetType, entityId: target.entityId, reason },
+                          {
+                            onSuccess: () => {
+                              toast(`${targetType} removed`);
+                              closeDialog();
+                            },
+                            onError: handleActionError,
+                          }
+                        ),
+                    })
+                  }
+                >
+                  remove {targetType}
+                </LxBtn>
+              ) : null}
+
+              {canRestore ? (
+                <LxBtn
+                  variant="secondary"
+                  disabled={contentActionInFlight}
+                  onClick={() =>
+                    openReason({
+                      key: 'restore',
+                      title: `restore ${targetType}`,
+                      description: `put this ${targetType} back. the reason is recorded.`,
+                      confirmLabel: 'restore',
+                      tone: 'primary',
+                      mutation: actions.restoreContent,
+                      run: (reason) =>
+                        actions.restoreContent.mutate(
+                          { targetType, entityId: target.entityId, reason },
+                          {
+                            onSuccess: (data) => {
+                              const dropped =
+                                targetType === 'post' && Array.isArray(data?.droppedHashtags)
+                                  ? data.droppedHashtags
+                                  : [];
+                              if (dropped.length > 0) {
+                                toast(
+                                  `${targetType} restored. dropped: ${dropped.map((t) => `#${t}`).join(', ')}`
+                                );
+                              } else {
+                                toast(`${targetType} restored`);
+                              }
+                              closeDialog();
+                            },
+                            onError: handleActionError,
+                          }
+                        ),
+                    })
+                  }
+                >
+                  restore {targetType}
+                </LxBtn>
+              ) : null}
+            </div>
+          </PanelCard>
+        ) : null}
+      </div>
+
+      <ReasonConfirmDialog
+        open={Boolean(activeAction)}
+        title={activeAction?.title}
+        description={activeAction?.description}
+        confirmLabel={activeAction?.confirmLabel}
+        tone={activeAction?.tone}
+        busy={dialogBusy}
+        serverError={serverError}
+        onConfirm={(reason) => activeAction?.run(reason)}
+        onClose={closeDialog}
+      />
+    </div>
+  );
+}

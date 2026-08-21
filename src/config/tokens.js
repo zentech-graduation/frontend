@@ -19,7 +19,13 @@ export const v = {
   errorDim: 'var(--lx-error-dim)',
   errorText: 'var(--lx-error-text)',
   success: 'var(--lx-success)',
+  successDim: 'var(--lx-success-dim)',
   successText: 'var(--lx-success-text)',
+  // Warning tokens exist in index.css but were absent from this shorthand; the
+  // panel's status vocabulary needs a caution tone, so they are surfaced here.
+  warning: 'var(--lx-warning)',
+  warningDim: 'var(--lx-warning-dim)',
+  warningText: 'var(--lx-warning-text)',
   scrim: 'var(--lx-scrim)',
   white: 'var(--lx-white)',
   white75: 'var(--lx-white-75)',

@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+import { normalizeRole } from '@/config/roles';
+
+/**
+ * Drops the `role` from a user object before it is persisted. The role is a
+ * server fact restored from the boot refresh, never a value read back from
+ * browser storage, so it must not ride along inside the persisted `user`. The
+ * in-memory `user` keeps its role; only the on-disk copy is stripped.
+ */
+const stripPersistedRole = (user) => {
+  if (!user || typeof user !== 'object') {
+    return user;
+  }
+  const { role: _role, ...rest } = user;
+  return rest;
+};
+
 // Keys used for Google OAuth PKCE-style state and nonce — kept in sessionStorage
 // (tab-scoped, never written to the persisted store).
 export const GOOGLE_OAUTH_STATE_KEY = 'luvax-google-oauth-state';
@@ -72,6 +88,10 @@ const initialState = {
   // flow; it is stripped from the persist partialize function below.
   refreshToken: null,
   user: null,
+  // Normalised lowercase role captured from the login and refresh responses
+  // only. In-memory, never persisted; restored from the boot refresh. Null
+  // until the first login or refresh populates it.
+  role: null,
   isAuthenticated: false,
   isBootstrapping: true,
   // Starts false; set to true only after persist middleware rehydrates.
@@ -91,6 +111,8 @@ export const useAuthStore = create(
           // refreshToken stays in memory; not persisted (see partialize below).
           refreshToken: normalizeToken(refreshToken),
           user: user ?? null,
+          // Captured here at login and at refresh, normalised once.
+          role: normalizeRole(user?.role),
           isAuthenticated: Boolean(nextAccessToken),
         });
       },
@@ -124,6 +146,10 @@ export const useAuthStore = create(
       setUser: (user) =>
         set({
           user: user ?? null,
+          // The boot refresh and login both flow their user through here or
+          // through setAuth; either way the role is recaptured from the same
+          // server object, so a reloaded session restores the role.
+          role: normalizeRole(user?.role),
         }),
 
       setBootstrapping: (isBootstrapping) =>
@@ -164,7 +190,7 @@ export const useAuthStore = create(
        * working session.
        */
       partialize: (state) => ({
-        user: state.user,
+        user: stripPersistedRole(state.user),
         isAuthenticated: state.isAuthenticated,
       }),
 

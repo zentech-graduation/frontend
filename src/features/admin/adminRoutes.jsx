@@ -1,0 +1,55 @@
+import { lazy } from 'react';
+import { Navigate } from 'react-router-dom';
+
+import { ROUTES } from '@/config/constants';
+
+import AdminRouteGuard from './guards/AdminRouteGuard';
+import AdminOnlyRoute from './guards/AdminOnlyRoute';
+import { NotAvailable } from './components/NotAvailable';
+
+/**
+ * The panel route subtree, registered in the central router.
+ *
+ * The whole panel is lazily loaded so the user-facing application does not carry
+ * its weight. The tree is a role guard wrapping the shell, and the shell frames
+ * every screen. Administrator-only screens sit behind a second guard, so adding
+ * a later section is one more child here and its screen, with no restructuring.
+ *
+ * Child paths are the relative segment of their ROUTES constant, so the path
+ * strings still have a single source in the central constants file.
+ */
+const AdminShell = lazy(() => import('./components/AdminShell'));
+const ReportQueueScreen = lazy(() =>
+  import('./screens/ReportQueueScreen').then((m) => ({ default: m.ReportQueueScreen }))
+);
+const EscalatedQueueScreen = lazy(() =>
+  import('./screens/EscalatedQueueScreen').then((m) => ({ default: m.EscalatedQueueScreen }))
+);
+const ReportDetailScreen = lazy(() =>
+  import('./screens/ReportDetailScreen').then((m) => ({ default: m.ReportDetailScreen }))
+);
+
+const rel = (fullPath) => fullPath.slice(ROUTES.ADMIN.length + 1);
+
+export const adminRoute = {
+  path: ROUTES.ADMIN,
+  element: <AdminRouteGuard />,
+  children: [
+    {
+      element: <AdminShell />,
+      children: [
+        { index: true, element: <Navigate to={ROUTES.ADMIN_REPORTS} replace /> },
+        { path: rel(ROUTES.ADMIN_REPORTS), element: <ReportQueueScreen /> },
+        { path: rel(ROUTES.ADMIN_REPORT_DETAIL), element: <ReportDetailScreen /> },
+        {
+          element: <AdminOnlyRoute />,
+          children: [{ path: rel(ROUTES.ADMIN_ESCALATED), element: <EscalatedQueueScreen /> }],
+        },
+        {
+          path: '*',
+          element: <NotAvailable title="not found" message="this panel page does not exist." />,
+        },
+      ],
+    },
+  ],
+};

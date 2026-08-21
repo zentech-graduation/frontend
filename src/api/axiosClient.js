@@ -58,6 +58,12 @@ export const getRefreshTokenFromResponse = (payload) =>
   payload?.refresh_token ??
   null;
 
+// The refresh response carries the same `user` object as login, including the
+// role. Pulling it out here lets the interceptor-driven refresh repopulate the
+// role, not only the tokens; without it a background refresh would leave the
+// role stale because setTokens does not touch the user.
+export const getUserFromResponse = (payload) => payload?.data?.user ?? payload?.user ?? null;
+
 const isSkippableRequest = (config = {}) => {
   const url = config.url || '';
   return (
@@ -133,6 +139,7 @@ const refreshAccessToken = async () => {
   const payload = response?.data;
   const nextAccessToken = getTokenFromResponse(payload);
   const nextRefreshToken = getRefreshTokenFromResponse(payload) || refreshToken;
+  const nextUser = getUserFromResponse(payload);
 
   if (!nextAccessToken) {
     throw new Error('Refresh response did not include an access token.');
@@ -141,6 +148,9 @@ const refreshAccessToken = async () => {
   persistAuthSession({
     accessToken: nextAccessToken,
     refreshToken: nextRefreshToken,
+    // Only pass `user` when the response carried one, so persistAuthSession
+    // routes to setAuth (which restores the role) rather than setTokens.
+    ...(nextUser ? { user: nextUser } : {}),
   });
 
   return {

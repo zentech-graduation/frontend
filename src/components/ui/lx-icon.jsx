@@ -200,6 +200,19 @@ const ICONS = {
       <line x1="3" y1="3" x2="21" y2="21" />
     </>
   ),
+  // Added for the admin panel: a shield for the panel identity, a funnel for the
+  // filter bar, a door-and-arrow for sign out, and a downward chevron for the
+  // select control. Same outline style as the rest of the set.
+  shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+  filter: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />,
+  logout: (
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </>
+  ),
+  chevronDown: <polyline points="6 9 12 15 18 9" />,
 };
 
 // Filled variants are distinct artwork, not the outline paths with a fill added. Each shape sets
