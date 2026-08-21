@@ -55,6 +55,17 @@ export const ROUTES = {
   // type as `type`, so a search can be shared and survives a reload.
   SEARCH: '/app/search',
 
+  // Administrative and moderation panel. Served under a single prefix for both
+  // roles; the role decides which tree exists beneath it, not the prefix. Every
+  // screen has a real address so it can be linked, reloaded, and bookmarked.
+  ADMIN: '/admin',
+  ADMIN_REPORTS: '/admin/reports',
+  // Parameterised. Build with `routeTo.adminReportDetail` rather than by hand.
+  ADMIN_REPORT_DETAIL: '/admin/reports/:reportId',
+  // Administrator-only escalated queue. Sits on its own segment rather than
+  // under /admin/reports so it never collides with the :reportId detail route.
+  ADMIN_ESCALATED: '/admin/escalated',
+
   NOT_FOUND: '*',
 };
 
@@ -71,6 +82,7 @@ export const routeTo = {
   userFollowing: (userId) => withParams(ROUTES.USER_FOLLOWING, { userId }),
   postDetail: (postId) => withParams(ROUTES.POST_DETAIL, { postId }),
   storyView: (storyId) => withParams(ROUTES.STORY_VIEW, { storyId }),
+  adminReportDetail: (reportId) => withParams(ROUTES.ADMIN_REPORT_DETAIL, { reportId }),
 };
 
 /** Query cache stale times (ms) */

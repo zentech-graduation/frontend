@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
 import { ROUTES } from '@/config/constants';
+import { landingPathForRole } from '@/config/roles';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authPageRegisterSchema, emailSchema, loginSchema } from '../utils/authSchemas';
 import Field from './AuthField';
@@ -223,7 +224,10 @@ export default function AuthPage() {
 
       setAuth({ accessToken, refreshToken, user });
 
-      const nextPath = location.state?.from?.pathname || ROUTES.APP;
+      // Where the user lands is decided by role: a moderator or administrator
+      // lands in the panel, an ordinary user in the application. A remembered
+      // origin from a redirected navigation still wins over the role default.
+      const nextPath = location.state?.from?.pathname || landingPathForRole(user?.role);
       navigate(nextPath, { replace: true });
     } catch (error) {
       // The backend returns 403 with code AUTH_EMAIL_NOT_VERIFIED on the
