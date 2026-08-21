@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- The panel now shows an account's discipline history — its warnings, and strikes for an administrator — reached from an account view and shown on the report detail, so a reviewer can see whether an account has been actioned before.
+- Moderators and administrators can issue a formal warning against an account, choosing a reason from the report-reason list and recording a note; administrators can also revoke a warning or strike.
+- The panel now lists everything an account has posted or commented, as posts and comments tabs on one screen, with removed items visibly marked and the same remove/restore controls used elsewhere.
+- A moderation action log reads back what was done, by whom, and why: a moderator sees its own actions and an administrator sees all, and opening an action shows its full detail, including a link back to the report it came from where one exists.
 - An administrative and moderation panel at /admin where moderators and administrators review reported content, with a filterable report queue, a report detail that shows the reported post, comment, or account, and actions to mark a report reviewing, escalate, resolve, dismiss, or remove and restore content, each behind a confirmation that records a reason.
 - Administrators get an escalated-report queue with a live count that moderators cannot reach.
 

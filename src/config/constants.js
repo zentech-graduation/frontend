@@ -65,6 +65,15 @@ export const ROUTES = {
   // Administrator-only escalated queue. Sits on its own segment rather than
   // under /admin/reports so it never collides with the :reportId detail route.
   ADMIN_ESCALATED: '/admin/escalated',
+  // The moderation action log. A moderator sees its own actions here; an
+  // administrator sees all. The open action's detail lives in the `action`
+  // query parameter so a specific action is a shareable link.
+  ADMIN_ACTIONS: '/admin/actions',
+  // An account's moderation context: its violation history, its posts and
+  // comments, and the warn control. This is deliberately not the account detail
+  // screen (no ban, suspend, role change, or profile); it hosts only this
+  // phase's account-scoped surfaces. Build with `routeTo.adminUser`.
+  ADMIN_USER: '/admin/users/:userId',
 
   NOT_FOUND: '*',
 };
@@ -83,6 +92,11 @@ export const routeTo = {
   postDetail: (postId) => withParams(ROUTES.POST_DETAIL, { postId }),
   storyView: (storyId) => withParams(ROUTES.STORY_VIEW, { storyId }),
   adminReportDetail: (reportId) => withParams(ROUTES.ADMIN_REPORT_DETAIL, { reportId }),
+  adminUser: (userId) => withParams(ROUTES.ADMIN_USER, { userId }),
+  // The action log with a specific action open in its drawer; the open state is
+  // a query parameter so the link is shareable and the list stays mounted.
+  adminAction: (actionId) =>
+    `${ROUTES.ADMIN_ACTIONS}?action=${encodeURIComponent(actionId ?? '')}`,
 };
 
 /** Query cache stale times (ms) */
@@ -114,6 +128,9 @@ export const CHAR_LIMITS = {
   websiteUrl: 2048,
   locationName: 255,
   reportDescription: 2000,
+  // The warning note the warn endpoint accepts (AdminWarnUserRequest.note @Size
+  // maxLength 2000). Required and non-blank; the client stops at this boundary.
+  warningNote: 2000,
   message: 4000,
   nickname: 50,
   search: 100,

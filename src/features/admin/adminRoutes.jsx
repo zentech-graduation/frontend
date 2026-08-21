@@ -28,6 +28,12 @@ const EscalatedQueueScreen = lazy(() =>
 const ReportDetailScreen = lazy(() =>
   import('./screens/ReportDetailScreen').then((m) => ({ default: m.ReportDetailScreen }))
 );
+const AuditLogScreen = lazy(() =>
+  import('./screens/AuditLogScreen').then((m) => ({ default: m.AuditLogScreen }))
+);
+const AccountModerationScreen = lazy(() =>
+  import('./screens/AccountModerationScreen').then((m) => ({ default: m.AccountModerationScreen }))
+);
 
 const rel = (fullPath) => fullPath.slice(ROUTES.ADMIN.length + 1);
 
@@ -41,6 +47,12 @@ export const adminRoute = {
         { index: true, element: <Navigate to={ROUTES.ADMIN_REPORTS} replace /> },
         { path: rel(ROUTES.ADMIN_REPORTS), element: <ReportQueueScreen /> },
         { path: rel(ROUTES.ADMIN_REPORT_DETAIL), element: <ReportDetailScreen /> },
+        // The action log and the account moderation view are reachable by both
+        // roles: a moderator sees its own actions and may view an account's
+        // violations, content, and issue a warning, so neither sits behind the
+        // administrator-only guard.
+        { path: rel(ROUTES.ADMIN_ACTIONS), element: <AuditLogScreen /> },
+        { path: rel(ROUTES.ADMIN_USER), element: <AccountModerationScreen /> },
         {
           element: <AdminOnlyRoute />,
           children: [{ path: rel(ROUTES.ADMIN_ESCALATED), element: <EscalatedQueueScreen /> }],

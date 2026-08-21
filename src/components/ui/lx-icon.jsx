@@ -213,6 +213,22 @@ const ICONS = {
     </>
   ),
   chevronDown: <polyline points="6 9 12 15 18 9" />,
+  // A clock for the moderation action log, and an outward arrow for a link that
+  // leaves the current screen (the audit row's route back to its report). Same
+  // outline style as the rest of the set.
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 15 14" />
+    </>
+  ),
+  external: (
+    <>
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+      <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+    </>
+  ),
 };
 
 // Filled variants are distinct artwork, not the outline paths with a fill added. Each shape sets

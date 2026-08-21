@@ -14,6 +14,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { LocalTime } from '../components/LocalTime';
 import { ReporterName } from '../components/ReporterName';
 import { ReasonConfirmDialog } from '../components/ReasonConfirmDialog';
+import { AccountDisciplinePanel } from '../components/AccountDisciplinePanel';
 import { FailedState } from '../components/ListStates';
 import { NotAvailable } from '../components/NotAvailable';
 import { useReportDetail, useReportTarget } from '../hooks/useReportDetail';
@@ -21,6 +22,7 @@ import { useReportActions } from '../hooks/useReportActions';
 import { useVocabularies } from '../hooks/useVocabularies';
 import { describeError, getErrorCode } from '../lib/errors';
 import { ACTIONABLE_TARGET_TYPES } from '../lib/reportSchema';
+import { restoreSuccessMessage } from '../lib/contentModeration';
 
 const Field = ({ label, children }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -433,17 +435,7 @@ export function ReportDetailScreen() {
                           { targetType, entityId: target.entityId, reason },
                           {
                             onSuccess: (data) => {
-                              const dropped =
-                                targetType === 'post' && Array.isArray(data?.droppedHashtags)
-                                  ? data.droppedHashtags
-                                  : [];
-                              if (dropped.length > 0) {
-                                toast(
-                                  `${targetType} restored. dropped: ${dropped.map((t) => `#${t}`).join(', ')}`
-                                );
-                              } else {
-                                toast(`${targetType} restored`);
-                              }
+                              toast(restoreSuccessMessage(targetType, data));
                               closeDialog();
                             },
                             onError: handleActionError,
@@ -456,6 +448,17 @@ export function ReportDetailScreen() {
                 </LxBtn>
               ) : null}
             </div>
+          </PanelCard>
+        ) : null}
+
+        {/* The content owner's discipline history, in its own region. It loads
+            after the report and the target through its own query and never
+            blocks either. It is rendered only when the target carries an owner
+            id; for a target type with no owner id it is absent rather than an
+            empty panel. */}
+        {target?.ownerId ? (
+          <PanelCard title="account history">
+            <AccountDisciplinePanel userId={target.ownerId} />
           </PanelCard>
         ) : null}
       </div>
