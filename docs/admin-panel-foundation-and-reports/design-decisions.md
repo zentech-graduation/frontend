@@ -112,6 +112,13 @@ Built from `LxTag` in its active state, which is a ready-made filter chip, plus 
 Changing a filter resets pagination through the query key.
 A clear affordance appears when any filter is set away from its default.
 
+**The report queue's status filter options are derived from the observed role-scoped result set, and differ by role.**
+`GET /api/v1/reports` was found, during contract verification, to return a moderator only `pending` and `reviewing` reports; `resolved`, `dismissed`, and `escalated` always return an empty page for a moderator, confirmed again in this delta by escalating a report as a moderator and finding no status filter, including `escalated` itself, ever surfaces it.
+A filter option that is provably incapable of returning a row is not an honest empty state, it is noise, and `escalated` is the worst instance because a moderator who just escalated a report will look for it there first and always find nothing.
+The moderator's status filter therefore offers exactly `pending` and `reviewing` (`MODERATOR_REPORT_STATUSES` in `lib/reportSchema.js`); the administrator's offers the full five-value `REPORT_STATUSES` set, since an administrator's list is not scoped.
+This was not an open design question; it follows directly from the contract verification and is implemented in `ReportQueueScreen.jsx`, gated on `isAdminRole(role)`.
+Verified in the browser in both sessions (`verification-evidence.md` checks 36 and 37).
+
 ### Status indicator (derived)
 
 Built from the four semantic colour tokens (`success`, `warning`, `error`, `accent`, each with a `-dim` background and a `-text` foreground) plus a neutral tone from the surface and ink-3 scale.

@@ -41,15 +41,22 @@ Deferred to the account phase, where the role is available. Nothing is rendered 
 - The owner's violation history panel, on the report detail screen: depends on the violations screen, built next.
 - A vocabulary-driven reason selector: the first surface that needs it is the warning form, next phase.
 
+## Settled since the first draft of this brief
+
+The moderator's status filter question is closed, not open: it offers exactly `pending` and `reviewing`; the administrator's offers all five.
+A filter option that can provably never return a row is noise, not an honest empty state, and `escalated` was the worst instance, since a moderator who just escalated a report would look for it there first and always find nothing.
+Implemented and verified in both sessions; see `design-decisions.md` and `verification-evidence.md` checks 36-37.
+
+A consequence of that same role-scoped result set surfaced during this close-out: a moderator has no list path back to a report it escalated, by any filter.
+The report stays readable by id, and the fix is cheap (the audit row already carries `reportId`; the next phase's action-log screen needs only to render the link), but it is a real gap until that screen exists.
+Recorded in `deferred-findings.md`, tagged to the next phase.
+
 ## Open questions for a human before the next phase
 
 1. Story and message reports can be read but not actioned, because no remove or restore endpoint exists for them; the backend team owns whether to add one.
 Options: (a) leave the panel read-only for these with its on-screen note, accepting that a reviewer cannot take down a reported story or message; (b) request a backend endpoint so the panel can remove them.
 Recommendation: (a) for now, since the backend is frozen for the frontend phases, and raise (b) as a backend ticket.
-2. Whether a moderator's report queue should hide the status filters it can never populate (resolved, dismissed, escalated all return empty for a moderator).
-Options: (a) keep the full status set and let the empty state cover it; (b) scope the moderator's status filter to pending and reviewing.
-Recommendation: (a), because the empty state is honest and the fixed schema set is simpler, but it is a product call.
-3. Whether `escalated` and `dismissed` should share a badge tone.
+2. Whether `escalated` and `dismissed` should share a badge tone.
 This phase separated them (attention versus neutral); confirm that reads correctly to a moderator before four more status systems inherit it.
 Recommendation: keep them separate.
 

@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { routeTo } from '@/config/constants';
+import { isAdminRole } from '@/config/roles';
+import { useAuthStore } from '@/store/useAuthStore';
 
 import { PageHeader } from '../components/PanelPage';
 import { FilterBar } from '../components/FilterBar';
@@ -10,11 +12,19 @@ import { LoadMore } from '../components/LoadMore';
 import { buildReportColumns } from '../components/reportColumns';
 import { useReportQueue } from '../hooks/useReportQueue';
 import { useVocabularies } from '../hooks/useVocabularies';
-import { REPORT_STATUSES, REPORT_STATUS_LABELS, REPORT_TYPES, REPORT_TYPE_LABELS } from '../lib/reportSchema';
+import {
+  MODERATOR_REPORT_STATUSES,
+  REPORT_STATUSES,
+  REPORT_STATUS_LABELS,
+  REPORT_TYPES,
+  REPORT_TYPE_LABELS,
+} from '../lib/reportSchema';
 
 /**
- * The report queue. Both roles reach it with identical access, though the
- * backend returns a moderator only the pending and reviewing reports.
+ * The report queue. Both roles reach the screen, but the backend returns a
+ * moderator only the pending and reviewing reports, so the moderator's status
+ * filter offers only those two values; the administrator's offers the full
+ * five-value set. See MODERATOR_REPORT_STATUSES in lib/reportSchema.js.
  *
  * First paint is the pending queue at a limit of twenty. Filter state lives in
  * the URL rather than in component state, so a filtered view can be linked and
@@ -27,6 +37,9 @@ export function ReportQueueScreen() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { reasonLabel } = useVocabularies();
+  const role = useAuthStore((state) => state.role);
+  const isAdmin = isAdminRole(role);
+  const availableStatuses = isAdmin ? REPORT_STATUSES : MODERATOR_REPORT_STATUSES;
 
   // A null status param means the screen has not been filtered yet, so it
   // defaults to pending; an explicit empty string is the "all" selection.
@@ -63,7 +76,7 @@ export function ReportQueueScreen() {
       key: 'status',
       label: 'status',
       value: status,
-      options: REPORT_STATUSES.map((value) => ({ value, label: REPORT_STATUS_LABELS[value] })),
+      options: availableStatuses.map((value) => ({ value, label: REPORT_STATUS_LABELS[value] })),
     },
     {
       key: 'reportType',

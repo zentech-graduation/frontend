@@ -16,6 +16,20 @@
 /** `report_status` enum, in lifecycle order. */
 export const REPORT_STATUSES = ['pending', 'reviewing', 'resolved', 'dismissed', 'escalated'];
 
+/**
+ * The status filter values worth offering a moderator.
+ *
+ * `GET /api/v1/reports` returns a role-scoped result set: a moderator's list is
+ * always empty for `resolved`, `dismissed`, and `escalated` (see
+ * report-contract-verification.md item 4). Offering a filter option that is
+ * provably incapable of returning a row is not an honest empty state, it is
+ * noise, and `escalated` is the worst instance because a moderator who just
+ * escalated a report will look for it there first and always find nothing.
+ * The administrator's filter offers the full REPORT_STATUSES set, since an
+ * administrator's list is not scoped.
+ */
+export const MODERATOR_REPORT_STATUSES = ['pending', 'reviewing'];
+
 /** `report_type` enum. */
 export const REPORT_TYPES = ['post', 'comment', 'user', 'story', 'message'];
 
