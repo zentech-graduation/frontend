@@ -62,5 +62,6 @@ Recommendation: keep them separate.
 
 ## What could not be verified
 
-The reduced-motion state could not be toggled through the available browser tooling; the mechanism was verified by inspection instead, and the panel adds no motion that bypasses the global reduced-motion rule.
 A message-target report was not created (it needs conversation fixtures the panel does not build); a story target verified the same read-only branch.
+
+Note (moderation-history-and-audit phase): the reduced-motion state, previously listed here as unverifiable with the available tooling, was exercised directly through Playwright's `emulateMedia({ reducedMotion: 'reduce' })` and confirmed correct against the report queue and the report detail. Computed `transition-duration` collapsed to `1e-06s` under the preference and zero animations ran; the panel adds no motion that bypasses the global reduced-motion rule. Recorded in that phase's `verification-evidence.md`.
