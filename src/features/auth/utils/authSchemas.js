@@ -1,10 +1,14 @@
 import { z } from 'zod';
+import { usernameField, displayNameField } from '@/utils/validationFields';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
 // Every rule below mirrors a jakarta.validation annotation on the matching
 // backend request record. The backend is the source of truth: this schema must
 // not reject a value the server accepts, nor accept one the server rejects.
+// `usernameField` and `displayNameField` are shared with profile editing (same
+// backend constraints on both RegisterRequest and UpdateProfileRequest), so
+// they live in the cross-feature utils module instead of being defined here.
 
 const emailField = z
   .string()
@@ -12,33 +16,61 @@ const emailField = z
   .min(1, 'email is required.')
   .email('please enter a valid email.');
 
-// Backend RegisterRequest.password / ResetPasswordRequest.newPassword:
-// @NotBlank @Size(min = 8, max = 128). No complexity requirement is enforced
-// server-side, so none is enforced here.
-const passwordField = z
-  .string()
-  .min(8, 'password must be at least 8 characters.')
-  .max(128, 'password must be 128 characters or fewer.');
+// Backend RegisterRequest.password / ResetPasswordRequest.newPassword, both
+// annotated @ValidPassword and enforced by PasswordPolicyValidator.
+//
+// The server reports at most one violation per value and returns the first rule
+// that failed, in the order below. This mirrors that order so the client names
+// the same rule the server would have named.
+//
+// Lengths are counted in code points rather than UTF-16 units, matching
+// String.codePointCount, so an astral character counts once here as it does
+// there. The byte ceiling is separate and lower than the character ceiling
+// because BCrypt truncates above 72 bytes.
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 64;
+const PASSWORD_MAX_UTF8_BYTES = 72;
 
-// Backend RegisterRequest.username: @NotBlank @Size(min = 3, max = 30)
-// @Pattern(^[a-zA-Z0-9_.]+$). Dots are permitted.
-const usernameField = z
-  .string()
-  .trim()
-  .min(3, 'username must be at least 3 characters.')
-  .max(30, 'username must be 30 characters or fewer.')
-  .regex(
-    /^[a-zA-Z0-9_.]+$/,
-    'username may only contain letters, digits, underscores and dots.'
-  );
+// Character.isWhitespace, isSpaceChar, isISOControl and the FORMAT category,
+// which together already cover the zero-width and joining characters the
+// validator lists explicitly.
+const BLANK_OR_INVISIBLE = /[\s\p{Zs}\p{Zl}\p{Zp}\p{Cc}\p{Cf}]/u;
+// \p{Uppercase} rather than \p{Lu}, to match Character.isUpperCase: it is also
+// true for characters carrying Other_Uppercase, such as U+2160 ROMAN NUMERAL
+// ONE, which the server accepts as the uppercase character.
+const HAS_UPPERCASE = /\p{Uppercase}/u;
+// Whitespace and invisible characters are rejected before this runs, so
+// anything that is not a letter is a digit or a special character.
+const HAS_DIGIT_OR_SPECIAL = /\P{L}/u;
 
-// Backend RegisterRequest.displayName: @Size(max = 100), optional.
-const displayNameField = z
-  .string()
-  .trim()
-  .max(100, 'display name must be 100 characters or fewer.')
-  .optional()
-  .or(z.literal(''));
+const passwordField = z.string().superRefine((value, ctx) => {
+  const addIssue = (message) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+  const length = [...value].length;
+
+  if (length < PASSWORD_MIN_LENGTH) {
+    addIssue(`password must be at least ${PASSWORD_MIN_LENGTH} characters.`);
+    return;
+  }
+  if (length > PASSWORD_MAX_LENGTH) {
+    addIssue(`password must be ${PASSWORD_MAX_LENGTH} characters or fewer.`);
+    return;
+  }
+  if (new TextEncoder().encode(value).length > PASSWORD_MAX_UTF8_BYTES) {
+    addIssue(`password must be ${PASSWORD_MAX_UTF8_BYTES} bytes or fewer once encoded.`);
+    return;
+  }
+  if (BLANK_OR_INVISIBLE.test(value)) {
+    addIssue('password must not contain spaces or invisible characters.');
+    return;
+  }
+  if (!HAS_UPPERCASE.test(value)) {
+    addIssue('password must contain at least one uppercase letter.');
+    return;
+  }
+  if (!HAS_DIGIT_OR_SPECIAL.test(value)) {
+    addIssue('password must contain at least one digit or special character.');
+  }
+});
 
 // One-time tokens arrive from an emailed link and are opaque to the client, so
 // the only client-side rule is that one is present.

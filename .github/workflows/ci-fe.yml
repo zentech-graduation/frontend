@@ -39,5 +39,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Runs before the build because it is faster and catches a different class of problem.
+      # Absent until now, which is how 1,234 findings accumulated unchallenged, four of them
+      # genuine Rules of Hooks violations rather than formatting.
+      - name: Lint
+        run: npm run lint
+
+      # Unit tests only. The live suite talks to a real API, database, and mail sink, none of
+      # which exist here, so it stays a local and pre-release check.
+      - name: Unit tests
+        run: npm test
+
       - name: Build
         run: npm run build

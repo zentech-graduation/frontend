@@ -8,8 +8,17 @@ export function ConversationListPanel({
   filteredThreads,
   activeThreadId,
   selectThread,
-  handleCompose,
   viewport,
+  onMarkRead,
+  onMarkUnread,
+  onDeleteThread,
+  onReportThread,
+  onBlockThread,
+  onPinThread,
+  onUnpinThread,
+  onMuteThread,
+  onUnmuteThread,
+  onRenameThread,
 }) {
   return (
     <aside
@@ -25,65 +34,23 @@ export function ConversationListPanel({
     >
       <div
         style={{
-          height: viewport === 'mobile' ? 0 : 56,
-          borderBottom: viewport === 'mobile' ? 'none' : `1px solid ${v.border}`,
-          display: viewport === 'mobile' ? 'none' : 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: viewport === 'mobile' ? '0' : '0 18px 0 20px',
+          padding: viewport === 'mobile' ? '8px 14px 9px' : '9px 14px 10px',
+          borderBottom: `1px solid ${v.borderSubtle}`,
         }}
       >
-        {viewport !== 'mobile' ? (
-          <div
-            style={{
-              fontFamily: v.fontDisplay,
-              fontSize: 16,
-              fontWeight: 700,
-              color: v.ink,
-              letterSpacing: '-0.03em',
-              lineHeight: 1,
-            }}
-          >
-            messages
-          </div>
-        ) : null}
-        {viewport !== 'mobile' ? (
-          <button
-            type="button"
-            onClick={handleCompose}
-            aria-label="new message"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              border: `1px solid ${v.border}`,
-              background: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              boxShadow: 'none',
-            }}
-          >
-            <LxIcon name="edit" size={13} color={v.ink3} />
-          </button>
-        ) : null}
-      </div>
-
-      <div style={{ padding: viewport === 'mobile' ? '9px 14px 10px' : '10px 16px 12px', borderBottom: `1px solid ${v.borderSubtle}` }}>
         <div
           style={{
-            height: viewport === 'mobile' ? 32 : 34,
+            height: viewport === 'mobile' ? 30 : 31,
             borderRadius: 999,
             background: v.surfaceSunken,
             border: `1px solid ${v.borderSubtle}`,
             display: 'flex',
             alignItems: 'center',
-            gap: 7,
-            padding: '0 11px',
+            gap: 6,
+            padding: '0 10px',
           }}
         >
-          <LxIcon name="explore" size={13} color={v.ink3} />
+          <LxIcon name="explore" size={12} color={v.ink3} />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -95,7 +62,7 @@ export function ConversationListPanel({
               outline: 'none',
               color: v.ink,
               fontFamily: v.fontBody,
-              fontSize: 13,
+              fontSize: 12,
             }}
           />
         </div>
@@ -110,6 +77,16 @@ export function ConversationListPanel({
               thread={thread}
               isActive={isActive}
               onSelect={() => selectThread(thread.id)}
+              onMarkRead={() => onMarkRead?.(thread.id)}
+              onMarkUnread={() => onMarkUnread?.(thread.id)}
+              onDelete={() => onDeleteThread?.(thread)}
+              onReport={thread.counterpartId ? () => onReportThread?.(thread) : null}
+              onBlock={thread.counterpartId ? () => onBlockThread?.(thread) : null}
+              onPin={() => onPinThread?.(thread.id)}
+              onUnpin={() => onUnpinThread?.(thread.id)}
+              onMute={() => onMuteThread?.(thread.id)}
+              onUnmute={() => onUnmuteThread?.(thread.id)}
+              onRename={thread.counterpartId ? () => onRenameThread?.(thread) : null}
             />
           );
         })}

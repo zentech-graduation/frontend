@@ -1,24 +1,112 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
-import { THREADS } from './data/mockThreads';
+import { CHAR_LIMITS } from '@/config/constants';
+import { LxIcon } from '@/components/ui/lx-icon';
+import { useAuthStore } from '@/store/useAuthStore';
+import {
+  counterpartOf,
+  toPendingThread,
+  toThread,
+  toThreadSummary,
+} from './utils/messageViewModel';
+import {
+  conversationsKey,
+  useConversations,
+  useMarkRead,
+  useMarkUnread,
+  useLeaveConversation,
+  usePinConversation,
+  useUnpinConversation,
+  useMuteConversation,
+  useUnmuteConversation,
+  useSetNickname,
+} from './hooks/useConversations';
+import { useMessages, useDeleteMessage, useSendMessage } from './hooks/useMessages';
+import { useLiveMessages } from './hooks/useLiveMessages';
 import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
 import { MediaPlaceholder } from './components/MediaPlaceholder';
+import { messageService } from '@/services/message.service';
+import { REPORT_TYPES } from '@/services/report.service';
+import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useLuvaxTweaks } from '@/features/luvax/LuvaxTweaksContext';
+import { toast } from '@/features/luvax/components/Toast';
+import { useMediaUpload } from '@/features/luvax/hooks/useMediaUpload';
+import { useMediaConstraints } from '@/features/luvax/hooks/useMediaConstraints';
+import { useUserProfile } from '@/features/luvax/hooks/useUsers';
+import { useBlock } from '@/features/luvax/hooks/useSocial';
+import { ReportModal } from '@/features/luvax/components/ReportModal';
+import { BlockConfirmDialog } from '@/features/luvax/components/BlockConfirmDialog';
+import { validateDuration, validateFile } from '@/features/luvax/utils/composerMedia';
+
+// A message send holds fewer items than a post carousel by design: a burst of ten photos already
+// reads as a lot in a chat thread, and the album viewer (see MessageAlbum) is tuned for that count.
+const MAX_MESSAGE_ATTACHMENTS = 10;
+
+// `vw`/`vh` are computed against the true browser viewport, not adjusted for the root's `zoom`
+// scale (see APP_SCALE in LuvaxApp.jsx) applied to an ancestor - so a raw `92vw` here rendered
+// `zoom` times too large and could push most of the image off-screen. Dividing by --lx-scale
+// cancels the zoom multiplication back out, the same fix already used for this element's own
+// on-screen position elsewhere (see lx-dropdown-menu.jsx).
+const LIGHTBOX_MAX_WIDTH = 'calc(92vw / var(--lx-scale))';
+const LIGHTBOX_MAX_HEIGHT = 'calc(92vh / var(--lx-scale))';
+
+// Light frosted chips over the dark scrim, matching the post viewer's own carousel controls.
+const lightboxArrowStyle = (side) => ({
+  position: 'absolute',
+  top: '50%',
+  [side]: 16,
+  transform: 'translateY(-50%)',
+  width: 36,
+  height: 36,
+  borderRadius: 999,
+  border: 'none',
+  background: 'rgba(255,255,255,0.9)',
+  boxShadow: '0 1px 5px rgba(0,0,0,0.3)',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  zIndex: 2,
+});
 
 export function MessagesScreen() {
   const { viewport } = useLuvaxTweaks();
-  const [threads, setThreads] = useState(THREADS);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const { conversations, isLoading: conversationsLoading } = useConversations();
+  // The adapter owns every mapping from the API shape onto what these panels render.
+  const threads = useMemo(
+    () => conversations.map((conversation) => toThreadSummary(conversation, currentUserId)),
+    [conversations, currentUserId]
+  );
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
-  const [activeThreadId, setActiveThreadId] = useState('priya');
+  const [activeThreadId, setActiveThreadId] = useState(null);
   const [threadOpen, setThreadOpen] = useState(viewport !== 'mobile');
-  const [mobileInfoOpen, setMobileInfoOpen] = useState(false);
-  const [previewItem, setPreviewItem] = useState(null);
-  const [composerSeed, setComposerSeed] = useState(0);
+  const [infoOpen, setInfoOpen] = useState(false);
+  // { items: [media, ...], index } while a lightbox is open, so a multi-photo album can step
+  // through the whole set with next/prev instead of only ever showing the one tile clicked.
+  const [previewGallery, setPreviewGallery] = useState(null);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const [isSending, setIsSending] = useState(false);
   const [pendingDeleteMessageId, setPendingDeleteMessageId] = useState(null);
+  const [deleteThreadTarget, setDeleteThreadTarget] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [blockTarget, setBlockTarget] = useState(null);
+  const [nicknameTarget, setNicknameTarget] = useState(null);
+  const [nicknameValue, setNicknameValue] = useState('');
+  // Set only by a profile's "message" button, before any conversation exists between the two
+  // people. Nothing is written to the server until the first message actually sends - see
+  // handleSend - so this is the only record of that intent until then.
+  const [pendingTargetUserId, setPendingTargetUserId] = useState(null);
+  const queryClient = useQueryClient();
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
 
@@ -33,23 +121,86 @@ export function MessagesScreen() {
     );
   }, [search, threads]);
 
-  const activeThread = threads.find((thread) => thread.id === activeThreadId) || filteredThreads[0] || threads[0];
+  // A pending target resolves to a real conversation the moment one exists for that pair -
+  // whether it was already there (they messaged first, or a mutual follow provisioned one) or
+  // was just created by this screen's own first send below.
+  const activeConversation =
+    conversations.find((conversation) => conversation.id === activeThreadId) ||
+    (pendingTargetUserId
+      ? conversations.find(
+          (conversation) =>
+            counterpartOf(conversation, currentUserId)?.userId === pendingTargetUserId
+        )
+      : null) ||
+    null;
+  const { messages: activeMessages } = useMessages(activeConversation?.id);
+  const { data: pendingProfileResponse } = useUserProfile(
+    pendingTargetUserId,
+    Boolean(pendingTargetUserId) && !activeConversation
+  );
+  const activeThread = activeConversation
+    ? toThread(activeConversation, activeMessages, currentUserId)
+    : pendingProfileResponse?.data
+      ? toPendingThread(pendingProfileResponse.data)
+      : null;
+
+  useLiveMessages(activeConversation?.id);
+
+  // Promotes a pending target to a real, selected conversation the moment one resolves above -
+  // whether that took a round trip through handleSend or was already sitting in the list.
+  useEffect(() => {
+    if (pendingTargetUserId && activeConversation) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveThreadId(activeConversation.id);
+      setPendingTargetUserId(null);
+    }
+  }, [pendingTargetUserId, activeConversation]);
+
+  const markRead = useMarkRead();
+  const markUnread = useMarkUnread();
+  const leaveConversation = useLeaveConversation();
+  const pinConversation = usePinConversation();
+  const unpinConversation = useUnpinConversation();
+  const muteConversation = useMuteConversation();
+  const unmuteConversation = useUnmuteConversation();
+  const setNickname = useSetNickname();
+  const block = useBlock();
+  const sendMessage = useSendMessage();
+  const deleteMessage = useDeleteMessage(activeConversation?.id);
+  const { uploadMedia, getMediaMetadata } = useMediaUpload();
+  const { constraints: mediaConstraints } = useMediaConstraints();
 
   useEffect(() => {
+    if (activeConversation?.id) {
+      markRead.mutate(activeConversation.id);
+    }
+    // markRead is recreated each render; depending on it would re-fire the mutation continuously.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversation?.id]);
+
+  useEffect(() => {
+    // A pending target is its own selection; the usual "pick something" fallback must not
+    // steal it back to the first real thread while it's still waiting to resolve.
+    if (pendingTargetUserId) return;
     if (!activeThreadId && filteredThreads[0]) {
       if (viewport !== 'mobile') {
+        // Reconciles the selected thread with the thread list after it changes.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setActiveThreadId(filteredThreads[0].id);
       }
     } else if (activeThreadId && !threads.some((thread) => thread.id === activeThreadId)) {
       setActiveThreadId(threads[0]?.id || null);
     }
-  }, [activeThreadId, filteredThreads, threads, viewport]);
+  }, [activeThreadId, filteredThreads, threads, viewport, pendingTargetUserId]);
 
   useEffect(() => {
+    if (pendingTargetUserId) return;
     if (viewport !== 'mobile' && !activeThreadId && threads[0]) {
+      // Selects a default thread once the viewport is wide enough to show one.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveThreadId(threads[0].id);
     }
-  }, [viewport, activeThreadId, threads]);
+  }, [viewport, activeThreadId, threads, pendingTargetUserId]);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -57,15 +208,31 @@ export function MessagesScreen() {
     scroller.scrollTop = scroller.scrollHeight;
   }, [activeThreadId, threads]);
 
+  // A profile's "message" button lands here carrying the target in route state rather than a URL
+  // param, so a stale bookmark can never re-trigger it. The state is cleared right after firing, so
+  // navigating back into the thread later - or a browser back/forward - does not replay it.
+  // No conversation is created here: setting pendingTargetUserId is enough to show the thread
+  // (see activeThread above), and the derivation there already picks up a real conversation if
+  // one exists for this pair. Creating one is deferred to the first actual send, in handleSend.
+  useEffect(() => {
+    const targetUserId = location.state?.openWithUserId;
+    if (!targetUserId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setActiveThreadId(null);
+    setPendingTargetUserId(targetUserId);
+    if (viewport === 'mobile') {
+      setThreadOpen(true);
+      setInfoOpen(false);
+    }
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return undefined;
     }
 
-    window.__lxMessagesCompose = () => {
-      handleCompose();
-      return true;
-    };
     window.__lxMessagesBack = () => {
       if (viewport === 'mobile' && threadOpen) {
         setThreadOpen(false);
@@ -75,19 +242,18 @@ export function MessagesScreen() {
     };
 
     return () => {
-      if (window.__lxMessagesCompose) {
-        delete window.__lxMessagesCompose;
-      }
       if (window.__lxMessagesBack) {
         delete window.__lxMessagesBack;
       }
     };
-  }, [composerSeed, threadOpen, viewport]);
+  }, [threadOpen, viewport]);
 
   useEffect(() => {
     if (viewport !== 'mobile') {
+      // Bridges the shell back action onto window for the mobile pane.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setThreadOpen(true);
-      setMobileInfoOpen(false);
+      setInfoOpen(false);
     }
   }, [viewport]);
 
@@ -100,81 +266,192 @@ export function MessagesScreen() {
     );
   }, [threadOpen, viewport]);
 
+  const openPreview = (items, index = 0) => setPreviewGallery({ items, index });
+
   const selectThread = (threadId) => {
     setActiveThreadId(threadId);
+    setPendingTargetUserId(null);
     if (viewport === 'mobile') {
       setThreadOpen(true);
-      setMobileInfoOpen(false);
+      setInfoOpen(false);
     }
-    setThreads((current) =>
-      current.map((thread) =>
-        thread.id === threadId
-          ? { ...thread, unread: 0 }
-          : thread
-      )
-    );
+    // Unread is database-owned. Opening the conversation marks it read server-side through the
+    // effect above, and the list is re-read from the response.
   };
 
-  const handleCompose = () => {
-    const newThreadId = `new-${composerSeed + 1}`;
-    const newThread = {
-      id: newThreadId,
-      idx: 6,
-      initials: 'N',
-      name: 'new conversation',
-      username: 'draft',
-      preview: 'start writing...',
-      time: 'now',
-      unread: 0,
-      accent: 'rgba(200, 169, 126, 0.16)',
-      mediaLabel: 'shared files',
-      media: [],
-      messages: [],
-    };
+  const nextIdempotencyKey = () =>
+    globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    setComposerSeed((seed) => seed + 1);
-    setThreads((current) => [newThread, ...current]);
-    setActiveThreadId(newThreadId);
-    setDraft('');
-    setReplyingTo(null);
+  const sendTextMessage = (conversationId, value) => {
+    const idempotencyKey = nextIdempotencyKey();
+    return sendMessage.mutateAsync({
+      conversationId,
+      idempotencyKey,
+      body: {
+        messageType: 'text',
+        content: value,
+        replyToId: replyingTo?.id || null,
+      },
+      // Shaped like a MessageResponse so the adapter renders it with no special case, and so a
+      // rollback simply removes it again.
+      optimisticMessage: {
+        id: `pending-${idempotencyKey}`,
+        conversationId,
+        senderId: currentUserId,
+        messageType: 'text',
+        content: value,
+        mediaAssetId: null,
+        media: null,
+        sharedPostId: null,
+        sharedStoryId: null,
+        replyToId: replyingTo?.id || null,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date().toISOString(),
+      },
+    });
   };
 
-  const handleSend = () => {
+  /**
+   * Uploads one staged file through the same pre-signed R2 flow the post composer uses, then sends
+   * it as a media message. The optimistic bubble renders from the staged preview URL so the
+   * attachment appears immediately, before the CDN URL comes back on the real response.
+   *
+   * Awaits the send itself, not just the upload - `mutate()` fires the request and returns
+   * immediately, so a caller looping over several attachments with only the upload awaited was
+   * racing every send request over the network instead of sending them in order.
+   */
+  const sendAttachmentMessage = async (conversationId, item) => {
+    const asset = await uploadMedia(item.file);
+    const idempotencyKey = nextIdempotencyKey();
+
+    return sendMessage.mutateAsync({
+      conversationId,
+      idempotencyKey,
+      body: {
+        messageType: item.isVideo ? 'video' : 'image',
+        mediaAssetId: asset.id,
+        replyToId: replyingTo?.id || null,
+      },
+      optimisticMessage: {
+        id: `pending-${idempotencyKey}`,
+        conversationId,
+        senderId: currentUserId,
+        messageType: item.isVideo ? 'video' : 'image',
+        content: null,
+        mediaAssetId: asset.id,
+        media: {
+          mediaAssetId: asset.id,
+          mediaType: item.isVideo ? 'VIDEO' : 'IMAGE',
+          cdnUrl: asset.cdnUrl || item.previewUrl,
+        },
+        sharedPostId: null,
+        sharedStoryId: null,
+        replyToId: replyingTo?.id || null,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: new Date().toISOString(),
+      },
+    });
+  };
+
+  /**
+   * Validates and stages picked files, same checks the post composer runs (type, size, and
+   * measured video duration against the server-published constraints) plus a per-send count cap
+   * the server has no equivalent for.
+   */
+  const handleStageAttachments = async (files) => {
+    const room = MAX_MESSAGE_ATTACHMENTS - pendingAttachments.length;
+    if (room <= 0) {
+      toast(`a message holds ${MAX_MESSAGE_ATTACHMENTS} attachments at most.`);
+      return;
+    }
+
+    let rejection = '';
+    if (files.length > room) {
+      rejection = `a message holds ${MAX_MESSAGE_ATTACHMENTS} attachments at most, so ${room} of the ${files.length} you chose were added.`;
+    }
+
+    const accepted = [];
+    for (const file of files.slice(0, room)) {
+      const check = validateFile(file, mediaConstraints);
+      if (!check.ok) {
+        rejection = check.message;
+        continue;
+      }
+      const metadata = await getMediaMetadata(file).catch(() => null);
+      const durationCheck = validateDuration(file, metadata?.duration, mediaConstraints);
+      if (!durationCheck.ok) {
+        rejection = durationCheck.message;
+        continue;
+      }
+      accepted.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        isVideo: file.type.startsWith('video/'),
+      });
+    }
+
+    if (rejection) toast(rejection);
+    if (accepted.length > 0) setPendingAttachments((current) => [...current, ...accepted]);
+  };
+
+  const handleRemovePendingAttachment = (id) => {
+    setPendingAttachments((current) => {
+      const target = current.find((item) => item.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return current.filter((item) => item.id !== id);
+    });
+  };
+
+  /**
+   * Sends every staged attachment, in the order they were picked, followed by the typed caption as
+   * its own trailing message. Each is a separate message rather than one album message - the
+   * bubble grouping already collapses a same-sender burst sent seconds apart into one visual
+   * cluster, so the reader sees one exchange either way.
+   *
+   * A pending (not-yet-real) thread has no conversation id to send into, so the first send here
+   * creates one first - the same idempotent create-or-reuse call a mutual-follow auto-provision or
+   * a second "message" click would hit, so two people who both clicked "message" on each other
+   * before either typed anything still end up in the one conversation, not two.
+   */
+  const handleSend = async () => {
     const value = draft.trim();
-    if (!value || !activeThread) return;
+    if ((!activeConversation && !pendingTargetUserId) || (!value && !pendingAttachments.length)) {
+      return;
+    }
 
-    setThreads((current) =>
-      current.map((thread) => {
-        if (thread.id !== activeThread.id) return thread;
-        return {
-          ...thread,
-          preview: value,
-          time: 'now',
-          messages: [
-            ...thread.messages,
-            replyingTo
-              ? {
-                  id: `${thread.id}-${Date.now()}`,
-                  from: 'me',
-                  kind: 'reply',
-                  replyTo: replyingTo.from === 'me' ? 'you' : activeThread.name,
-                  replyText: replyingTo.text,
-                  text: value,
-                  time: 'now',
-                }
-              : {
-                  id: `${thread.id}-${Date.now()}`,
-                  from: 'me',
-                  kind: 'text',
-                  text: value,
-                  time: 'now',
-                },
-          ],
-        };
-      })
-    );
-    setDraft('');
-    setReplyingTo(null);
+    setIsSending(true);
+    try {
+      let conversationId = activeConversation?.id;
+      if (!conversationId) {
+        const response = await messageService.createDirect(pendingTargetUserId);
+        conversationId = response?.data?.id;
+        // Awaited, not fired and forgotten: the reconciliation effects above reset the active
+        // thread whenever its id is absent from the loaded list, so selecting it before the
+        // refetch lands would snap the panel straight back to the previous thread.
+        await queryClient.invalidateQueries({ queryKey: conversationsKey });
+      }
+
+      for (const item of pendingAttachments) {
+        // Sequential, not parallel: message order in the thread must match send order.
+        await sendAttachmentMessage(conversationId, item);
+      }
+      pendingAttachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      setPendingAttachments([]);
+
+      if (value) await sendTextMessage(conversationId, value);
+
+      setDraft('');
+      setReplyingTo(null);
+      setActiveThreadId(conversationId);
+      setPendingTargetUserId(null);
+    } catch (error) {
+      toast(error?.uploadMessage || error?.message || "couldn't send that. try again.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleDeleteToggle = (messageId) => {
@@ -182,34 +459,56 @@ export function MessagesScreen() {
   };
 
   const handleDeleteConfirm = () => {
-    if (!activeThread || !pendingDeleteMessageId) return;
-    if (!activeThread) return;
-    setThreads((current) =>
-      current.map((thread) => {
-        if (thread.id !== activeThread.id) return thread;
-        return {
-          ...thread,
-          preview: 'message was deleted',
-          messages: thread.messages.map((message) =>
-            message.id === pendingDeleteMessageId
-              ? { ...message, kind: 'deleted', text: 'this message was deleted' }
-              : message
-          ),
-        };
-      })
-    );
+    if (!activeConversation || !pendingDeleteMessageId) return;
+    deleteMessage.mutate(pendingDeleteMessageId);
     setPendingDeleteMessageId(null);
+  };
+
+  const handleDeleteThreadConfirm = () => {
+    if (!deleteThreadTarget) return;
+    leaveConversation.mutate(deleteThreadTarget.id, {
+      onError: (error) => toast(error?.message || "couldn't delete that chat. try again."),
+    });
+    setDeleteThreadTarget(null);
+  };
+
+  const handleReportThread = (thread) => {
+    setReportTarget({
+      entityType: REPORT_TYPES.USER,
+      entityId: thread.counterpartId,
+      author: thread.name,
+      avatarUrl: thread.avatarUrl,
+    });
+  };
+
+  const handleBlockConfirm = () => {
+    if (!blockTarget) return;
+    block.mutate(blockTarget.counterpartId, {
+      onError: (error) => toast(error?.message || "couldn't block that account. try again."),
+    });
+    setBlockTarget(null);
+  };
+
+  const handleRenameThread = (thread) => {
+    setNicknameTarget(thread);
+    setNicknameValue(thread.nickname || '');
+  };
+
+  const handleSaveNickname = () => {
+    if (!nicknameTarget) return;
+    setNickname.mutate(
+      { conversationId: nicknameTarget.id, nickname: nicknameValue.trim() },
+      { onError: (error) => toast(error?.message || "couldn't save that nickname. try again.") }
+    );
+    setNicknameTarget(null);
   };
 
   const showDetail = viewport !== 'mobile' || threadOpen;
   const showSidebar = viewport !== 'mobile' || listOnlyMobile;
-  const showRightRail = (viewport === 'desktop' || viewport === 'tablet') && Boolean(activeThread);
   const isDesktop = viewport === 'desktop';
   const isTablet = viewport === 'tablet';
   const desktopSidebar = 320;
-  const desktopRail = 300;
   const tabletSidebar = 316;
-  const tabletRail = 304;
 
   return (
     <div
@@ -219,11 +518,18 @@ export function MessagesScreen() {
         background: v.base,
         color: v.ink,
         display: 'grid',
+        // No third column for the info panel: it is hidden by default on every viewport now and
+        // opens as an overlay from the header's info button, so it never reserves screen width it
+        // isn't using.
         gridTemplateColumns: isDesktop
-          ? `${desktopSidebar}px minmax(520px, 1fr) ${desktopRail}px`
+          ? `${desktopSidebar}px minmax(520px, 1fr)`
           : isTablet
-            ? `${tabletSidebar}px minmax(40px, 1fr) ${tabletRail}px`
+            ? `${tabletSidebar}px minmax(40px, 1fr)`
             : '1fr',
+        // Explicit, not auto: an auto row's track size can end up based on its content rather
+        // than the container's own (definite) height, which is what let the message list and
+        // the page itself both grow taller than the viewport and scroll independently.
+        gridTemplateRows: '1fr',
         paddingTop: viewport === 'mobile' ? (threadOpen ? 0 : 56) : 0,
         width: '100%',
         maxWidth: '100%',
@@ -241,8 +547,17 @@ export function MessagesScreen() {
           filteredThreads={filteredThreads}
           activeThreadId={activeThreadId}
           selectThread={selectThread}
-          handleCompose={handleCompose}
           viewport={viewport}
+          onMarkRead={(threadId) => markRead.mutate(threadId)}
+          onMarkUnread={(threadId) => markUnread.mutate(threadId)}
+          onDeleteThread={setDeleteThreadTarget}
+          onReportThread={handleReportThread}
+          onBlockThread={setBlockTarget}
+          onPinThread={(threadId) => pinConversation.mutate(threadId)}
+          onUnpinThread={(threadId) => unpinConversation.mutate(threadId)}
+          onMuteThread={(threadId) => muteConversation.mutate(threadId)}
+          onUnmuteThread={(threadId) => unmuteConversation.mutate(threadId)}
+          onRenameThread={handleRenameThread}
         />
       ) : null}
 
@@ -252,32 +567,27 @@ export function MessagesScreen() {
           activeThread={activeThread}
           setActiveThreadId={setActiveThreadId}
           closeThread={() => setThreadOpen(false)}
-          openInfo={() => setMobileInfoOpen(true)}
+          openInfo={() => setInfoOpen(true)}
           isDesktop={isDesktop}
           isTablet={isTablet}
-          showRightRail={showRightRail}
           scrollerRef={scrollerRef}
-          setPreviewItem={setPreviewItem}
+          openPreview={openPreview}
           handleDeleteToggle={handleDeleteToggle}
           replyingTo={replyingTo}
           setReplyingTo={setReplyingTo}
           draft={draft}
           setDraft={setDraft}
           handleSend={handleSend}
+          pendingAttachments={pendingAttachments}
+          onStageAttachments={handleStageAttachments}
+          onRemovePendingAttachment={handleRemovePendingAttachment}
+          isSending={isSending}
         />
       ) : null}
 
-      {showRightRail ? (
-        <ConversationInfoPanel
-          activeThread={activeThread}
-          setPreviewItem={setPreviewItem}
-          compact={isTablet}
-        />
-      ) : null}
-
-      {viewport === 'mobile' && mobileInfoOpen && activeThread ? (
+      {infoOpen && activeThread ? (
         <div
-          onClick={() => setMobileInfoOpen(false)}
+          onClick={() => setInfoOpen(false)}
           style={{
             position: 'fixed',
             inset: 0,
@@ -286,13 +596,13 @@ export function MessagesScreen() {
             alignItems: 'stretch',
             justifyContent: 'flex-end',
             zIndex: 130,
-            padding: '0 0 0 38px',
+            padding: viewport === 'mobile' ? '0 0 0 38px' : 0,
           }}
         >
           <div
             onClick={(event) => event.stopPropagation()}
             style={{
-              width: 'min(78vw, 340px)',
+              width: viewport === 'mobile' ? 'min(calc(78vw / var(--lx-scale)), 340px)' : 320,
               background: v.base,
               border: `1px solid ${v.border}`,
               display: 'flex',
@@ -302,21 +612,31 @@ export function MessagesScreen() {
           >
             <ConversationInfoPanel
               activeThread={activeThread}
-                  setPreviewItem={setPreviewItem}
+              currentUserId={currentUserId}
+              openPreview={openPreview}
               mobileOverlay
-              onClose={() => setMobileInfoOpen(false)}
+              onClose={() => setInfoOpen(false)}
+              onMute={() => muteConversation.mutate(activeThreadId)}
+              onUnmute={() => unmuteConversation.mutate(activeThreadId)}
+              onRename={activeThread.counterpartId ? () => handleRenameThread(activeThread) : null}
+              onReport={activeThread.counterpartId ? () => handleReportThread(activeThread) : null}
+              onBlock={activeThread.counterpartId ? () => setBlockTarget(activeThread) : null}
+              onDelete={() => setDeleteThreadTarget(activeThread)}
             />
           </div>
         </div>
       ) : null}
 
-      {previewItem ? (
+      {previewGallery ? (
+        // Clicking the scrim closes the viewer; clicking the media itself must not, so the media
+        // element stops the click from reaching this handler. No card, no rounded corners, no
+        // close button - the raw image or video at its own scale is the whole interface.
         <div
-          onClick={() => setPreviewItem(null)}
+          onClick={() => setPreviewGallery(null)}
           style={{
             position: 'fixed',
             inset: 0,
-            background: v.scrim,
+            background: 'rgba(10,9,8,0.92)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -324,40 +644,111 @@ export function MessagesScreen() {
             padding: 24,
           }}
         >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              width: 'min(520px, 100%)',
-              borderRadius: 18,
-              background: v.base,
-              border: `1px solid ${v.border}`,
-              padding: 18,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-            }}
-          >
-            <MediaPlaceholder item={previewItem} large />
-            <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>{previewItem.title || previewItem.label}</div>
-            <button
-              type="button"
-              onClick={() => setPreviewItem(null)}
-              style={{
-                alignSelf: 'flex-end',
-                height: 34,
-                padding: '0 16px',
-                borderRadius: 999,
-                border: 'none',
-                background: v.accent,
-                color: v.ink,
-                fontFamily: v.fontBody,
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
-            >
-              close
-            </button>
-          </div>
+          {(() => {
+            const { items, index } = previewGallery;
+            const current = items[index];
+            const hasPrev = index > 0;
+            const hasNext = index < items.length - 1;
+            const go = (nextIndex) =>
+              setPreviewGallery((gallery) => (gallery ? { ...gallery, index: nextIndex } : null));
+
+            return (
+              <>
+                {hasPrev ? (
+                  <button
+                    type="button"
+                    aria-label="previous item"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      go(index - 1);
+                    }}
+                    style={lightboxArrowStyle('left')}
+                  >
+                    <LxIcon name="chevronLeft" size={18} color="#1c1a17" />
+                  </button>
+                ) : null}
+                {current.cdnUrl ? (
+                  (current.mediaType || '').toUpperCase() === 'VIDEO' ? (
+                    <video
+                      key={current.mediaAssetId || current.cdnUrl}
+                      src={current.cdnUrl}
+                      controls
+                      autoPlay
+                      onClick={(event) => event.stopPropagation()}
+                      className="lx-lightbox-media"
+                      style={{
+                        maxWidth: LIGHTBOX_MAX_WIDTH,
+                        maxHeight: LIGHTBOX_MAX_HEIGHT,
+                        display: 'block',
+                      }}
+                    />
+                  ) : (
+                    <img
+                      key={current.mediaAssetId || current.cdnUrl}
+                      src={current.cdnUrl}
+                      alt=""
+                      onClick={(event) => event.stopPropagation()}
+                      className="lx-lightbox-media"
+                      style={{
+                        maxWidth: LIGHTBOX_MAX_WIDTH,
+                        maxHeight: LIGHTBOX_MAX_HEIGHT,
+                        display: 'block',
+                      }}
+                    />
+                  )
+                ) : (
+                  <div
+                    onClick={(event) => event.stopPropagation()}
+                    style={{
+                      width: 'min(420px, 100%)',
+                      background: v.base,
+                      border: `1px solid ${v.border}`,
+                      padding: 18,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 14,
+                    }}
+                  >
+                    <MediaPlaceholder item={current} large />
+                    <div style={{ fontFamily: v.fontBody, fontSize: 15, color: v.ink }}>
+                      {current.title || current.label}
+                    </div>
+                  </div>
+                )}
+                {hasNext ? (
+                  <button
+                    type="button"
+                    aria-label="next item"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      go(index + 1);
+                    }}
+                    style={lightboxArrowStyle('right')}
+                  >
+                    <LxIcon name="chevronRight" size={18} color="#1c1a17" />
+                  </button>
+                ) : null}
+                {items.length > 1 ? (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 24,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(255,255,255,0.9)',
+                      borderRadius: 999,
+                      padding: '3px 9px',
+                      fontFamily: v.fontMono,
+                      fontSize: 11,
+                      color: '#1c1a17',
+                    }}
+                  >
+                    {index + 1}/{items.length}
+                  </div>
+                ) : null}
+              </>
+            );
+          })()}
         </div>
       ) : null}
 
@@ -387,10 +778,26 @@ export function MessagesScreen() {
               padding: '22px 24px 20px',
             }}
           >
-            <div style={{ fontFamily: v.fontDisplay, fontSize: 18, fontWeight: 700, color: v.ink, letterSpacing: '-0.03em' }}>
+            <div
+              style={{
+                fontFamily: v.fontDisplay,
+                fontSize: 18,
+                fontWeight: 700,
+                color: v.ink,
+                letterSpacing: '-0.03em',
+              }}
+            >
               delete message?
             </div>
-            <div style={{ marginTop: 10, fontFamily: v.fontBody, fontSize: 14, lineHeight: 1.45, color: v.ink3 }}>
+            <div
+              style={{
+                marginTop: 10,
+                fontFamily: v.fontBody,
+                fontSize: 14,
+                lineHeight: 1.45,
+                color: v.ink3,
+              }}
+            >
               this can't be undone.
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
@@ -434,6 +841,129 @@ export function MessagesScreen() {
           </div>
         </>
       ) : null}
+
+      {nicknameTarget ? (
+        <>
+          <div
+            onClick={() => setNicknameTarget(null)}
+            style={{ position: 'fixed', inset: 0, background: v.scrim, zIndex: 1000 }}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'calc(100% - 56px)',
+              maxWidth: 348,
+              background: v.base,
+              borderRadius: 18,
+              boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`,
+              zIndex: 1001,
+              padding: '22px 24px 20px',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: v.fontDisplay,
+                fontSize: 18,
+                fontWeight: 700,
+                color: v.ink,
+                letterSpacing: '-0.03em',
+              }}
+            >
+              nickname for {nicknameTarget.name}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <input
+                autoFocus
+                value={nicknameValue}
+                onChange={(event) => setNicknameValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') handleSaveNickname();
+                }}
+                placeholder="only you see this"
+                maxLength={CHAR_LIMITS.nickname}
+                style={{
+                  width: '100%',
+                  height: 38,
+                  borderRadius: 999,
+                  background: v.surfaceSunken,
+                  border: `1px solid ${v.borderSubtle}`,
+                  padding: '0 14px',
+                  color: v.ink,
+                  fontFamily: v.fontBody,
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={() => setNicknameTarget(null)}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: '#2c2621',
+                  color: '#c4b9a8',
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveNickname}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: v.accent,
+                  color: v.ink,
+                  fontFamily: v.fontBody,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                save
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      <ConfirmModal
+        config={
+          deleteThreadTarget
+            ? {
+                title: `delete chat with ${deleteThreadTarget.name}?`,
+                message:
+                  'this removes it from your inbox only. it comes back if they message you again.',
+                onConfirm: handleDeleteThreadConfirm,
+              }
+            : null
+        }
+        onClose={() => setDeleteThreadTarget(null)}
+      />
+
+      <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
+
+      <BlockConfirmDialog
+        open={Boolean(blockTarget)}
+        handle={blockTarget?.username}
+        pending={block.isPending}
+        onCancel={() => setBlockTarget(null)}
+        onConfirm={handleBlockConfirm}
+      />
     </div>
   );
 }

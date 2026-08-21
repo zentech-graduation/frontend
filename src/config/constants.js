@@ -4,7 +4,9 @@ export const APP_NAME = import.meta.env.VITE_APP_NAME || 'MyApp';
 
 const ENV_API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
 
-export const API_URL = import.meta.env.DEV ? '/api/v1' : ENV_API_URL || 'http://localhost:8080/api/v1';
+export const API_URL = import.meta.env.DEV
+  ? '/api/v1'
+  : ENV_API_URL || 'http://localhost:8080/api/v1';
 
 /** Route paths — single source of truth for navigation */
 export const ROUTES = {
@@ -30,6 +32,9 @@ export const ROUTES = {
   EDIT_PROFILE: '/app/settings/profile',
   CHANGE_PASSWORD: '/app/settings/password',
   BLOCKED_USERS: '/app/settings/blocked',
+  // The viewer's saved posts. Filed under settings because the list belongs to
+  // the viewer rather than to a profile being looked at, and is private to them.
+  SAVED: '/app/settings/saved',
   ONBOARDING: '/app/onboarding',
   STORY_COMPOSE: '/app/stories/new',
 
@@ -46,10 +51,8 @@ export const ROUTES = {
   POST_DETAIL: '/app/p/:postId',
   STORY_VIEW: '/app/stories/:storyId',
 
-  // Reserved for the search results screen. The screen does not exist yet, so no
-  // route is registered and this address currently falls to the in-shell
-  // not-found. Declared here so building the screen is a one-line router change
-  // rather than another pass over the route table.
+  // The search results screen. Carries the term as `q` and the selected result
+  // type as `type`, so a search can be shared and survives a reload.
   SEARCH: '/app/search',
 
   NOT_FOUND: '*',
@@ -72,9 +75,9 @@ export const routeTo = {
 
 /** Query cache stale times (ms) */
 export const STALE_TIME = {
-  SHORT: 30_000,      // 30 seconds
+  SHORT: 30_000, // 30 seconds
   MEDIUM: 5 * 60_000, // 5 minutes
-  LONG: 30 * 60_000,  // 30 minutes
+  LONG: 30 * 60_000, // 30 minutes
 };
 
 /** HTTP status codes */
@@ -86,4 +89,20 @@ export const HTTP_STATUS = {
   FORBIDDEN: 403,
   NOT_FOUND: 404,
   SERVER_ERROR: 500,
+};
+
+// Maximum input lengths, mirroring the backend @Size limits so the client stops
+// at the same boundary the server enforces rather than inventing its own.
+export const CHAR_LIMITS = {
+  comment: 2200,
+  caption: 2200,
+  bio: 500,
+  displayName: 100,
+  username: 30,
+  websiteUrl: 2048,
+  locationName: 255,
+  reportDescription: 2000,
+  message: 4000,
+  nickname: 50,
+  search: 100,
 };

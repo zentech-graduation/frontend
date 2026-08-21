@@ -14,7 +14,15 @@ export function ChangePasswordScreen() {
   const navigate = useNavigate();
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 32px', background: v.base }}>
-      <div style={{ maxWidth: 520, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div
+        style={{
+          maxWidth: 520,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}
+      >
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.5 }}>
           changing your password isn't available yet. check back soon.
         </div>

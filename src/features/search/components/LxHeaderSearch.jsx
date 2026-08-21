@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { ROUTES } from '@/config/constants';
+import { ROUTES, CHAR_LIMITS } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 
 export function LxHeaderSearch({ navigate, viewport }) {
@@ -11,9 +11,15 @@ export function LxHeaderSearch({ navigate, viewport }) {
   const activeQuery = searchParams.get('q') || '';
   const [query, setQuery] = useState(activeQuery);
 
-  useEffect(() => {
+  // Adjusted during render rather than in an effect. The field is user-editable, so it cannot be
+  // derived outright, but resetting it from an effect meant every address change rendered twice:
+  // once with the stale term, then again after the effect committed. Comparing against the last
+  // address seen resets it before the browser paints, in one pass.
+  const [lastActiveQuery, setLastActiveQuery] = useState(activeQuery);
+  if (activeQuery !== lastActiveQuery) {
+    setLastActiveQuery(activeQuery);
     setQuery(activeQuery);
-  }, [activeQuery]);
+  }
 
   const openSearch = (nextQuery = query, focusSearch = true) => {
     const next = new URLSearchParams();
@@ -24,6 +30,9 @@ export function LxHeaderSearch({ navigate, viewport }) {
       next.set('focusSearch', '1');
     }
     const search = next.toString();
+    // Submitting goes to the explore search, which keeps the navigation bar, so
+    // the header field and the explore field are one search experience rather
+    // than two, and the nav never disappears on a results page.
     navigate(search ? `${ROUTES.EXPLORE}?${search}` : ROUTES.EXPLORE);
   };
 
@@ -64,6 +73,7 @@ export function LxHeaderSearch({ navigate, viewport }) {
       <input
         type="search"
         value={query}
+        maxLength={CHAR_LIMITS.search}
         aria-label="search posts"
         placeholder="search"
         onChange={(event) => {

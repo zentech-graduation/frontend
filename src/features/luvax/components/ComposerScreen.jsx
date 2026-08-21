@@ -1,29 +1,47 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/config/constants';
+import { ROUTES, CHAR_LIMITS } from '@/config/constants';
 import { v } from '@/config/tokens';
-import { SUGGESTED_TAGS } from '../constants/data';
 import { LxAvatar, LxDivider, LxIcon, LxTag } from './primitives';
+import { ComposerAttachments } from './ComposerAttachments';
 import { useCreatePost } from '../hooks/usePosts';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useMediaUpload } from '../hooks/useMediaUpload';
+import { useMediaConstraints } from '../hooks/useMediaConstraints';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
+import {
+  MAX_CAROUSEL_ITEMS,
+  buildAcceptAttribute,
+  buildHelperText,
+  derivePostType,
+  isVideoFile,
+  moveItem,
+  validateDuration,
+  validateFile,
+} from '../utils/composerMedia';
 
 const MAX_CHARS = 280;
 
 const clampCaption = (value) => value.slice(0, MAX_CHARS);
 
+const SUBMIT_LABEL = {
+  TEXT: 'post text',
+  IMAGE: 'post photo',
+  VIDEO: 'post video',
+};
+
 export function ComposerScreen() {
   const navigate = useNavigate();
   const { viewport } = useLuvaxTweaks();
-  const [type, setType] = useState('text');
+  const currentUser = useAuthStore((state) => state.user);
   const [caption, setCaption] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
-  const [file, setFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [items, setItems] = useState([]);
   const [formError, setFormError] = useState('');
   const fileInputRef = useRef(null);
 
-  const { uploadMedia, isUploading, progress } = useMediaUpload();
+  const { uploadMedia, getMediaMetadata } = useMediaUpload();
+  const { constraints } = useMediaConstraints();
 
   const captionTags = useMemo(() => {
     const matches = caption.match(/#(\w+)/g) || [];
@@ -36,81 +54,192 @@ export function ComposerScreen() {
     setCaption(clampCaption(value));
   };
 
-  const handleFileChange = (event) => {
-    const selected = event.target.files[0];
-    if (selected) {
-      setFile(selected);
-      setPreviewUrl(URL.createObjectURL(selected));
+  const makeItem = (file) => ({
+    id: crypto.randomUUID(),
+    file,
+    previewUrl: URL.createObjectURL(file),
+    isVideo: isVideoFile(file),
+    status: 'pending',
+    progress: 0,
+    assetId: null,
+    error: null,
+  });
+
+  /**
+   * Files are added to what is already attached rather than replacing it, so a
+   * second trip to the picker never costs the person the first selection.
+   */
+  const handleFilesSelected = async (event) => {
+    const selected = Array.from(event.target.files || []);
+    // Cleared immediately so choosing the same file again still fires a change.
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (selected.length === 0) return;
+    setFormError('');
+
+    const room = MAX_CAROUSEL_ITEMS - items.length;
+    if (room <= 0) {
+      setFormError(`a post holds ${MAX_CAROUSEL_ITEMS} items at most. remove one to add another.`);
+      return;
+    }
+
+    let rejection = '';
+    if (selected.length > room) {
+      rejection = `a post holds ${MAX_CAROUSEL_ITEMS} items at most, so ${room} of the ${selected.length} you chose were added.`;
+    }
+
+    const accepted = [];
+    for (const file of selected.slice(0, room)) {
+      const check = validateFile(file, constraints);
+      if (!check.ok) {
+        rejection = check.message;
+        continue;
+      }
+      // The server bounds only the duration the client declares, so a file the
+      // composer never measures is a file nothing checks.
+      const metadata = await getMediaMetadata(file).catch(() => null);
+      const durationCheck = validateDuration(file, metadata?.duration, constraints);
+      if (!durationCheck.ok) {
+        rejection = durationCheck.message;
+        continue;
+      }
+      accepted.push(makeItem(file));
+    }
+
+    if (rejection) setFormError(rejection);
+    if (accepted.length > 0) setItems((current) => [...current, ...accepted]);
+  };
+
+  const patchItem = (id, patch) => {
+    setItems((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  };
+
+  const removeItem = (id) => {
+    setItems((current) => {
+      const target = current.find((item) => item.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return current.filter((item) => item.id !== id);
+    });
+    setFormError('');
+  };
+
+  const moveAttachment = (id, direction) => {
+    setItems((current) => {
+      const index = current.findIndex((item) => item.id === id);
+      return index < 0 ? current : moveItem(current, index, index + direction);
+    });
+  };
+
+  const uploadOne = async (item) => {
+    patchItem(item.id, { status: 'uploading', progress: 0, error: null });
+    try {
+      const asset = await uploadMedia(item.file, {
+        onProgress: (percent) => patchItem(item.id, { progress: percent }),
+      });
+      patchItem(item.id, { status: 'done', progress: 100, assetId: asset.id });
+      return asset.id;
+    } catch (err) {
+      // The file stays attached. Every failure the server reports can be
+      // retried with the same file, so dropping it would make the person find
+      // it again and would take the other attachments and the caption with it.
+      patchItem(item.id, {
+        status: 'failed',
+        progress: 0,
+        error: err?.uploadMessage || 'upload failed',
+      });
+      return null;
     }
   };
 
-  const removeFile = (event) => {
-    event.stopPropagation();
-    setFile(null);
-    setPreviewUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const retryItem = async (id) => {
+    const target = items.find((item) => item.id === id);
+    if (target) {
+      setFormError('');
+      await uploadOne(target);
+    }
+  };
+
+  const createPostMutation = useCreatePost();
+
+  const postType = derivePostType(items);
+  const isUploading = items.some((item) => item.status === 'uploading');
+
+  const handlePost = async () => {
+    setFormError('');
+
+    // Captured once, because this list is both the upload set and the order
+    // the post is created in. Submitting is blocked while uploads run, so it
+    // cannot change underneath this.
+    const ordered = items;
+    const assetIds = new Map(
+      ordered.filter((item) => item.status === 'done').map((item) => [item.id, item.assetId])
+    );
+
+    const pending = ordered.filter((item) => item.status !== 'done');
+    if (pending.length > 0) {
+      const results = await Promise.all(
+        pending.map(async (item) => [item.id, await uploadOne(item)])
+      );
+      results.forEach(([id, assetId]) => assetIds.set(id, assetId));
+
+      if (results.some(([, assetId]) => !assetId)) {
+        setFormError(
+          pending.length === 1
+            ? "that file didn't upload. retry it or remove it, then post again."
+            : "some files didn't upload. retry or remove them, then post again."
+        );
+        return;
+      }
+    }
+
+    const mediaIds = ordered.map((item) => assetIds.get(item.id)).filter(Boolean);
+    const payload = {
+      caption,
+      postType,
+      mediaIds: mediaIds.length > 0 ? mediaIds : null,
+    };
+
+    createPostMutation.mutate(payload, {
+      onSuccess: () => {
+        ordered.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+        setCaption('');
+        setItems([]);
+        setSelectedTags([]);
+        setFormError('');
+        navigate(ROUTES.FEED);
+      },
+      onError: (error) => {
+        setFormError(error.message || "we couldn't publish your post. try again.");
+      },
+    });
   };
 
   const insertTag = (tag) => {
     const regex = new RegExp(`#${tag}(?![A-Za-z0-9_])`, 'gi');
     if (regex.test(caption)) {
-      handleCaptionChange(caption.replace(regex, '').replace(/[ \t]{2,}/g, ' ').trim());
+      handleCaptionChange(
+        caption
+          .replace(regex, '')
+          .replace(/[ \t]{2,}/g, ' ')
+          .trim()
+      );
       return;
     }
     handleCaptionChange(caption ? `${caption} #${tag}` : `#${tag}`);
   };
 
-  const createPostMutation = useCreatePost();
+  const isActionDisabled =
+    createPostMutation.isPending || isUploading || (postType === 'TEXT' && !caption.trim());
 
-  const handlePost = async () => {
-    setFormError('');
+  const completedCount = items.filter((item) => item.status === 'done').length;
+  const submitLabel =
+    postType === 'CAROUSEL' ? `post carousel of ${items.length}` : SUBMIT_LABEL[postType];
 
-    if ((type === 'photo' || type === 'video') && !file) {
-      setFormError(`please select a ${type} to post.`);
-      return;
-    }
-
-    try {
-      let mediaIds = [];
-      if (file) {
-        const mediaAsset = await uploadMedia(file);
-        mediaIds = [mediaAsset.id];
-      }
-
-      const backendPostType = type === 'photo' ? 'IMAGE' : type === 'video' ? 'VIDEO' : 'TEXT';
-      const payload = {
-        caption,
-        postType: backendPostType,
-        mediaIds: mediaIds.length > 0 ? mediaIds : null,
-      };
-
-      createPostMutation.mutate(payload, {
-        onSuccess: () => {
-          setCaption('');
-          setFile(null);
-          setPreviewUrl(null);
-          setFormError('');
-          navigate(ROUTES.FEED);
-        },
-        onError: (error) => {
-          setFormError(error.message || "we couldn't publish your post. try again.");
-        },
-      });
-    } catch {
-      setFormError("we couldn't upload your media. try again.");
-    }
-  };
-
-  const isActionDisabled = createPostMutation.isPending || isUploading || ((type === 'photo' || type === 'video') && !file) || (type === 'text' && !caption.trim());
-  const mediaLabel = type === 'photo' ? 'tap to add a photo' : 'tap to add a video';
-  const isDesktop = viewport === 'desktop';
   const isTablet = viewport === 'tablet';
   const tabletLeftLineInset = 150;
   const tabletBodyPadLeft = 166;
   const tabletBodyPadRight = 24;
-  const contentLeftInset = isDesktop ? 50 : isTablet ? tabletBodyPadLeft : 48;
-  const mediaBoxMinHeight = isDesktop ? 160 : 176;
-  const mediaMeta = type === 'photo' ? 'jpg, png · max 10MB' : 'mp4 · max 60s · 50MB';
+  const helperText = buildHelperText(constraints);
+  const canAttachMore = items.length < MAX_CAROUSEL_ITEMS;
 
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: '100%' }}>
@@ -134,13 +263,25 @@ export function ComposerScreen() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: isTablet ? `10px ${tabletBodyPadRight}px 10px ${tabletBodyPadLeft}px` : '10px 16px',
-          borderBottom: isTablet ? 'none' : `1.5px solid ${v.borderStrong}`,
+          padding: isTablet
+            ? `10px ${tabletBodyPadRight}px 10px ${tabletBodyPadLeft}px`
+            : '10px 16px',
+          borderBottom: isTablet ? 'none' : `1px solid ${v.border}`,
           background: v.base,
           position: 'relative',
         }}
       >
-        <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 500, color: v.ink2 }}>new post</span>
+        <span
+          style={{
+            fontFamily: v.fontDisplay,
+            fontSize: 16,
+            fontWeight: 600,
+            color: v.ink,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          new post
+        </span>
         <button
           onClick={handlePost}
           disabled={isActionDisabled}
@@ -149,14 +290,18 @@ export function ComposerScreen() {
             fontSize: 14,
             fontWeight: 600,
             background: isActionDisabled ? v.surfaceRaised : v.accent,
-            color: isActionDisabled ? v.ink3 : v.ink,
+            color: isActionDisabled ? v.ink3 : v.inkInverse,
             border: 'none',
             borderRadius: 999,
             padding: '7px 16px',
             cursor: isActionDisabled ? 'default' : 'pointer',
           }}
         >
-          {isUploading ? `uploading ${progress}%` : createPostMutation.isPending ? 'posting...' : 'post it'}
+          {isUploading
+            ? `uploading ${completedCount} of ${items.length}`
+            : createPostMutation.isPending
+              ? 'posting...'
+              : submitLabel}
         </button>
         {isTablet ? (
           <div
@@ -175,8 +320,11 @@ export function ComposerScreen() {
 
       {formError ? (
         <div
+          role="alert"
           style={{
-            padding: isTablet ? `10px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px` : '10px 16px 0',
+            padding: isTablet
+              ? `10px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px`
+              : '10px 16px 0',
             fontFamily: v.fontBody,
             fontSize: 13,
             color: v.error,
@@ -190,109 +338,145 @@ export function ComposerScreen() {
         <div
           style={{
             display: 'flex',
-            gap: 0,
-            padding: isTablet ? `12px ${tabletBodyPadRight}px 4px ${tabletBodyPadLeft}px` : '12px 16px 4px',
-            borderBottom: isTablet ? 'none' : `1.5px solid ${v.borderStrong}`,
-            position: 'relative',
+            gap: 12,
+            padding: isTablet
+              ? `20px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px`
+              : '20px 16px 0',
           }}
         >
-          {[['text', 'type', 'text'], ['photo', 'image', 'photo'], ['video', 'video', 'video']].map(([tabId, icon, label]) => (
-            <button
-              key={tabId}
-              onClick={() => setType(tabId)}
+          <LxAvatar size={38} src={currentUser?.avatarUrl} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
               style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '10px 0 11px',
-                borderBottom: type === tabId ? `2.5px solid ${v.ink}` : '2.5px solid transparent',
-                marginBottom: -1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
                 fontFamily: v.fontBody,
                 fontSize: 13,
-                fontWeight: type === tabId ? 600 : 500,
-                color: type === tabId ? v.ink : v.ink3,
+                fontWeight: 600,
+                color: v.ink,
+                marginBottom: 10,
               }}
             >
-              <LxIcon name={icon} size={16} color={type === tabId ? v.ink : v.ink3} />
-              {label}
-            </button>
-          ))}
-          {isTablet ? (
-            <div
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                left: tabletLeftLineInset,
-                right: 0,
-                bottom: 0,
-                height: 1.5,
-                background: v.borderStrong,
-              }}
+              {currentUser?.displayName || currentUser?.username || 'you'}
+            </div>
+
+            <input
+              type="file"
+              multiple
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept={buildAcceptAttribute(constraints)}
+              onChange={handleFilesSelected}
             />
-          ) : null}
-        </div>
 
-        <div style={{ display: 'flex', gap: 12, padding: isTablet ? `18px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px` : '18px 16px 0' }}>
-          <LxAvatar size={36} idx={0} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink, marginBottom: 12 }}>you</div>
+            <ComposerAttachments
+              items={items}
+              onRemove={removeItem}
+              onMove={moveAttachment}
+              onRetry={retryItem}
+            />
 
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept={type === 'photo' ? 'image/*' : 'video/*'} onChange={handleFileChange} />
-
-            {type !== 'text' ? (
+            {items.length === 0 ? (
               <div
-                onClick={() => !file && fileInputRef.current?.click()}
+                onClick={() => fileInputRef.current?.click()}
                 style={{
                   width: '100%',
-                  minHeight: mediaBoxMinHeight,
+                  height: 220,
                   background: v.surfaceSunken,
-                  borderRadius: 12,
-                  border: previewUrl ? 'none' : `1px dashed ${v.border}`,
+                  borderRadius: 16,
+                  border: `1.5px dashed ${v.border}`,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 8,
-                  cursor: file ? 'default' : 'pointer',
-                  marginBottom: 14,
+                  gap: 14,
+                  cursor: 'pointer',
+                  marginBottom: 16,
                   position: 'relative',
                   overflow: 'hidden',
+                  transition:
+                    'border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out)',
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.borderColor = v.accent;
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.borderColor = v.border;
                 }}
               >
-                {previewUrl ? (
-                  <>
-                    {type === 'photo' ? (
-                      <img src={previewUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <video src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} controls />
-                    )}
-                    <button onClick={removeFile} style={{ position: 'absolute', top: 8, right: 8, background: v.black50, border: 'none', borderRadius: '50%', padding: 4, cursor: 'pointer', zIndex: 10 }}>
-                      <LxIcon name="close" size={16} color={v.white} />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <LxIcon name={type === 'photo' ? 'image' : 'video'} size={32} color={v.ink3} />
-                    <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>{mediaLabel}</span>
-                    <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{mediaMeta}</span>
-                  </>
-                )}
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: '50%',
+                    background: v.surface,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <LxIcon name="image" size={26} color={v.ink2} />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div
+                    style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}
+                  >
+                    add photos or a video
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: v.fontMono,
+                      fontSize: 10,
+                      color: v.ink3,
+                      marginTop: 6,
+                      padding: '0 12px',
+                    }}
+                  >
+                    {helperText}
+                  </div>
+                </div>
               </div>
-            ) : null}
+            ) : (
+              // Derived, not from the design: with attachments present the
+              // empty 160px box would be a large blank, so the add control
+              // collapses to a single row that keeps the same border idiom.
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!canAttachMore}
+                style={{
+                  width: '100%',
+                  background: v.surfaceSunken,
+                  borderRadius: 12,
+                  border: `1px dashed ${v.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  padding: '12px 0',
+                  marginBottom: 14,
+                  cursor: canAttachMore ? 'pointer' : 'default',
+                  fontFamily: v.fontBody,
+                  fontSize: 13,
+                  color: canAttachMore ? v.ink2 : v.ink3,
+                }}
+              >
+                <LxIcon name="plus" size={16} color={canAttachMore ? v.ink2 : v.ink3} />
+                {canAttachMore
+                  ? `add more (${items.length}/${MAX_CAROUSEL_ITEMS})`
+                  : `${MAX_CAROUSEL_ITEMS} is the maximum`}
+              </button>
+            )}
 
             <textarea
               value={caption}
               onChange={(event) => handleCaptionChange(event.target.value)}
-              placeholder={type === 'text' ? 'say something real...' : 'add a caption (optional)'}
+              maxLength={CHAR_LIMITS.caption}
+              placeholder={
+                items.length === 0 ? 'say something real...' : 'add a caption (optional)'
+              }
               style={{
                 width: '100%',
                 fontFamily: v.fontBody,
-                fontSize: type === 'text' ? 17 : 14,
+                fontSize: items.length === 0 ? 17 : 14,
                 color: v.ink,
                 background: 'transparent',
                 border: 'none',
@@ -300,45 +484,43 @@ export function ComposerScreen() {
                 resize: 'none',
                 lineHeight: 1.55,
                 letterSpacing: '-0.01em',
-                minHeight: type === 'text' ? 120 : 60,
+                minHeight: items.length === 0 ? 120 : 60,
                 padding: 0,
               }}
             />
           </div>
         </div>
 
-        <div
-          style={{
-            padding: isTablet ? `8px ${tabletBodyPadRight}px 4px ${contentLeftInset}px` : '8px 16px 4px',
-            marginLeft: isTablet ? 0 : contentLeftInset,
-          }}
-        >
-          <div style={{ fontFamily: v.fontMono, fontSize: 9, color: v.ink3, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <LxIcon name="hash" size={12} color={v.ink3} />
-            hashtags {allTags.length > 0 ? <span style={{ color: v.accentText, marginLeft: 4 }}>({allTags.length})</span> : null}
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {SUGGESTED_TAGS.map((tag) => (
-              <LxTag key={tag} active={allTags.includes(tag)} onClick={() => insertTag(tag)}>
-                #{tag}
-              </LxTag>
-            ))}
-          </div>
-        </div>
-
         <LxDivider mx={isTablet ? tabletLeftLineInset : 0} />
 
+        {/* Tags typed into the caption count automatically; there is no
+            separate tag-selection step, so one row reports the whole state. */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: isTablet ? `14px ${tabletBodyPadRight}px 14px ${tabletBodyPadLeft}px` : '14px 16px',
+            padding: isTablet
+              ? `14px ${tabletBodyPadRight}px 14px ${tabletBodyPadLeft}px`
+              : '14px 16px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
-            <LxIcon name="hash" size={13} color={v.ink3} />
-            <span>auto-tagged: {captionTags.length}</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontFamily: v.fontMono,
+              fontSize: 11,
+              color: allTags.length > 0 ? v.accentText : v.ink3,
+            }}
+          >
+            <LxIcon name="hash" size={13} color={allTags.length > 0 ? 'currentColor' : v.ink3} />
+            <span>
+              {allTags.length > 0
+                ? `${allTags.length} hashtag${allTags.length > 1 ? 's' : ''}`
+                : 'no hashtags yet'}
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {caption.length > 0 ? (
@@ -356,7 +538,13 @@ export function ComposerScreen() {
                 <div style={{ width: 17, height: 17, borderRadius: '50%', background: v.base }} />
               </div>
             ) : null}
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: caption.length > MAX_CHARS * 0.9 ? v.error : v.ink3 }}>
+            <span
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 11,
+                color: caption.length > MAX_CHARS * 0.9 ? v.error : v.ink3,
+              }}
+            >
               {MAX_CHARS - caption.length}
             </span>
           </div>
