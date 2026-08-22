@@ -77,11 +77,12 @@ Evidence: `uptake-contract-verification.md` §4.1; the interface branch is in
   drawn. `admin_actions_by_type` can exceed seven in a busy deployment. Today the screen states what
   it did not draw, which is honest but not selectable. Carried from the observability phase.
 
-- **PANEL: the hundred-id split is exercised by the constant, not by a screen.** The loader chunks at
-  100 and the bound was established against the server, but no panel screen renders more than a
-  hundred distinct people in a single page, so the split path has no end-to-end exercise. If a screen
-  ever does — a much larger page size, or a list where every row names a different person — drive it
-  and confirm the chunks come back in order and merge correctly.
+- **PANEL: the hundred-id split has no *screen* that reaches it.** The loader was driven directly
+  with 150 ids and split correctly into two requests of 100 and 50, all 150 settling and each real id
+  resolving to its own account (`verification-evidence.md` §2) — so the mechanism is verified. What
+  is not verified is any interface path that produces more than a hundred distinct people in one
+  page, because none exists. If a screen ever does — a much larger page size, or a list where every
+  row names a different person — drive it through the interface as well.
 
 - **VERIFICATION: one check still cannot be run here.** An administrator viewing **another
   administrator** — this deployment has exactly one administrator and promotion is irreversible

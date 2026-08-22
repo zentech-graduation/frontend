@@ -66,12 +66,32 @@ Read from the network log:
 { indexes: null }` setting doing its job. Axios's default `ids[]=` is rejected by the server with
 `400`, so this is load-bearing, not cosmetic.
 
-**Splitting beyond the bound.** The hundred-id ceiling and the `400` past it were established
-against the server (`uptake-contract-verification.md` §1.5: 100 ids → 200 with 100 entries; 101 →
-`400 "At most 100 identifiers may be resolved in one call"`). The loader chunks at
-`MAX_IDS_PER_REQUEST = 100` and issues chunks sequentially. No panel screen renders more than a
-hundred distinct people in one page, so the split path is exercised by the constant rather than by a
-real screen; that is stated plainly rather than claimed as a driven check.
+**Splitting beyond the bound — driven, not inferred.** The ceiling and the `400` past it were first
+established against the server (`uptake-contract-verification.md` §1.5: 100 ids → 200 with 100
+entries; 101 → `400 "At most 100 identifiers may be resolved in one call"`).
+
+The loader itself was then driven with **150 distinct ids** — three real accounts and 147 that do not
+exist — by importing the real module in the running application and calling `loadUserSummary` once
+per id:
+
+| Observed | Value |
+|---|---|
+| `MAX_IDS_PER_REQUEST` | `100` |
+| Ids requested | 150 |
+| **Requests issued** | **2** — one carrying 100 ids, one carrying 50 |
+| HTTP status of both | `200` — the bound was respected, no `400` |
+| Promises settled | 150 |
+| Resolved to a name | 3 (`seed_alice`, `seed_carol`, `seed_bob`) |
+| Settled as not-found | 147 |
+
+**Order-independence confirmed in the same run.** The three real ids sat at indexes 0, 1 and 2 of a
+150-element request and each came back as its own account — `seed_alice`, `seed_carol`, `seed_bob` in
+that order — across a response that was split into two separate calls. Entries are matched by the
+`userId` each carries, so a positional bug could not have produced this.
+
+No panel screen renders more than a hundred distinct people in one page, so this path is not reachable
+through the interface today; it is verified against the module directly rather than left to the
+constant.
 
 **Regression: every screen that showed a name still shows one.** Both role trees walked. On the
 moderator's report queue, three rows, all reporters resolved, and a scan for unresolved 8-character

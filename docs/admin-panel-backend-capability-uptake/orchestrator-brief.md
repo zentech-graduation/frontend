@@ -121,9 +121,9 @@ All in `deferred-findings.md`, and the backend items also in
 - **The production rate limit of 20 requests a minute.** The dev profile is looser: 25 rapid calls
   all returned 200 and no rate-limit header came back. The figure is documentation-sourced and the
   panel is built to it; it cannot be measured from here.
-- **The hundred-id split path.** The bound and the 400 past it were established against the server,
-  and the loader chunks at 100 — but no panel screen renders more than a hundred distinct people, so
-  the split is exercised by the constant rather than by a real screen.
+- **A *screen* that reaches the hundred-id split.** The loader itself was driven with 150 ids and
+  split correctly into two requests of 100 and 50 — so the mechanism is verified. No panel screen
+  produces more than a hundred distinct people in one page, so no interface path exercises it.
 - **Two administrators viewing each other.** Still one administrator in this deployment, and
   promotion is irreversible through the API. Carried from the previous phase.
 - **The two role contexts open simultaneously.** The session lives in one `localStorage` key, so two
