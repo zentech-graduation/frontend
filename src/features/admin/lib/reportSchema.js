@@ -49,5 +49,16 @@ export const REPORT_TYPE_LABELS = {
   message: 'message',
 };
 
-/** The two target types the panel can remove or restore; the rest are read-only. */
-export const ACTIONABLE_TARGET_TYPES = new Set(['post', 'comment']);
+/**
+ * The target types the panel can remove and restore.
+ *
+ * Stories and messages joined posts and comments when the backend added
+ * `PATCH /admin/stories/{id}/remove|restore` and the same pair for messages.
+ * Before those existed the panel rendered a reported story or message
+ * read-only and said so; that copy is gone, because it is no longer true.
+ *
+ * `user` is the one report type with no content to take down — the actions
+ * against an account are ban, suspend, and warn, which live on the account
+ * screen and are not content moderation.
+ */
+export const ACTIONABLE_TARGET_TYPES = new Set(['post', 'comment', 'story', 'message']);
