@@ -1500,6 +1500,7 @@ export function PostDetailScreen({ overlay = false }) {
             if (!updatePost.isPending) setEditSheetOpen(false);
           }}
           title="edit post"
+          zIndex={1700}
           actions={
             <LxBtn variant="primary" onClick={handleEditSubmit} disabled={updatePost.isPending}>
               {updatePost.isPending ? 'saving...' : 'save changes'}
