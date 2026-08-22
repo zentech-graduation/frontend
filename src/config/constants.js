@@ -112,8 +112,7 @@ export const routeTo = {
   adminUser: (userId) => withParams(ROUTES.ADMIN_USER, { userId }),
   // The action log with a specific action open in its drawer; the open state is
   // a query parameter so the link is shareable and the list stays mounted.
-  adminAction: (actionId) =>
-    `${ROUTES.ADMIN_ACTIONS}?action=${encodeURIComponent(actionId ?? '')}`,
+  adminAction: (actionId) => `${ROUTES.ADMIN_ACTIONS}?action=${encodeURIComponent(actionId ?? '')}`,
 };
 
 /** Query cache stale times (ms) */

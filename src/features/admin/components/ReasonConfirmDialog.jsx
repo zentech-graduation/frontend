@@ -46,13 +46,17 @@ export function ReasonConfirmDialog({
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReason('');
+
       setArmed(false);
+
       setLocalError('');
       return undefined;
     }
     openCount.current += 1;
     const myCount = openCount.current;
+
     setArmed(false);
     const timer = setTimeout(() => {
       if (openCount.current === myCount) {
@@ -183,10 +187,22 @@ export function ReasonConfirmDialog({
             }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12, color: fieldError ? v.errorText : 'transparent' }}>
+            <span
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 12,
+                color: fieldError ? v.errorText : 'transparent',
+              }}
+            >
               {fieldError || '.'}
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: overLimit ? v.errorText : v.ink3 }}>
+            <span
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 11,
+                color: overLimit ? v.errorText : v.ink3,
+              }}
+            >
               {reason.length}/{REASON_MAX}
             </span>
           </div>

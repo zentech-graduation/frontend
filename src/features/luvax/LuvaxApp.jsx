@@ -44,6 +44,8 @@ function resolveBaseScreen(backgroundPath) {
 const APP_SCALE_BASE = 1.14;
 const APP_SCALE_REFERENCE_WIDTH = 1920;
 const APP_SCALE_MAX = 1.6;
+const DARK_MANUAL_KEY = 'lxDarkManual';
+const DARK_VALUE_KEY = 'lxDark';
 
 function computeAppScale(width) {
   if (!width) return APP_SCALE_BASE;
@@ -51,20 +53,27 @@ function computeAppScale(width) {
   return Math.min(APP_SCALE_MAX, Math.max(APP_SCALE_BASE, scaled));
 }
 
+function readInitialDarkMode() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return TWEAK_DEFAULTS.dark;
+  }
+
+  if (localStorage.getItem(DARK_MANUAL_KEY) !== null) {
+    const stored = localStorage.getItem(DARK_VALUE_KEY);
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+    return false;
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
 // ─── Luvax App Layout ──────────────────────────────────────────────────────
 export function LuvaxApp() {
   const [tweaks, setTweakState] = useState(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return TWEAK_DEFAULTS;
-    }
-
-    if (localStorage.getItem('lxDarkManual') !== null) {
-      return TWEAK_DEFAULTS;
-    }
-
     return {
       ...TWEAK_DEFAULTS,
-      dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+      dark: readInitialDarkMode(),
     };
   });
   const [messagesThreadOpen, setMessagesThreadOpen] = useState(false);
@@ -109,14 +118,14 @@ export function LuvaxApp() {
     }
 
     const media = window.matchMedia('(prefers-color-scheme: dark)');
-    if (localStorage.getItem('lxDarkManual') === null) {
+    if (localStorage.getItem(DARK_MANUAL_KEY) === null) {
       // Synchronises with the OS colour-scheme media query and the stored manual override.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTweak('dark', media.matches);
     }
 
     const handleChange = (event) => {
-      if (localStorage.getItem('lxDarkManual') === null) {
+      if (localStorage.getItem(DARK_MANUAL_KEY) === null) {
         setTweak('dark', event.matches);
       }
     };

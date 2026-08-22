@@ -30,7 +30,11 @@ export function AccountModerationScreen() {
   const isAdmin = isAdminRole(role);
   const { username, isLoading: nameLoading } = useResolveUsername(userId);
 
-  const nameLabel = username ? `@${username}` : nameLoading ? `${shortId(userId)}…` : shortId(userId);
+  const nameLabel = username
+    ? `@${username}`
+    : nameLoading
+      ? `${shortId(userId)}…`
+      : shortId(userId);
 
   return (
     <div>
@@ -41,7 +45,15 @@ export function AccountModerationScreen() {
           isAdmin ? (
             <Link
               to={ROUTES.ADMIN_USERS}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: v.fontBody, fontSize: 13, color: v.ink3, textDecoration: 'none' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: v.fontBody,
+                fontSize: 13,
+                color: v.ink3,
+                textDecoration: 'none',
+              }}
             >
               <LxIcon name="chevronLeft" size={14} color={v.ink3} />
               all accounts

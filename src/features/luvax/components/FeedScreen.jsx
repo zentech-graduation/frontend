@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent } from '@/utils/helpers';
-import { LxIcon, LxAvatar, LxTag, LxBtn } from './primitives';
+import { LxIcon, LxAvatar } from './primitives';
 import { useFeed } from '../hooks/usePosts';
 import { useStoryFeed } from '../hooks/useStories';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
@@ -42,62 +41,94 @@ export function StoriesCarousel({ viewport }) {
         justifyContent: 'safe center',
       }}
     >
-      <button
-        onClick={() =>
-          hasOwnEntry
-            ? openOverlay(routeTo.storyView(tray[0].stories[0].id))
-            : openOverlay(ROUTES.STORY_COMPOSE)
-        }
+      <div
         style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: 7,
           flexShrink: 0,
-          padding: 0,
-          position: 'relative',
         }}
       >
-        {hasOwnEntry ? (
-          <LxAvatar size={avatar} src={currentUser?.avatarUrl} hasStory viewed={false} />
-        ) : (
-          <div
+        <div style={{ position: 'relative', width: ownRing, height: ownRing }}>
+          <button
+            onClick={() =>
+              hasOwnEntry
+                ? openOverlay(routeTo.storyView(tray[0].stories[0].id))
+                : openOverlay(ROUTES.STORY_COMPOSE)
+            }
+            aria-label={hasOwnEntry ? 'view your story' : 'add story'}
             style={{
-              width: ownRing,
-              height: ownRing,
-              borderRadius: '50%',
-              background: currentUser?.avatarUrl
-                ? `url(${currentUser.avatarUrl}) center/cover no-repeat`
-                : v.surface,
-              border: `1px solid ${v.borderStrong}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              position: 'relative',
+              position: 'absolute',
+              inset: 0,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
             }}
           >
-            {currentUser?.avatarUrl ? (
+            {hasOwnEntry ? (
+              <LxAvatar size={avatar} src={currentUser?.avatarUrl} hasStory viewed={false} />
+            ) : (
               <div
                 style={{
-                  position: 'absolute',
-                  inset: 0,
+                  width: ownRing,
+                  height: ownRing,
                   borderRadius: '50%',
-                  background: v.black40,
+                  background: currentUser?.avatarUrl
+                    ? `url(${currentUser.avatarUrl}) center/cover no-repeat`
+                    : v.surface,
+                  border: `1px solid ${v.borderStrong}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  position: 'relative',
                 }}
-              />
-            ) : null}
-            <LxIcon
-              name="plus"
-              size={isTablet ? 20 : 22}
-              color={currentUser?.avatarUrl ? v.white : v.ink2}
-              style={{ position: 'relative' }}
-            />
-          </div>
-        )}
+              >
+                {currentUser?.avatarUrl ? (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '50%',
+                      background: v.black40,
+                    }}
+                  />
+                ) : null}
+                <LxIcon
+                  name="plus"
+                  size={isTablet ? 20 : 22}
+                  color={currentUser?.avatarUrl ? v.white : v.ink2}
+                  style={{ position: 'relative' }}
+                />
+              </div>
+            )}
+          </button>
+          {hasOwnEntry ? (
+            <button
+              onClick={() => openOverlay(ROUTES.STORY_COMPOSE)}
+              aria-label="add story"
+              style={{
+                position: 'absolute',
+                right: -1,
+                bottom: -1,
+                width: 23,
+                height: 23,
+                borderRadius: '50%',
+                border: `2px solid ${v.base}`,
+                background: v.accent,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+              }}
+            >
+              <LxIcon name="plus" size={13} color={v.ink} />
+            </button>
+          ) : null}
+        </div>
         <span
           style={{
             fontFamily: v.fontBody,
@@ -112,7 +143,7 @@ export function StoriesCarousel({ viewport }) {
         >
           your story
         </span>
-      </button>
+      </div>
       {others.map((entry) => (
         <button
           key={entry.userId}

@@ -246,13 +246,47 @@ export function MessageBubble({
           {isFile ? (
             // A real photo or video is the bubble - no surrounding card, border, or padding
             // framing it. Chrome around a thumbnail read as over-designed next to a plain photo.
-            <MediaPlaceholder
-              item={
-                message.media ? { ...message.media, label: message.text } : { label: message.text }
-              }
-              large
-              onClick={() => onPreviewMedia(message.media || { label: message.text })}
-            />
+            <div
+              style={{
+                maxWidth: isMobile ? 196 : 248,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: isMine ? 'flex-end' : 'flex-start',
+                gap: message.text ? 2 : 0,
+              }}
+            >
+              <MediaPlaceholder
+                item={
+                  message.media
+                    ? { ...message.media, label: message.text }
+                    : { label: message.text }
+                }
+                large
+                onClick={() => onPreviewMedia(message.media || { label: message.text })}
+              />
+              {message.text ? (
+                <div
+                  style={{
+                    maxWidth: '100%',
+                    padding: '8px 11px',
+                    borderRadius: bubbleCornerRadius({
+                      isMine,
+                      isFirstInRun: false,
+                      isLastInRun: message.isLastInRun,
+                    }),
+                    background: isMine ? activeThread.accent || v.accentDim : v.surface,
+                    color: v.ink,
+                    fontFamily: v.fontBody,
+                    fontSize: 13.5,
+                    lineHeight: 1.42,
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {message.text}
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div
               style={{
@@ -346,6 +380,7 @@ export function MessageBubble({
           alignItems: 'center',
           gap: 6,
           flexDirection: isMine ? 'row-reverse' : 'row',
+          minWidth: 0,
         }}
         onPointerDown={handleBubbleInteraction}
         onClick={handleTouchMenuToggle}
@@ -358,15 +393,44 @@ export function MessageBubble({
             border: isMine ? 'none' : `1px solid ${v.border}`,
             minWidth: isMobile ? 0 : 76,
             width: isMobile ? '100%' : 'auto',
+            overflow: 'hidden',
           }}
         >
           {message.kind === 'reply' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, color: v.ink2 }}>
-                <span style={{ fontFamily: v.fontMono, fontSize: 10 }}>↳ {message.replyTo}</span>
-                <span style={{ fontSize: 11.5 }}>{message.replyText}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  color: v.ink2,
+                  minWidth: 0,
+                }}
+              >
+                <span style={{ fontFamily: v.fontMono, fontSize: 10, minWidth: 0 }}>
+                  ↳ {message.replyTo}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    minWidth: 0,
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {message.replyText}
+                </span>
               </div>
-              <strong style={{ fontWeight: 600 }}>{message.text}</strong>
+              <strong
+                style={{
+                  fontWeight: 600,
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {message.text}
+              </strong>
             </div>
           ) : (
             message.text

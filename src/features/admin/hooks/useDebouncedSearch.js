@@ -53,5 +53,15 @@ export function useDebouncedSearch({ minLength = 2, delay = 350 } = {}) {
     setDebounced('');
   };
 
-  return { text, setText, term, cooling, cooldownRemaining, startCooldown, tooShort, minLength, reset };
+  return {
+    text,
+    setText,
+    term,
+    cooling,
+    cooldownRemaining,
+    startCooldown,
+    tooShort,
+    minLength,
+    reset,
+  };
 }

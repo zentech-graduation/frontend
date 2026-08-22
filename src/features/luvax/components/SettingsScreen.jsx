@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { ROUTES } from '@/config/constants';
-import { LxIcon, LxBtn } from './primitives';
+import { LxIcon } from './primitives';
 import { LxToggle } from '@/components/ui/lx-toggle';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -72,12 +72,10 @@ export function SettingsScreen() {
   const navigate = useNavigate();
   const { tweaks, setTweak } = useLuvaxTweaks();
   const queryClient = useQueryClient();
-  const logout = useAuthStore((state) => state.logout);
-
   const handleSignOut = async () => {
     try {
       await authApi.logout();
-    } catch (e) {
+    } catch {
       // ignore
     }
     queryClient.clear();
@@ -102,6 +100,7 @@ export function SettingsScreen() {
 
   const handleDarkModeToggle = (value) => {
     localStorage.setItem('lxDarkManual', '1');
+    localStorage.setItem('lxDark', String(value));
     if (setTweak) {
       setTweak('dark', value);
     }

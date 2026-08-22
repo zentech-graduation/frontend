@@ -113,16 +113,29 @@ export function AccountLifecyclePanel({ userId }) {
     });
   };
 
-  const statusActions = capabilities.canChangeStatus ? STATUS_ACTIONS[detail.status] ?? [] : [];
-  const roleAssignable = capabilities.canChangeRole ? capabilities.assignableRoles ?? [] : [];
+  const statusActions = capabilities.canChangeStatus ? (STATUS_ACTIONS[detail.status] ?? []) : [];
+  const roleAssignable = capabilities.canChangeRole ? (capabilities.assignableRoles ?? []) : [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <StateSummary detail={detail} isSelf={isSelf} />
 
-      <div style={{ borderTop: `1px solid ${v.borderSubtle}`, paddingTop: 14, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+      <div
+        style={{
+          borderTop: `1px solid ${v.borderSubtle}`,
+          paddingTop: 14,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 10,
+        }}
+      >
         {statusActions.includes('suspend') ? (
-          <LxBtn variant="secondary" size="sm" onClick={() => openDialog('suspend')} style={{ color: v.warningText }}>
+          <LxBtn
+            variant="secondary"
+            size="sm"
+            onClick={() => openDialog('suspend')}
+            style={{ color: v.warningText }}
+          >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <LxIcon name="clock" size={14} color={v.warningText} />
               suspend
@@ -252,7 +265,11 @@ export function AccountLifecyclePanel({ userId }) {
         busy={actions.changeRole.isPending}
         serverError={serverError || null}
         onConfirm={({ role, reason }) =>
-          run(actions.changeRole, { role, reason }, role === 'admin' ? 'promoted to administrator' : 'role changed')
+          run(
+            actions.changeRole,
+            { role, reason },
+            role === 'admin' ? 'promoted to administrator' : 'role changed'
+          )
         }
         onClose={closeDialog}
       />
@@ -262,10 +279,20 @@ export function AccountLifecyclePanel({ userId }) {
 
 const Field = ({ label, children }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
-    <span style={{ fontFamily: v.fontMono, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}>
+    <span
+      style={{
+        fontFamily: v.fontMono,
+        fontSize: 9,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: v.ink3,
+      }}
+    >
       {label}
     </span>
-    <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, wordBreak: 'break-word' }}>{children}</span>
+    <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, wordBreak: 'break-word' }}>
+      {children}
+    </span>
   </div>
 );
 
@@ -276,17 +303,47 @@ function StateSummary({ detail, isSelf }) {
         <StatusBadge status={detail.status} />
         <StatusBadge status={detail.role} />
         {detail.isVerified ? (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', color: v.accentText }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              color: v.accentText,
+            }}
+          >
             <LxIcon name="check" size={12} color={v.accentText} /> verified
           </span>
         ) : null}
         {detail.isPrivate ? (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', color: v.ink3 }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              color: v.ink3,
+            }}
+          >
             <LxIcon name="lock" size={12} color={v.ink3} /> private
           </span>
         ) : null}
         {isSelf ? (
-          <span style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', color: v.ink3, background: v.surface, borderRadius: 999, padding: '2px 8px' }}>
+          <span
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              color: v.ink3,
+              background: v.surface,
+              borderRadius: 999,
+              padding: '2px 8px',
+            }}
+          >
             this is you
           </span>
         ) : null}
@@ -298,7 +355,20 @@ function StateSummary({ detail, isSelf }) {
           says "indefinitely" rather than rendering nothing, which would leave a
           suspended account looking unsuspended. */}
       {detail.status === 'suspended' ? (
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: v.fontBody, fontSize: 13, color: v.warningText, background: v.warningDim, borderRadius: 10, padding: '8px 12px', width: 'fit-content' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontFamily: v.fontBody,
+            fontSize: 13,
+            color: v.warningText,
+            background: v.warningDim,
+            borderRadius: 10,
+            padding: '8px 12px',
+            width: 'fit-content',
+          }}
+        >
           <LxIcon name="clock" size={14} color={v.warningText} />
           {detail.suspendedUntil ? (
             <span>
@@ -310,7 +380,13 @@ function StateSummary({ detail, isSelf }) {
         </div>
       ) : null}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: 14,
+        }}
+      >
         <Field label="email">{detail.email || '—'}</Field>
         <Field label="registration address">
           {detail.registrationIp ? (

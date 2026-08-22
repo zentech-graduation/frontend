@@ -37,10 +37,11 @@ import { toast } from '@/features/luvax/components/Toast';
 import { useMediaUpload } from '@/features/luvax/hooks/useMediaUpload';
 import { useMediaConstraints } from '@/features/luvax/hooks/useMediaConstraints';
 import { useUserProfile } from '@/features/luvax/hooks/useUsers';
-import { useBlock } from '@/features/luvax/hooks/useSocial';
+import { useBlock, useBlockedUsers } from '@/features/luvax/hooks/useSocial';
 import { ReportModal } from '@/features/luvax/components/ReportModal';
 import { BlockConfirmDialog } from '@/features/luvax/components/BlockConfirmDialog';
 import { validateDuration, validateFile } from '@/features/luvax/utils/composerMedia';
+import { extractPageContent } from '@/utils/helpers';
 
 // A message send holds fewer items than a post carousel by design: a burst of ten photos already
 // reads as a lot in a chat thread, and the album viewer (see MessageAlbum) is tuned for that count.
@@ -100,6 +101,7 @@ export function MessagesScreen() {
   const [deleteThreadTarget, setDeleteThreadTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
+  const [locallyBlockedUserIds, setLocallyBlockedUserIds] = useState([]);
   const [nicknameTarget, setNicknameTarget] = useState(null);
   const [nicknameValue, setNicknameValue] = useState('');
   // Set only by a profile's "message" button, before any conversation exists between the two
@@ -109,6 +111,11 @@ export function MessagesScreen() {
   const queryClient = useQueryClient();
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
+  const activeComposerKeyRef = useRef(null);
+  const draftRef = useRef('');
+  const pendingAttachmentsRef = useRef([]);
+  const composerDraftsRef = useRef({});
+  const composerAttachmentsRef = useRef({});
 
   const filteredThreads = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -143,8 +150,65 @@ export function MessagesScreen() {
     : pendingProfileResponse?.data
       ? toPendingThread(pendingProfileResponse.data)
       : null;
+  const activeComposerKey =
+    activeConversation?.id || (pendingTargetUserId ? `pending:${pendingTargetUserId}` : null);
+  const activeReplyingTo =
+    replyingTo?.conversationId === activeConversation?.id ? replyingTo : null;
+  const { data: blockedResponse } = useBlockedUsers();
+  const blockedRows = useMemo(() => extractPageContent(blockedResponse), [blockedResponse]);
+  const blockedUserIdSet = useMemo(() => {
+    const ids = new Set(locallyBlockedUserIds);
+    blockedRows.forEach((row) => {
+      const id = row?.user?.id ?? row?.id;
+      if (id) ids.add(id);
+    });
+    return ids;
+  }, [blockedRows, locallyBlockedUserIds]);
+  const isThreadBlocked = (thread) =>
+    Boolean(thread?.counterpartId && blockedUserIdSet.has(thread.counterpartId));
 
   useLiveMessages(activeConversation?.id);
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+
+  useEffect(() => {
+    pendingAttachmentsRef.current = pendingAttachments;
+  }, [pendingAttachments]);
+
+  useEffect(() => {
+    const previousKey = activeComposerKeyRef.current;
+    if (previousKey === activeComposerKey) return;
+
+    if (previousKey) {
+      composerDraftsRef.current[previousKey] = draftRef.current;
+      composerAttachmentsRef.current[previousKey] = pendingAttachmentsRef.current;
+    }
+
+    activeComposerKeyRef.current = activeComposerKey;
+    setReplyingTo(null);
+    setDraft(activeComposerKey ? composerDraftsRef.current[activeComposerKey] || '' : '');
+    setPendingAttachments(
+      activeComposerKey ? composerAttachmentsRef.current[activeComposerKey] || [] : []
+    );
+  }, [activeComposerKey]);
+
+  useEffect(
+    () => () => {
+      const previewUrls = new Set();
+      pendingAttachmentsRef.current.forEach((item) => {
+        if (item.previewUrl) previewUrls.add(item.previewUrl);
+      });
+      Object.values(composerAttachmentsRef.current).forEach((items) => {
+        items.forEach((item) => {
+          if (item.previewUrl) previewUrls.add(item.previewUrl);
+        });
+      });
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    },
+    []
+  );
 
   // Promotes a pending target to a real, selected conversation the moment one resolves above -
   // whether that took a round trip through handleSend or was already sitting in the list.
@@ -290,7 +354,7 @@ export function MessagesScreen() {
       body: {
         messageType: 'text',
         content: value,
-        replyToId: replyingTo?.id || null,
+        replyToId: activeReplyingTo?.id || null,
       },
       // Shaped like a MessageResponse so the adapter renders it with no special case, and so a
       // rollback simply removes it again.
@@ -304,7 +368,7 @@ export function MessagesScreen() {
         media: null,
         sharedPostId: null,
         sharedStoryId: null,
-        replyToId: replyingTo?.id || null,
+        replyToId: activeReplyingTo?.id || null,
         isDeleted: false,
         deletedAt: null,
         createdAt: new Date().toISOString(),
@@ -321,24 +385,26 @@ export function MessagesScreen() {
    * immediately, so a caller looping over several attachments with only the upload awaited was
    * racing every send request over the network instead of sending them in order.
    */
-  const sendAttachmentMessage = async (conversationId, item) => {
+  const sendAttachmentMessage = async (conversationId, item, caption = null) => {
     const asset = await uploadMedia(item.file);
     const idempotencyKey = nextIdempotencyKey();
+    const content = caption?.trim() || null;
 
     return sendMessage.mutateAsync({
       conversationId,
       idempotencyKey,
       body: {
         messageType: item.isVideo ? 'video' : 'image',
+        content,
         mediaAssetId: asset.id,
-        replyToId: replyingTo?.id || null,
+        replyToId: activeReplyingTo?.id || null,
       },
       optimisticMessage: {
         id: `pending-${idempotencyKey}`,
         conversationId,
         senderId: currentUserId,
         messageType: item.isVideo ? 'video' : 'image',
-        content: null,
+        content,
         mediaAssetId: asset.id,
         media: {
           mediaAssetId: asset.id,
@@ -347,7 +413,7 @@ export function MessagesScreen() {
         },
         sharedPostId: null,
         sharedStoryId: null,
-        replyToId: replyingTo?.id || null,
+        replyToId: activeReplyingTo?.id || null,
         isDeleted: false,
         deletedAt: null,
         createdAt: new Date().toISOString(),
@@ -422,6 +488,7 @@ export function MessagesScreen() {
       return;
     }
 
+    const sendingComposerKey = activeComposerKey;
     setIsSending(true);
     try {
       let conversationId = activeConversation?.id;
@@ -434,15 +501,25 @@ export function MessagesScreen() {
         await queryClient.invalidateQueries({ queryKey: conversationsKey });
       }
 
-      for (const item of pendingAttachments) {
+      for (const [index, item] of pendingAttachments.entries()) {
         // Sequential, not parallel: message order in the thread must match send order.
-        await sendAttachmentMessage(conversationId, item);
+        await sendAttachmentMessage(
+          conversationId,
+          item,
+          index === 0 && pendingAttachments.length > 0 ? value : null
+        );
       }
       pendingAttachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setPendingAttachments([]);
 
-      if (value) await sendTextMessage(conversationId, value);
+      if (value && pendingAttachments.length === 0) await sendTextMessage(conversationId, value);
 
+      [sendingComposerKey, conversationId].filter(Boolean).forEach((key) => {
+        delete composerDraftsRef.current[key];
+        delete composerAttachmentsRef.current[key];
+      });
+      draftRef.current = '';
+      pendingAttachmentsRef.current = [];
       setDraft('');
       setReplyingTo(null);
       setActiveThreadId(conversationId);
@@ -483,8 +560,19 @@ export function MessagesScreen() {
 
   const handleBlockConfirm = () => {
     if (!blockTarget) return;
-    block.mutate(blockTarget.counterpartId, {
-      onError: (error) => toast(error?.message || "couldn't block that account. try again."),
+    const target = blockTarget;
+    if (isThreadBlocked(target)) {
+      setBlockTarget(null);
+      return;
+    }
+    setLocallyBlockedUserIds((ids) =>
+      ids.includes(target.counterpartId) ? ids : [...ids, target.counterpartId]
+    );
+    block.mutate(target.counterpartId, {
+      onError: (error) => {
+        setLocallyBlockedUserIds((ids) => ids.filter((id) => id !== target.counterpartId));
+        toast(error?.message || "couldn't block that account. try again.");
+      },
     });
     setBlockTarget(null);
   };
@@ -553,6 +641,7 @@ export function MessagesScreen() {
           onDeleteThread={setDeleteThreadTarget}
           onReportThread={handleReportThread}
           onBlockThread={setBlockTarget}
+          isThreadBlocked={isThreadBlocked}
           onPinThread={(threadId) => pinConversation.mutate(threadId)}
           onUnpinThread={(threadId) => unpinConversation.mutate(threadId)}
           onMuteThread={(threadId) => muteConversation.mutate(threadId)}
@@ -573,7 +662,7 @@ export function MessagesScreen() {
           scrollerRef={scrollerRef}
           openPreview={openPreview}
           handleDeleteToggle={handleDeleteToggle}
-          replyingTo={replyingTo}
+          replyingTo={activeReplyingTo}
           setReplyingTo={setReplyingTo}
           draft={draft}
           setDraft={setDraft}
@@ -620,7 +709,11 @@ export function MessagesScreen() {
               onUnmute={() => unmuteConversation.mutate(activeThreadId)}
               onRename={activeThread.counterpartId ? () => handleRenameThread(activeThread) : null}
               onReport={activeThread.counterpartId ? () => handleReportThread(activeThread) : null}
-              onBlock={activeThread.counterpartId ? () => setBlockTarget(activeThread) : null}
+              onBlock={
+                activeThread.counterpartId && !isThreadBlocked(activeThread)
+                  ? () => setBlockTarget(activeThread)
+                  : null
+              }
               onDelete={() => setDeleteThreadTarget(activeThread)}
             />
           </div>

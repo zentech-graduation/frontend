@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { useViewport } from '../hooks/useViewport';
-import { LxIcon, LxAvatar } from './primitives';
+import { LxIcon, LxAvatar, LxBtn, LxModal } from './primitives';
 import {
   useStoryFeed,
   useCreateStory,
+  useDeleteStory,
   useRecordStoryView,
   useLikeStory,
 } from '../hooks/useStories';
@@ -320,10 +321,12 @@ export function StoryViewScreen({ viewport: vpProp }) {
   const sequence = useFlatStorySequence();
   const recordView = useRecordStoryView();
   const likeStory = useLikeStory();
+  const deleteStory = useDeleteStory();
   const [progress, setProgress] = useState(0);
   const [replyDraft, setReplyDraft] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [showBigHeart, setShowBigHeart] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const videoRef = useRef(null);
   const recordedRef = useRef(null);
   const lastTapRef = useRef(0);
@@ -335,6 +338,7 @@ export function StoryViewScreen({ viewport: vpProp }) {
   const isVideo = story?.media?.mediaType?.toUpperCase() === 'VIDEO';
   const segmentIndex = entry ? entry.stories.findIndex((s) => s.id === storyId) : 0;
   const segmentCount = entry?.stories.length || 1;
+  const isOwnStory = Boolean(entry?.userId && entry.userId === currentUser?.id);
 
   const close = () => navigate(-1);
 
@@ -414,6 +418,24 @@ export function StoryViewScreen({ viewport: vpProp }) {
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
     likeStory.mutate({ storyId: story.id, liked: story.liked });
+  };
+
+  const handleDelete = () => {
+    const fallback = sequence[currentIndex + 1] || sequence[currentIndex - 1] || null;
+    deleteStory.mutate(story.id, {
+      onSuccess: () => {
+        setConfirmDelete(false);
+        toast('story deleted');
+        if (fallback) {
+          navigate(routeTo.storyView(fallback.story.id), { replace: true });
+          return;
+        }
+        close();
+      },
+      onError: (error) => {
+        toast(error?.message || "couldn't delete that story");
+      },
+    });
   };
 
   // Double-tap to like, in the manner of Instagram and matching the same
@@ -538,6 +560,30 @@ export function StoryViewScreen({ viewport: vpProp }) {
         >
           {formatRelativeTime(story.createdAt)}
         </span>
+        {isOwnStory ? (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleteStory.isPending}
+            aria-label="delete story"
+            style={{
+              marginLeft: 'auto',
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: 'none',
+              background: v.black35,
+              cursor: deleteStory.isPending ? 'default' : 'pointer',
+              opacity: deleteStory.isPending ? 0.6 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            <LxIcon name="trash" size={16} color={v.white} />
+          </button>
+        ) : null}
       </div>
 
       {/* Caption */}
@@ -553,6 +599,11 @@ export function StoryViewScreen({ viewport: vpProp }) {
             fontWeight: 500,
             color: v.white,
             textShadow: `0 1px 8px ${v.black55}`,
+            lineHeight: 1.35,
+            maxHeight: 82,
+            overflow: 'hidden',
+            overflowWrap: 'anywhere',
+            wordBreak: 'break-word',
           }}
         >
           {story.caption}
@@ -682,7 +733,7 @@ export function StoryViewScreen({ viewport: vpProp }) {
 
   const handleReplySend = async () => {
     const text = replyDraft.trim();
-    if (!text || !entry?.userId) return;
+    if (!text || !entry?.userId || isOwnStory) return;
     setReplyDraft('');
 
     try {
@@ -702,7 +753,7 @@ export function StoryViewScreen({ viewport: vpProp }) {
     }
   };
 
-  const replyBar = (
+  const replyBar = isOwnStory ? null : (
     <div
       style={{
         display: 'flex',
@@ -794,16 +845,35 @@ export function StoryViewScreen({ viewport: vpProp }) {
   const nextItem = currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
 
   return (
-    <StoryStage
-      viewport={vp}
-      onClose={close}
-      footer={replyBar}
-      peeks={
-        vp === 'mobile' ? null : { prev: prevItem, next: nextItem, onPrev: prev, onNext: next }
-      }
-    >
-      {card}
-    </StoryStage>
+    <>
+      <StoryStage
+        viewport={vp}
+        onClose={close}
+        footer={replyBar}
+        peeks={
+          vp === 'mobile' ? null : { prev: prevItem, next: nextItem, onPrev: prev, onNext: next }
+        }
+      >
+        {card}
+      </StoryStage>
+      <LxModal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="delete story"
+        actions={
+          <>
+            <LxBtn variant="ghost" onClick={() => setConfirmDelete(false)}>
+              cancel
+            </LxBtn>
+            <LxBtn variant="danger" onClick={handleDelete} disabled={deleteStory.isPending}>
+              {deleteStory.isPending ? 'deleting...' : 'delete'}
+            </LxBtn>
+          </>
+        }
+      >
+        This story will be removed from your profile and story tray.
+      </LxModal>
+    </>
   );
 }
 

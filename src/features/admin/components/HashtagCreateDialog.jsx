@@ -41,15 +41,21 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName('');
+
       setStatus('active');
+
       setNote('');
+
       setArmed(false);
+
       setLocalErrors({});
       return undefined;
     }
     openCount.current += 1;
     const myCount = openCount.current;
+
     setArmed(false);
     const timer = setTimeout(() => {
       if (openCount.current === myCount) {
@@ -98,9 +104,20 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
       role="dialog"
       aria-modal="true"
       aria-label="create hashtag"
-      style={{ position: 'fixed', inset: 0, zIndex: 2147483400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2147483400,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
     >
-      <div onClick={busy ? undefined : onClose} style={{ position: 'absolute', inset: 0, background: v.scrim }} />
+      <div
+        onClick={busy ? undefined : onClose}
+        style={{ position: 'absolute', inset: 0, background: v.scrim }}
+      />
       <div
         style={{
           position: 'relative',
@@ -115,15 +132,42 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
           gap: 14,
         }}
       >
-        <div style={{ fontFamily: v.fontDisplay, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', color: v.ink }}>
+        <div
+          style={{
+            fontFamily: v.fontDisplay,
+            fontWeight: 700,
+            fontSize: 18,
+            letterSpacing: '-0.02em',
+            color: v.ink,
+          }}
+        >
           create a hashtag
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="hashtag-name" style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}>
+          <label
+            htmlFor="hashtag-name"
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: v.ink3,
+            }}
+          >
             name
           </label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: v.surfaceSunken, border: `1px solid ${shownNameError ? v.error : v.border}`, borderRadius: 10, padding: '10px 12px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: v.surfaceSunken,
+              border: `1px solid ${shownNameError ? v.error : v.border}`,
+              borderRadius: 10,
+              padding: '10px 12px',
+            }}
+          >
             <LxIcon name="hash" size={15} color={v.ink3} />
             <input
               id="hashtag-name"
@@ -139,16 +183,40 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
                   setLocalErrors((prev) => ({ ...prev, name: undefined }));
                 }
               }}
-              style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', fontFamily: v.fontBody, fontSize: 14, color: v.ink }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontFamily: v.fontBody,
+                fontSize: 14,
+                color: v.ink,
+              }}
             />
           </div>
-          <span style={{ fontFamily: v.fontBody, fontSize: 12, color: shownNameError ? v.errorText : 'transparent', minHeight: 16 }}>
+          <span
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 12,
+              color: shownNameError ? v.errorText : 'transparent',
+              minHeight: 16,
+            }}
+          >
             {shownNameError || '.'}
           </span>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}>
+          <span
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: v.ink3,
+            }}
+          >
             initial status
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -173,8 +241,14 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
                     border: `1px solid ${selected ? v.accent : v.border}`,
                   }}
                 >
-                  <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>{option.label}</span>
-                  <span style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink3 }}>{option.hint}</span>
+                  <span
+                    style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}
+                  >
+                    {option.label}
+                  </span>
+                  <span style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink3 }}>
+                    {option.hint}
+                  </span>
                 </button>
               );
             })}
@@ -182,7 +256,16 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="hashtag-note" style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}>
+          <label
+            htmlFor="hashtag-note"
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: v.ink3,
+            }}
+          >
             note (recorded)
           </label>
           <textarea
@@ -213,10 +296,22 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
             }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12, color: noteError ? v.errorText : 'transparent' }}>
+            <span
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 12,
+                color: noteError ? v.errorText : 'transparent',
+              }}
+            >
               {noteError || '.'}
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: overNote ? v.errorText : v.ink3 }}>
+            <span
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 11,
+                color: overNote ? v.errorText : v.ink3,
+              }}
+            >
               {note.length}/{NOTE_MAX}
             </span>
           </div>
@@ -227,7 +322,19 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
             type="button"
             onClick={busy ? undefined : onClose}
             disabled={busy}
-            style={{ flex: 1, padding: '11px 0', borderRadius: 999, background: v.surface, border: 'none', cursor: busy ? 'default' : 'pointer', fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink2, opacity: busy ? 0.6 : 1 }}
+            style={{
+              flex: 1,
+              padding: '11px 0',
+              borderRadius: 999,
+              background: v.surface,
+              border: 'none',
+              cursor: busy ? 'default' : 'pointer',
+              fontFamily: v.fontBody,
+              fontSize: 14,
+              fontWeight: 500,
+              color: v.ink2,
+              opacity: busy ? 0.6 : 1,
+            }}
           >
             cancel
           </button>

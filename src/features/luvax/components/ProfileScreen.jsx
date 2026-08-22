@@ -558,7 +558,7 @@ export function ProfileScreen() {
               pixel nudge, and a `transform` on any ancestor becomes the containing block for a
               `position: fixed` descendant, which broke this menu's fixed-position math under the
               app's root zoom and left it rendering off-screen. */}
-          {!isSelf && !isBlocking && (
+          {!isSelf && (
             <LxDropdownMenu
               anchorRef={menuAnchor}
               open={menuOpen}
@@ -609,6 +609,8 @@ export function ProfileScreen() {
               lineHeight: 1.5,
               marginTop: user?.bio ? 10 : 0,
               maxWidth: 480,
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
             }}
           >
             {user?.bio || ''}

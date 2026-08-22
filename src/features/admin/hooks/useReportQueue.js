@@ -24,7 +24,10 @@ export function useReportQueue(filters = {}) {
   const reportType = filters.reportType || undefined;
 
   const query = useInfiniteQuery({
-    queryKey: listQueryKey('reports', role, { status: status ?? null, reportType: reportType ?? null }),
+    queryKey: listQueryKey('reports', role, {
+      status: status ?? null,
+      reportType: reportType ?? null,
+    }),
     queryFn: ({ pageParam }) =>
       adminApi.getReports({ status, reportType, cursor: pageParam, limit: PAGE_LIMIT }),
     initialPageParam: undefined,

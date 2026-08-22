@@ -134,11 +134,7 @@ export function SessionList({ sessions, isSelf, onRevokeAll }) {
             background: isSelf ? v.warningDim : v.surface,
           }}
         >
-          <LxIcon
-            name="alert"
-            size={14}
-            color={isSelf ? v.warningText : v.ink3}
-          />
+          <LxIcon name="alert" size={14} color={isSelf ? v.warningText : v.ink3} />
           <span
             style={{
               fontFamily: v.fontBody,

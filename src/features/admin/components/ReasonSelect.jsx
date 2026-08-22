@@ -24,7 +24,14 @@ import { LxIcon } from '@/components/ui/lx-icon';
  * @param {boolean} [disabled] whether the control is inert (e.g. a request in flight)
  * @param {string} [id] the id the label points at
  */
-export function ReasonSelect({ reasons = [], value, onChange, error, disabled = false, id = 'reason-select' }) {
+export function ReasonSelect({
+  reasons = [],
+  value,
+  onChange,
+  error,
+  disabled = false,
+  id = 'reason-select',
+}) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
 
@@ -49,7 +56,13 @@ export function ReasonSelect({ reasons = [], value, onChange, error, disabled = 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }} ref={rootRef}>
       <label
         htmlFor={id}
-        style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}
+        style={{
+          fontFamily: v.fontMono,
+          fontSize: 10,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: v.ink3,
+        }}
       >
         reason
       </label>
@@ -138,7 +151,14 @@ export function ReasonSelect({ reasons = [], value, onChange, error, disabled = 
                 >
                   <span>{reason.displayName}</span>
                   {isDisabled ? (
-                    <span style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', color: v.ink3 }}>
+                    <span
+                      style={{
+                        fontFamily: v.fontMono,
+                        fontSize: 10,
+                        textTransform: 'uppercase',
+                        color: v.ink3,
+                      }}
+                    >
                       unavailable
                     </span>
                   ) : isSelected ? (
@@ -150,7 +170,14 @@ export function ReasonSelect({ reasons = [], value, onChange, error, disabled = 
           </ul>
         ) : null}
       </div>
-      <span style={{ fontFamily: v.fontBody, fontSize: 12, color: error ? v.errorText : 'transparent', minHeight: 16 }}>
+      <span
+        style={{
+          fontFamily: v.fontBody,
+          fontSize: 12,
+          color: error ? v.errorText : 'transparent',
+          minHeight: 16,
+        }}
+      >
         {error || '.'}
       </span>
     </div>

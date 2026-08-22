@@ -119,11 +119,19 @@ export function HashtagRegistryScreen() {
       setConfirm(null);
     };
     if (type === 'delete') {
-      hashtagActions.remove.mutate({ hashtagId: tag.id, reason }, { onSuccess: done('hashtag deleted'), onError });
+      hashtagActions.remove.mutate(
+        { hashtagId: tag.id, reason },
+        { onSuccess: done('hashtag deleted'), onError }
+      );
       return;
     }
     const nextStatus = type === 'ban' ? 'banned' : 'active';
-    const message = type === 'ban' ? 'hashtag banned' : type === 'restore' ? 'hashtag restored' : 'hashtag unbanned';
+    const message =
+      type === 'ban'
+        ? 'hashtag banned'
+        : type === 'restore'
+          ? 'hashtag restored'
+          : 'hashtag unbanned';
     hashtagActions.update.mutate(
       { hashtagId: tag.id, status: nextStatus, note: reason },
       { onSuccess: done(message), onError }
@@ -153,7 +161,19 @@ export function HashtagRegistryScreen() {
               event.stopPropagation();
               setConfirm({ type, tag });
             }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 9px', borderRadius: 999, background: v.surface, border: `1px solid ${v.border}`, cursor: 'pointer', fontFamily: v.fontBody, fontSize: 12, color }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '5px 9px',
+              borderRadius: 999,
+              background: v.surface,
+              border: `1px solid ${v.border}`,
+              cursor: 'pointer',
+              fontFamily: v.fontBody,
+              fontSize: 12,
+              color,
+            }}
           >
             <LxIcon name={icon} size={12} color={color} />
             {type}
@@ -168,15 +188,45 @@ export function HashtagRegistryScreen() {
       key: 'name',
       header: 'hashtag',
       render: (row) => (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: v.fontBody, fontSize: 13, color: v.ink, fontWeight: 500 }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontFamily: v.fontBody,
+            fontSize: 13,
+            color: v.ink,
+            fontWeight: 500,
+          }}
+        >
           <LxIcon name="hash" size={13} color={v.ink3} />
           {row.name}
         </span>
       ),
     },
-    { key: 'postCount', header: 'posts', align: 'right', nowrap: true, render: (row) => <span style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink2 }}>{row.postCount ?? 0}</span> },
-    { key: 'status', header: 'status', nowrap: true, render: (row) => <StatusBadge status={row.status} size="sm" /> },
-    { key: 'created', header: 'created', nowrap: true, render: (row) => <LocalTime value={row.createdAt} showZone={false} /> },
+    {
+      key: 'postCount',
+      header: 'posts',
+      align: 'right',
+      nowrap: true,
+      render: (row) => (
+        <span style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink2 }}>
+          {row.postCount ?? 0}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'status',
+      nowrap: true,
+      render: (row) => <StatusBadge status={row.status} size="sm" />,
+    },
+    {
+      key: 'created',
+      header: 'created',
+      nowrap: true,
+      render: (row) => <LocalTime value={row.createdAt} showZone={false} />,
+    },
     { key: 'actions', header: '', align: 'right', render: rowActions },
   ];
 
@@ -186,15 +236,39 @@ export function HashtagRegistryScreen() {
     }
     const { type, tag } = confirm;
     if (type === 'ban') {
-      return { open: true, title: `ban #${tag.name}`, description: BAN_CONSEQUENCE, confirmLabel: 'ban hashtag', tone: 'danger' };
+      return {
+        open: true,
+        title: `ban #${tag.name}`,
+        description: BAN_CONSEQUENCE,
+        confirmLabel: 'ban hashtag',
+        tone: 'danger',
+      };
     }
     if (type === 'delete') {
-      return { open: true, title: `delete #${tag.name}`, description: DELETE_CONSEQUENCE, confirmLabel: 'delete hashtag', tone: 'danger' };
+      return {
+        open: true,
+        title: `delete #${tag.name}`,
+        description: DELETE_CONSEQUENCE,
+        confirmLabel: 'delete hashtag',
+        tone: 'danger',
+      };
     }
     if (type === 'restore') {
-      return { open: true, title: `restore #${tag.name}`, description: 'this returns the hashtag to active, usable in posts and search again.', confirmLabel: 'restore hashtag', tone: 'default' };
+      return {
+        open: true,
+        title: `restore #${tag.name}`,
+        description: 'this returns the hashtag to active, usable in posts and search again.',
+        confirmLabel: 'restore hashtag',
+        tone: 'default',
+      };
     }
-    return { open: true, title: `unban #${tag.name}`, description: 'this returns the hashtag to active, usable in posts again.', confirmLabel: 'unban hashtag', tone: 'default' };
+    return {
+      open: true,
+      title: `unban #${tag.name}`,
+      description: 'this returns the hashtag to active, usable in posts again.',
+      confirmLabel: 'unban hashtag',
+      tone: 'default',
+    };
   })();
 
   return (
@@ -203,7 +277,14 @@ export function HashtagRegistryScreen() {
         title="hashtags"
         subtitle="manage the hashtag vocabulary."
         right={
-          <LxBtn variant="primary" size="sm" onClick={() => { setNameError(''); setCreateOpen(true); }}>
+          <LxBtn
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setNameError('');
+              setCreateOpen(true);
+            }}
+          >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <LxIcon name="plus" size={14} color={v.inkInverse} />
               create hashtag
@@ -213,19 +294,63 @@ export function HashtagRegistryScreen() {
       />
 
       <PanelCard padded={false}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: `1px solid ${v.border}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, background: v.surfaceSunken, border: `1px solid ${search.cooling ? v.warning : v.border}`, borderRadius: 999, padding: '8px 14px' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 16px',
+            borderBottom: `1px solid ${v.border}`,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              flex: 1,
+              minWidth: 0,
+              background: v.surfaceSunken,
+              border: `1px solid ${search.cooling ? v.warning : v.border}`,
+              borderRadius: 999,
+              padding: '8px 14px',
+            }}
+          >
             <LxIcon name="explore" size={15} color={v.ink3} />
             <input
               type="text"
               value={search.text}
               disabled={search.cooling}
-              placeholder={search.cooling ? `rate limited — searching again in ${search.cooldownRemaining}s` : 'search hashtags'}
+              placeholder={
+                search.cooling
+                  ? `rate limited — searching again in ${search.cooldownRemaining}s`
+                  : 'search hashtags'
+              }
               onChange={(event) => search.setText(event.target.value)}
-              style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', fontFamily: v.fontBody, fontSize: 14, color: v.ink }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontFamily: v.fontBody,
+                fontSize: 14,
+                color: v.ink,
+              }}
             />
             {search.text ? (
-              <button type="button" aria-label="clear search" onClick={search.reset} style={{ display: 'inline-flex', background: 'transparent', border: 'none', cursor: 'pointer', padding: 2 }}>
+              <button
+                type="button"
+                aria-label="clear search"
+                onClick={search.reset}
+                style={{
+                  display: 'inline-flex',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 2,
+                }}
+              >
                 <LxIcon name="close" size={14} color={v.ink3} />
               </button>
             ) : null}
@@ -233,9 +358,22 @@ export function HashtagRegistryScreen() {
         </div>
 
         {search.cooling ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderBottom: `1px solid ${v.border}`, background: v.warningDim, fontFamily: v.fontBody, fontSize: 13, color: v.warningText }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              borderBottom: `1px solid ${v.border}`,
+              background: v.warningDim,
+              fontFamily: v.fontBody,
+              fontSize: 13,
+              color: v.warningText,
+            }}
+          >
             <LxIcon name="clock" size={14} color={v.warningText} />
-            search is rate limited. it will be available again in {search.cooldownRemaining}s. no automatic retry.
+            search is rate limited. it will be available again in {search.cooldownRemaining}s. no
+            automatic retry.
           </div>
         ) : (
           <FilterBar
@@ -255,8 +393,18 @@ export function HashtagRegistryScreen() {
           onRetry={view.refetch}
           emptyIcon="hash"
           emptyTitle={searchResult.active ? 'no hashtags match' : 'no hashtags yet'}
-          emptyHint={searchResult.active ? 'no hashtag matches this search.' : 'create a hashtag to start the vocabulary.'}
-          footer={<LoadMore hasNextPage={view.hasNextPage} isFetchingNextPage={view.isFetchingNextPage} onLoadMore={() => view.fetchNextPage()} />}
+          emptyHint={
+            searchResult.active
+              ? 'no hashtag matches this search.'
+              : 'create a hashtag to start the vocabulary.'
+          }
+          footer={
+            <LoadMore
+              hasNextPage={view.hasNextPage}
+              isFetchingNextPage={view.isFetchingNextPage}
+              onLoadMore={() => view.fetchNextPage()}
+            />
+          }
         />
       </PanelCard>
 

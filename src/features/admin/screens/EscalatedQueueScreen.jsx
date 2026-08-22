@@ -20,8 +20,16 @@ import { useVocabularies } from '../hooks/useVocabularies';
 export function EscalatedQueueScreen() {
   const navigate = useNavigate();
   const { reasonLabel } = useVocabularies();
-  const { rows, isLoading, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
-    useReportQueue({ status: 'escalated' });
+  const {
+    rows,
+    isLoading,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useReportQueue({ status: 'escalated' });
 
   const columns = useMemo(() => buildReportColumns(reasonLabel), [reasonLabel]);
 

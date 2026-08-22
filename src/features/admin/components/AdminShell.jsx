@@ -34,18 +34,61 @@ const NAV_SECTIONS = [
   {
     heading: 'moderation',
     items: [
-      { key: 'reports', label: 'reports', icon: 'flag', to: ROUTES.ADMIN_REPORTS, roles: [ROLES.MODERATOR, ROLES.ADMIN] },
-      { key: 'actions', label: 'actions', icon: 'clock', to: ROUTES.ADMIN_ACTIONS, roles: [ROLES.MODERATOR, ROLES.ADMIN] },
+      {
+        key: 'reports',
+        label: 'reports',
+        icon: 'flag',
+        to: ROUTES.ADMIN_REPORTS,
+        roles: [ROLES.MODERATOR, ROLES.ADMIN],
+      },
+      {
+        key: 'actions',
+        label: 'actions',
+        icon: 'clock',
+        to: ROUTES.ADMIN_ACTIONS,
+        roles: [ROLES.MODERATOR, ROLES.ADMIN],
+      },
     ],
   },
   {
     heading: 'administration',
     items: [
-      { key: 'escalated', label: 'escalated', icon: 'alert', to: ROUTES.ADMIN_ESCALATED, roles: [ROLES.ADMIN], badge: 'escalated' },
-      { key: 'accounts', label: 'accounts', icon: 'profile', to: ROUTES.ADMIN_USERS, roles: [ROLES.ADMIN] },
-      { key: 'hashtags', label: 'hashtags', icon: 'hash', to: ROUTES.ADMIN_HASHTAGS, roles: [ROLES.ADMIN] },
-      { key: 'statistics', label: 'statistics', icon: 'eye', to: ROUTES.ADMIN_STATISTICS, roles: [ROLES.ADMIN] },
-      { key: 'activity', label: 'activity', icon: 'explore', to: ROUTES.ADMIN_ACTIVITY, roles: [ROLES.ADMIN] },
+      {
+        key: 'escalated',
+        label: 'escalated',
+        icon: 'alert',
+        to: ROUTES.ADMIN_ESCALATED,
+        roles: [ROLES.ADMIN],
+        badge: 'escalated',
+      },
+      {
+        key: 'accounts',
+        label: 'accounts',
+        icon: 'profile',
+        to: ROUTES.ADMIN_USERS,
+        roles: [ROLES.ADMIN],
+      },
+      {
+        key: 'hashtags',
+        label: 'hashtags',
+        icon: 'hash',
+        to: ROUTES.ADMIN_HASHTAGS,
+        roles: [ROLES.ADMIN],
+      },
+      {
+        key: 'statistics',
+        label: 'statistics',
+        icon: 'eye',
+        to: ROUTES.ADMIN_STATISTICS,
+        roles: [ROLES.ADMIN],
+      },
+      {
+        key: 'activity',
+        label: 'activity',
+        icon: 'explore',
+        to: ROUTES.ADMIN_ACTIVITY,
+        roles: [ROLES.ADMIN],
+      },
     ],
   },
 ];
@@ -59,7 +102,8 @@ function HeaderIdentity() {
     retry: 1,
   });
 
-  const displayName = me.data?.displayName || storeUser?.displayName || storeUser?.username || 'signed in';
+  const displayName =
+    me.data?.displayName || storeUser?.displayName || storeUser?.username || 'signed in';
   const username = me.data?.username || storeUser?.username || '';
   const avatarUrl = me.data?.avatarUrl || null;
   const hue = [...username].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
@@ -150,7 +194,7 @@ export default function AdminShell() {
                             color={isActive ? v.accentText : v.ink3}
                           />
                           <span>{item.label}</span>
-                          {badge != null ? <span className="lx-admin-badge">{badge}</span> : null}
+                          {badge !== null ? <span className="lx-admin-badge">{badge}</span> : null}
                         </>
                       )}
                     </NavLink>

@@ -32,4 +32,5 @@ export function useResolveUsername(userId) {
 }
 
 /** A stable, honest short form of an id for use before a name resolves. */
-export const shortId = (id) => (typeof id === 'string' && id.length >= 8 ? id.slice(0, 8) : id ?? '');
+export const shortId = (id) =>
+  typeof id === 'string' && id.length >= 8 ? id.slice(0, 8) : (id ?? '');

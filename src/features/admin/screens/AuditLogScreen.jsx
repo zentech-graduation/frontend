@@ -26,9 +26,26 @@ import { useResolveUsername } from '../hooks/useResolveUsername';
 function ActorFilter({ actorId, onChange }) {
   const { username } = useResolveUsername(actorId);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: `1px solid ${v.border}`, flexWrap: 'wrap' }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 16px',
+        borderBottom: `1px solid ${v.border}`,
+        flexWrap: 'wrap',
+      }}
+    >
       <LxIcon name="profile" size={14} color={v.ink3} />
-      <span style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}>
+      <span
+        style={{
+          fontFamily: v.fontMono,
+          fontSize: 10,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: v.ink3,
+        }}
+      >
         actor
       </span>
       <AccountSearchPicker
@@ -56,9 +73,26 @@ function ActorFilter({ actorId, onChange }) {
  */
 function ActionTypeFilter({ actions, value, onChange }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: `1px solid ${v.border}`, flexWrap: 'wrap' }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '14px 16px',
+        borderBottom: `1px solid ${v.border}`,
+        flexWrap: 'wrap',
+      }}
+    >
       <LxIcon name="filter" size={14} color={v.ink3} />
-      <span style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}>
+      <span
+        style={{
+          fontFamily: v.fontMono,
+          fontSize: 10,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: v.ink3,
+        }}
+      >
         action type
       </span>
       <div style={{ position: 'relative' }}>
@@ -87,7 +121,15 @@ function ActionTypeFilter({ actions, value, onChange }) {
             </option>
           ))}
         </select>
-        <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+        <span
+          style={{
+            position: 'absolute',
+            right: 10,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            pointerEvents: 'none',
+          }}
+        >
           <LxIcon name="chevronDown" size={14} color={v.ink3} />
         </span>
       </div>
@@ -95,7 +137,17 @@ function ActionTypeFilter({ actions, value, onChange }) {
         <button
           type="button"
           onClick={() => onChange('')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: v.fontBody,
+            fontSize: 12,
+            color: v.ink3,
+          }}
         >
           <LxIcon name="close" size={12} color={v.ink3} />
           clear
@@ -115,8 +167,19 @@ export function AuditLogScreen() {
   const openActionId = searchParams.get('action') || null;
 
   const { moderationActions, actionLabel, actionKnown } = useVocabularies();
-  const { rows, isLoading, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
-    useActions({ actionType: actionType || undefined, adminId: isAdmin ? actorId || undefined : undefined });
+  const {
+    rows,
+    isLoading,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useActions({
+    actionType: actionType || undefined,
+    adminId: isAdmin ? actorId || undefined : undefined,
+  });
 
   const setParam = (key, value) => {
     setSearchParams(
@@ -151,7 +214,15 @@ export function AuditLogScreen() {
             {!known ? (
               <span
                 title="not in the moderation-action vocabulary"
-                style={{ fontFamily: v.fontMono, fontSize: 9, textTransform: 'uppercase', color: v.warningText, background: v.warningDim, borderRadius: 999, padding: '1px 6px' }}
+                style={{
+                  fontFamily: v.fontMono,
+                  fontSize: 9,
+                  textTransform: 'uppercase',
+                  color: v.warningText,
+                  background: v.warningDim,
+                  borderRadius: 999,
+                  padding: '1px 6px',
+                }}
               >
                 unknown
               </span>
@@ -170,7 +241,11 @@ export function AuditLogScreen() {
         row.adminId ? (
           <ReporterName userId={row.adminId} prefix="@" />
         ) : (
-          <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3, fontStyle: 'italic' }}>system</span>
+          <span
+            style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3, fontStyle: 'italic' }}
+          >
+            system
+          </span>
         ),
     },
     {
@@ -202,8 +277,19 @@ export function AuditLogScreen() {
           <span style={{ color: v.ink3 }}>—</span>
         ),
     },
-    { key: 'when', header: 'when', nowrap: true, render: (row) => <LocalTime value={row.createdAt} showZone={false} /> },
-    { key: 'chevron', header: '', align: 'right', width: 40, render: () => <LxIcon name="chevronRight" size={14} color={v.ink3} /> },
+    {
+      key: 'when',
+      header: 'when',
+      nowrap: true,
+      render: (row) => <LocalTime value={row.createdAt} showZone={false} />,
+    },
+    {
+      key: 'chevron',
+      header: '',
+      align: 'right',
+      width: 40,
+      render: () => <LxIcon name="chevronRight" size={14} color={v.ink3} />,
+    },
   ];
 
   return (
@@ -241,7 +327,11 @@ export function AuditLogScreen() {
               : 'you have taken no moderation actions for this filter.'
           }
           footer={
-            <LoadMore hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} onLoadMore={() => fetchNextPage()} />
+            <LoadMore
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={() => fetchNextPage()}
+            />
           }
         />
       </PanelCard>

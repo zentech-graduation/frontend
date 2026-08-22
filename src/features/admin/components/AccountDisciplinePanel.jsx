@@ -76,7 +76,10 @@ export function AccountDisciplinePanel({ userId }) {
           // surfaced here where it is an honest server fact rather than computed
           // from a partial page.
           const count = data?.activeWarningCount;
-          const suffix = typeof count === 'number' ? ` — ${count} active warning${count === 1 ? '' : 's'} now` : '';
+          const suffix =
+            typeof count === 'number'
+              ? ` — ${count} active warning${count === 1 ? '' : 's'} now`
+              : '';
           // The strike is not the whole outcome: it also moves the account's
           // status. `resultingStatus` is the server's own word for where the
           // account ended up, so it is quoted rather than inferred — a message
@@ -96,7 +99,10 @@ export function AccountDisciplinePanel({ userId }) {
           if (described.kind === 'field') {
             // Map VALIDATION_ERROR onto the form's per-field slots; a key that
             // matches no field is simply not shown, never crashed on.
-            setFieldErrors({ reasonKey: described.fields?.reasonKey, note: described.fields?.note });
+            setFieldErrors({
+              reasonKey: described.fields?.reasonKey,
+              note: described.fields?.note,
+            });
             return;
           }
           // A disabled reason, an ineligible (elevated) target, or a self-action
@@ -112,9 +118,23 @@ export function AccountDisciplinePanel({ userId }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, borderBottom: `1px solid ${v.borderSubtle}`, paddingBottom: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          gap: 12,
+          borderBottom: `1px solid ${v.borderSubtle}`,
+          paddingBottom: 12,
+        }}
+      >
         {canWarn ? (
-          <LxBtn variant="primary" size="sm" onClick={openWarn} disabled={discipline.warn.isPending}>
+          <LxBtn
+            variant="primary"
+            size="sm"
+            onClick={openWarn}
+            disabled={discipline.warn.isPending}
+          >
             issue warning
           </LxBtn>
         ) : (

@@ -43,10 +43,16 @@ const Field = ({ label, children }) => (
 
 function TargetRegion({ target, isLoading, isError }) {
   if (isLoading) {
-    return <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>loading content...</div>;
+    return (
+      <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>loading content...</div>
+    );
   }
   if (isError || !target) {
-    return <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>the reported content could not be loaded.</div>;
+    return (
+      <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>
+        the reported content could not be loaded.
+      </div>
+    );
   }
 
   const isUser = target.reportType === 'user';
@@ -113,7 +119,13 @@ function TargetRegion({ target, isLoading, isError }) {
               key={url}
               src={url}
               alt="reported media"
-              style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 8, border: `1px solid ${v.border}` }}
+              style={{
+                width: 96,
+                height: 96,
+                objectFit: 'cover',
+                borderRadius: 8,
+                border: `1px solid ${v.border}`,
+              }}
             />
           ))}
         </div>
@@ -190,7 +202,9 @@ export function ReportDetailScreen() {
     return (
       <div>
         <PageHeader title="report" />
-        <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 14, padding: 24 }}>loading report...</div>
+        <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 14, padding: 24 }}>
+          loading report...
+        </div>
       </div>
     );
   }
@@ -225,7 +239,8 @@ export function ReportDetailScreen() {
   const canRemove = isActionableTarget && target.removed === false;
   const canRestore = isActionableTarget && target.removed === true;
 
-  const anyControl = canMarkReviewing || canEscalate || canResolveDismiss || canRemove || canRestore;
+  const anyControl =
+    canMarkReviewing || canEscalate || canResolveDismiss || canRemove || canRestore;
 
   const openReason = (config) => {
     setServerError(null);
@@ -251,7 +266,12 @@ export function ReportDetailScreen() {
         right={
           <Link
             to={ROUTES.ADMIN_REPORTS}
-            style={{ fontFamily: v.fontBody, fontSize: 14, color: v.accentText, textDecoration: 'none' }}
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 14,
+              color: v.accentText,
+              textDecoration: 'none',
+            }}
           >
             back to reports
           </Link>
@@ -260,7 +280,13 @@ export function ReportDetailScreen() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 0 }}>
         <PanelCard title="report">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: 16,
+            }}
+          >
             <Field label="reason">{reasonLabel(report.reportReason)}</Field>
             <Field label="status">
               <StatusBadge status={report.status} />
@@ -288,7 +314,9 @@ export function ReportDetailScreen() {
           {report.resolutionNote ? (
             <div style={{ marginTop: 16 }}>
               <Field label="resolution note">
-                <span style={{ whiteSpace: 'pre-wrap', color: v.ink2 }}>{report.resolutionNote}</span>
+                <span style={{ whiteSpace: 'pre-wrap', color: v.ink2 }}>
+                  {report.resolutionNote}
+                </span>
               </Field>
             </div>
           ) : null}

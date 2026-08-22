@@ -33,7 +33,14 @@ import { ReasonSelect } from './ReasonSelect';
 const ARMING_DELAY_MS = 500;
 const NOTE_MAX = CHAR_LIMITS.warningNote;
 
-export function WarnDialog({ open, reasons = [], busy = false, serverFieldErrors = null, onConfirm, onClose }) {
+export function WarnDialog({
+  open,
+  reasons = [],
+  busy = false,
+  serverFieldErrors = null,
+  onConfirm,
+  onClose,
+}) {
   const [reasonKey, setReasonKey] = useState('');
   const [note, setNote] = useState('');
   const [armed, setArmed] = useState(false);
@@ -42,14 +49,19 @@ export function WarnDialog({ open, reasons = [], busy = false, serverFieldErrors
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReasonKey('');
+
       setNote('');
+
       setArmed(false);
+
       setLocalErrors({});
       return undefined;
     }
     openCount.current += 1;
     const myCount = openCount.current;
+
     setArmed(false);
     const timer = setTimeout(() => {
       if (openCount.current === myCount) {
@@ -97,9 +109,20 @@ export function WarnDialog({ open, reasons = [], busy = false, serverFieldErrors
       role="dialog"
       aria-modal="true"
       aria-label="warn account"
-      style={{ position: 'fixed', inset: 0, zIndex: 2147483400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2147483400,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
     >
-      <div onClick={busy ? undefined : onClose} style={{ position: 'absolute', inset: 0, background: v.scrim }} />
+      <div
+        onClick={busy ? undefined : onClose}
+        style={{ position: 'absolute', inset: 0, background: v.scrim }}
+      />
       <div
         style={{
           position: 'relative',
@@ -115,7 +138,16 @@ export function WarnDialog({ open, reasons = [], busy = false, serverFieldErrors
         }}
       >
         <div>
-          <div style={{ fontFamily: v.fontDisplay, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', color: v.ink, marginBottom: 8 }}>
+          <div
+            style={{
+              fontFamily: v.fontDisplay,
+              fontWeight: 700,
+              fontSize: 18,
+              letterSpacing: '-0.02em',
+              color: v.ink,
+              marginBottom: 8,
+            }}
+          >
             warn this account
           </div>
           <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55 }}>
@@ -140,7 +172,13 @@ export function WarnDialog({ open, reasons = [], busy = false, serverFieldErrors
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label
             htmlFor="warn-note"
-            style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: v.ink3,
+            }}
           >
             note (recorded)
           </label>
@@ -172,10 +210,22 @@ export function WarnDialog({ open, reasons = [], busy = false, serverFieldErrors
             }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12, color: noteError ? v.errorText : 'transparent' }}>
+            <span
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 12,
+                color: noteError ? v.errorText : 'transparent',
+              }}
+            >
               {noteError || '.'}
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: overLimit ? v.errorText : v.ink3 }}>
+            <span
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 11,
+                color: overLimit ? v.errorText : v.ink3,
+              }}
+            >
               {note.length}/{NOTE_MAX}
             </span>
           </div>
