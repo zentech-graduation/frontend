@@ -48,7 +48,17 @@ export function AccountDisciplinePanel({ userId }) {
       { reasonKey, note },
       {
         onSuccess: (data) => {
-          toast(data?.strikeIssued ? 'warning issued — a strike was applied' : 'warning issued');
+          // The active warning count is only available on the warn response, not
+          // on any read (see accounts-contract-verification.md 3.5), so it is
+          // surfaced here where it is an honest server fact rather than computed
+          // from a partial page.
+          const count = data?.activeWarningCount;
+          const suffix = typeof count === 'number' ? ` — ${count} active warning${count === 1 ? '' : 's'} now` : '';
+          toast(
+            data?.strikeIssued
+              ? `warning issued — a strike was applied${suffix}`
+              : `warning issued${suffix}`
+          );
           closeWarn();
         },
         onError: (err) => {

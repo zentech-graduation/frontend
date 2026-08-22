@@ -69,11 +69,19 @@ export const ROUTES = {
   // administrator sees all. The open action's detail lives in the `action`
   // query parameter so a specific action is a shareable link.
   ADMIN_ACTIONS: '/admin/actions',
+  // The account list and search. Administrator only: the backend answers the
+  // whole account surface (list, search, detail) with 403 for a moderator. A row
+  // opens the account at ADMIN_USER.
+  ADMIN_USERS: '/admin/users',
   // An account's moderation context: its violation history, its posts and
-  // comments, and the warn control. This is deliberately not the account detail
-  // screen (no ban, suspend, role change, or profile); it hosts only this
-  // phase's account-scoped surfaces. Build with `routeTo.adminUser`.
+  // comments, the warn control, and — for an administrator — the lifecycle
+  // controls (ban, suspend, role change, force logout) driven by the account's
+  // capabilities. Reachable by both roles; a moderator sees only the discipline
+  // surfaces because the capabilities-bearing detail is administrator-only.
+  // Build with `routeTo.adminUser`.
   ADMIN_USER: '/admin/users/:userId',
+  // The administrative hashtag registry. Administrator only.
+  ADMIN_HASHTAGS: '/admin/hashtags',
 
   NOT_FOUND: '*',
 };

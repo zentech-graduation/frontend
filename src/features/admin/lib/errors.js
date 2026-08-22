@@ -45,8 +45,19 @@ const PAGE_CODES = new Set([
 ]);
 
 // "Another reviewer acted first" and "the entity is already in that state".
-// Both are shown calmly and followed by a refetch, never a raw error.
-const CONFLICT_CODES = new Set(['REPORT_INVALID_TRANSITION', 'ADMIN_INVALID_TRANSITION']);
+// Both are shown calmly and followed by a refetch, never a raw error. The
+// account lifecycle codes join this set because capabilities normally prevent an
+// ineligible control from rendering at all, so when one of these does arrive it
+// means the target's state changed under the reviewer (a race) and the honest
+// response is to refetch the detail rather than alarm — see
+// accounts-contract-verification.md 3.3.
+const CONFLICT_CODES = new Set([
+  'REPORT_INVALID_TRANSITION',
+  'ADMIN_INVALID_TRANSITION',
+  'ADMIN_ROLE_TRANSITION_NOT_ALLOWED',
+  'ADMIN_SELF_ACTION_NOT_ALLOWED',
+  'ADMIN_TARGET_PROTECTED',
+]);
 
 /**
  * Classifies an Axios error into a kind the caller can act on.

@@ -15,7 +15,7 @@ export default function AdminOnlyRoute() {
   const role = useAuthStore((state) => state.role);
 
   if (!isAdminRole(role)) {
-    return <NotAvailable message="the escalated queue is available to administrators only." />;
+    return <NotAvailable message="this area is available to administrators only." />;
   }
 
   return <Outlet />;

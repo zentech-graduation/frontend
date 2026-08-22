@@ -23,6 +23,14 @@ const CURSOR_QUERY_KEYS = ['cursor', 'limit'];
 // The action log declares exactly these four; there is no date range and no
 // target filter (see discipline-contract-verification.md 4.4.2).
 const ACTIONS_QUERY_KEYS = ['adminId', 'actionType', 'cursor', 'limit'];
+// The account list declares status and role; search declares only q. Both take
+// keyset paging. See accounts-contract-verification.md 3.2.
+const USERS_QUERY_KEYS = ['status', 'role', 'cursor', 'limit'];
+const USER_SEARCH_QUERY_KEYS = ['q', 'cursor', 'limit'];
+// The hashtag registry list declares status; search declares q and status.
+// See accounts-contract-verification.md 3.4.
+const HASHTAGS_QUERY_KEYS = ['status', 'cursor', 'limit'];
+const HASHTAG_SEARCH_QUERY_KEYS = ['q', 'status', 'cursor', 'limit'];
 
 export const adminApi = {
   /** The one-hour-cached vocabulary lists (report reasons, moderation actions). */
@@ -222,6 +230,166 @@ export const adminApi = {
    */
   async getAction(actionId) {
     const res = await axiosClient.get(`/admin/actions/${actionId}`);
+    return unwrap(res);
+  },
+
+  /**
+   * One page of the account list. Administrator only; a moderator receives 403.
+   * Declares two filters, `status` and `role`; both are optional and serialised
+   * only when set. Rows are `AdminUserListItemResponse`, carrying role and status
+   * so a row is renderable and triage-able without a second fetch.
+   */
+  async getUsers({ status, role, cursor, limit } = {}) {
+    const params = pickParams({ status, role, cursor, limit }, USERS_QUERY_KEYS);
+    const res = await axiosClient.get('/admin/users', { params });
+    return unwrap(res);
+  },
+
+  /**
+   * One page of an account search. Administrator only. `q` is required and must
+   * be at least two characters; the server answers a shorter or blank query with
+   * 400, so the caller gates on length before firing. Returns the same row shape
+   * as the list. Rate limited (prod 40/min); a 429 carries `Retry-After`.
+   */
+  async searchUsers({ q, cursor, limit } = {}) {
+    const params = pickParams({ q, cursor, limit }, USER_SEARCH_QUERY_KEYS);
+    const res = await axiosClient.get('/admin/users/search', { params });
+    return unwrap(res);
+  },
+
+  /**
+   * A single account's detail. Administrator only; a moderator receives 403. The
+   * `capabilities` object is a field of this payload rather than a separate
+   * endpoint, so it is refetched with the detail after every action; no action
+   * response carries capabilities.
+   */
+  async getUserDetail(userId) {
+    const res = await axiosClient.get(`/admin/users/${userId}`);
+    return unwrap(res);
+  },
+
+  /** Ban an account. Body is `reason` (required) and an optional `reportId`. */
+  async banUser(userId, { reason, reportId } = {}) {
+    const res = await axiosClient.patch(
+      `/admin/users/${userId}/ban`,
+      buildBody({ reason, reportId })
+    );
+    return unwrap(res);
+  },
+
+  /** Lift a ban. Body is `reason` (required) and an optional `reportId`. */
+  async unbanUser(userId, { reason, reportId } = {}) {
+    const res = await axiosClient.patch(
+      `/admin/users/${userId}/unban`,
+      buildBody({ reason, reportId })
+    );
+    return unwrap(res);
+  },
+
+  /**
+   * Suspend an account. Body is `reason` (required), an optional `reportId`, and
+   * `durationDays` (1..3650, unit days). The server stores a resulting
+   * `suspendedUntil`; the client shows `now + durationDays` in local time before
+   * confirming rather than sending an end time.
+   */
+  async suspendUser(userId, { reason, reportId, durationDays } = {}) {
+    const res = await axiosClient.patch(
+      `/admin/users/${userId}/suspend`,
+      buildBody({ reason, reportId, durationDays })
+    );
+    return unwrap(res);
+  },
+
+  /** Lift a suspension. Body is `reason` (required) and an optional `reportId`. */
+  async unsuspendUser(userId, { reason, reportId } = {}) {
+    const res = await axiosClient.patch(
+      `/admin/users/${userId}/unsuspend`,
+      buildBody({ reason, reportId })
+    );
+    return unwrap(res);
+  },
+
+  /**
+   * Change an account's role. Body is `role` (required, from the target's
+   * `assignableRoles`) and `reason` (required). Promotion to administrator is
+   * irreversible: an existing administrator can never be demoted through the API.
+   */
+  async changeUserRole(userId, { role, reason } = {}) {
+    const res = await axiosClient.patch(
+      `/admin/users/${userId}/role`,
+      buildBody({ role, reason })
+    );
+    return unwrap(res);
+  },
+
+  /**
+   * End every session for an account. Revokes all refresh tokens and advances the
+   * token epoch, so both the refresh path and every already-issued access token
+   * die immediately. Body is `reason` (required) and an optional `reportId`.
+   */
+  async forceLogout(userId, { reason, reportId } = {}) {
+    const res = await axiosClient.post(
+      `/admin/users/${userId}/force-logout`,
+      buildBody({ reason, reportId })
+    );
+    return unwrap(res);
+  },
+
+  /**
+   * One page of the hashtag registry. Administrator only; a moderator receives
+   * 403. Declares a `status` filter (`active`/`banned`/`deleted`). Rows are
+   * `HashtagAdminResponse`.
+   */
+  async getHashtags({ status, cursor, limit } = {}) {
+    const params = pickParams({ status, cursor, limit }, HASHTAGS_QUERY_KEYS);
+    const res = await axiosClient.get('/admin/hashtags', { params });
+    return unwrap(res);
+  },
+
+  /**
+   * One page of a hashtag search. Administrator only. `q` is required (minimum
+   * one character; blank is 400) and an optional `status` narrows it. Same row
+   * shape as the list. Rate limited on its own bucket (prod 40/min).
+   */
+  async searchHashtags({ q, status, cursor, limit } = {}) {
+    const params = pickParams({ q, status, cursor, limit }, HASHTAG_SEARCH_QUERY_KEYS);
+    const res = await axiosClient.get('/admin/hashtags/search', { params });
+    return unwrap(res);
+  },
+
+  /**
+   * Create a hashtag. Body is `name`, `status`, and `note`, all required. The
+   * response is the audit `AdminActionResponse`, not the hashtag; the new
+   * hashtag's id is carried in `targetEntityId`. A duplicate name returns 409
+   * HASHTAG_ALREADY_EXISTS.
+   */
+  async createHashtag({ name, status, note } = {}) {
+    const res = await axiosClient.post('/admin/hashtags', buildBody({ name, status, note }));
+    return unwrap(res);
+  },
+
+  /**
+   * Transition a hashtag's status. Body is `status` and `note`, both required.
+   * Returns an `AdminActionResponse`. Banning a hashtag drops it from any post
+   * restored later; unbanning returns it to `active`.
+   */
+  async updateHashtag(hashtagId, { status, note } = {}) {
+    const res = await axiosClient.patch(
+      `/admin/hashtags/${hashtagId}`,
+      buildBody({ status, note })
+    );
+    return unwrap(res);
+  },
+
+  /**
+   * Delete a hashtag. Body is `reason` (required). This marks the record
+   * `deleted` rather than removing it; it stays queryable under the `deleted`
+   * status filter. Returns an `AdminActionResponse`.
+   */
+  async deleteHashtag(hashtagId, { reason } = {}) {
+    const res = await axiosClient.delete(`/admin/hashtags/${hashtagId}`, {
+      data: buildBody({ reason }),
+    });
     return unwrap(res);
   },
 };
