@@ -14,6 +14,7 @@ export function ConversationListPanel({
   onDeleteThread,
   onReportThread,
   onBlockThread,
+  isThreadBlocked,
   onPinThread,
   onUnpinThread,
   onMuteThread,
@@ -71,6 +72,7 @@ export function ConversationListPanel({
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {filteredThreads.map((thread) => {
           const isActive = thread.id === activeThreadId;
+          const isBlocked = Boolean(isThreadBlocked?.(thread));
           return (
             <ConvRow
               key={thread.id}
@@ -81,7 +83,7 @@ export function ConversationListPanel({
               onMarkUnread={() => onMarkUnread?.(thread.id)}
               onDelete={() => onDeleteThread?.(thread)}
               onReport={thread.counterpartId ? () => onReportThread?.(thread) : null}
-              onBlock={thread.counterpartId ? () => onBlockThread?.(thread) : null}
+              onBlock={thread.counterpartId && !isBlocked ? () => onBlockThread?.(thread) : null}
               onPin={() => onPinThread?.(thread.id)}
               onUnpin={() => onUnpinThread?.(thread.id)}
               onMute={() => onMuteThread?.(thread.id)}

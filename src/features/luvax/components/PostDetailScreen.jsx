@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import {
@@ -293,11 +293,12 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
           ) : null}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: 7,
-              flexWrap: 'wrap',
+              display: 'block',
+              minWidth: 0,
+              maxWidth: '100%',
               lineHeight: 1.42,
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
             }}
           >
             <span
@@ -308,6 +309,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
                 fontWeight: 600,
                 color: v.ink,
                 cursor: author.id ? 'pointer' : 'default',
+                marginRight: 7,
               }}
             >
               {authorName}
@@ -318,7 +320,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
                   fontFamily: v.fontBody,
                   fontSize: 12.5,
                   color: v.ink,
-                  minWidth: 0,
+                  display: 'inline',
                   overflowWrap: 'anywhere',
                   wordBreak: 'break-word',
                 }}
@@ -346,6 +348,8 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
                   fontFamily: v.fontBody,
                   fontSize: 12.5,
                   outline: 'none',
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
                 }}
               />
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -709,11 +713,11 @@ export function PostDetailScreen({ overlay = false }) {
   // every other overlay.
   useEscapeKey(overlay, closePost);
 
-  const handleLikeToggle = () => {
+  const handleLikeToggle = useCallback(() => {
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
     likeMutation.mutate({ postId, liked });
-  };
+  }, [likeMutation, liked, postId]);
 
   const handleSaveToggle = () => {
     saveMutation.mutate({ postId, saved });
@@ -728,10 +732,10 @@ export function PostDetailScreen({ overlay = false }) {
     follow.mutate(targetUserId);
   };
 
-  const handleEditOpen = () => {
+  const handleEditOpen = useCallback(() => {
     setEditCaption(post?.caption || post?.text || '');
     setEditSheetOpen(true);
-  };
+  }, [post.caption, post.text]);
 
   const handleEditSubmit = () => {
     if (editCaption.trim() !== '') {
@@ -740,9 +744,9 @@ export function PostDetailScreen({ overlay = false }) {
     }
   };
 
-  const handleDeleteRequest = () => {
+  const handleDeleteRequest = useCallback(() => {
     setDeleteConfirmOpen(true);
-  };
+  }, []);
 
   const handleDeleteConfirm = () => {
     deletePost.mutate(postId, {
@@ -821,6 +825,24 @@ export function PostDetailScreen({ overlay = false }) {
             .then(() => toast('link copied'))
             .catch(() => {}),
       },
+      ...(isSelf
+        ? [
+            {
+              id: 'edit',
+              icon: 'edit',
+              label: 'Edit post',
+              onClick: handleEditOpen,
+            },
+            {
+              id: 'delete',
+              icon: 'trash',
+              label: 'Delete post',
+              tone: 'danger',
+              separator: true,
+              onClick: handleDeleteRequest,
+            },
+          ]
+        : []),
       // Kept off the viewer's own post, where the server refuses the report with
       // REPORT_SELF_NOT_ALLOWED and the action could never succeed.
       ...(isSelf
@@ -848,7 +870,18 @@ export function PostDetailScreen({ overlay = false }) {
                 },
           ]),
     ],
-    [authorAvatarUrl, authorName, isSelf, liked, post.caption, post.hasReported, postId]
+    [
+      authorAvatarUrl,
+      authorName,
+      handleDeleteRequest,
+      handleEditOpen,
+      handleLikeToggle,
+      isSelf,
+      liked,
+      post.caption,
+      post.hasReported,
+      postId,
+    ]
   );
 
   if (isLoading) {
@@ -988,6 +1021,8 @@ export function PostDetailScreen({ overlay = false }) {
             lineHeight: 1.42,
             color: v.ink,
             letterSpacing: '-0.01em',
+            overflowWrap: 'anywhere',
+            wordBreak: 'break-word',
           }}
         >
           {post.caption}
@@ -1140,19 +1175,52 @@ export function PostDetailScreen({ overlay = false }) {
               background: 'color-mix(in srgb, var(--lx-accent) 14%, var(--lx-surface))',
               fontFamily: v.fontMono,
               fontSize: 11,
+              lineHeight: 1.35,
               color: v.accentText,
+              minWidth: 0,
+              maxWidth: '100%',
+              overflow: 'hidden',
+              boxSizing: 'border-box',
             }}
           >
             <div
               style={{
                 minWidth: 0,
+                flex: 1,
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 6,
               }}
             >
-              <span style={{ marginRight: 6 }}>↩ replying to @{replyingTo.author}</span>
-              <span style={{ color: v.ink2 }}>{replyingTo.text}</span>
+              <span
+                style={{
+                  flexShrink: 1,
+                  minWidth: 0,
+                  maxWidth: '45%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  lineHeight: 1.35,
+                }}
+              >
+                ↩ replying to @{replyingTo.author}
+              </span>
+              <span
+                style={{
+                  color: v.ink2,
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitBoxOrient: 'vertical',
+                  WebkitLineClamp: 2,
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-all',
+                }}
+              >
+                {replyingTo.text}
+              </span>
             </div>
             <button
               type="button"
@@ -1178,24 +1246,42 @@ export function PostDetailScreen({ overlay = false }) {
           </div>
         ) : null}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px 12px' }}>
-          <LxAvatar size={30} src={currentUser?.avatarUrl} />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 10,
+            padding: '10px 12px 12px',
+            minWidth: 0,
+            maxWidth: '100%',
+            overflow: 'hidden',
+            boxSizing: 'border-box',
+          }}
+        >
+          <div style={{ flexShrink: 0 }}>
+            <LxAvatar size={30} src={currentUser?.avatarUrl} />
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
+                width: '100%',
+                minWidth: 0,
                 minHeight: 40,
                 borderRadius: 20,
                 border: `1px solid ${v.border}`,
                 background: 'transparent',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 padding: '4px 14px',
+                overflow: 'hidden',
+                boxSizing: 'border-box',
               }}
             >
               <textarea
                 ref={commentInputRef}
                 value={commentDraft}
                 onChange={(event) => setCommentDraft(event.target.value)}
+                wrap="soft"
                 rows={1}
                 maxLength={COMMENT_MAX_LENGTH}
                 placeholder={replyingTo ? `reply to @${replyingTo.author}...` : 'add a comment...'}
@@ -1203,6 +1289,9 @@ export function PostDetailScreen({ overlay = false }) {
                 // lines, then scrolls. Long comments wrap instead of running off.
                 style={{
                   flex: 1,
+                  minWidth: 0,
+                  width: '100%',
+                  boxSizing: 'border-box',
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
@@ -1213,6 +1302,10 @@ export function PostDetailScreen({ overlay = false }) {
                   lineHeight: '20px',
                   maxHeight: 70,
                   overflowY: 'auto',
+                  overflowX: 'hidden',
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-all',
+                  whiteSpace: 'pre-wrap',
                   padding: '5px 0',
                   display: 'block',
                 }}
@@ -1237,6 +1330,7 @@ export function PostDetailScreen({ overlay = false }) {
               opacity: commentDraft.trim() ? 1 : 0.5,
               display: 'flex',
               alignItems: 'center',
+              flexShrink: 0,
             }}
           >
             <LxIcon name="send" size={18} color={v.accent} />

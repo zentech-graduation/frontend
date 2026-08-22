@@ -150,6 +150,7 @@ export const toMessageView = (message, { participants, currentUserId, loadedMess
 
   return {
     id: message.id,
+    conversationId: message.conversationId,
     from: message.senderId === currentUserId ? 'me' : 'them',
     kind: kindOf(message),
     text: message.isDeleted ? DELETED_PLACEHOLDER : message.content || '',

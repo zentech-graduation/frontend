@@ -10,7 +10,7 @@
 
 // Prefix keys. Every post query is keyed with parameters after the prefix, so
 // matching on the prefix reaches each parameter variant that is currently held.
-const POST_LIST_PREFIXES = [['feed'], ['explore'], ['userPosts']];
+const POST_LIST_PREFIXES = [['feed'], ['explore'], ['userPosts'], ['savedPosts'], ['likedPosts']];
 
 const applyToPost = (postId, patch) => (cached) => {
   if (!cached) return cached;
@@ -64,4 +64,37 @@ export const patchCachedPost = (queryClient, postId, patch) => {
       queryClient.setQueryData(queryKey, previous);
     });
   };
+};
+
+const removeFromPostList = (postId) => (cached) => {
+  if (!cached) return cached;
+
+  const keepRow = (row) => row?.id !== postId && row?.post?.id !== postId;
+
+  const mapPayload = (payload) => {
+    const rows = payload?.data?.content;
+    if (!Array.isArray(rows)) return payload;
+    return { ...payload, data: { ...payload.data, content: rows.filter(keepRow) } };
+  };
+
+  if (Array.isArray(cached.pages)) {
+    return { ...cached, pages: cached.pages.map(mapPayload) };
+  }
+
+  return mapPayload(cached);
+};
+
+/**
+ * Removes a post from every list cache and clears its detail entry after a
+ * successful delete, so closed overlays and profile grids cannot keep showing a
+ * post the server has already removed.
+ */
+export const removeCachedPost = (queryClient, postId) => {
+  POST_LIST_PREFIXES.flatMap((queryKey) => queryClient.getQueriesData({ queryKey })).forEach(
+    ([queryKey]) => {
+      queryClient.setQueryData(queryKey, removeFromPostList(postId));
+    }
+  );
+
+  queryClient.removeQueries({ queryKey: ['post', postId] });
 };

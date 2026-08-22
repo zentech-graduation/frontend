@@ -20,6 +20,7 @@ const autoResizeDraft = (element) => {
 };
 
 const ACCEPTED_ATTACHMENT_TYPES = 'image/*,video/*';
+const CLIPBOARD_IMAGE_FALLBACK_NAME = 'pasted-image.png';
 
 export function ChatCenterPanel({
   viewport,
@@ -49,6 +50,24 @@ export function ChatCenterPanel({
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     if (files.length) onStageAttachments?.(files);
+  };
+
+  const handleDraftPaste = (event) => {
+    const imageFiles = Array.from(event.clipboardData?.items || [])
+      .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter(Boolean)
+      .map(
+        (file, index) =>
+          new File([file], file.name || `${Date.now()}-${index}-${CLIPBOARD_IMAGE_FALLBACK_NAME}`, {
+            type: file.type || 'image/png',
+            lastModified: file.lastModified || Date.now(),
+          })
+      );
+
+    if (!imageFiles.length) return;
+    event.preventDefault();
+    onStageAttachments?.(imageFiles);
   };
 
   const canSend = Boolean(draft.trim() || pendingAttachments?.length) && !isSending;
@@ -266,6 +285,7 @@ export function ChatCenterPanel({
           display: 'flex',
           flexDirection: 'column',
           gap: 8,
+          minWidth: 0,
         }}
       >
         {replyingTo ? (
@@ -279,20 +299,33 @@ export function ChatCenterPanel({
               fontFamily: v.fontMono,
               fontSize: 10.5,
               color: v.accentText,
+              minWidth: 0,
             }}
           >
             <div
               style={{
                 minWidth: 0,
+                flex: 1,
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 6,
               }}
             >
-              <span style={{ marginRight: 6 }}>
+              <span style={{ flexShrink: 0 }}>
                 ↩ replying to {replyingTo.from === 'me' ? 'you' : activeThread.name}
               </span>
-              <span style={{ color: v.ink2 }}>{replyingTo.text}</span>
+              <span
+                style={{
+                  color: v.ink2,
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {replyingTo.text}
+              </span>
             </div>
             <button
               type="button"
@@ -369,7 +402,7 @@ export function ChatCenterPanel({
             with the draft, next to the last line of text. Centering them against the row - the
             previous approach - looked fine for one line and left them stranded in the middle of
             empty space once the draft wrapped to several. */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, minWidth: 0 }}>
           <input
             ref={attachmentInputRef}
             type="file"
@@ -418,6 +451,7 @@ export function ChatCenterPanel({
               ref={draftInputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
+              onPaste={handleDraftPaste}
               maxLength={CHAR_LIMITS.message}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
@@ -430,6 +464,7 @@ export function ChatCenterPanel({
               style={{
                 flex: 1,
                 minWidth: 0,
+                width: '100%',
                 minHeight: 16,
                 maxHeight: DRAFT_MAX_HEIGHT,
                 background: 'transparent',
@@ -441,6 +476,8 @@ export function ChatCenterPanel({
                 lineHeight: 1.4,
                 resize: 'none',
                 overflowY: 'auto',
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
                 padding: 0,
                 boxSizing: 'border-box',
               }}

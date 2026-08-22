@@ -19,50 +19,88 @@ const ALBUM_WIDTH = 210;
 export function MessageAlbum({ items, onOpenViewer, isMine, isFirstInRun, isLastInRun }) {
   const visible = items.slice(0, MAX_VISIBLE_TILES);
   const overflow = items.length - MAX_VISIBLE_TILES;
+  const caption = items.find((item) => item.text)?.text || '';
+  const albumRadius = bubbleCornerRadius({
+    isMine,
+    isFirstInRun,
+    isLastInRun: !caption && isLastInRun,
+  });
 
   return (
     <div
       style={{
         width: ALBUM_WIDTH,
         maxWidth: '100%',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: 2,
-        borderRadius: bubbleCornerRadius({ isMine, isFirstInRun, isLastInRun }),
-        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: isMine ? 'flex-end' : 'flex-start',
       }}
     >
-      {visible.map((item, index) => {
-        const isLastTile = index === MAX_VISIBLE_TILES - 1;
-        return (
-          <div key={item.id} style={{ position: 'relative' }}>
-            <MediaPlaceholder
-              item={item.media || { label: item.text }}
-              onClick={() => onOpenViewer(items, index)}
-            />
-            {isLastTile && overflow > 0 ? (
-              <div
+      <div
+        style={{
+          width: '100%',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 2,
+          borderRadius: albumRadius,
+          overflow: 'hidden',
+        }}
+      >
+        {visible.map((item, index) => {
+          const isLastTile = index === MAX_VISIBLE_TILES - 1;
+          return (
+            <div key={item.id} style={{ position: 'relative' }}>
+              <MediaPlaceholder
+                item={item.media || { label: item.text }}
                 onClick={() => onOpenViewer(items, index)}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontFamily: v.fontBody,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                +{overflow}
-              </div>
-            ) : null}
-          </div>
-        );
-      })}
+              />
+              {isLastTile && overflow > 0 ? (
+                <div
+                  onClick={() => onOpenViewer(items, index)}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    fontFamily: v.fontBody,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  +{overflow}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      {caption ? (
+        <div
+          style={{
+            maxWidth: '100%',
+            marginTop: 2,
+            padding: '8px 11px',
+            borderRadius: bubbleCornerRadius({
+              isMine,
+              isFirstInRun: false,
+              isLastInRun,
+            }),
+            background: isMine ? v.accentDim : v.surface,
+            color: v.ink,
+            fontFamily: v.fontBody,
+            fontSize: 13.5,
+            lineHeight: 1.42,
+            overflowWrap: 'anywhere',
+            wordBreak: 'break-word',
+          }}
+        >
+          {caption}
+        </div>
+      ) : null}
     </div>
   );
 }

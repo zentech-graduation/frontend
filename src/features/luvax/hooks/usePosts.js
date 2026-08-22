@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { postService } from '@/services/post.service';
 import { getNextCursor } from '@/utils/helpers';
-import { patchCachedPost } from './usePostLikeState';
+import { patchCachedPost, removeCachedPost } from './usePostLikeState';
 import { beginSelfPostLike, endSelfPostLike, noteSelfCommentLike } from './useLivePostUpdates';
 
 export const useFeed = (params = {}) => {
@@ -124,9 +124,13 @@ export const useDeletePost = () => {
 
   return useMutation({
     mutationFn: (postId) => postService.deletePost(postId),
-    onSuccess: () => {
+    onSuccess: (_data, postId) => {
+      removeCachedPost(queryClient, postId);
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['explore'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: savedPostsKey });
+      queryClient.invalidateQueries({ queryKey: likedPostsKey });
     },
   });
 };
