@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- A reported story or message can now be taken down and put back, with the same recorded-reason confirmation used for posts and comments, available to moderators as well as administrators.
+- Moderators and administrators get a "my escalations" screen listing the reports they escalated together with what became of each one, including reports an administrator has since closed.
+- An account's sessions can now be ended one at a time, leaving every other session signed in, and the row for the session the reader is currently using is marked.
+- The violations list can now include revoked warnings and strikes, off by default, each marked as revoked with who revoked it and when.
+- The moderation action log can now be filtered by the account that was acted on and by a time window, both of which narrow what the caller can already see rather than widening it.
+- An account can now be suspended indefinitely, with no end date, as an explicit choice alongside a dated suspension.
+- Post rows now show the media attached to them.
+- The warning form now shows how many warnings an account already carries and, when the warning being issued is the third, states that it issues a strike and what that strike does to the account.
 - Administrators get a statistics screen showing the platform's stored snapshot, labelled as of the time it was collected rather than as live, and a chart of any of the fourteen metrics over a date range they choose.
 - The statistics screen tells apart three things a chart usually blurs: a period in which nothing was ever collected, a period that was measured and counted zero, and a missing measurement inside an otherwise complete series, which is drawn as a marked break rather than a line through it.
 - Administrators get an activity log showing what one account, or every account, has been doing, over a required date window of up to thirty days, filterable to the three kinds of activity the application records.
@@ -25,6 +33,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Administrators get an escalated-report queue with a live count that moderators cannot reach.
 
 ### Changed
+- Account names throughout the panel are now resolved in a single request per page instead of one request per person, cutting a page of twenty action-log rows from five identifier requests to one.
+- The message shown after restoring a post now describes the post's present state — the banned hashtags its caption still carries — so restoring the same post twice reads as correct rather than as a repeated action.
+- Restoring a story or a message now states what the action does and does not do before it is confirmed: a story past its expiry stays out of every feed, and a message the sender also deleted stays hidden from both participants.
+- The activity log's event-type filter now offers what the current environment actually records: seven kinds in development, three in production, because four of them depend on a service no production deployment runs.
+- The date-range control now states that the start of a window is included and the end is not.
 - Issuing a warning that triggers an automatic strike now names what happened to the account, not just that a strike was applied.
 - Revoking a warning or strike from a suspended or banned account now states in the confirmation that the account's status is unchanged, so a reviewer cannot mistake it for a restoration.
 - Banning a hashtag now says first that no existing post is taken down, so a reviewer does not ban a tag believing the content it appears on has gone.
@@ -39,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
 ### Fixed
+- A date-range preset no longer leaves behind a message asking for a start and an end while a range is applied and results are showing.
 - An account suspended without an end date now reads as "suspended indefinitely" in the panel, where the suspension previously showed nothing at all and the account appeared not to be suspended.
 - The panel no longer offers a warning against an account that cannot receive one, such as a moderator or an administrator, explaining instead why the action is unavailable.
 - Date ranges in the panel are now held to the limit of the screen they belong to rather than a single shared limit, and a range that has to be shortened to fit says so instead of changing silently.
@@ -77,6 +91,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Corrected the session store's documentation, which stated that reloading the page ends the session. It does not: the session is restored from the refresh cookie on load.
 
 ### Removed
+- The copy telling reviewers that a reported story or message could not be taken down from the panel, which is no longer true.
+- The static "three active warnings issue a strike" statement, replaced by the account's real count wherever it can be read.
 - Group conversations. Messaging is one to one.
 - The floating "message" button on desktop and tablet, now redundant with the always-visible side rail's own message icon.
 - The separate "compose" flow (the messages list's pencil button and its person-search picker) and the top bar's mobile "new message" button. Starting a conversation now happens from a person's profile only; nothing is created until you actually send something.

@@ -283,6 +283,9 @@ From the OpenAPI document, `GET /admin/actions` declares exactly:
 There is **no** date-range (`from`/`to`), **no** `targetUserId`, **no** `reportId` filter. A
 bogus parameter → **400**. `?actionType=warn_user` returns only `warn_user` rows (works).
 
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** `targetUserId`, `from`, and `to` now exist and compose with `adminId` and `actionType`. The window is half-open — `from` inclusive, `to` exclusive, verified at the boundary — and the endpoint imposes no span limit of its own. The filters compose with the moderator's own-actions scoping rather than bypassing it. `reportId` is still not a declared filter.
+
+
 `adminId` is declared but selecting one needs a user picker (the account phase); this phase has
 no user search, so the only surfaced filter is `actionType`. `adminId` is recorded as
 declared-but-unsurfaced, not fabricated away.

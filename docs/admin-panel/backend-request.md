@@ -12,7 +12,34 @@ each one closes a gap a reviewer will eventually notice.
 
 ---
 
-## 1. A reported story or message cannot be acted on
+## Delivery status
+
+**All ten items were answered by the backend and taken up by the panel in
+`docs/admin-panel-backend-capability-uptake/`.** Each heading below carries its outcome. Nothing is
+deleted: the record of what was asked survives alongside what arrived, and where what arrived differs
+from what was asked, that difference is stated.
+
+| # | Item | Outcome |
+|---|---|---|
+| 1 | A reported story or message cannot be acted on | **Delivered** — four endpoints; the panel removes and restores both |
+| 2 | A revoked warning or strike disappears | **Delivered** — `includeRevoked=true`, with `revokedAt` / `revokedBy` |
+| 3 | Active warning count cannot be read | **Delivered for an administrator** — `activeWarningCount` on the account detail. A moderator still cannot read it, because the whole detail is administrator-only; re-raised in the uptake phase's `deferred-findings.md` |
+| 4 | Suspension with no end date | **Delivered** — the optionality was always there; omitting `durationDays` suspends indefinitely |
+| 5 | Sessions can only be ended all at once | **Delivered** — per-session revocation, plus `POST /auth/session` to identify the caller's own row |
+| 6 | Settings returns not-found for seeded accounts | **Delivered** — `GET /users/me/settings` now answers 200; confirmed end to end in the browser |
+| 7 | The activity log's second writer never lands a row | **Delivered in development only** — the recommender service is in the default local stack and all four engagement types now write rows. No production deployment exists, so the panel's filter is gated on the environment |
+| 8 | A repeated restore keeps reporting the same dropped hashtag | **Delivered, differently than asked** — the field was renamed to `remainingBannedHashtags` and its *meaning* changed to the post's present state, rather than the repetition being fixed. The panel rewrote the copy to match |
+| 9 | Read surfaces the panel wanted and could not use | **Delivered** — batch identifier resolution, a moderator's own escalations, the audit log's target and window filters, and media on post rows |
+| 10 | Contract and documentation divergences | **Delivered** — the handoff and `openapi.json` were regenerated; five stated facts were corrected. Three of the five were already right in the panel |
+
+**Still open, and raised fresh by the uptake phase** (also in that phase's `deferred-findings.md`):
+the story target payload carries no `expiresAt`, so no panel can tell a reviewer whether a particular
+story has expired; a moderation restore refusal is indistinguishable from a double-click refusal; and
+a moderator cannot read the active warning count.
+
+---
+
+## 1. A reported story or message cannot be acted on — DELIVERED
 
 **Observed.** A report may name a story or a message as its target. The panel can read that target
 and show it. There is no way to take it down or put it back — the only content actions that exist
@@ -30,7 +57,7 @@ place in the panel where the record and the reality can disagree.
 
 ---
 
-## 2. A revoked warning or strike disappears instead of staying visible and marked
+## 2. A revoked warning or strike disappears instead of staying visible and marked — DELIVERED
 
 **Observed.** Revoking a warning or a strike removes the record from the account's violation list
 entirely. The list has no parameter that would include revoked records, so after a revocation the
@@ -44,7 +71,7 @@ can be audited where it is read rather than reconstructed from two screens.
 
 ---
 
-## 3. An account's active warning count cannot be read before issuing a warning
+## 3. An account's active warning count cannot be read before issuing a warning — DELIVERED for an administrator
 
 **Observed.** Three active warnings automatically issue a strike, which suspends the account. A
 reviewer about to issue a warning has no way to know whether this will be the third. No read exposes
@@ -62,7 +89,7 @@ they issue it.
 
 ---
 
-## 4. Suspension with no end date cannot be offered
+## 4. Suspension with no end date cannot be offered — DELIVERED
 
 **Observed.** The suspension request treats the duration as optional, but the behaviour when it is
 omitted has never been observed: the one attempt made during verification hit an already-suspended
@@ -80,7 +107,7 @@ as optional.
 
 ---
 
-## 5. Sessions can only be ended all at once
+## 5. Sessions can only be ended all at once — DELIVERED
 
 **Observed.** An account's live sessions are readable — one entry per session, each carrying an
 identifier, an optional device identifier, the user agent and client address recorded when the
@@ -102,7 +129,7 @@ the panel say which one.
 
 ---
 
-## 6. A settings page returns not-found for accounts created by the seed script
+## 6. A settings page returns not-found for accounts created by the seed script — DELIVERED
 
 **Observed and diagnosed this phase.** Signing in as any seed account and opening the user-facing
 settings page produces two not-found responses on the settings read, plus a console error. The page
@@ -123,7 +150,7 @@ known. This item is recorded so it is not lost if that branch is not the fix.
 
 ---
 
-## 7. The activity log's second writer never lands a row in a complete deployment
+## 7. The activity log's second writer never lands a row in a complete deployment — DELIVERED in development only
 
 **Observed.** The behavioural event enumeration declares twenty types. The contract states three are
 ever written, and the panel offers exactly those three as filters. But a **second** writer exists in
@@ -144,7 +171,7 @@ settled once.
 
 ---
 
-## 8. A repeated restore keeps reporting the same dropped hashtag
+## 8. A repeated restore keeps reporting the same dropped hashtag — DELIVERED, differently than asked
 
 **Observed.** Restoring a post reports which of its hashtags stayed banned and were dropped. On the
 first restore this was correct. On a second and a third restore of the same post, the same tag was
@@ -160,7 +187,7 @@ depending on the answer. No change is needed if the current behaviour is intende
 
 ---
 
-## 9. Read surfaces the panel wanted and could not use
+## 9. Read surfaces the panel wanted and could not use — DELIVERED
 
 Grouped because each is small and none blocks anything.
 
@@ -188,7 +215,7 @@ Grouped because each is small and none blocks anything.
 
 ---
 
-## 10. Contract and documentation divergences
+## 10. Contract and documentation divergences — DELIVERED
 
 Not defects, and not blocking. Recorded because each cost a phase time to discover, and because the
 handoff is the document the next team will read.

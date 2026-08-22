@@ -146,6 +146,9 @@ A row whose `reportId` is non-null links to `routeTo.adminReportDetail(reportId)
 own** `escalate_report` (§4.4.6). This is the route back the previous phase recorded as missing: a
 moderator that escalated a report reaches it from its own action log via this link.
 
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** This is no longer the route. `GET /api/v1/reports/escalated/mine` exists and is surfaced as the *my escalations* screen, which also shows the outcome a link to one report never did. The drawer no longer links an `escalate_report` row; it points at that screen.
+
+
 ---
 
 ## Drawer URL state and portalling

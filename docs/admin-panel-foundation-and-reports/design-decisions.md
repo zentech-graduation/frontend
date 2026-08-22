@@ -90,6 +90,9 @@ The `FilterBar` already renders a disabled option as unavailable and unselectabl
 ## Identifier resolution
 
 `GET /api/v1/admin/content/user/{userId}` is the per-id resolution, reachable by a moderator, cached by user id with an infinite stale time (`useResolveUsername`).
+
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** The per-id mechanism is **gone**. `GET /api/v1/admin/user-summaries?ids=` resolves up to a hundred ids in one request and is reachable by a moderator. A page of twenty audit rows referencing five distinct people went from five requests to one.
+
 A fully scrolled list of a hundred rows produces at most one request per distinct user id referenced, deduplicated by React Query, and never per row.
 In the report queue a page is twenty rows, so a page resolves at most twenty distinct reporters; five pages to a hundred rows resolve at most a hundred distinct people across five user-initiated "load more" actions, well within the production budget of 300 requests per minute on `/api/v1/admin/**`.
 In practice reporters repeat, so the real count is far lower; the test page of twenty rows referencing three distinct reporters produced exactly three requests.
