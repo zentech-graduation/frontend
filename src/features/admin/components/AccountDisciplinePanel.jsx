@@ -1,11 +1,14 @@
 import { useState } from 'react';
 
 import { v } from '@/config/tokens';
+import { isAdminRole } from '@/config/roles';
+import { useAuthStore } from '@/store/useAuthStore';
 import { LxBtn } from '@/features/luvax/components/primitives';
 import { toast } from '@/features/luvax/components/Toast';
 
 import { ViolationHistory } from './ViolationHistory';
 import { WarnDialog } from './WarnDialog';
+import { useAccountDetail } from '../hooks/useAccountDetail';
 import { useDisciplineActions } from '../hooks/useDisciplineActions';
 import { useVocabularies } from '../hooks/useVocabularies';
 import { describeError } from '../lib/errors';
@@ -18,17 +21,37 @@ import { describeError } from '../lib/errors';
  * violation history and the warn-the-owner control — with the same code the
  * account screen uses, rather than a second copy.
  *
- * The warn control renders for both roles. A moderator may warn an ordinary
- * account; an ineligible (elevated) target is refused by the backend with a
- * specific code that is surfaced honestly. On success the history refetches
- * through the mutation's cache invalidation, so a new warning appears without a
- * reload.
+ * **The warn control renders only where the target can actually be warned.**
+ * Only an ordinary account may be warned; the backend refuses an elevated target
+ * with `ADMIN_TARGET_NOT_WARNABLE`. Where the target's role is knowable the
+ * control is withheld rather than offered and then refused, because a control
+ * that always fails is worse than no control.
+ *
+ * Whether the role is knowable depends on the caller. An administrator can read
+ * it from the account detail, so for an administrator this is decided before
+ * anything renders. A moderator cannot read that endpoint at all, so for a
+ * moderator the control is offered and an ineligible target is surfaced through
+ * the specific refusal code — the fallback the backend handoff prescribes for
+ * exactly this asymmetry, and defensible because the accounts a moderator
+ * reaches from a report are almost always ordinary ones.
+ *
+ * On success the history refetches through the mutation's cache invalidation, so
+ * a new warning appears without a reload.
  *
  * @param {string} userId the account this panel acts on
  */
 export function AccountDisciplinePanel({ userId }) {
+  const role = useAuthStore((state) => state.role);
+  const isAdmin = isAdminRole(role);
   const { reportReasons } = useVocabularies();
   const discipline = useDisciplineActions(userId);
+  // Administrator only: the detail is the sole read that carries the target's
+  // role, and a moderator receives 403 from it. Shared by query key with every
+  // other reader of the same account, so this costs no extra request.
+  const { detail } = useAccountDetail(userId, { enabled: isAdmin });
+  // An administrator withholds the control for a target the server would refuse.
+  // A moderator, which cannot know, keeps offering it.
+  const canWarn = isAdmin ? detail?.role === 'user' : true;
 
   const [warnOpen, setWarnOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState(null);
@@ -89,10 +112,17 @@ export function AccountDisciplinePanel({ userId }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', borderBottom: `1px solid ${v.borderSubtle}`, paddingBottom: 12 }}>
-        <LxBtn variant="primary" size="sm" onClick={openWarn} disabled={discipline.warn.isPending}>
-          issue warning
-        </LxBtn>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, borderBottom: `1px solid ${v.borderSubtle}`, paddingBottom: 12 }}>
+        {canWarn ? (
+          <LxBtn variant="primary" size="sm" onClick={openWarn} disabled={discipline.warn.isPending}>
+            issue warning
+          </LxBtn>
+        ) : (
+          <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+            a warning cannot be issued against {detail?.role === 'admin' ? 'an' : 'a'}{' '}
+            {detail?.role ?? 'staff'} account.
+          </span>
+        )}
       </div>
 
       <ViolationHistory userId={userId} />
