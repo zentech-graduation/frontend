@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Administrators get a statistics screen showing the platform's stored snapshot, labelled as of the time it was collected rather than as live, and a chart of any of the fourteen metrics over a date range they choose.
+- The statistics screen tells apart three things a chart usually blurs: a period in which nothing was ever collected, a period that was measured and counted zero, and a missing measurement inside an otherwise complete series, which is drawn as a marked break rather than a line through it.
+- Administrators get an activity log showing what one account, or every account, has been doing, over a required date window of up to thirty days, filterable to the three kinds of activity the application records.
+- An account now lists the sessions it is signed in on, showing the device description and network address exactly as they were recorded, with the account-wide sign-out beside them because sessions cannot be ended individually.
+- An account now lists the reports filed against it, each opening the report it names, where previously only a count was shown.
 - Administrators can find any account from a new accounts screen, filtering by status and role and searching by name, and open an account to see its state and act on it.
 - From an account, administrators can ban, unban, suspend for a set number of days, lift a suspension, change role, and force every session to sign out, with each control shown only when the server permits it for that account and a mandatory recorded reason; suspending shows the resulting end time in local time before confirming.
 - Promoting an account to administrator is marked as a one-way action that cannot be undone, with its own confirmation wording, and an administrator can never act on their own account except to sign their own sessions out.
@@ -20,6 +25,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Administrators get an escalated-report queue with a live count that moderators cannot reach.
 
 ### Changed
+- Issuing a warning that triggers an automatic strike now names what happened to the account, not just that a strike was applied.
+- Revoking a warning or strike from a suspended or banned account now states in the confirmation that the account's status is unchanged, so a reviewer cannot mistake it for a restoration.
+- Banning a hashtag now says first that no existing post is taken down, so a reviewer does not ban a tag believing the content it appears on has gone.
 - The report queue's status filter now offers moderators only "pending" and "reviewing", since a moderator's queue never contains a report in any other status.
 - After signing in, moderators and administrators now land on the panel while everyone else lands on the application.
 - Extracted the username and display-name validation rules shared by registration and profile editing into a common module, so both stay in sync with the backend by construction instead of by convention.
@@ -31,6 +39,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
 ### Fixed
+- An account suspended without an end date now reads as "suspended indefinitely" in the panel, where the suspension previously showed nothing at all and the account appeared not to be suspended.
+- The panel no longer offers a warning against an account that cannot receive one, such as a moderator or an administrator, explaining instead why the action is unavailable.
+- Date ranges in the panel are now held to the limit of the screen they belong to rather than a single shared limit, and a range that has to be shortened to fit says so instead of changing silently.
 - The bio field on the edit-profile screen now allows the full 500 characters the server accepts, instead of cutting off at 160.
 - The message nickname prompt and a post's comment length limit now read from the same shared constant the rest of the app uses, instead of separate hardcoded numbers that happened to match it.
 - A conversation row's content no longer sits shifted toward the top of the row with empty space below it.
