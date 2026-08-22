@@ -287,11 +287,7 @@ export function AccountLifecyclePanel({ userId }) {
         busy={actions.revokeSession.isPending}
         serverError={serverError || null}
         onConfirm={(reason) =>
-          run(
-            actions.revokeSession,
-            { sessionId: sessionToRevoke?.id, reason },
-            'session ended'
-          )
+          run(actions.revokeSession, { sessionId: sessionToRevoke?.id, reason }, 'session ended')
         }
         onClose={closeDialog}
       />

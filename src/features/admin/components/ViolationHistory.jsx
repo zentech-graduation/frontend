@@ -27,9 +27,10 @@ import { ReasonConfirmDialog } from './ReasonConfirmDialog';
  * A moderator sees warnings only; that view is complete for a moderator, so the
  * empty and populated states are worded without implying a strike is hidden.
  * Revocation is administrator-only and sits behind the shared reason-carrying
- * confirmation. The backend removes a revoked record from this list rather than
- * marking it, so a revoke refetches and the record leaves; the revocation is
- * preserved in the action log (recorded in discipline-contract-verification.md).
+ * confirmation. A revoked record leaves the default listing, and the toggle
+ * brings it back marked as revoked with when and by whom — which reverses what
+ * an earlier phase recorded, when the only listing available dropped revoked
+ * records entirely and the revocation survived solely in the action log.
  *
  * @param {string} userId the account whose history to render
  */
@@ -89,6 +90,11 @@ export function ViolationHistory({ userId }) {
   const role = useAuthStore((state) => state.role);
   const isAdmin = isAdminRole(role);
   const { reasonLabel } = useVocabularies();
+  // Off by default, matching the server's own default. Flipping it changes the
+  // query key, so pagination restarts from the first page rather than replaying
+  // a cursor the other listing rejects with INVALID_CURSOR.
+  const [includeRevoked, setIncludeRevoked] = useState(false);
+
   const {
     rows,
     isLoading,
@@ -98,7 +104,7 @@ export function ViolationHistory({ userId }) {
     isFetchingNextPage,
     fetchNextPage,
     refetch,
-  } = useViolations(userId);
+  } = useViolations(userId, includeRevoked);
   const discipline = useDisciplineActions(userId);
   // Read only as an administrator: revoke controls are administrator-only, so
   // this is exactly the audience that needs the account's current status, and a
@@ -142,23 +148,46 @@ export function ViolationHistory({ userId }) {
     });
   };
 
+  // The toggle is rendered in every state, including the empty one. If it were
+  // inside the populated branch only, turning it on against an account whose
+  // revoked records are its only records would hide the control that turned it
+  // on, leaving no way back.
+  const toggle = (
+    <RevokedToggle checked={includeRevoked} disabled={isLoading} onChange={setIncludeRevoked} />
+  );
+
   if (isLoading && rows.length === 0) {
-    return <LoadingState rows={3} />;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {toggle}
+        <LoadingState rows={3} />
+      </div>
+    );
   }
   if (isError && rows.length === 0) {
-    return <FailedState message={error?.message} onRetry={refetch} />;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {toggle}
+        <FailedState message={error?.message} onRetry={refetch} />
+      </div>
+    );
   }
   if (rows.length === 0) {
     return (
-      <EmptyState
-        icon="check"
-        title="clean record"
-        hint={
-          isAdmin
-            ? 'no warnings or strikes on file for this account.'
-            : 'no warnings on file for this account.'
-        }
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {toggle}
+        <EmptyState
+          icon="check"
+          title="clean record"
+          hint={
+            includeRevoked
+              ? 'no records on file for this account, revoked ones included.'
+              : isAdmin
+                ? 'no warnings or strikes on file for this account.'
+                : 'no warnings on file for this account.'
+          }
+        />
+      </div>
     );
   }
 
@@ -166,6 +195,7 @@ export function ViolationHistory({ userId }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {toggle}
       {rows.map((record) => (
         <div
           key={record.id}
@@ -178,6 +208,9 @@ export function ViolationHistory({ userId }) {
             border: `1px solid ${v.border}`,
             borderRadius: 12,
             background: v.surfaceSunken,
+            // A revoked record is still a record and stays legible; the reduced
+            // emphasis says it no longer counts without hiding what it said.
+            opacity: record.revokedAt ? 0.72 : 1,
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
@@ -195,6 +228,24 @@ export function ViolationHistory({ userId }) {
                   style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink }}
                 >
                   strike #{record.strikeNumber}
+                </span>
+              ) : null}
+              {record.revokedAt ? (
+                <span
+                  style={{
+                    fontFamily: v.fontMono,
+                    fontSize: 10,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    borderRadius: 999,
+                    padding: '3px 9px',
+                    background: v.surface,
+                    color: v.ink3,
+                    border: `1px solid ${v.border}`,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  revoked
                 </span>
               ) : null}
             </div>
@@ -229,9 +280,28 @@ export function ViolationHistory({ userId }) {
               <span aria-hidden="true">·</span>
               <LocalTime value={record.createdAt} showZone={false} />
             </div>
+
+            {record.revokedAt ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontFamily: v.fontBody,
+                  fontSize: 12,
+                  color: v.ink3,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span>revoked by</span>
+                <ReporterName userId={record.revokedBy} prefix="@" />
+                <span aria-hidden="true">·</span>
+                <LocalTime value={record.revokedAt} showZone={false} />
+              </div>
+            ) : null}
           </div>
 
-          {isAdmin ? (
+          {isAdmin && !record.revokedAt ? (
             <LxBtn
               variant="ghost"
               size="sm"
@@ -265,5 +335,43 @@ export function ViolationHistory({ userId }) {
         onClose={closeRevoke}
       />
     </div>
+  );
+}
+
+/**
+ * Controls whether revoked warnings and strikes are listed.
+ *
+ * Off by default, which is the server's own default. It is a checkbox rather
+ * than a pair of filter buttons because it adds records to the list rather than
+ * choosing between two lists, and because "include revoked" reads as what it
+ * does where "all / active" would leave the reader to work out which is which.
+ *
+ * Flipping it restarts pagination. That is not a nicety: the cursor is scoped
+ * on this flag and the server rejects one issued under the other setting, so
+ * carrying a cursor across would produce INVALID_CURSOR rather than a page.
+ */
+function RevokedToggle({ checked, disabled, onChange }) {
+  return (
+    <label
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        alignSelf: 'flex-start',
+        fontFamily: v.fontBody,
+        fontSize: 12,
+        color: v.ink2,
+        cursor: disabled ? 'default' : 'pointer',
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+        style={{ accentColor: v.accentText, width: 14, height: 14 }}
+      />
+      include revoked records
+    </label>
   );
 }

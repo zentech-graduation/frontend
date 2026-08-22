@@ -23,8 +23,22 @@ import { ReasonSelect } from './ReasonSelect';
  * ignored. The confirm is inert during the arming delay and while the request
  * is in flight.
  *
+ * **What this warning will do is stated before it is issued.** The account
+ * detail carries `activeWarningCount`, so an administrator is told how many
+ * warnings already count and, when this one is the third, what the strike it
+ * triggers does to the account. The panel used to state the three-warning rule
+ * as a bare constant because the count could not be read; that statement is
+ * gone wherever the number itself is available.
+ *
+ * A moderator cannot read the account detail at all — it answers 403 — so the
+ * count is genuinely unavailable there. That case says so rather than showing a
+ * number it cannot have, and states the rule, which remains the only true thing
+ * that can be said without the count.
+ *
  * @param {boolean} open
  * @param {Object[]} reasons the report-reason vocabulary, pre-sorted
+ * @param {number|null} activeWarningCount warnings already counting toward the
+ *   next strike, or null when the caller cannot read it
  * @param {boolean} busy whether the warn request is in flight
  * @param {{reasonKey?: string, note?: string}} serverFieldErrors mapped from VALIDATION_ERROR
  * @param {(payload:{reasonKey:string, note:string})=>void} onConfirm
@@ -36,6 +50,7 @@ const NOTE_MAX = CHAR_LIMITS.warningNote;
 export function WarnDialog({
   open,
   reasons = [],
+  activeWarningCount = null,
   busy = false,
   serverFieldErrors = null,
   onConfirm,
@@ -151,8 +166,9 @@ export function WarnDialog({
             warn this account
           </div>
           <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55 }}>
-            a formal warning is recorded against this account. three active warnings issue a strike.
+            a formal warning is recorded against this account.
           </div>
+          <WarningConsequence activeWarningCount={activeWarningCount} />
         </div>
 
         <ReasonSelect
@@ -277,5 +293,66 @@ export function WarnDialog({
       </div>
     </div>,
     document.body
+  );
+}
+
+/**
+ * What issuing this warning will do, said before it is issued.
+ *
+ * Three cases, and the difference between them is what the caller can actually
+ * know:
+ *
+ * - The count is readable and this warning is not the third: the number is
+ *   stated, and what it will become.
+ * - The count is readable and this warning is the third: the strike is named
+ *   along with what a strike does. The consequence is a ladder — seven days,
+ *   then thirty, then a ban — and which rung this account lands on depends on
+ *   how many strikes it already carries, which the account detail does not
+ *   carry. So the ladder is stated in full rather than one rung of it guessed.
+ *   A message naming only the strike, or only a suspension, would repeat the
+ *   omission a previous phase already had to fix.
+ * - The count is not readable, which is every moderator: that is said plainly,
+ *   with the rule.
+ */
+function WarningConsequence({ activeWarningCount }) {
+  const known = typeof activeWarningCount === 'number';
+  const isThird = known && activeWarningCount >= 2;
+
+  return (
+    <div
+      style={{
+        marginTop: 10,
+        padding: '10px 12px',
+        borderRadius: 'var(--radius-md)',
+        background: isThird ? v.warningDim : v.surfaceSunken,
+        fontFamily: v.fontBody,
+        fontSize: 13,
+        lineHeight: 1.55,
+        color: isThird ? v.warningText : v.ink3,
+      }}
+    >
+      {!known ? (
+        <>
+          how many warnings this account already carries cannot be read with your access. three
+          active warnings issue a strike: a first strike suspends the account for seven days, a
+          second for thirty, and a third bans it.
+        </>
+      ) : isThird ? (
+        <>
+          this account has <strong>{activeWarningCount} active warnings</strong>. this one will be
+          the third, which issues a strike automatically and resets the count to zero. a strike
+          suspends the account — seven days for a first strike, thirty for a second — and a third
+          strike bans it outright.
+        </>
+      ) : (
+        <>
+          this account has{' '}
+          <strong>
+            {activeWarningCount} active {activeWarningCount === 1 ? 'warning' : 'warnings'}
+          </strong>
+          . this will make {activeWarningCount + 1}. the third issues a strike.
+        </>
+      )}
+    </div>
   );
 }

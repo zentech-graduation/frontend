@@ -71,10 +71,11 @@ export function AccountDisciplinePanel({ userId }) {
       { reasonKey, note },
       {
         onSuccess: (data) => {
-          // The active warning count is only available on the warn response, not
-          // on any read (see accounts-contract-verification.md 3.5), so it is
-          // surfaced here where it is an honest server fact rather than computed
-          // from a partial page.
+          // Quoted from the warn response rather than recomputed. The account
+          // detail now carries `activeWarningCount` too, which is what the
+          // dialogue reads before issuing; this is the same number after the
+          // fact, and after a strike it is legitimately zero because the ladder
+          // resets the count.
           const count = data?.activeWarningCount;
           const suffix =
             typeof count === 'number'
@@ -150,6 +151,12 @@ export function AccountDisciplinePanel({ userId }) {
       <WarnDialog
         open={warnOpen}
         reasons={reportReasons}
+        // Null for a moderator: the detail this comes from answers 403 there, so
+        // the dialogue says the count is unreadable rather than showing a zero
+        // it did not read.
+        activeWarningCount={
+          typeof detail?.activeWarningCount === 'number' ? detail.activeWarningCount : null
+        }
         busy={discipline.warn.isPending}
         serverFieldErrors={fieldErrors}
         onConfirm={submitWarn}
