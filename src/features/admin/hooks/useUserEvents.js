@@ -11,20 +11,15 @@ import { toIso } from '../lib/statistics';
 const PAGE_LIMIT = 20;
 
 /**
- * The three event types the application actually writes.
+ * The event types the application writes unconditionally, in every deployment.
  *
  * Read from the backend source, not from the OpenAPI enumeration. The
  * `event_type` database enum declares twenty values; `UserEventRecorder` writes
- * exactly these three, and the endpoint's own contract states that the other
- * seventeen "exist in the schema and have no writer". Generating this list from
- * the enumeration would offer seventeen filters that can never return a row, and
- * an administrator who tried one would conclude the log was broken.
- *
- * The derivation and the one complication in it — a second, conditional writer
- * whose events do not reach the table in any observed deployment — are recorded
- * in `design-decisions.md` and `observability-contract-verification.md` 2.3.
+ * exactly these three. Generating this list from the enumeration would offer
+ * seventeen filters that can never return a row, and an administrator who tried
+ * one would conclude the log was broken.
  */
-export const WRITTEN_EVENT_TYPES = [
+const UNCONDITIONAL_EVENT_TYPES = [
   {
     key: 'session_start',
     label: 'session start',
@@ -41,6 +36,73 @@ export const WRITTEN_EVENT_TYPES = [
     hint: "written when one account views another's profile; viewing one's own records nothing",
   },
 ];
+
+/**
+ * Four more types that are written by a second consumer, and only where the
+ * service that consumer depends on is actually running.
+ *
+ * That service is part of the default local stack and is set up for no
+ * production deployment, so these four write rows in development and cannot in
+ * production. Verified by producing each one against the local stack and
+ * reading the log back (`uptake-contract-verification.md` §5.4) — not inferred
+ * from configuration.
+ */
+const ENGAGEMENT_EVENT_TYPES = [
+  {
+    key: 'post_like',
+    label: 'post like',
+    hint: 'written when an account likes a post',
+  },
+  {
+    key: 'post_save',
+    label: 'post save',
+    hint: 'written when an account saves a post',
+  },
+  {
+    key: 'post_view',
+    label: 'post view',
+    hint: 'written when a post view is registered',
+  },
+  {
+    key: 'post_comment',
+    label: 'post comment',
+    hint: 'written when an account comments on a post',
+  },
+];
+
+/**
+ * Whether this build is talking to a stack that writes the engagement types.
+ *
+ * Two signals, and both must agree, because either one alone gets a real case
+ * wrong:
+ *
+ * - `VITE_APP_ENV` is the deployment's own tag, which is the thing that
+ *   actually describes which stack the panel faces.
+ * - `import.meta.env.DEV` is false in anything `vite build` produces. Without
+ *   it, a production bundle built from a checkout whose `.env` still says
+ *   `development` would offer four filters that can never match, against a
+ *   server that answers 200 with an empty page — which is exactly the failure
+ *   this gate exists to prevent.
+ *
+ * Requiring both errs toward offering fewer filters. That is the safe
+ * direction: a filter that is missing costs a reviewer one unfiltered read,
+ * where a filter that can never match costs them a false conclusion about the
+ * log. Nothing is hidden either way — the unfiltered list still shows every
+ * type a row carries.
+ */
+const writesEngagementEvents = () =>
+  import.meta.env.DEV && (import.meta.env.VITE_APP_ENV ?? 'development') === 'development';
+
+/**
+ * The event types worth offering as a filter in this environment.
+ *
+ * Deliberately environment-dependent, and recorded in `design-decisions.md`
+ * because a filter list that changes by build is exactly the kind of thing a
+ * later reader assumes is a bug.
+ */
+export const WRITTEN_EVENT_TYPES = writesEngagementEvents()
+  ? [...UNCONDITIONAL_EVENT_TYPES, ...ENGAGEMENT_EVENT_TYPES]
+  : UNCONDITIONAL_EVENT_TYPES;
 
 /**
  * One account's behavioural events, or every account's when `userId` is omitted.

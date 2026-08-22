@@ -33,11 +33,13 @@ import { localZone } from '../lib/statistics';
  * **The window may span at most thirty days**, inclusive. The range control
  * clamps to that before submitting and states the limit on itself.
  *
- * **Only three event types are ever written.** The `event_type` enumeration
- * declares twenty; seventeen of them have no writer anywhere in the application.
- * Offering all twenty would present seventeen filters that can never return a
- * row, and an administrator who tried one would reasonably conclude the log was
- * broken. The derivation is recorded in `design-decisions.md`.
+ * **The filter offers only what this environment actually writes**, which is
+ * three types in production and seven here. The `event_type` enumeration
+ * declares twenty; most have no writer at all, and four more are written by a
+ * consumer that depends on a service running in the local stack and in no
+ * production deployment. Offering a filter that can never match would leave an
+ * administrator who tried it concluding the log was broken. The gate and its
+ * evidence are recorded in `design-decisions.md`.
  *
  * The endpoint is one of the two tightest in the system, so nothing here fires
  * on a keystroke or a drag; every read follows a deliberate commit.
@@ -156,10 +158,13 @@ export function ActivityLogScreen() {
               ))}
             </div>
             <span style={hint}>
-              these are the only three kinds of event the application writes. the underlying
-              enumeration declares twenty; the other seventeen exist in the schema with no writer,
-              so they are not offered as filters that could never match. an unfiltered page still
-              shows whatever type a row carries.
+              these are the {WRITTEN_EVENT_TYPES.length} kinds of event this environment writes. the
+              underlying enumeration declares twenty; the rest have no writer here, so they are not
+              offered as filters that could never match.{' '}
+              {WRITTEN_EVENT_TYPES.length > 3
+                ? 'four of these are written by a consumer that runs in the local stack only, so a production panel offers three.'
+                : 'a development stack additionally records four engagement types, through a consumer that no production deployment runs.'}{' '}
+              an unfiltered page still shows whatever type a row carries.
             </span>
           </div>
 
@@ -206,7 +211,7 @@ export function ActivityLogScreen() {
             onRetry={() => events.refetch()}
             emptyIcon="check"
             emptyTitle="no recorded activity in this window"
-            emptyHint="nothing was recorded here, which is the ordinary case: only three kinds of event are ever written, and a quiet window is a quiet window rather than a fault. widen the range or clear the event filter to look further."
+            emptyHint={`nothing was recorded here, which is the ordinary case: only ${WRITTEN_EVENT_TYPES.length} kinds of event are written in this environment, and a quiet window is a quiet window rather than a fault. widen the range or clear the event filter to look further.`}
             footer={
               <LoadMore
                 hasNextPage={events.hasNextPage}
