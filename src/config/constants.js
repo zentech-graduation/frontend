@@ -82,6 +82,15 @@ export const ROUTES = {
   ADMIN_USER: '/admin/users/:userId',
   // The administrative hashtag registry. Administrator only.
   ADMIN_HASHTAGS: '/admin/hashtags',
+  // Platform statistics. Administrator only; both statistics endpoints answer a
+  // moderator with 403.
+  ADMIN_STATISTICS: '/admin/statistics',
+  // The behavioural activity log. Administrator only. The account under
+  // investigation and the event type live in the `account` and `type` query
+  // parameters so a view is shareable; the time window does not, because it is
+  // mandatory and must be a deliberate commit rather than something a link can
+  // fire on arrival.
+  ADMIN_ACTIVITY: '/admin/activity',
 
   NOT_FOUND: '*',
 };

@@ -44,6 +44,8 @@ const NAV_SECTIONS = [
       { key: 'escalated', label: 'escalated', icon: 'alert', to: ROUTES.ADMIN_ESCALATED, roles: [ROLES.ADMIN], badge: 'escalated' },
       { key: 'accounts', label: 'accounts', icon: 'profile', to: ROUTES.ADMIN_USERS, roles: [ROLES.ADMIN] },
       { key: 'hashtags', label: 'hashtags', icon: 'hash', to: ROUTES.ADMIN_HASHTAGS, roles: [ROLES.ADMIN] },
+      { key: 'statistics', label: 'statistics', icon: 'eye', to: ROUTES.ADMIN_STATISTICS, roles: [ROLES.ADMIN] },
+      { key: 'activity', label: 'activity', icon: 'explore', to: ROUTES.ADMIN_ACTIVITY, roles: [ROLES.ADMIN] },
     ],
   },
 ];
