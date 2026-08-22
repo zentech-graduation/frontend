@@ -35,18 +35,24 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
   const [days, setDays] = useState('7');
   const [armed, setArmed] = useState(false);
   const [localErrors, setLocalErrors] = useState({});
+  const [nowMs] = useState(() => Date.now());
   const openCount = useRef(0);
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReason('');
+
       setDays('7');
+
       setArmed(false);
+
       setLocalErrors({});
       return undefined;
     }
     openCount.current += 1;
     const myCount = openCount.current;
+
     setArmed(false);
     const timer = setTimeout(() => {
       if (openCount.current === myCount) {
@@ -64,7 +70,7 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
 
   const daysNum = Number.parseInt(days, 10);
   const daysValid = Number.isFinite(daysNum) && daysNum >= MIN_DAYS && daysNum <= MAX_DAYS;
-  const endDate = daysValid ? new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString() : null;
+  const endDate = daysValid ? new Date(nowMs + daysNum * 24 * 60 * 60 * 1000).toISOString() : null;
   const reasonError = localErrors.reason || serverError || '';
   const daysError = localErrors.days || '';
   const overLimit = reason.length > REASON_MAX;
@@ -97,9 +103,20 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
       role="dialog"
       aria-modal="true"
       aria-label="suspend account"
-      style={{ position: 'fixed', inset: 0, zIndex: 2147483400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2147483400,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
     >
-      <div onClick={busy ? undefined : onClose} style={{ position: 'absolute', inset: 0, background: v.scrim }} />
+      <div
+        onClick={busy ? undefined : onClose}
+        style={{ position: 'absolute', inset: 0, background: v.scrim }}
+      />
       <div
         style={{
           position: 'relative',
@@ -115,7 +132,16 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
         }}
       >
         <div>
-          <div style={{ fontFamily: v.fontDisplay, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', color: v.ink, marginBottom: 8 }}>
+          <div
+            style={{
+              fontFamily: v.fontDisplay,
+              fontWeight: 700,
+              fontSize: 18,
+              letterSpacing: '-0.02em',
+              color: v.ink,
+              marginBottom: 8,
+            }}
+          >
             suspend this account
           </div>
           <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55 }}>
@@ -127,7 +153,13 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label
             htmlFor="suspend-days"
-            style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: v.ink3,
+            }}
           >
             duration (days)
           </label>
@@ -158,7 +190,14 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
               outline: 'none',
             }}
           />
-          <div style={{ minHeight: 20, fontFamily: v.fontBody, fontSize: 13, color: daysError ? v.errorText : v.ink3 }}>
+          <div
+            style={{
+              minHeight: 20,
+              fontFamily: v.fontBody,
+              fontSize: 13,
+              color: daysError ? v.errorText : v.ink3,
+            }}
+          >
             {daysError ? (
               daysError
             ) : endDate ? (
@@ -174,7 +213,13 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label
             htmlFor="suspend-reason"
-            style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: v.ink3,
+            }}
           >
             reason (recorded)
           </label>
@@ -206,10 +251,22 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
             }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12, color: reasonError ? v.errorText : 'transparent' }}>
+            <span
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 12,
+                color: reasonError ? v.errorText : 'transparent',
+              }}
+            >
               {reasonError || '.'}
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: overLimit ? v.errorText : v.ink3 }}>
+            <span
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 11,
+                color: overLimit ? v.errorText : v.ink3,
+              }}
+            >
               {reason.length}/{REASON_MAX}
             </span>
           </div>

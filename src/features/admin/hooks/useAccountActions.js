@@ -40,7 +40,8 @@ export function useAccountActions(userId) {
     onSuccess: afterAction,
   });
   const suspend = useMutation({
-    mutationFn: ({ reason, durationDays }) => adminApi.suspendUser(userId, { reason, durationDays }),
+    mutationFn: ({ reason, durationDays }) =>
+      adminApi.suspendUser(userId, { reason, durationDays }),
     onSuccess: afterAction,
   });
   const unsuspend = useMutation({

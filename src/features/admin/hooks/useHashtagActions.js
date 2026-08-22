@@ -25,7 +25,8 @@ export function useHashtagActions() {
     onSuccess: afterAction,
   });
   const update = useMutation({
-    mutationFn: ({ hashtagId, status, note }) => adminApi.updateHashtag(hashtagId, { status, note }),
+    mutationFn: ({ hashtagId, status, note }) =>
+      adminApi.updateHashtag(hashtagId, { status, note }),
     onSuccess: afterAction,
   });
   const remove = useMutation({

@@ -54,14 +54,19 @@ export function RoleChangeDialog({
 
   useEffect(() => {
     if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRole('');
+
       setReason('');
+
       setArmed(false);
+
       setLocalErrors({});
       return undefined;
     }
     openCount.current += 1;
     const myCount = openCount.current;
+
     setArmed(false);
     const timer = setTimeout(() => {
       if (openCount.current === myCount) {
@@ -111,9 +116,20 @@ export function RoleChangeDialog({
       role="dialog"
       aria-modal="true"
       aria-label="change role"
-      style={{ position: 'fixed', inset: 0, zIndex: 2147483400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2147483400,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+      }}
     >
-      <div onClick={busy ? undefined : onClose} style={{ position: 'absolute', inset: 0, background: v.scrim }} />
+      <div
+        onClick={busy ? undefined : onClose}
+        style={{ position: 'absolute', inset: 0, background: v.scrim }}
+      />
       <div
         style={{
           position: 'relative',
@@ -129,16 +145,29 @@ export function RoleChangeDialog({
         }}
       >
         <div>
-          <div style={{ fontFamily: v.fontDisplay, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', color: v.ink, marginBottom: 8 }}>
+          <div
+            style={{
+              fontFamily: v.fontDisplay,
+              fontWeight: 700,
+              fontSize: 18,
+              letterSpacing: '-0.02em',
+              color: v.ink,
+              marginBottom: 8,
+            }}
+          >
             change role
           </div>
           <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55 }}>
-            this account is currently <strong style={{ color: v.ink2 }}>{currentRole}</strong>. choose
-            the role to move it to.
+            this account is currently <strong style={{ color: v.ink2 }}>{currentRole}</strong>.
+            choose the role to move it to.
           </div>
         </div>
 
-        <div role="radiogroup" aria-label="target role" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div
+          role="radiogroup"
+          aria-label="target role"
+          style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+        >
           {assignableRoles.map((target) => {
             const selected = role === target;
             const oneWay = target === 'admin';
@@ -173,11 +202,21 @@ export function RoleChangeDialog({
                   color={selected ? (oneWay ? v.errorText : v.accentText) : v.ink3}
                 />
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-                  <span style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}>
+                  <span
+                    style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 600, color: v.ink }}
+                  >
                     {transitionLabel(currentRole, target)}
                   </span>
                   {oneWay ? (
-                    <span style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: v.errorText }}>
+                    <span
+                      style={{
+                        fontFamily: v.fontMono,
+                        fontSize: 10,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        color: v.errorText,
+                      }}
+                    >
                       one-way — cannot be undone
                     </span>
                   ) : null}
@@ -185,7 +224,14 @@ export function RoleChangeDialog({
               </button>
             );
           })}
-          <span style={{ fontFamily: v.fontBody, fontSize: 12, color: roleError ? v.errorText : 'transparent', minHeight: 16 }}>
+          <span
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 12,
+              color: roleError ? v.errorText : 'transparent',
+              minHeight: 16,
+            }}
+          >
             {roleError || '.'}
           </span>
         </div>
@@ -202,7 +248,9 @@ export function RoleChangeDialog({
             }}
           >
             <LxIcon name="alert" size={18} color={v.errorText} />
-            <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.errorText, lineHeight: 1.5 }}>
+            <div
+              style={{ fontFamily: v.fontBody, fontSize: 13, color: v.errorText, lineHeight: 1.5 }}
+            >
               Promotion to administrator cannot be reversed through this panel. An administrator can
               never be demoted or otherwise acted on here. Continue only if this is intended.
             </div>
@@ -212,7 +260,13 @@ export function RoleChangeDialog({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label
             htmlFor="role-reason"
-            style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: v.ink3,
+            }}
           >
             reason (recorded)
           </label>
@@ -244,10 +298,22 @@ export function RoleChangeDialog({
             }}
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: v.fontBody, fontSize: 12, color: reasonError ? v.errorText : 'transparent' }}>
+            <span
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 12,
+                color: reasonError ? v.errorText : 'transparent',
+              }}
+            >
               {reasonError || '.'}
             </span>
-            <span style={{ fontFamily: v.fontMono, fontSize: 11, color: overLimit ? v.errorText : v.ink3 }}>
+            <span
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 11,
+                color: overLimit ? v.errorText : v.ink3,
+              }}
+            >
               {reason.length}/{REASON_MAX}
             </span>
           </div>

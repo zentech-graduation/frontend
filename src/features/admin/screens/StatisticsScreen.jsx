@@ -62,10 +62,7 @@ export function StatisticsScreen() {
     return { fromMs: to - DAY_MS, toMs: to };
   });
 
-  const granularityOptions = useMemo(
-    () => availableGranularities(range.fromMs),
-    [range.fromMs]
-  );
+  const granularityOptions = useMemo(() => availableGranularities(range.fromMs), [range.fromMs]);
 
   // Selecting a granularity the window cannot serve is prevented in the control
   // rather than surfaced as a server error, so this only ever fires when a range
@@ -78,7 +75,9 @@ export function StatisticsScreen() {
 
   useEffect(() => {
     if (!selectedAvailable) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGranularity('day');
+
       setAutoDowngraded(true);
     }
   }, [selectedAvailable]);
@@ -151,7 +150,14 @@ export function StatisticsScreen() {
         />
 
         {autoDowngraded ? (
-          <p style={{ margin: '10px 0 0', fontFamily: v.fontBody, fontSize: 12, color: v.warningText }}>
+          <p
+            style={{
+              margin: '10px 0 0',
+              fontFamily: v.fontBody,
+              fontSize: 12,
+              color: v.warningText,
+            }}
+          >
             this range starts before the {FINE_HORIZON_DAYS}-day fine-bucket horizon, so the
             half-hour series no longer exists for it. the granularity was moved to daily.
           </p>
@@ -304,9 +310,9 @@ function MetricSelector({ value, onChange, disabled }) {
         FLOW_METRICS
       )}
       <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
-        one metric is read at a time. the series endpoint allows a small number of reads a minute and
-        there are {METRICS.length} metrics, so a screen that drew them all at once would exhaust its
-        budget in two page loads.
+        one metric is read at a time. the series endpoint allows a small number of reads a minute
+        and there are {METRICS.length} metrics, so a screen that drew them all at once would exhaust
+        its budget in two page loads.
       </p>
     </div>
   );
@@ -412,8 +418,8 @@ function SnapshotPanel({ current }) {
       <p style={{ margin: '0 0 16px', fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
         read from the last completed bucket, which began at{' '}
         <LocalTime value={snapshot.bucketStart} showZone={false} />. these figures are up to 30
-        minutes behind the platform and are not live — an account banned a moment ago will not appear
-        here until the next bucket is written.
+        minutes behind the platform and are not live — an account banned a moment ago will not
+        appear here until the next bucket is written.
       </p>
 
       <div
@@ -444,10 +450,7 @@ function SnapshotPanel({ current }) {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <TopHashtags
-          entries={snapshot.topHashtags}
-          live={snapshot.topHashtagsLive}
-        />
+        <TopHashtags entries={snapshot.topHashtags} live={snapshot.topHashtagsLive} />
       </div>
     </PanelCard>
   );

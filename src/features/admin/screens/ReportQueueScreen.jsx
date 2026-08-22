@@ -47,8 +47,16 @@ export function ReportQueueScreen() {
   const status = statusParam === null ? DEFAULT_STATUS : statusParam;
   const reportType = searchParams.get('reportType') ?? '';
 
-  const { rows, isLoading, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
-    useReportQueue({ status, reportType });
+  const {
+    rows,
+    isLoading,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useReportQueue({ status, reportType });
 
   const columns = useMemo(() => buildReportColumns(reasonLabel), [reasonLabel]);
 

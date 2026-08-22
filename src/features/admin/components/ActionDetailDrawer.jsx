@@ -39,11 +39,22 @@ const FIELD_LABEL = {
 };
 
 const humanize = (key) =>
-  key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase();
+  key
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .toLowerCase();
 
 function MetaLabel({ children }) {
   return (
-    <span style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}>
+    <span
+      style={{
+        fontFamily: v.fontMono,
+        fontSize: 10,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: v.ink3,
+      }}
+    >
       {children}
     </span>
   );
@@ -53,7 +64,11 @@ function MetaRow({ label, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <MetaLabel>{label}</MetaLabel>
-      <span style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, overflowWrap: 'anywhere' }}>{children}</span>
+      <span
+        style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink, overflowWrap: 'anywhere' }}
+      >
+        {children}
+      </span>
     </div>
   );
 }
@@ -76,7 +91,11 @@ function MetaValue({ fieldKey, value, reasonLabel }) {
     if (fieldKey === 'strippedHashtags') {
       return <>{value.map((tag) => `#${tag}`).join(', ')}</>;
     }
-    return <>{value.length} warning{value.length === 1 ? '' : 's'}</>;
+    return (
+      <>
+        {value.length} warning{value.length === 1 ? '' : 's'}
+      </>
+    );
   }
   if (value === null || value === undefined) {
     return <span style={{ color: v.ink3 }}>none</span>;
@@ -92,11 +111,21 @@ function MetaValue({ fieldKey, value, reasonLabel }) {
 }
 
 function ActionMetadata({ metadata, reasonLabel }) {
-  if (metadata == null || (typeof metadata === 'object' && Object.keys(metadata).length === 0)) {
-    return <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>no additional detail recorded.</span>;
+  if (
+    metadata === null ||
+    metadata === undefined ||
+    (typeof metadata === 'object' && Object.keys(metadata).length === 0)
+  ) {
+    return (
+      <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+        no additional detail recorded.
+      </span>
+    );
   }
   if (typeof metadata !== 'object') {
-    return <span style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink }}>{String(metadata)}</span>;
+    return (
+      <span style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink }}>{String(metadata)}</span>
+    );
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -124,7 +153,15 @@ export function ActionDetailDrawer({ actionId, onClose }) {
   const known = action ? actionKnown(action.actionType) : true;
 
   return createPortal(
-    <div style={{ position: 'fixed', inset: 0, zIndex: 2147483300, display: 'flex', justifyContent: 'flex-end' }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2147483300,
+        display: 'flex',
+        justifyContent: 'flex-end',
+      }}
+    >
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: v.scrim }} />
       <aside
         role="dialog"
@@ -156,14 +193,29 @@ export function ActionDetailDrawer({ actionId, onClose }) {
             background: v.base,
           }}
         >
-          <span style={{ fontFamily: v.fontDisplay, fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', color: v.ink }}>
+          <span
+            style={{
+              fontFamily: v.fontDisplay,
+              fontWeight: 700,
+              fontSize: 18,
+              letterSpacing: '-0.02em',
+              color: v.ink,
+            }}
+          >
             action detail
           </span>
           <button
             type="button"
             onClick={onClose}
             aria-label="close"
-            style={{ display: 'inline-flex', background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 8 }}
+            style={{
+              display: 'inline-flex',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 4,
+              borderRadius: 8,
+            }}
           >
             <LxIcon name="close" size={18} color={v.ink3} />
           </button>
@@ -171,7 +223,9 @@ export function ActionDetailDrawer({ actionId, onClose }) {
 
         <div style={{ padding: 20 }}>
           {isLoading ? (
-            <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3 }}>loading action...</div>
+            <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3 }}>
+              loading action...
+            </div>
           ) : notFound ? (
             <NotAvailable
               title="action not available"
@@ -182,7 +236,9 @@ export function ActionDetailDrawer({ actionId, onClose }) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: v.fontBody, fontSize: 16, fontWeight: 600, color: v.ink }}>
+                <span
+                  style={{ fontFamily: v.fontBody, fontSize: 16, fontWeight: 600, color: v.ink }}
+                >
                   {actionLabel(action.actionType)}
                 </span>
                 {!known ? (
@@ -216,7 +272,13 @@ export function ActionDetailDrawer({ actionId, onClose }) {
                 <MetaRow label="target account">
                   <Link
                     to={routeTo.adminUser(action.targetUserId)}
-                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, color: v.accentText }}
+                    style={{
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      color: v.accentText,
+                    }}
                   >
                     <ReporterName userId={action.targetUserId} prefix="@" />
                     <LxIcon name="chevronRight" size={13} color={v.accentText} />
@@ -226,7 +288,9 @@ export function ActionDetailDrawer({ actionId, onClose }) {
                 <MetaRow label="target">
                   {action.targetEntityType}
                   {action.targetEntityId ? (
-                    <span style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink3, marginLeft: 8 }}>
+                    <span
+                      style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink3, marginLeft: 8 }}
+                    >
                       {action.targetEntityId.slice(0, 8)}
                     </span>
                   ) : null}
@@ -246,7 +310,15 @@ export function ActionDetailDrawer({ actionId, onClose }) {
                   <MetaLabel>originating report</MetaLabel>
                   <Link
                     to={routeTo.adminReportDetail(action.reportId)}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: v.fontBody, fontSize: 14, color: v.accentText, textDecoration: 'none' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontFamily: v.fontBody,
+                      fontSize: 14,
+                      color: v.accentText,
+                      textDecoration: 'none',
+                    }}
                   >
                     <LxIcon name="external" size={14} color={v.accentText} />
                     open report {action.reportId.slice(0, 8)}
@@ -254,7 +326,15 @@ export function ActionDetailDrawer({ actionId, onClose }) {
                 </div>
               ) : null}
 
-              <div style={{ borderTop: `1px solid ${v.border}`, paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div
+                style={{
+                  borderTop: `1px solid ${v.border}`,
+                  paddingTop: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
                 <MetaLabel>metadata</MetaLabel>
                 <ActionMetadata metadata={action.metadata} reasonLabel={reasonLabel} />
               </div>

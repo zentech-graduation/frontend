@@ -64,8 +64,7 @@ export const GRANULARITIES = [
   { key: 'day', label: 'daily', stepMs: 24 * 60 * 60 * 1000 },
 ];
 
-export const granularityFor = (key) =>
-  GRANULARITIES.find((g) => g.key === key) ?? GRANULARITIES[0];
+export const granularityFor = (key) => GRANULARITIES.find((g) => g.key === key) ?? GRANULARITIES[0];
 
 /** Longest span a single series read may cover. Verified: 365 days passes, 366 is refused. */
 export const MAX_WINDOW_DAYS = 365;

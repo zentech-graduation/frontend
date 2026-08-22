@@ -82,26 +82,69 @@ export function AccountListScreen() {
       header: 'account',
       render: (row) => (
         <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-          <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink, fontWeight: 500 }}>@{row.username}</span>
+          <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink, fontWeight: 500 }}>
+            @{row.username}
+          </span>
           {row.displayName ? (
-            <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>
+            <span
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 12,
+                color: v.ink3,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: 220,
+              }}
+            >
               {row.displayName}
             </span>
           ) : null}
         </span>
       ),
     },
-    { key: 'email', header: 'email', nowrap: true, render: (row) => <span style={{ color: v.ink3 }}>{row.email}</span> },
-    { key: 'role', header: 'role', nowrap: true, render: (row) => <StatusBadge status={row.role} size="sm" /> },
-    { key: 'status', header: 'status', nowrap: true, render: (row) => <StatusBadge status={row.status} size="sm" /> },
-    { key: 'joined', header: 'joined', nowrap: true, render: (row) => <LocalTime value={row.createdAt} showZone={false} /> },
+    {
+      key: 'email',
+      header: 'email',
+      nowrap: true,
+      render: (row) => <span style={{ color: v.ink3 }}>{row.email}</span>,
+    },
+    {
+      key: 'role',
+      header: 'role',
+      nowrap: true,
+      render: (row) => <StatusBadge status={row.role} size="sm" />,
+    },
+    {
+      key: 'status',
+      header: 'status',
+      nowrap: true,
+      render: (row) => <StatusBadge status={row.status} size="sm" />,
+    },
+    {
+      key: 'joined',
+      header: 'joined',
+      nowrap: true,
+      render: (row) => <LocalTime value={row.createdAt} showZone={false} />,
+    },
     {
       key: 'lastLogin',
       header: 'last login',
       nowrap: true,
-      render: (row) => (row.lastLoginAt ? <LocalTime value={row.lastLoginAt} showZone={false} /> : <span style={{ color: v.ink3 }}>never</span>),
+      render: (row) =>
+        row.lastLoginAt ? (
+          <LocalTime value={row.lastLoginAt} showZone={false} />
+        ) : (
+          <span style={{ color: v.ink3 }}>never</span>
+        ),
     },
-    { key: 'chevron', header: '', align: 'right', width: 40, render: () => <LxIcon name="chevronRight" size={14} color={v.ink3} /> },
+    {
+      key: 'chevron',
+      header: '',
+      align: 'right',
+      width: 40,
+      render: () => <LxIcon name="chevronRight" size={14} color={v.ink3} />,
+    },
   ];
 
   const isDirty = Boolean(status || role);
@@ -111,19 +154,63 @@ export function AccountListScreen() {
       <PageHeader title="accounts" subtitle="find an account, see its state, and open it to act." />
 
       <PanelCard padded={false}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: `1px solid ${v.border}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, background: v.surfaceSunken, border: `1px solid ${search.cooling ? v.warning : v.border}`, borderRadius: 999, padding: '8px 14px' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 16px',
+            borderBottom: `1px solid ${v.border}`,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              flex: 1,
+              minWidth: 0,
+              background: v.surfaceSunken,
+              border: `1px solid ${search.cooling ? v.warning : v.border}`,
+              borderRadius: 999,
+              padding: '8px 14px',
+            }}
+          >
             <LxIcon name="explore" size={15} color={v.ink3} />
             <input
               type="text"
               value={search.text}
               disabled={search.cooling}
-              placeholder={search.cooling ? `rate limited — searching again in ${search.cooldownRemaining}s` : 'search by username or name (min 2 characters)'}
+              placeholder={
+                search.cooling
+                  ? `rate limited — searching again in ${search.cooldownRemaining}s`
+                  : 'search by username or name (min 2 characters)'
+              }
               onChange={(event) => search.setText(event.target.value)}
-              style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', fontFamily: v.fontBody, fontSize: 14, color: v.ink }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontFamily: v.fontBody,
+                fontSize: 14,
+                color: v.ink,
+              }}
             />
             {search.text ? (
-              <button type="button" aria-label="clear search" onClick={search.reset} style={{ display: 'inline-flex', background: 'transparent', border: 'none', cursor: 'pointer', padding: 2 }}>
+              <button
+                type="button"
+                aria-label="clear search"
+                onClick={search.reset}
+                style={{
+                  display: 'inline-flex',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 2,
+                }}
+              >
                 <LxIcon name="close" size={14} color={v.ink3} />
               </button>
             ) : null}
@@ -131,16 +218,45 @@ export function AccountListScreen() {
         </div>
 
         {search.cooling ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderBottom: `1px solid ${v.border}`, background: v.warningDim, fontFamily: v.fontBody, fontSize: 13, color: v.warningText }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              borderBottom: `1px solid ${v.border}`,
+              background: v.warningDim,
+              fontFamily: v.fontBody,
+              fontSize: 13,
+              color: v.warningText,
+            }}
+          >
             <LxIcon name="clock" size={14} color={v.warningText} />
-            search is rate limited. it will be available again in {search.cooldownRemaining}s. no automatic retry.
+            search is rate limited. it will be available again in {search.cooldownRemaining}s. no
+            automatic retry.
           </div>
         ) : search.tooShort ? (
-          <div style={{ padding: '10px 16px', borderBottom: `1px solid ${v.border}`, fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+          <div
+            style={{
+              padding: '10px 16px',
+              borderBottom: `1px solid ${v.border}`,
+              fontFamily: v.fontBody,
+              fontSize: 13,
+              color: v.ink3,
+            }}
+          >
             keep typing — search needs at least two characters.
           </div>
         ) : searchResult.active ? (
-          <div style={{ padding: '10px 16px', borderBottom: `1px solid ${v.border}`, fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+          <div
+            style={{
+              padding: '10px 16px',
+              borderBottom: `1px solid ${v.border}`,
+              fontFamily: v.fontBody,
+              fontSize: 13,
+              color: v.ink3,
+            }}
+          >
             showing search results. status and role filters apply to the full list, not to search.
           </div>
         ) : (

@@ -246,7 +246,13 @@ export function TimeseriesChart({ points, metric, granularity, fromMs, toMs }) {
                 ))}
                 {showMarkers
                   ? series.points.map((p) => (
-                      <circle key={`pt-${p.t}`} cx={x(p.t)} cy={y(p.value)} r={markerRadius} fill={color}>
+                      <circle
+                        key={`pt-${p.t}`}
+                        cx={x(p.t)}
+                        cy={y(p.value)}
+                        r={markerRadius}
+                        fill={color}
+                      >
                         <title>
                           {`${dimensionLabel(series.dimension, metric)}: ${p.value} ${
                             metric.unit
@@ -326,9 +332,8 @@ function ChartLegend({ series, metric, omitted, gaps, granularity }) {
       {gaps.length > 0 ? (
         <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
           the hatched {gaps.length === 1 ? 'band marks an interval' : 'bands mark intervals'} in
-          which no bucket was collected —{' '}
-          {gaps.reduce((total, gap) => total + gap.missing, 0)} missing{' '}
-          {granularity.key === 'day' ? 'day' : 'half-hour'} bucket
+          which no bucket was collected — {gaps.reduce((total, gap) => total + gap.missing, 0)}{' '}
+          missing {granularity.key === 'day' ? 'day' : 'half-hour'} bucket
           {gaps.reduce((total, gap) => total + gap.missing, 0) === 1 ? '' : 's'} in all. the line is
           broken across {gaps.length === 1 ? 'it' : 'them'} rather than joined, because nothing was
           measured there.
@@ -337,9 +342,9 @@ function ChartLegend({ series, metric, omitted, gaps, granularity }) {
 
       {omitted.length > 0 ? (
         <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
-          {omitted.length} further {omitted.length === 1 ? 'breakdown is' : 'breakdowns are'} present
-          in the data and not drawn, because the chart has {MAX_SERIES} distinguishable colours:{' '}
-          {omitted.join(', ')}.
+          {omitted.length} further {omitted.length === 1 ? 'breakdown is' : 'breakdowns are'}{' '}
+          present in the data and not drawn, because the chart has {MAX_SERIES} distinguishable
+          colours: {omitted.join(', ')}.
         </p>
       ) : null}
     </div>

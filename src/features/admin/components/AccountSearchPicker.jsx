@@ -24,8 +24,14 @@ import { describeError } from '../lib/errors';
  * @param {string} [placeholder]
  * @param {string} [id]
  */
-export function AccountSearchPicker({ value, onSelect, placeholder = 'search accounts…', id = 'account-picker' }) {
-  const { text, setText, term, cooling, cooldownRemaining, startCooldown, tooShort, reset } = useDebouncedSearch({ minLength: 2 });
+export function AccountSearchPicker({
+  value,
+  onSelect,
+  placeholder = 'search accounts…',
+  id = 'account-picker',
+}) {
+  const { text, setText, term, cooling, cooldownRemaining, startCooldown, tooShort, reset } =
+    useDebouncedSearch({ minLength: 2 });
   const { rows, isLoading, isError, error, active } = useAccountSearch(term);
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
@@ -78,7 +84,13 @@ export function AccountSearchPicker({ value, onSelect, placeholder = 'search acc
             onSelect(null);
             reset();
           }}
-          style={{ display: 'inline-flex', background: 'transparent', border: 'none', cursor: 'pointer', padding: 2 }}
+          style={{
+            display: 'inline-flex',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 2,
+          }}
         >
           <LxIcon name="close" size={13} color={v.accentText} />
         </button>
@@ -90,7 +102,17 @@ export function AccountSearchPicker({ value, onSelect, placeholder = 'search acc
 
   return (
     <div ref={rootRef} style={{ position: 'relative', width: 260, maxWidth: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: v.surfaceSunken, border: `1px solid ${cooling ? v.warning : v.border}`, borderRadius: 999, padding: '6px 12px' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          background: v.surfaceSunken,
+          border: `1px solid ${cooling ? v.warning : v.border}`,
+          borderRadius: 999,
+          padding: '6px 12px',
+        }}
+      >
         <LxIcon name="explore" size={14} color={v.ink3} />
         <input
           id={id}
@@ -103,7 +125,16 @@ export function AccountSearchPicker({ value, onSelect, placeholder = 'search acc
             setText(event.target.value);
             setOpen(true);
           }}
-          style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', fontFamily: v.fontBody, fontSize: 13, color: v.ink }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            fontFamily: v.fontBody,
+            fontSize: 13,
+            color: v.ink,
+          }}
         />
         {isLoading && active ? <LxIcon name="clock" size={13} color={v.ink3} /> : null}
       </div>
@@ -163,9 +194,22 @@ export function AccountSearchPicker({ value, onSelect, placeholder = 'search acc
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
               >
                 <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                  <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink, fontWeight: 500 }}>@{row.username}</span>
+                  <span
+                    style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink, fontWeight: 500 }}
+                  >
+                    @{row.username}
+                  </span>
                   {row.displayName ? (
-                    <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span
+                      style={{
+                        fontFamily: v.fontBody,
+                        fontSize: 12,
+                        color: v.ink3,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
                       {row.displayName}
                     </span>
                   ) : null}
@@ -182,5 +226,7 @@ export function AccountSearchPicker({ value, onSelect, placeholder = 'search acc
 }
 
 const Hint = ({ children }) => (
-  <div style={{ padding: '10px 12px', fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>{children}</div>
+  <div style={{ padding: '10px 12px', fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+    {children}
+  </div>
 );

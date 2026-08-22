@@ -31,7 +31,10 @@ export function FilterBar({ groups, onChange, onClear, isDirty }) {
     >
       <LxIcon name="filter" size={14} color={v.ink3} />
       {groups.map((group) => (
-        <div key={group.key} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div
+          key={group.key}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
+        >
           <span
             style={{
               fontFamily: v.fontMono,

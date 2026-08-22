@@ -105,7 +105,9 @@ export function DateRangeControl({
     if (committedFrom === null || committedTo === null) {
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraftFrom(toLocalInput(committedFrom));
+
     setDraftTo(toLocalInput(committedTo));
     // The note is deliberately not cleared here. A commit that was clamped sets
     // the note and then changes the committed range, so clearing it on that
@@ -180,6 +182,7 @@ export function DateRangeControl({
     if (disabled) {
       return;
     }
+    // eslint-disable-next-line react-hooks/purity
     const to = Date.now();
     setNote(null);
     onCommit({ fromMs: to - days * DAY_MS, toMs: to });
@@ -220,7 +223,12 @@ export function DateRangeControl({
             style={fieldStyle}
           />
         </label>
-        <LxBtn type="submit" variant={dirty ? 'primary' : 'secondary'} size="sm" disabled={disabled}>
+        <LxBtn
+          type="submit"
+          variant={dirty ? 'primary' : 'secondary'}
+          size="sm"
+          disabled={disabled}
+        >
           apply
         </LxBtn>
       </div>

@@ -83,7 +83,14 @@ export const describeError = (error) => {
   }
 
   if (code === 'INVALID_CURSOR') {
-    return { kind: 'silent', code, message: '', fields: null, retryAfterSeconds: null, isConflict: false };
+    return {
+      kind: 'silent',
+      code,
+      message: '',
+      fields: null,
+      retryAfterSeconds: null,
+      isConflict: false,
+    };
   }
 
   if (code === 'TOO_MANY_REQUESTS') {
@@ -98,11 +105,25 @@ export const describeError = (error) => {
   }
 
   if (PAGE_CODES.has(code)) {
-    return { kind: 'page', code, message, fields: null, retryAfterSeconds: null, isConflict: false };
+    return {
+      kind: 'page',
+      code,
+      message,
+      fields: null,
+      retryAfterSeconds: null,
+      isConflict: false,
+    };
   }
 
   if (CONFLICT_CODES.has(code)) {
-    return { kind: 'toast', code, message, fields: null, retryAfterSeconds: null, isConflict: true };
+    return {
+      kind: 'toast',
+      code,
+      message,
+      fields: null,
+      retryAfterSeconds: null,
+      isConflict: true,
+    };
   }
 
   return { kind: 'toast', code, message, fields: null, retryAfterSeconds: null, isConflict: false };

@@ -323,10 +323,7 @@ export const adminApi = {
    * irreversible: an existing administrator can never be demoted through the API.
    */
   async changeUserRole(userId, { role, reason } = {}) {
-    const res = await axiosClient.patch(
-      `/admin/users/${userId}/role`,
-      buildBody({ role, reason })
-    );
+    const res = await axiosClient.patch(`/admin/users/${userId}/role`, buildBody({ role, reason }));
     return unwrap(res);
   },
 

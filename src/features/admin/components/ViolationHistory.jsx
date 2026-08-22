@@ -89,8 +89,16 @@ export function ViolationHistory({ userId }) {
   const role = useAuthStore((state) => state.role);
   const isAdmin = isAdminRole(role);
   const { reasonLabel } = useVocabularies();
-  const { rows, isLoading, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
-    useViolations(userId);
+  const {
+    rows,
+    isLoading,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useViolations(userId);
   const discipline = useDisciplineActions(userId);
   // Read only as an administrator: revoke controls are administrator-only, so
   // this is exactly the audience that needs the account's current status, and a
@@ -109,9 +117,12 @@ export function ViolationHistory({ userId }) {
     if (!revoking) {
       return;
     }
-    const mutation = revoking.kind === 'strike' ? discipline.revokeStrike : discipline.revokeWarning;
+    const mutation =
+      revoking.kind === 'strike' ? discipline.revokeStrike : discipline.revokeWarning;
     const payload =
-      revoking.kind === 'strike' ? { strikeId: revoking.id, reason } : { warningId: revoking.id, reason };
+      revoking.kind === 'strike'
+        ? { strikeId: revoking.id, reason }
+        : { warningId: revoking.id, reason };
     mutation.mutate(payload, {
       onSuccess: () => {
         toast(`${revoking.kind} revoked`);
@@ -173,24 +184,46 @@ export function ViolationHistory({ userId }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <KindBadge kind={record.kind} />
               {record.kind === 'warning' ? (
-                <span style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink }}>
+                <span
+                  style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink }}
+                >
                   {reasonLabel(record.reasonKey)}
                 </span>
               ) : null}
               {record.kind === 'strike' ? (
-                <span style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink }}>
+                <span
+                  style={{ fontFamily: v.fontBody, fontSize: 14, fontWeight: 500, color: v.ink }}
+                >
                   strike #{record.strikeNumber}
                 </span>
               ) : null}
             </div>
 
             {record.kind === 'warning' && record.note ? (
-              <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+              <div
+                style={{
+                  fontFamily: v.fontBody,
+                  fontSize: 13,
+                  color: v.ink2,
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.5,
+                }}
+              >
                 {record.note}
               </div>
             ) : null}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: v.fontBody, fontSize: 12, color: v.ink3, flexWrap: 'wrap' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                fontFamily: v.fontBody,
+                fontSize: 12,
+                color: v.ink3,
+                flexWrap: 'wrap',
+              }}
+            >
               <span>by</span>
               <ReporterName userId={record.actorId} prefix="@" />
               <span aria-hidden="true">·</span>
@@ -214,7 +247,11 @@ export function ViolationHistory({ userId }) {
         </div>
       ))}
 
-      <LoadMore hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} onLoadMore={() => fetchNextPage()} />
+      <LoadMore
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={() => fetchNextPage()}
+      />
 
       <ReasonConfirmDialog
         open={Boolean(revoking)}

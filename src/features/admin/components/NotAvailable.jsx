@@ -47,7 +47,12 @@ export function NotAvailable({
       </div>
       <Link
         to={ROUTES.ADMIN_REPORTS}
-        style={{ fontFamily: v.fontBody, fontSize: 14, color: v.accentText, textDecoration: 'none' }}
+        style={{
+          fontFamily: v.fontBody,
+          fontSize: 14,
+          color: v.accentText,
+          textDecoration: 'none',
+        }}
       >
         back to reports
       </Link>

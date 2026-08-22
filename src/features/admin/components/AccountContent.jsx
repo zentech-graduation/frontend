@@ -67,7 +67,17 @@ function ContentRow({ row, kind, onRemove, onRestore, busy }) {
         >
           {text || <span style={{ fontStyle: 'italic', color: v.ink3 }}>no text</span>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: v.fontMono, fontSize: 11, color: v.ink3, flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontFamily: v.fontMono,
+            fontSize: 11,
+            color: v.ink3,
+            flexWrap: 'wrap',
+          }}
+        >
           <LocalTime value={row.createdAt} showZone={false} />
           <span aria-hidden="true">·</span>
           <span>{row.likeCount ?? 0} likes</span>
@@ -97,8 +107,16 @@ function ContentRow({ row, kind, onRemove, onRestore, busy }) {
 
 function ContentList({ userId, kind }) {
   const singular = kind === 'posts' ? 'post' : 'comment';
-  const { rows, isLoading, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
-    useUserContent(userId, kind);
+  const {
+    rows,
+    isLoading,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refetch,
+  } = useUserContent(userId, kind);
   const moderation = useContentModeration(userId);
 
   const [active, setActive] = useState(null);
@@ -196,7 +214,11 @@ function ContentList({ userId, kind }) {
         />
       ))}
 
-      <LoadMore hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} onLoadMore={() => fetchNextPage()} />
+      <LoadMore
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={() => fetchNextPage()}
+      />
 
       <ReasonConfirmDialog
         open={Boolean(active)}

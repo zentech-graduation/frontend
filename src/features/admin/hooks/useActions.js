@@ -29,7 +29,10 @@ export function useActions(filters = {}) {
   const adminId = filters.adminId || undefined;
 
   const query = useInfiniteQuery({
-    queryKey: listQueryKey('actions', role, { actionType: actionType ?? null, adminId: adminId ?? null }),
+    queryKey: listQueryKey('actions', role, {
+      actionType: actionType ?? null,
+      adminId: adminId ?? null,
+    }),
     queryFn: ({ pageParam }) =>
       adminApi.getActions({ actionType, adminId, cursor: pageParam, limit: PAGE_LIMIT }),
     initialPageParam: undefined,
