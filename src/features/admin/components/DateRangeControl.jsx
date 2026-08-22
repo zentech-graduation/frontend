@@ -107,7 +107,11 @@ export function DateRangeControl({
     }
     setDraftFrom(toLocalInput(committedFrom));
     setDraftTo(toLocalInput(committedTo));
-    setNote(null);
+    // The note is deliberately not cleared here. A commit that was clamped sets
+    // the note and then changes the committed range, so clearing it on that
+    // change would wipe the explanation in the same tick it was written and the
+    // correction would land silently — which is the one thing this control must
+    // not do. The note is cleared where an edit actually invalidates it instead.
   }, [committedFrom, committedTo]);
 
   const draftFromMs = fromLocalInput(draftFrom);
@@ -130,11 +134,17 @@ export function DateRangeControl({
     return closest;
   }, [draftSpanDays, steps]);
 
+  // Compared as the strings the inputs hold, not as milliseconds. A
+  // datetime-local field has minute precision, so a committed instant carrying
+  // seconds can never equal its own round trip through the field, and comparing
+  // numbers would leave the control permanently claiming to be edited.
   const dirty =
-    draftFromMs !== committedFrom ||
-    draftToMs !== committedTo ||
     draftFromMs === null ||
-    draftToMs === null;
+    draftToMs === null ||
+    committedFrom === null ||
+    committedTo === null ||
+    draftFrom !== toLocalInput(committedFrom) ||
+    draftTo !== toLocalInput(committedTo);
 
   const handleSlider = (event) => {
     const days = steps[Number(event.target.value)] ?? steps[steps.length - 1];
@@ -157,7 +167,11 @@ export function DateRangeControl({
       setNote('enter both a start and an end before applying.');
       return;
     }
-    const clamped = clampRange(draftFromMs, draftToMs);
+    // The endpoint's own maximum, not the module default: this control serves
+    // two endpoints whose limits differ by an order of magnitude (a year for the
+    // series, thirty days for the activity log), and clamping to the wrong one
+    // lets a refused window through.
+    const clamped = clampRange(draftFromMs, draftToMs, maxDays);
     setNote(clamped.note);
     onCommit({ fromMs: clamped.fromMs, toMs: clamped.toMs });
   };
@@ -185,7 +199,10 @@ export function DateRangeControl({
           <input
             type="datetime-local"
             value={draftFrom}
-            onChange={(event) => setDraftFrom(event.target.value)}
+            onChange={(event) => {
+              setDraftFrom(event.target.value);
+              setNote(null);
+            }}
             disabled={disabled}
             style={fieldStyle}
           />
@@ -195,7 +212,10 @@ export function DateRangeControl({
           <input
             type="datetime-local"
             value={draftTo}
-            onChange={(event) => setDraftTo(event.target.value)}
+            onChange={(event) => {
+              setDraftTo(event.target.value);
+              setNote(null);
+            }}
             disabled={disabled}
             style={fieldStyle}
           />

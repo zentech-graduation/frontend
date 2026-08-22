@@ -122,7 +122,7 @@ export const availableGranularities = (fromMs, nowMs = Date.now()) =>
  * Returns the corrected range together with a note naming what was changed, so
  * the control can say what it did instead of silently altering the input.
  */
-export const clampRange = (fromMs, toMs) => {
+export const clampRange = (fromMs, toMs, maxDays = MAX_WINDOW_DAYS) => {
   let from = fromMs;
   let to = toMs;
   let note = null;
@@ -131,9 +131,9 @@ export const clampRange = (fromMs, toMs) => {
     to = from + DAY_MS;
     note = 'the end of the range must be after its start; it was moved to one day later.';
   }
-  if (to - from > MAX_WINDOW_DAYS * DAY_MS) {
-    from = to - MAX_WINDOW_DAYS * DAY_MS;
-    note = `a range may span at most ${MAX_WINDOW_DAYS} days; the start was moved forward to fit.`;
+  if (to - from > maxDays * DAY_MS) {
+    from = to - maxDays * DAY_MS;
+    note = `a range may span at most ${maxDays} days; the start was moved forward to fit.`;
   }
   return { fromMs: from, toMs: to, note };
 };
