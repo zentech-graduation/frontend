@@ -28,6 +28,11 @@ import { clampRange, localZone } from '../lib/statistics';
  * @param {(range: {fromMs:number,toMs:number}) => void} onCommit
  * @param {boolean} disabled
  * @param {string} disabledReason shown in place of the limit while disabled
+ * @param {string} unsetHint what to say while no range has been applied. The
+ *   default suits an endpoint whose bounds are mandatory and which is therefore
+ *   showing nothing at all; a screen whose bounds are optional is already
+ *   showing rows and must say something else, or it tells the reviewer nothing
+ *   was requested while a full page sits underneath.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -85,6 +90,7 @@ export function DateRangeControl({
   onCommit,
   disabled = false,
   disabledReason = null,
+  unsetHint = 'nothing has been requested yet — set both ends and apply.',
 }) {
   const steps = useMemo(() => WINDOW_STEPS.filter((d) => d <= maxDays), [maxDays]);
 
@@ -275,14 +281,19 @@ export function DateRangeControl({
           ))}
         </div>
         <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
-          times are {localZone()}
+          {/* Both endpoints behind this control treat the window as half-open,
+              verified at the boundary against a real row's timestamp on each
+              rather than assumed from one. Saying so matters because a reviewer
+              setting an exact end time and not finding the row that sits on it
+              would otherwise read a correct result as a missing record. */}
+          from is included, to is not — times are {localZone()}
         </span>
       </div>
 
       {dirty && !disabled ? (
         <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
           {value === null
-            ? 'nothing has been requested yet — set both ends and apply.'
+            ? unsetHint
             : 'the range has been edited and not applied yet — nothing is requested until you apply it.'}
         </p>
       ) : null}

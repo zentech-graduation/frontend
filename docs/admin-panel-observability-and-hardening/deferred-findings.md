@@ -32,6 +32,9 @@ phase leaves behind.
   `observability-contract-verification.md` §2.3 and `design-decisions.md` §3; the backend side of the
   question is item 7 of the backend request.
 
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** **Answered.** The recommender service is now part of the default local compose stack, and all four engagement types were produced and read back out of `user_events`. The filter widens to seven in a development build and stays at three in a production build, gated on the environment — a production deployment of that service still does not exist. Evidence and the gate's reasoning are in the uptake phase's `design-decisions.md` §1.
+
+
 - **PANEL: statistics for a breakdown metric with more than seven dimensions.** The categorical token
   palette has seven entries, so at most seven series are drawn and the rest are named rather than
   drawn. `admin_actions_by_type` can exceed seven in a busy deployment. If that becomes common, the

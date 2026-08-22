@@ -3,6 +3,29 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
 
 /**
+ * The four content types a reviewer can take down and put back, each mapped to
+ * its endpoint pair. Stories and messages joined posts and comments when the
+ * backend added their four endpoints; before that a reported story or message
+ * was rendered read-only.
+ *
+ * A map rather than a chain of ternaries: with four types a ternary chain has a
+ * silent default, and the default would have been "treat it as a comment".
+ */
+const REMOVE_BY_TYPE = {
+  post: (id, reason, reportId) => adminApi.removePost(id, reason, reportId),
+  comment: (id, reason, reportId) => adminApi.removeComment(id, reason, reportId),
+  story: (id, reason, reportId) => adminApi.removeStory(id, reason, reportId),
+  message: (id, reason, reportId) => adminApi.removeMessage(id, reason, reportId),
+};
+
+const RESTORE_BY_TYPE = {
+  post: (id, reason, reportId) => adminApi.restorePost(id, reason, reportId),
+  comment: (id, reason, reportId) => adminApi.restoreComment(id, reason, reportId),
+  story: (id, reason, reportId) => adminApi.restoreStory(id, reason, reportId),
+  message: (id, reason, reportId) => adminApi.restoreMessage(id, reason, reportId),
+};
+
+/**
  * The mutations a reviewer performs from the report detail screen.
  *
  * Every mutation invalidates the queries whose result it changed, so the report
@@ -49,17 +72,13 @@ export function useReportActions(reportId) {
 
   const removeContent = useMutation({
     mutationFn: ({ targetType, entityId, reason }) =>
-      targetType === 'post'
-        ? adminApi.removePost(entityId, reason, reportId)
-        : adminApi.removeComment(entityId, reason, reportId),
+      REMOVE_BY_TYPE[targetType](entityId, reason, reportId),
     onSuccess: invalidateReport,
   });
 
   const restoreContent = useMutation({
     mutationFn: ({ targetType, entityId, reason }) =>
-      targetType === 'post'
-        ? adminApi.restorePost(entityId, reason, reportId)
-        : adminApi.restoreComment(entityId, reason, reportId),
+      RESTORE_BY_TYPE[targetType](entityId, reason, reportId),
     onSuccess: invalidateReport,
   });
 

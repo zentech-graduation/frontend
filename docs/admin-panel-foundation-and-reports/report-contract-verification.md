@@ -188,6 +188,9 @@ The badge poll must be gated on the administrator role, or a moderator produces 
 | `/admin/posts/{id}/restore` | wrapped: `{ action, droppedHashtags }`, actionType `restore_post` |
 
 For a post with no banned hashtag, `droppedHashtags` is `[]` and `action.metadata` is `{ resultingStatus: "published" }` with no `strippedHashtags` key.
+
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** The field is now **`remainingBannedHashtags`**, in both the wrapper and `action.metadata`, and its meaning changed: it is the banned tags the caption still carries **after** the restore, not the set the call dropped. Restoring the same post twice returns the same names both times.
+
 The two response shapes differ, and the restore wrapper must be unwrapped separately from remove.
 
 ## Item 14: non-empty droppedHashtags, reproduced end to end

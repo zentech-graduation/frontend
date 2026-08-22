@@ -10,6 +10,7 @@ import { StatusBadge } from './StatusBadge';
 import { LocalTime } from './LocalTime';
 import { LoadingState, FailedState } from './ListStates';
 import { ReportsAgainstList, SessionList } from './AccountSessionsPanel';
+import { useCurrentSession } from '../hooks/useCurrentSession';
 import { ReasonConfirmDialog } from './ReasonConfirmDialog';
 import { SuspendDialog } from './SuspendDialog';
 import { RoleChangeDialog } from './RoleChangeDialog';
@@ -56,8 +57,20 @@ export function AccountLifecyclePanel({ userId }) {
 
   const [dialog, setDialog] = useState(null);
   const [serverError, setServerError] = useState('');
+  // The row a per-session revoke confirmation is about, held while the dialog is
+  // open so the confirmation can name what it is ending.
+  const [sessionToRevoke, setSessionToRevoke] = useState(null);
+  const currentSession = useCurrentSession();
 
   const isSelf = Boolean(signedInUserId) && signedInUserId === userId;
+  // True only when the server named the caller's session and the row queued for
+  // revocation is that one. Never guessed from the account being one's own: an
+  // administrator looking at their own account has many sessions and only one
+  // of them is the one they are reading in.
+  const isOwnSessionRow =
+    currentSession.isKnown &&
+    Boolean(sessionToRevoke?.id) &&
+    sessionToRevoke.id === currentSession.sessionId;
 
   if (isLoading) {
     return <LoadingState rows={3} />;
@@ -84,6 +97,7 @@ export function AccountLifecyclePanel({ userId }) {
   const closeDialog = () => {
     setServerError('');
     setDialog(null);
+    setSessionToRevoke(null);
   };
 
   const run = (mutation, payload, successMessage) => {
@@ -192,6 +206,12 @@ export function AccountLifecyclePanel({ userId }) {
           sessions={detail.sessions}
           isSelf={isSelf}
           onRevokeAll={() => openDialog('forceLogout')}
+          onRevokeSession={(row) => {
+            setSessionToRevoke(row);
+            openDialog('revokeSession');
+          }}
+          currentSessionId={currentSession.sessionId}
+          currentSessionKnown={currentSession.isKnown}
         />
       </div>
 
@@ -246,6 +266,28 @@ export function AccountLifecyclePanel({ userId }) {
         serverError={serverError || null}
         onConfirm={(reason) =>
           run(actions.forceLogout, { reason }, isSelf ? 'signing you out...' : 'all sessions ended')
+        }
+        onClose={closeDialog}
+      />
+      {/* Per-session revocation. The confirmation states both halves of what it
+          does: this session ends, the account's others do not. When the row is
+          the reader's own session it says plainly that confirming signs them
+          out, because that is the one case where the consequence lands on the
+          person confirming. */}
+      <ReasonConfirmDialog
+        open={dialog === 'revokeSession'}
+        title="end this session"
+        description={
+          isOwnSessionRow
+            ? 'this ends the session you are reading this in and signs you out of the panel immediately. the account’s other sessions stay signed in. a revoked session cannot be restored — signing in again is the only way back.'
+            : 'this ends one session. every other session this account holds stays signed in, and the account is not banned or suspended. a revoked session cannot be restored — the person signs in again.'
+        }
+        confirmLabel={isOwnSessionRow ? 'end my session and sign out' : 'end this session'}
+        tone="danger"
+        busy={actions.revokeSession.isPending}
+        serverError={serverError || null}
+        onConfirm={(reason) =>
+          run(actions.revokeSession, { sessionId: sessionToRevoke?.id, reason }, 'session ended')
         }
         onClose={closeDialog}
       />
@@ -375,7 +417,10 @@ function StateSummary({ detail, isSelf }) {
               suspension ends <LocalTime value={detail.suspendedUntil} />
             </span>
           ) : (
-            <span>suspended indefinitely — no end date is recorded</span>
+            <span>
+              suspended indefinitely — there is no end date, and it lasts until an administrator
+              lifts it
+            </span>
           )}
         </div>
       ) : null}

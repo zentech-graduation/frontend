@@ -5,7 +5,6 @@ import { v } from '@/config/tokens';
 import { ROUTES } from '@/config/constants';
 import { isAdminRole } from '@/config/roles';
 import { useAuthStore } from '@/store/useAuthStore';
-import { LxIcon } from '@/components/ui/lx-icon';
 import { LxBtn } from '@/features/luvax/components/primitives';
 import { toast } from '@/features/luvax/components/Toast';
 
@@ -22,7 +21,12 @@ import { useReportActions } from '../hooks/useReportActions';
 import { useVocabularies } from '../hooks/useVocabularies';
 import { describeError, getErrorCode } from '../lib/errors';
 import { ACTIONABLE_TARGET_TYPES } from '../lib/reportSchema';
-import { restoreSuccessMessage } from '../lib/contentModeration';
+import {
+  removeConfirmDescription,
+  removeSuccessMessage,
+  restoreConfirmDescription,
+  restoreSuccessMessage,
+} from '../lib/contentModeration';
 
 const Field = ({ label, children }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -56,7 +60,6 @@ function TargetRegion({ target, isLoading, isError }) {
   }
 
   const isUser = target.reportType === 'user';
-  const isReadOnlyType = target.reportType === 'story' || target.reportType === 'message';
   const hasText = typeof target.text === 'string' && target.text.length > 0;
   const media = Array.isArray(target.mediaUrls) ? target.mediaUrls : [];
 
@@ -131,24 +134,6 @@ function TargetRegion({ target, isLoading, isError }) {
         </div>
       ) : null}
 
-      {isReadOnlyType ? (
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            alignItems: 'flex-start',
-            background: v.warningDim,
-            borderRadius: 10,
-            padding: '10px 12px',
-          }}
-        >
-          <LxIcon name="alert" size={16} color={v.warningText} />
-          <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.warningText }}>
-            a {target.reportType} cannot be taken down from this panel. the available actions are
-            resolve, dismiss, and escalate.
-          </span>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -424,7 +409,7 @@ export function ReportDetailScreen() {
                     openReason({
                       key: 'remove',
                       title: `remove ${targetType}`,
-                      description: `take down this ${targetType}. the reason is recorded.`,
+                      description: removeConfirmDescription(targetType),
                       confirmLabel: 'remove',
                       tone: 'danger',
                       mutation: actions.removeContent,
@@ -433,7 +418,7 @@ export function ReportDetailScreen() {
                           { targetType, entityId: target.entityId, reason },
                           {
                             onSuccess: () => {
-                              toast(`${targetType} removed`);
+                              toast(removeSuccessMessage(targetType));
                               closeDialog();
                             },
                             onError: handleActionError,
@@ -454,7 +439,7 @@ export function ReportDetailScreen() {
                     openReason({
                       key: 'restore',
                       title: `restore ${targetType}`,
-                      description: `put this ${targetType} back. the reason is recorded.`,
+                      description: restoreConfirmDescription(targetType),
                       confirmLabel: 'restore',
                       tone: 'primary',
                       mutation: actions.restoreContent,

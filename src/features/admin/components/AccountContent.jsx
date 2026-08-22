@@ -25,8 +25,9 @@ import { ReasonConfirmDialog } from './ReasonConfirmDialog';
  * invalidation differs. Post restore and comment restore are handled separately
  * because their response shapes differ — post restore names any dropped hashtags.
  *
- * The content row carries no media field, so no media is rendered; its absence
- * is the row simply not carrying it (recorded in the contract verification).
+ * A post row carries `mediaUrls` and its attachments are rendered. A comment
+ * row does not, and none is drawn for one: comments have no media in this
+ * schema, so the absence is the schema's, not a gap the panel is papering over.
  *
  * @param {string} userId the account whose content to show
  */
@@ -34,6 +35,9 @@ function ContentRow({ row, kind, onRemove, onRestore, busy }) {
   const text = kind === 'posts' ? row.caption : row.content;
   const isRemoved = row.removed === true;
   const status = kind === 'posts' ? row.status : null;
+  // Posts only. `mediaUrls` exists on a post row and not on a comment row, and
+  // a text post carries an empty array rather than a missing field.
+  const media = kind === 'posts' && Array.isArray(row.mediaUrls) ? row.mediaUrls : [];
 
   return (
     <div
@@ -67,6 +71,26 @@ function ContentRow({ row, kind, onRemove, onRestore, busy }) {
         >
           {text || <span style={{ fontStyle: 'italic', color: v.ink3 }}>no text</span>}
         </div>
+
+        {media.length > 0 ? (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {media.map((url) => (
+              <img
+                key={url}
+                src={url}
+                alt=""
+                loading="lazy"
+                style={{
+                  width: 64,
+                  height: 64,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                  border: `1px solid ${v.border}`,
+                }}
+              />
+            ))}
+          </div>
+        ) : null}
         <div
           style={{
             display: 'flex',

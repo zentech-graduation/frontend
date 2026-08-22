@@ -211,6 +211,9 @@ Confirmed by calling.
 - `PATCH /api/v1/admin/posts/{id}/restore` returns `data` as `{ action, droppedHashtags }` (wrapped).
 - `PATCH /api/v1/admin/comments/{id}/remove` and `/restore` both return `data` as an `AdminActionResponse` directly (no wrapper, no `droppedHashtags`).
 
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** `droppedHashtags` is now **`remainingBannedHashtags`** with a changed meaning — the banned tags the caption still carries after the restore. `action.metadata.strippedHashtags` became `action.metadata.remainingBannedHashtags`. The comment endpoints are unchanged.
+
+
 ### 5.4.2 non-empty `droppedHashtags`, reproduced end to end
 
 - Created a post as `seed_carol` with caption `drop end2end #dropme2 test`.

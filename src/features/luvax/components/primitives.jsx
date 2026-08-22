@@ -44,6 +44,12 @@ export function LxBtn({
   onClick,
   disabled = false,
   style = {},
+  // Forwarded rather than defaulted, so existing call sites keep the browser's
+  // own default and nothing changes for them. Without this a caller inside a
+  // <form> cannot opt out of submitting: a button with no type submits, so a
+  // `type="button"` that never reaches the DOM silently does nothing.
+  type,
+  ...rest
 }) {
   const sizes = {
     sm: { fontSize: 12, padding: '5px 14px' },
@@ -61,8 +67,10 @@ export function LxBtn({
   }
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
+      {...rest}
       style={{
         fontFamily: v.fontBody,
         fontWeight: 500,

@@ -65,6 +65,11 @@ export const ROUTES = {
   // Administrator-only escalated queue. Sits on its own segment rather than
   // under /admin/reports so it never collides with the :reportId detail route.
   ADMIN_ESCALATED: '/admin/escalated',
+  // The reports the caller escalated, whatever became of them. Open to both
+  // roles: the endpoint scopes by caller, so an administrator sees its own
+  // escalations rather than everyone's. Its own segment for the same
+  // no-collision reason as the escalated queue.
+  ADMIN_MY_ESCALATIONS: '/admin/my-escalations',
   // The moderation action log. A moderator sees its own actions here; an
   // administrator sees all. The open action's detail lives in the `action`
   // query parameter so a specific action is a shareable link.

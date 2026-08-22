@@ -122,6 +122,9 @@ reportId, reason, metadata, createdAt).
 `durationDays: 3` → 200, `suspendedUntil` set to now + 3 days (`AdminUserDetailResponse.suspendedUntil`);
 `durationDays: 9999` → **400 VALIDATION_ERROR** (over max). `reason` is the only required field in
 the schema; the panel treats `durationDays` as a required, bounded input because showing a resulting
+
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** `durationDays` is **optional**. Omitting it suspends indefinitely: `200`, then `status = suspended` with `suspendedUntil = null`, and the reinstatement sweep never matches it. The panel now offers an indefinite suspension alongside a dated one. The 1..3650 bounds remain correct when a duration *is* given.
+
 end time needs one. The server accepts a duration, not an end time; the panel computes and displays
 `now + durationDays` in local time before confirming.
 

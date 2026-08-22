@@ -16,7 +16,162 @@ Target stack for the panel: React 19, Vite, TanStack Query, Zustand, React Route
 
 ---
 
-## Read this first: five things that will cost you hours if you miss them
+## What changed since the previous package
+
+This document was regenerated against a running server after a round of backend work. If you built
+against the previous version, these are the things that are now different. Everything below was
+captured from a live call or read from the source, not carried over from notes.
+
+### Corrections to statements that were wrong
+
+| Was stated | Actually true |
+|---|---|
+| `POST /api/v1/admin/hashtags` returns 200 in the role matrix | It returns **201**. The endpoint's own entry always said 201; the summary table was wrong. |
+| The statistics series and the activity log allow 30 requests a minute | Production allows **20**. Build to 20. Development is looser than both, so a limit you meet while building is not the one production enforces. |
+| The first statistics snapshot appears within thirty minutes | Worst case is **just under an hour**. The interval is thirty minutes and the partial bucket the process starts inside is discarded. |
+| An out-of-range granularity is forced to daily | It is **refused with 400**. The server resolves to daily only when you name no granularity at all. Asking for `half_hour` over a window older than the fine-bucket horizon is an error. Prevent the combination in your controls. |
+| The statistics window limit is thirty days | Two different limits were being conflated. The **window may span at most one year**. The **thirty-day** figure is the fine-bucket horizon, applied to the window's *start* against the present moment. So a one-hour window starting thirty-one days ago is refused at fine granularity, while a year-long window starting today is accepted. The activity log's own thirty-day window limit is separate and still correct. |
+| `droppedHashtags` on the post restore response | Renamed **`remainingBannedHashtags`**, and its meaning is now stated: it is the banned tags the caption still carries **after** the restore, which is the post's present state and not the set that one call changed. Restoring the same post twice returns the same names both times. That is correct, not a bug. The audit metadata key changed to match. |
+
+### Behaviour that was always true and was never written down
+
+- **The report queue is scoped by role.** A moderator sees `pending` and `reviewing` only; an
+  administrator sees all five statuses. Asking for a status outside a moderator's scope returns an
+  empty page, not an error. The cursor is scoped per role, so one issued to an administrator is
+  rejected when a moderator replays it.
+- **A closed report answers 404 to a moderator**, with one exception that matters: a moderator keeps
+  read access to a report **it escalated itself**. That exception is what makes following your own
+  escalations possible at all.
+- **An empty `appliesTo` on a report reason means every report type, never none.** Four reasons carry
+  an empty list: `spam`, `harassment`, `scam`, `other`. If you filter the reason list by the type
+  being reported, treat empty as a match or those four vanish.
+- **Omitting `durationDays` on a suspension is a supported, deliberate choice**, not an incomplete
+  request. It suspends indefinitely with a null end time that the reinstatement sweep never matches,
+  so the account stays suspended until an administrator lifts it. Offer it alongside a dated
+  suspension.
+
+### Rules that changed
+
+- **The strict query-parameter rule now covers the report endpoints too.**
+  `GET /api/v1/reports` and `GET /api/v1/reports/pending` reject an unrecognised parameter with 400
+  instead of ignoring it. It previously applied to the administrative tree only. If you send only
+  declared keys nothing changes for you.
+- **`GET /api/v1/users/me/settings` no longer answers 404 on a valid account.** Every account has a
+  settings record from creation and existing accounts were backfilled. Stop treating a 404 there as
+  an expected state; if you see one now, it is a real fault.
+
+### New endpoints
+
+Eight. Their request and response schemas are in `openapi.json`, which was regenerated from the
+running server alongside this document. Section 9's per-endpoint prose has **not** been extended to
+cover them, so treat `openapi.json` as authoritative for their shapes and this section for their
+behaviour.
+
+Declared status codes, read out of the regenerated document:
+
+| Endpoint | Declared responses |
+|---|---|
+| `PATCH /api/v1/admin/stories/{storyId}/remove` | 200, 400, 401, 403, 404, 409, 415, 429 |
+| `PATCH /api/v1/admin/stories/{storyId}/restore` | 200, 400, 401, 403, 404, 409, 415, 429 |
+| `PATCH /api/v1/admin/messages/{messageId}/remove` | 200, 400, 401, 403, 404, 409, 415, 429 |
+| `PATCH /api/v1/admin/messages/{messageId}/restore` | 200, 400, 401, 403, 404, 409, 415, 429 |
+| `DELETE /api/v1/admin/users/{userId}/sessions/{sessionId}` | 200, 400, 401, 403, 404, 415, 429 |
+| `POST /api/v1/auth/session` | 200, 400, 401, 415, 429 |
+| `GET /api/v1/admin/user-summaries` | 200, 400, 401, 403, 429 |
+| `GET /api/v1/reports/escalated/mine` | 200, 400, 401, 403, 429 |
+
+The four content actions take the same body every other moderation action takes,
+`{"reason": "...", "reportId": "..."}` with `reason` mandatory, and return the same audit-row
+response. 409 means the target is already in the state you asked for. The session revocation takes
+that same body. `POST /api/v1/auth/session` takes an optional `{"refreshToken": "..."}` and falls
+back to the HttpOnly cookie.
+
+Behaviour you cannot read off a schema:
+
+- **Story restore does not resurrect an expired story.** Removal writes only the soft-delete marker;
+  expiry keeps deciding visibility. A story that expired while removed comes back to a live row that
+  no feed shows. Once a story is both removed and expired the cleanup job deletes it outright and a
+  later restore answers 404. Do not promise the reviewer that a restore always brings a story back.
+- **Message removal withholds the text, the media and any shared post or story** from both
+  participants, leaving the same "message deleted" placeholder the thread already shows when a
+  sender deletes their own message. Restore returns all of it. A message the **sender** deleted
+  cannot be restored by moderation and answers 409.
+- **Revoking an already-revoked session answers 200, not an error**, so a double click is safe. A
+  session belonging to a different account answers 404. Revoking one session does **not** sign the
+  account out everywhere; force logout still does.
+- **`user-summaries` returns one entry per requested id, in request order**, with `found: false` and
+  a null `user` for an unknown or deleted id rather than omitting it. More than 100 ids is a 400,
+  not a truncated list. Display fields only, so do not expect status, role or email.
+- **`escalated/mine` carries no status filter**: a report an administrator has since resolved still
+  appears, which is the outcome you escalated in order to see. An administrator calling it gets its
+  own escalations, not everyone's.
+
+| Endpoint | What it unlocks |
+|---|---|
+| `PATCH /api/v1/admin/stories/{storyId}/remove` and `/restore` | A reported story can be taken down and put back |
+| `PATCH /api/v1/admin/messages/{messageId}/remove` and `/restore` | The same for a reported message |
+| `DELETE /api/v1/admin/users/{userId}/sessions/{sessionId}` | End one session instead of all of them |
+| `POST /api/v1/auth/session` | Ask which session the caller is using |
+| `GET /api/v1/admin/user-summaries?ids=` | Resolve up to 100 account ids to names in one request |
+| `GET /api/v1/reports/escalated/mine` | List the reports you escalated |
+
+### Extended payloads
+
+- `AdminUserDetailResponse.activeWarningCount` - non-nullable, zero for a clean account. Three
+  active warnings issue a strike, so you can now warn the reviewer *before* the third.
+- `GET /api/v1/admin/violations/for-user/{userId}?includeRevoked=true` - revoked warnings and
+  strikes, each carrying `revokedAt` and `revokedBy`. Default is false and unchanged. The cursor is
+  scoped on the flag, so a cursor from one listing is rejected by the other.
+- `GET /api/v1/admin/actions?targetUserId=&from=&to=` - the audit log now filters by target and by a
+  half-open time window. These compose with the moderator scoping; they do not bypass it.
+- `AdminPostSummaryResponse.mediaUrls` - an account's post rows now carry their attached media.
+  Comment rows do not, because comments have no media in this schema.
+
+### The activity log now writes seven event types, in development only
+
+`post_like`, `post_save`, `post_view` and `post_comment` join `session_start`, `search` and
+`profile_view`. The consumer that writes the four engagement types depends on a recommender service
+that was defined but never started; it is now part of the default local stack.
+
+**Read this carefully before widening your filter.** This is true of the **development** stack only.
+Nothing about a production deployment of that service was set up. A production panel will still only
+ever see three types. If your filter is built from a constant, gate it on the environment or you
+will offer four filters that can never match in production, against a server that will answer 200
+with an empty page.
+
+### Workarounds you can now delete
+
+Leaving these in place alongside the new endpoints gives you two mechanisms for one job.
+
+1. Rendering a story or message report read-only, and the copy telling the reviewer such content
+   cannot be taken down from the panel. Four endpoints now exist.
+2. Linking from a moderator's own audit rows back to a report it escalated.
+   `GET /api/v1/reports/escalated/mine` replaces it.
+3. Resolving account identifiers one at a time and caching the result.
+   `GET /api/v1/admin/user-summaries` replaces it.
+4. Treating suspension `durationDays` as required and bounded.
+5. Stating the static three-warning rule before issuing a warning because the count could not be
+   read. `activeWarningCount` on the account detail is the real number.
+
+### What the panel still cannot do
+
+Do not design a route for any of these.
+
+- **No totals on any list.** No endpoint returns a count of matching rows, anywhere, except the
+  escalated-report counter. This is deliberate and unchanged: adding `COUNT(*)` to every list
+  reintroduces exactly the cost the statistics design exists to avoid. Every "how many" question
+  stays unanswerable, and the panel is already built for that.
+- **The administrative session listing carries no per-row "this is you" marker.** Call
+  `POST /api/v1/auth/session` and correlate its `sessionId` against the listing yourself. The
+  session is not derivable from an access token: the `jti` is unique per access token and the
+  refresh cookie is scoped to `/api/v1/auth`, so it never reaches the administrative tree.
+- **No media on comment rows.** The schema has none to give.
+- **A revoked session cannot be un-revoked.** The account signs in again; that is the whole
+  recovery path.
+
+---
+
+## Read this first: seven things that will cost you hours if you miss them
 
 These are stated here, at the top, because you read linearly and each one is cheap to get wrong.
 
@@ -40,6 +195,13 @@ See section 8.
 5. **Promoting an account to `admin` is irreversible through the API.**
 There is no supported way to demote an administrator.
 See section 11.
+
+6. **The activity log's four engagement event types exist in development only.**
+Gate the filter on the environment or you will offer four filters that can never match in
+production. See "What changed since the previous package" above.
+
+7. **An out-of-range statistics granularity is refused with 400, never silently forced to daily.**
+Prevent the combination in your controls rather than handling the error. See section 9.
 
 ---
 
@@ -932,7 +1094,7 @@ Status shown is the response for a well-formed request against a valid target.
 | 39 | `POST /api/v1/admin/users/{userId}/force-logout` | **403** | 200 |
 | 40 | `GET /api/v1/admin/hashtags` | **403** | 200 |
 | 41 | `GET /api/v1/admin/hashtags/search` | **403** | 200 |
-| 42 | `POST /api/v1/admin/hashtags` | **403** | 200 |
+| 42 | `POST /api/v1/admin/hashtags` | **403** | 201 |
 | 43 | `PATCH /api/v1/admin/hashtags/{hashtagId}` | **403** | 200 |
 | 44 | `DELETE /api/v1/admin/hashtags/{hashtagId}` | **403** | 200 |
 | 45 | `GET /api/v1/admin/stats/current` | **403** | 200 |
@@ -1401,12 +1563,35 @@ An administrator sees all actions.
 | Parameter | Type | Required | Values |
 |---|---|---|---|
 | `adminId` | uuid | no | filter by actor |
-| `actionType` | string | no | `ban_user`, `unban_user`, `suspend_user`, `unsuspend_user`, `remove_post`, `restore_post`, `remove_comment`, `restore_comment`, `resolve_report`, `dismiss_report`, `change_user_role`, `warn_user`, `revoke_warning`, `issue_strike`, `revoke_strike`, `escalate_report`, `force_logout`, `create_hashtag`, `edit_hashtag`, `ban_hashtag`, `unban_hashtag`, `delete_hashtag` |
+| `actionType` | string | no | `ban_user`, `unban_user`, `suspend_user`, `unsuspend_user`, `remove_post`, `restore_post`, `remove_comment`, `restore_comment`, `remove_story`, `restore_story`, `remove_message`, `restore_message`, `resolve_report`, `dismiss_report`, `change_user_role`, `warn_user`, `revoke_warning`, `issue_strike`, `revoke_strike`, `escalate_report`, `force_logout`, `revoke_session`, `create_hashtag`, `edit_hashtag`, `ban_hashtag`, `unban_hashtag`, `delete_hashtag` |
+| `targetUserId` | uuid | no | the account the action was taken against |
+| `from` | string | no | ISO-8601 instant, **inclusive** lower bound on when the action was recorded |
+| `to` | string | no | ISO-8601 instant, **exclusive** upper bound |
+
+Five new `actionType` values are in that list: `remove_story`, `restore_story`, `remove_message`,
+`restore_message` and `revoke_session`. If you render action types from a hard-coded map, add them
+or those rows will fall through to a blank label.
+
+**The window is half-open, `[from, to)`.** Two adjacent windows therefore partition the log with no
+row counted twice and none skipped, which is what makes a month-by-month drill-down add up. Sending
+`to` earlier than or equal to `from` is a `400 BAD_REQUEST`.
+
+**Encode the offset.** A `+` in a query string is decoded as a space, so
+`2026-08-21T13:00:00+07:00` arrives malformed and the endpoint answers 400. Send UTC with a `Z`
+suffix, or percent-encode the `+` as `%2B`.
+
+**The new filters compose with the moderator narrowing; they do not bypass it.** A moderator
+supplying `targetUserId` sees only its own actions against that account. Verified live: a moderator
+that explicitly asked for `adminId=<administrator>` still received only its own rows, because the
+requested actor filter is discarded and replaced with the caller's own id. Do not build an
+"investigate another moderator" view on this; it will silently return the caller's own work.
 
 Captured request:
 
 ```bash
 curl -s -H "Authorization: Bearer $ADMIN" "http://localhost:8080/api/v1/admin/actions?limit=3"
+
+curl -s -H "Authorization: Bearer $ADMIN"   "http://localhost:8080/api/v1/admin/actions?targetUserId=<userId>&from=2026-08-21T13:21:19Z&to=2026-08-23T13:21:19Z&limit=1"
 ```
 
 Returns a cursor page whose `content` entries have the `AdminActionResponse` shape **minus `metadata`**.
@@ -1447,9 +1632,23 @@ Captured `content[0]`, HTTP 200:
   "removed": false,
   "likeCount": 0,
   "commentCount": 0,
-  "createdAt": "2026-08-21T09:34:52.298865Z"
+  "createdAt": "2026-08-21T09:34:52.298865Z",
+  "mediaUrls": []
 }
 ```
+
+**`mediaUrls` carries the attached images and video, in carousel order.** It is the same shape the
+report-anchored moderation view returns, so a reviewer sees the same thing on both screens. Empty
+for a text post, never null. Captured on a carousel post:
+
+```json
+"mediaUrls": ["https://cdn.example/e2e-1787404908-0.jpg",
+              "https://cdn.example/e2e-1787404908-1.jpg"]
+```
+
+Comment rows carry no equivalent, because comments have no media in this schema. Do not build a
+media column into a shared post-and-comment table component and expect it to fill on the comment
+side.
 
 | Field | Type | Nullable | Notes |
 |---|---|---|---|
@@ -1601,7 +1800,7 @@ Captured response, HTTP 200:
       },
       "createdAt": "2026-08-21T09:39:04.973006Z"
     },
-    "droppedHashtags": ["handoffactive"]
+    "remainingBannedHashtags": ["handoffactive"]
   },
   "timestamp": "2026-08-21T09:39:04.982561800Z"
 }
@@ -1610,9 +1809,9 @@ Captured response, HTTP 200:
 | Field | Type | Nullable | Notes |
 |---|---|---|---|
 | `data.action` | object | no | an `AdminActionResponse`, and here it **does** carry `metadata` |
-| `data.droppedHashtags` | array of string | no | empty array when nothing was dropped |
+| `data.remainingBannedHashtags` | array of string | no | empty array when nothing was dropped |
 
-**You must surface `droppedHashtags` to the moderator.**
+**You must surface `remainingBannedHashtags` to the moderator.**
 See the rule in section 11.8.
 
 Errors: `404 POST_NOT_FOUND`, `409 ADMIN_INVALID_TRANSITION` when the post is not in a removed state.
@@ -1623,9 +1822,87 @@ Required role: moderator or administrator.
 Same request body as the post endpoints.
 Both return an `AdminActionResponse` directly as `data`, with `actionType` of `remove_comment` or `restore_comment`.
 
-Comments have no hashtags, so restore here has no `droppedHashtags` wrapper.
+Comments have no hashtags, so restore here has no `remainingBannedHashtags` wrapper.
 
 Errors: `404 COMMENT_NOT_FOUND`, `409 ADMIN_INVALID_TRANSITION`.
+
+#### `PATCH /api/v1/admin/stories/{storyId}/remove`
+
+Required role: moderator or administrator.
+
+Same request body as every other content action:
+
+| Field | Type | Required | Constraint |
+|---|---|---|---|
+| `reason` | string | **yes** | max 2000 characters |
+| `reportId` | uuid | no | links the action to the report that prompted it |
+
+```bash
+curl -s -X PATCH http://localhost:8080/api/v1/admin/stories/<storyId>/remove \
+  -H "Authorization: Bearer $MOD" -H 'Content-Type: application/json' \
+  -d '{"reason":"spam in story","reportId":"<reportId>"}'
+```
+
+HTTP 200, `data` is an `AdminActionResponse` with `actionType: "remove_story"`.
+
+The story disappears from its owner's profile and from every viewer's story feed immediately.
+
+Errors: `404 STORY_NOT_FOUND`, `409 ADMIN_INVALID_TRANSITION` when it is already removed.
+
+#### `PATCH /api/v1/admin/stories/{storyId}/restore`
+
+Required role: moderator or administrator. Same body, `actionType: "restore_story"`.
+
+**Do not promise the reviewer that a restore always brings a story back.** Removal writes only the
+soft-delete marker; the twenty-four hour expiry is untouched and keeps deciding visibility. Three
+outcomes, and your copy has to survive all of them:
+
+| Situation | What happens |
+|---|---|
+| Story still within its 24 hours | It returns to the owner's profile and to viewers' feeds |
+| Story expired while it was removed | The row comes back live, and **no feed shows it**. This is correct, not a bug: a restore must not extend content past its lifetime |
+| Story was both removed and expired when the cleanup job last ran | The row is gone for good and this answers `404 STORY_NOT_FOUND` |
+
+The cleanup job runs hourly by default, so the third case becomes reachable about an hour after a
+removed story expires.
+
+Errors: `404 STORY_NOT_FOUND`, `409 ADMIN_INVALID_TRANSITION` when it is not removed.
+
+#### `PATCH /api/v1/admin/messages/{messageId}/remove`
+
+Required role: moderator or administrator. Same body, `actionType: "remove_message"`.
+
+Both participants immediately see the message as deleted, with `content`, `mediaAssetId`, `media`,
+`sharedPostId` and `sharedStoryId` all null and `isDeleted: true`. That is the same placeholder the
+thread already shows when a sender deletes their own message, so **render it with the existing
+placeholder rather than adding a "removed by an administrator" variant** - the wire gives you no way
+to tell the two apart, deliberately.
+
+Captured, what each participant sees afterwards:
+
+```json
+{"id":"fc3a89c9-...","content":null,"mediaAssetId":null,"media":null,
+ "isDeleted":true,"deletedAt":"2026-08-22T10:24:15.705062Z"}
+```
+
+The row keeps its payload behind the scenes, which is what makes the restore possible.
+
+Errors: `404 MESSAGE_NOT_FOUND`, `409 ADMIN_INVALID_TRANSITION` when it is already removed.
+
+#### `PATCH /api/v1/admin/messages/{messageId}/restore`
+
+Required role: moderator or administrator. Same body, `actionType: "restore_message"`.
+
+Returns the text, the media and any shared post or story to both participants.
+
+**A message the sender deleted cannot be restored by moderation.** It answers
+`409 ADMIN_INVALID_TRANSITION`. The sender's own deletion destroys the content, so there is nothing
+to put back, and moderation does not reverse a user's own decision. If your UI offers restore on any
+message showing the deleted placeholder, it will hit this 409 on the ones the sender deleted; gate
+the control on the report, not on the placeholder.
+
+Errors: `404 MESSAGE_NOT_FOUND`, `409 ADMIN_INVALID_TRANSITION` when it is not administratively
+removed.
 
 ### 9.6 Account discipline
 
@@ -1641,7 +1918,35 @@ This is not a filter you can override; it is derived from the caller's role.
 A cursor obtained by a moderator is rejected with `400 INVALID_CURSOR` if replayed by an administrator against the same endpoint, and the reverse also holds.
 Include the caller's role in your TanStack Query key for this endpoint so a role change starts a fresh sequence.
 
-Revoked warnings and revoked strikes are excluded from this listing entirely.
+**Revoked warnings and strikes are excluded by default, and included on request.**
+
+| Parameter | Type | Required | Constraint |
+|---|---|---|---|
+| `includeRevoked` | boolean | no | default `false`, which is the previous behaviour |
+| `cursor` | string | no | scoped to role **and** to this flag, see below |
+| `limit` | integer | no | 1 to 100, default 20 |
+
+Send `includeRevoked=true` and each revoked entry comes back carrying `revokedAt` and `revokedBy`.
+Both are `null` on an entry that still stands, so a non-null `revokedAt` is what tells the two
+apart. Captured, an administrator asking for them:
+
+```json
+{"content":[
+  {"kind":"strike","id":"9ff4f5da-...","userId":"9bbc0295-...",
+   "actorId":"2f0d04c6-...","strikeNumber":1,
+   "createdAt":"2026-08-22T13:21:04.115434Z","revokedAt":null,"revokedBy":null},
+  {"kind":"warning","id":"dc62b2ce-...","userId":"9bbc0295-...",
+   "actorId":"2f0d04c6-...","reasonKey":"spam","note":"...",
+   "createdAt":"2026-08-22T13:21:04.09328Z","revokedAt":null,"revokedBy":null}]}
+```
+
+**The cursor is scoped to this flag as well as to the role, so there are four variants.** Toggling
+"show revoked" mid-listing invalidates the cursor you are holding: it will be rejected with
+`400 INVALID_CURSOR`. Put both the role and the flag in your query key and start a fresh sequence
+when either changes.
+
+`revokedBy` is an account id, so resolve it through `GET /api/v1/admin/user-summaries` along with
+the other identifiers on the page rather than one at a time.
 
 The response is a **discriminated union** on the `kind` field.
 The OpenAPI document declares this properly with a discriminator, so a generator will produce a usable union type.
@@ -1916,9 +2221,25 @@ Captured response `data`, HTTP 200, truncated in the `sessions` array only:
     "canChangeStatus": true,
     "canChangeRole": true,
     "assignableRoles": ["moderator"]
-  }
+  },
+  "activeWarningCount": 2
 }
 ```
+
+**`activeWarningCount` is how you warn the reviewer before the third warning, not after it.**
+
+Three active warnings automatically issue a strike, and a strike suspends the account. This field is
+the same number the strike decision itself uses, so when it reads `2` the next warning will suspend
+the account. Say so in the confirmation dialog.
+
+It is always present and never null; an account that has never been warned reads `0`. It is not a
+count of every warning ever issued: it excludes revoked warnings, warnings issued before the most
+recent unrevoked strike, and warnings older than the retention window. Verified live: it read `2`
+after two warnings, and `0` immediately after the third issued a strike, because the strike consumes
+the warnings that produced it.
+
+Do not compute this yourself from the violations list. That list is a cursor page with no total, so
+any number you derive from a partial page is fiction.
 
 | Field | Type | Nullable | Notes |
 |---|---|---|---|
@@ -2271,7 +2592,7 @@ Captured, HTTP 400:
 
 If your date-range picker offers a range wider than 30 days, force `granularity=day` when the range start is more than 30 days ago, or you will hand the user an error instead of a chart.
 
-**Rate limited to 30 requests per minute.**
+**Rate limited to 20 requests per minute.**
 A dashboard that renders 14 charts on one screen will exhaust that in two page loads.
 Fetch only the visible chart, and cache aggressively with TanStack Query's `staleTime`.
 
@@ -2325,9 +2646,152 @@ Captured `content[0]`, HTTP 200:
 | `metadata` | object | **yes** | observed null on every captured row |
 | `createdAt` | string | no | |
 
-**Rate limited to 30 requests per minute.**
+**Rate limited to 20 requests per minute.**
 
 ---
+
+### 9.10 Single-session revocation and self-identification
+
+#### `DELETE /api/v1/admin/users/{userId}/sessions/{sessionId}`
+
+Required role: administrator.
+
+Body is the standard `{"reason": ..., "reportId": ...}`. `sessionId` is the `id` of a row in the
+`sessions` array of `GET /api/v1/admin/users/{userId}`.
+
+Captured:
+
+```json
+{"success":true,"code":"OK","data":{
+  "id":"920e443e-a53f-4755-b2fc-9f60d1a0204d",
+  "adminId":"2f0d04c6-efcd-42b1-92af-22c1bd44d758",
+  "actionType":"revoke_session",
+  "targetUserId":"28faa499-cfdc-4336-846b-81c37f6615a5",
+  "targetEntityType":"user","targetEntityId":"28faa499-cfdc-4336-846b-81c37f6615a5",
+  "reason":"e2e single revoke",
+  "metadata":{"alreadyRevoked":false,"sessionId":"b001636f-c58c-4078-b1ed-52f2f9f89f1f"},
+  "createdAt":"2026-08-22T13:18:37.084446Z"}}
+```
+
+Three behaviours to build against:
+
+1. **Revoking twice is a success, not an error.** The second call returns 200 with
+   `metadata.alreadyRevoked: true`. A reviewer who double-clicks must not see a failure, so do not
+   disable-on-success as an error-avoidance measure.
+2. **A session belonging to another account answers `404 NOT_FOUND`**, even though the identifier is
+   real and the listing handed it out. Never construct this URL from one account's page with another
+   account's session id.
+3. **This does not advance the token epoch**, so the account's other sessions and its access tokens
+   are untouched. Force logout still does advance it and still ends everything.
+
+Errors: `404 USER_NOT_FOUND`, `404 NOT_FOUND` when no such session belongs to that account.
+
+#### `POST /api/v1/auth/session`
+
+Required role: any authenticated caller.
+
+This is how you mark "this is you" in a session listing. **The administrative session listing has no
+such marker of its own**, and it cannot have one: the access token's `jti` is unique per access
+token and carries no link to the session, and the refresh cookie is scoped to `/api/v1/auth` so it
+never reaches the administrative tree.
+
+Optional body `{"refreshToken": "..."}`; when omitted it reads the HttpOnly refresh cookie, which is
+why this endpoint lives under the auth path.
+
+Captured:
+
+```json
+{"success":true,"code":"OK","data":{"sessionId":"15368165-ea7c-411c-a9ab-798dd9522c10"}}
+```
+
+Correlate that `sessionId` against the `id` of each row in
+`GET /api/v1/admin/users/{yourOwnId}`'s `sessions` array. Verified live: it matches exactly one row
+on the caller's own account and zero rows on anyone else's.
+
+`sessionId` is **null** when the request carried no usable refresh token. That is not an error and
+does not mean the caller is signed out; it means you cannot draw the marker. Render the listing
+without one rather than showing an error.
+
+### 9.11 Batch identifier resolution
+
+#### `GET /api/v1/admin/user-summaries`
+
+Required role: moderator **or** administrator. It sits outside the `/users/**` sub-tree precisely so
+a moderator can reach it, because queues, audit rows and violation rows are moderator surfaces and
+they all carry bare identifiers.
+
+| Parameter | Type | Required | Constraint |
+|---|---|---|---|
+| `ids` | comma-separated uuids | **yes** | at most 100 |
+
+Captured:
+
+```bash
+curl -s "http://localhost:8080/api/v1/admin/user-summaries?ids=<a>,<unknown>" \
+  -H "Authorization: Bearer $MOD"
+```
+
+```json
+{"success":true,"code":"OK","data":[
+  {"userId":"2f0d04c6-efcd-42b1-92af-22c1bd44d758","found":true,
+   "user":{"id":"2f0d04c6-efcd-42b1-92af-22c1bd44d758","username":"seed_admin",
+           "displayName":"Seed Admin","avatarUrl":null,"isVerified":false}},
+  {"userId":"00000000-0000-0000-0000-0000000000ff","found":false,"user":null}]}
+```
+
+**One entry per requested identifier, in request order, duplicates collapsed.** An unknown or
+deleted identifier is returned with `found: false` and a null `user` rather than omitted, so your
+lookup map is never silently short. Render those as an unresolvable account rather than leaving a
+bare uuid on screen.
+
+**Over the bound is refused, not truncated.** Captured with 101 identifiers, HTTP 400:
+
+```json
+{"success":false,"code":"BAD_REQUEST",
+ "message":"At most 100 identifiers may be resolved in one call"}
+```
+
+Chunk your requests at 100. Do not rely on the server trimming.
+
+Display fields only: `id`, `username`, `displayName`, `avatarUrl`, `isVerified`. There is no status,
+role, email or counter here and there never will be; this must not become a second route to the
+administrative account detail.
+
+### 9.12 A moderator's own escalations
+
+#### `GET /api/v1/reports/escalated/mine`
+
+Required role: moderator or administrator.
+
+| Parameter | Type | Required | Constraint |
+|---|---|---|---|
+| `cursor` | string | no | own scope, see below |
+| `limit` | integer | no | 1 to 100, default 20 |
+
+Captured:
+
+```json
+{"success":true,"code":"OK","data":{"content":[
+  {"id":"a0dc5552-e258-4bf6-85e9-3ce41a77a119",
+   "reporterId":"6db66fb3-6e51-4c21-8a20-f3218afd893d",
+   "reportType":"post","reportReason":"spam",
+   "entityId":"58d8c43d-5fab-417a-86aa-612eeef7a25c",
+   "status":"escalated","createdAt":"2026-08-21T15:03:00.083835Z"}],
+  "pageInfo":{"hasNextPage":false,"hasPreviousPage":false,
+    "startCursor":"cnB0ZW06...","endCursor":"cnB0ZW06..."}}}
+```
+
+Three things that decide how you use it:
+
+1. **Always the caller's own escalations.** An administrator calling it gets its own, not everyone's;
+   the full escalated queue already serves that need. Verified live: the administrator saw zero rows
+   while the moderator saw two.
+2. **No status filter.** A report an administrator has since resolved still appears, because that
+   outcome is exactly what you escalated in order to see. Read `status` on each row and render the
+   resolved ones as closed rather than filtering them out.
+3. **Its own cursor scope.** Ordering is by escalation time, not creation time, so a cursor from the
+   report queue is rejected. Verified live: replaying one returned
+   `400 INVALID_CURSOR "Malformed pagination cursor"`.
 
 ## 10. Error codes
 
@@ -2650,14 +3114,14 @@ The restore response names them:
 ```json
 "data": {
   "action": { "...": "audit row" },
-  "droppedHashtags": ["handoffactive"]
+  "remainingBannedHashtags": ["handoffactive"]
 }
 ```
 
-Verified end to end: a post carrying `#handoffactive` was removed, the tag was banned while the post was down, and the restore returned `droppedHashtags: ["handoffactive"]`.
+Verified end to end: a post carrying `#handoffactive` was removed, the tag was banned while the post was down, and the restore returned `remainingBannedHashtags: ["handoffactive"]`.
 
 **Do not treat a successful restore as nothing more than a success toast.**
-When `droppedHashtags` is non-empty, show the names.
+When `remainingBannedHashtags` is non-empty, show the names.
 The moderator restored a post believing it would come back as it was, and it did not.
 
 When the array is empty, a plain success toast is correct.
@@ -2737,7 +3201,13 @@ Counts observed: `reportReasons` 8 entries, `notificationTypes` 11 entries, `mod
 | `key` | string | no | the value you send in `reasonKey` and receive in `reportReason` |
 | `displayName` | string | no | render this, never the key |
 | `description` | string | **yes** | observed null on every entry |
-| `appliesTo` | array of string | no | entity types this reason is valid for; **an empty array means all of them**, as observed on `spam` |
+| `appliesTo` | array of string | no | entity types this reason is valid for; **an empty array means all of them**, never none |
+
+**If you filter the reason list by the type being reported, treat an empty `appliesTo` as a match.**
+Four reasons carry an empty array - `spam`, `harassment`, `scam` and `other` - because each applies
+to an account as readily as to a piece of content, and enumerating all five types would say the same
+thing at more length. Treating empty as "no types" makes those four vanish from every reason picker
+you build.
 | `isEnabled` | boolean | no | see 12.2 |
 | `sortOrder` | integer | no | order your selector by this |
 
@@ -2848,7 +3318,7 @@ Fine buckets are retained 30 days and daily rows 365 days, and those retention w
 
 **What to build.**
 Treat `computedAt === null` as a first-class empty state, not an error and not a zero.
-Render "No statistics collected yet. The first snapshot appears within 30 minutes of the server starting."
+Render "No statistics collected yet. The first snapshot appears within an hour of the server starting."
 Do not render a chart axis with a flat zero line, because that asserts something false: that there are zero users.
 
 To see real data during development, leave the application running for at least 30 minutes, or accept the empty state and build against it.
@@ -2871,26 +3341,42 @@ An administrator who bans an account and then sees the banned count unchanged wi
 Do not poll this endpoint faster than the collection interval; there is nothing new to get.
 A `staleTime` of 5 minutes and a manual refresh control is a reasonable design.
 
-### 13.3 The activity log can only ever contain three of its twenty declared event types
+### 13.3 The activity log writes seven of its twenty declared event types in development, three in production
 
-**What you will observe.**
-The `eventType` query parameter on `GET /api/v1/admin/user-events` accepts 20 values, and the OpenAPI schema documents all 20.
-Filtering by 17 of them always returns an empty page.
+**This one changed, and the change is environment-dependent. Read it before you build the filter.**
 
-**Why.**
-Only three kinds of behavioural event are actually written by the application:
+The `eventType` parameter accepts 20 values and the OpenAPI schema documents all 20. Seven of them
+can now produce rows; thirteen never will.
+
+Three have always been written by the application itself:
 
 - `session_start`
 - `search`
 - `profile_view`
 
-This was confirmed in the server source: exactly three event types are ever recorded.
-The other seventeen exist in the database enumeration for a recommendation subsystem that does not write through this path.
-A view of one's own profile is deliberately not recorded, because it would bury the views that matter.
+Four more are written by a consumer that turns engagement into behavioural events:
+
+- `post_like`
+- `post_save`
+- `post_view`
+- `post_comment`
+
+That consumer depends on a recommender service. The service was defined but never started, so every
+engagement event was retried against nothing and discarded. It is now part of the default local
+development stack, and those four types land. Verified live: a save produced a `post_save` row and
+the dead-letter queue stayed empty.
+
+**Nothing about a production deployment of that service was set up.** In production those four types
+still produce nothing.
 
 **What to build.**
-Offer a filter with exactly three options: `session_start`, `search`, and `profile_view`.
-Do not generate the filter from the OpenAPI enumeration, or you will present seventeen options that silently return nothing, and an administrator will conclude the log is broken.
+Do not generate the filter from the OpenAPI enumeration; thirteen of the twenty return nothing
+anywhere. Offer the three always-written types unconditionally. Gate the four engagement types on
+the environment, or a production administrator gets four filters that return an empty page against a
+server answering 200, and concludes the log is broken.
+
+A view of one's own profile is deliberately not recorded, because it would bury the views that
+matter.
 
 ### 13.4 The activity log refuses an unbounded or over-wide window
 
@@ -2951,31 +3437,31 @@ useQuery({
 
 A moderator gets 403 on this endpoint, so gate the query on the role or you will fire a failing request every minute for every moderator.
 
-### 13.6 Reported stories and messages cannot be actioned
+### 13.6 Reported stories and messages can now be actioned, with two catches
 
-**What you will observe.**
-A report may have `reportType` of `story` or `message`.
-You can read the target through `GET /api/v1/admin/reports/{reportId}/target` and through `GET /api/v1/admin/content/story/{id}`.
-But there is no endpoint to remove or restore either one.
-
-The only content moderation endpoints that exist are:
+**This one changed.** Remove and restore now exist for all four content types:
 
 ```
-PATCH /api/v1/admin/posts/{postId}/remove
-PATCH /api/v1/admin/posts/{postId}/restore
-PATCH /api/v1/admin/comments/{commentId}/remove
-PATCH /api/v1/admin/comments/{commentId}/restore
+PATCH /api/v1/admin/posts/{postId}/remove       PATCH /api/v1/admin/posts/{postId}/restore
+PATCH /api/v1/admin/comments/{commentId}/remove PATCH /api/v1/admin/comments/{commentId}/restore
+PATCH /api/v1/admin/stories/{storyId}/remove    PATCH /api/v1/admin/stories/{storyId}/restore
+PATCH /api/v1/admin/messages/{messageId}/remove PATCH /api/v1/admin/messages/{messageId}/restore
 ```
 
-**Why.**
-The moderation surface was built for posts and comments.
-The report type enumeration covers five entity types.
-The two do not line up, and this cycle did not close the difference.
+Same body, same response shape, same 409 on an invalid transition. Section 9.5 has the detail.
 
-**What to build.**
-On a report whose `reportType` is `story` or `message`, render the target read-only and **do not show remove or restore controls**.
-The reviewer's available actions there are resolve, dismiss, escalate, and warning the owning account.
-Say so on the screen, so the moderator understands the content itself cannot be taken down from this panel rather than hunting for a button.
+**Delete the read-only treatment and the copy telling the reviewer such content cannot be taken
+down.** Leaving it beside a working control is worse than either alone.
+
+Two catches that do not apply to posts and comments:
+
+1. **A story restore does not always bring the story back.** Expiry is untouched by removal, so a
+   story that expired while removed returns to a live row that no feed shows, and one the cleanup
+   job has already purged answers 404. Word the confirmation as reversing the removal, not as
+   restoring visibility.
+2. **A message the sender deleted cannot be restored by moderation**; it answers 409. Gate the
+   restore control on the report, not on the deleted placeholder, because the wire does not
+   distinguish a sender deletion from an administrative removal.
 
 ### 13.7 There is no total count anywhere
 
@@ -2993,18 +3479,17 @@ Do not design "Showing 1 to 20 of 350" or a numbered page control.
 Use infinite scroll or a "Load more" button driven by `hasNextPage`.
 If a count is genuinely needed, the only one available in the whole administrative surface is the escalated-report count.
 
-### 13.8 There is no batch lookup from user id to username
+### 13.8 Batch lookup from account id to name now exists
 
-**What you will observe.**
-The report queue, the audit log, and the violations list all return raw uuids for actors and reporters, with no accompanying username.
-There is no endpoint that takes a list of ids and returns names.
+**This one changed.** `GET /api/v1/admin/user-summaries?ids=a,b,c` resolves up to 100 identifiers in
+one request, and a moderator can call it. Section 9.11 has the detail.
 
-**What to build.**
-`GET /api/v1/admin/content/user/{userId}` returns `ownerUsername` and is reachable by a moderator, so it is the per-id lookup.
-Fetch these individually and cache them in TanStack Query keyed by user id, so a list of twenty rows referencing five distinct people costs five requests once and zero thereafter.
+**Delete the one-at-a-time resolution and its cache.** Collect the distinct identifiers on a page,
+resolve them in one call, and key your map on `userId`.
 
-Be careful with rate limits on long lists.
-An alternative that avoids the problem: render the shortened uuid, and resolve the name only in a detail view or on hover.
+An unknown or deleted identifier comes back with `found: false` rather than being omitted, so the map
+you build is always complete and you can render those as unresolvable rather than leaving a bare
+uuid on screen. More than 100 identifiers is a 400, not a trimmed list, so chunk at 100.
 
 ### 13.9 The audit list omits `metadata`
 
@@ -3061,13 +3546,20 @@ On this endpoint the field echoes the `entityType` you requested.
 
 Do not design a route for any of these.
 
+Three entries that were in this table are gone, because the endpoints now exist: story and message
+takedown, an audit trail filtered by date range, and batch identifier resolution. See 13.6, 9.4 and
+13.8.
+
 | Screen | Why it cannot be built |
 |---|---|
 | A moderation dashboard with counts by queue | no aggregate endpoint; only the escalated count exists |
 | A global warnings or strikes list across all accounts | violations are readable per account only, through `/admin/violations/for-user/{userId}` |
-| Story or message takedown | no remove or restore endpoint for either; see 13.6 |
+| A count of how many accounts match a filter | no list returns a total, anywhere; see 13.7 |
 | A numbered pagination control on any list | no total count; see 13.7 |
-| An audit trail filtered by date range | `GET /admin/actions` accepts `adminId` and `actionType` only, with no `from` or `to` |
+| A per-row "this is your session" marker straight off the session listing | the listing carries no such field; call `POST /api/v1/auth/session` and correlate, see 9.10 |
+| Media on an account's comment rows | comments have no media in the schema; post rows do carry it |
+| Un-revoking a session | there is no inverse; the account signs in again |
+| Investigating another moderator's actions as a moderator | the actor filter is replaced with the caller's own id, so it silently returns your own work; see 9.4 |
 | Undoing an administrator promotion | no API path demotes an administrator; see 11.1 |
 | A notification centre for moderators or administrators | no administrative notification is produced by any moderation action |
 | Bulk actions on multiple reports or accounts | every action endpoint takes exactly one target |
@@ -3180,7 +3672,7 @@ Actions: `PATCH /api/v1/admin/posts/{postId}/remove` and `/restore`, each requir
 
 Conditional controls: show remove when `removed` is false, restore when `removed` is true.
 
-**On a successful restore, read `data.droppedHashtags`.**
+**On a successful restore, read `data.remainingBannedHashtags`.**
 If it is non-empty, show the names in the success message.
 See section 11.8.
 
@@ -3194,7 +3686,7 @@ Empty state: "This account has no posts."
 
 Identical in shape to 14.5, using `GET /api/v1/admin/content/for-user/{userId}/comments` and the comment remove and restore endpoints.
 
-Comments have no hashtags, so the restore response is a plain `AdminActionResponse` with no `droppedHashtags` wrapper.
+Comments have no hashtags, so the restore response is a plain `AdminActionResponse` with no `remainingBannedHashtags` wrapper.
 
 Empty state: "This account has no comments."
 
@@ -3353,14 +3845,14 @@ Calls:
 An empty result is correct on a new deployment, and the snapshot is up to 30 minutes stale.
 
 **Fetch only the visible chart.**
-The timeseries endpoint allows 30 requests per minute, and there are 14 metrics.
+The timeseries endpoint allows 20 requests per minute in production, and there are 14 metrics.
 A screen that renders all 14 at once will exhaust the budget in two page loads.
 Use a metric selector, or lazy-load charts as they scroll into view, with a generous `staleTime`.
 
 Clamp the date-range control: if the range starts more than 30 days ago, force `granularity=day`, or the request is refused.
 Read `granularity` back off the response to label the axis, because the server may choose a different one from the one you sent.
 
-Empty state: when `computedAt` is null, "No statistics collected yet. The first snapshot appears within 30 minutes of the server starting." Do not draw an empty chart.
+Empty state: when `computedAt` is null, "No statistics collected yet. The first snapshot appears within an hour of the server starting." Do not draw an empty chart.
 
 ### 14.15 User activity log, administrator only
 
@@ -3375,7 +3867,7 @@ Default the range to the last 7 days and clamp the picker at 30. See 13.4.
 
 `userId` is optional; omitting it reads across all accounts, which is useful for a platform-wide activity view.
 
-Rate limited to 30 requests per minute; do not refetch on every keystroke of the date picker, only on commit.
+Rate limited to 20 requests per minute in production; do not refetch on every keystroke of the date picker, only on commit.
 
 Empty state: "No recorded activity in this window." This is common and expected, because only three event kinds are ever written.
 
@@ -3392,7 +3884,9 @@ These are written to catch a plausible wrong implementation, not merely a broken
 1. Sign in as `admin@seed.local` with `SeedPass123!`. **Expect** the panel to land on an administrator route and the navigation to show the administrator group.
 2. Sign in as `mod@seed.local`. **Expect** the moderator navigation only, with no user list, no hashtags, no statistics, and no activity log entry.
 3. While signed in, reload the page. **Expect** to stay signed in without re-entering credentials, and **expect** the role-dependent navigation to be correct immediately rather than flickering from moderator to administrator. If the role is briefly wrong, you are reading it from somewhere that is not the refresh response.
-4. Sign in, then in a database client run `UPDATE users SET token_epoch = token_epoch + 1 WHERE username = 'seed_admin';`. Make any request. **Expect** exactly one refresh attempt, then a redirect to login. **Expect no infinite loop of 401s.**
+4. Sign in, then force a logout through the API rather than the database: `POST /api/v1/admin/users/{yourId}/force-logout` with a reason. Make any request. **Expect** exactly one refresh attempt, then a redirect to login. **Expect no infinite loop of 401s.**
+
+   Use the endpoint, not `UPDATE users SET token_epoch = token_epoch + 1`. Advancing the epoch by hand invalidates the access token but leaves the refresh token alive, so the client refreshes and heals itself and you will conclude your handling is broken when it is not. Force logout revokes the refresh tokens and advances the epoch in one transaction, which is what a real sign-out does. Verified live: after it, the old access token answered 401 and the refresh answered `401 AUTH_REFRESH_TOKEN_INVALID`.
 5. Open the browser network tab and confirm the refresh request carries the `luvax_refresh` cookie. **Expect** it present. If absent, `withCredentials` is not set.
 6. Sign out. **Expect** a 204, the cookie cleared, and the previous access token to fail if replayed.
 
@@ -3429,7 +3923,7 @@ These are written to catch a plausible wrong implementation, not merely a broken
 
 ### 15.6 Content moderation
 
-26. Create a post containing a hashtag, remove the post, ban that hashtag, then restore the post. **Expect** the success message to name the dropped hashtag. If it says only "Post restored", you are ignoring `droppedHashtags`.
+26. Create a post containing a hashtag, remove the post, ban that hashtag, then restore the post. **Expect** the success message to name the dropped hashtag. If it says only "Post restored", you are ignoring `remainingBannedHashtags`.
 27. Restore a post with no banned hashtags. **Expect** a plain success message with no empty "dropped: " text.
 
 ### 15.7 Hashtags
@@ -3463,8 +3957,8 @@ These are written to catch a plausible wrong implementation, not merely a broken
 
 43. Open the statistics screen on a freshly reset database. **Expect** a "no statistics collected yet" empty state. **Expect not** a chart of zeros and **expect not** an error page.
 44. Once data exists, **expect** the snapshot panel to display `computedAt` and to be labelled as of that time, not as live.
-45. Set the statistics date range to something starting more than 30 days ago. **Expect** the granularity to be forced to daily, and **expect no** 400 error to reach the user.
-46. Open the activity log. **Expect** the event-type filter to offer exactly three options. If it offers twenty, you generated it from the OpenAPI enumeration.
+45. Set the statistics date range to something starting more than 30 days ago **without naming a granularity**. **Expect** the server to resolve to daily on its own. Then send the same range **with `granularity=half_hour`** and **expect a 400**: an out-of-range granularity is refused, never silently forced. Your controls must prevent that combination reaching the server.
+46. Open the activity log. **Expect** the event-type filter to offer three options against production and seven against local development, never twenty. If it offers twenty you generated it from the OpenAPI enumeration; if it offers seven against production you did not gate the four engagement types on the environment.
 47. Attempt to set the activity log range to 60 days. **Expect** the picker to prevent it rather than the server to refuse it.
 48. Leave the panel open for two minutes as an administrator. **Expect** roughly two requests to the escalated count endpoint, not twenty.
 
@@ -3473,3 +3967,19 @@ These are written to catch a plausible wrong implementation, not merely a broken
 49. Find an audit row with `actionType: "issue_strike"`. **Expect** the actor column to read "System". If the row is blank or the page crashes, you are not handling a null `adminId`.
 50. Open a user detail for an account suspended with no end date. **Expect** "Suspended indefinitely", not "Not suspended" and not a blank date.
 51. Open a report whose target is a user. **Expect** no empty content block where `text` would be; the field is null for user targets.
+
+### 15.13 The endpoints added since the previous package
+
+52. Open a report whose `reportType` is `story`. **Expect** remove and restore controls, not a read-only panel with copy saying the content cannot be taken down. If that copy is still there, you did not delete the workaround.
+53. Remove a reported story, then read the owner's profile and a follower's story feed. **Expect** the story absent from both, and **expect** exactly one `remove_story` row in the audit log.
+54. Restore a story whose 24 hours have already passed. **Expect** the call to succeed and **expect** the story still to be absent from every feed. If your copy promised the reviewer it would come back, fix the copy.
+55. Remove a reported message. **Expect** both participants to see the existing "message deleted" placeholder, with `content`, `media` and the share fields all null. **Expect not** a new "removed by an administrator" variant; the wire cannot tell you which it was.
+56. Try to restore a message the sender deleted. **Expect** `409`. If your restore control was enabled by the placeholder rather than by the report, you will hit this.
+57. Warn an account twice and open its detail. **Expect** `activeWarningCount` to read `2` and **expect** your warning dialog to say the next one will suspend the account. Issue the third and reopen the detail: **expect** `0`.
+58. Open an account's violations, revoke a warning, and reload. **Expect** it gone. Toggle "show revoked": **expect** it back, marked, with a revocation time and actor. **Expect** the toggle to start a fresh page rather than reusing the cursor you were holding, which would be a `400 INVALID_CURSOR`.
+59. List an account's sessions, revoke one. **Expect** exactly one to disappear and the rest to survive. Click revoke again on the same row: **expect** success, not an error.
+60. As an administrator viewing your own account, **expect** exactly one session row marked as yours, resolved through `POST /api/v1/auth/session`. View another account: **expect** none marked.
+61. Open a page of audit rows. **Expect** one `GET /api/v1/admin/user-summaries` request resolving every distinct identifier on it, not one request per row. Include an identifier that does not exist: **expect** an entry with `found: false`, not a missing key in your map.
+62. Filter the audit log by a date range and a target account together. As a moderator, **expect** only your own rows. Ask explicitly for another actor with `adminId`: **expect** still only your own rows, silently.
+63. As a moderator, escalate a report, then open your escalations list. **Expect** it there. Have an administrator resolve it, reload: **expect** it still there, rendered as closed. If it vanished, you filtered on status.
+64. Open an account's post rows for an account with image posts. **Expect** the media on each row. **Expect not** a media column on the comment rows; there is none to fill.

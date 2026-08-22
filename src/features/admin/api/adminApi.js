@@ -18,11 +18,15 @@ const unwrap = (response) => response?.data?.data;
 // stripped before the request, which the admin endpoints enforce with 400 and
 // which is applied to the report endpoints too as a defensive habit.
 const REPORTS_QUERY_KEYS = ['status', 'reportType', 'cursor', 'limit'];
-// Violations and per-account content take only keyset paging parameters.
+// Per-account content and the escalations list take only keyset paging.
 const CURSOR_QUERY_KEYS = ['cursor', 'limit'];
-// The action log declares exactly these four; there is no date range and no
-// target filter (see discipline-contract-verification.md 4.4.2).
-const ACTIONS_QUERY_KEYS = ['adminId', 'actionType', 'cursor', 'limit'];
+// Violations additionally declare includeRevoked, default false.
+// See uptake-contract-verification.md 4.2.
+const VIOLATIONS_QUERY_KEYS = ['cursor', 'limit', 'includeRevoked'];
+// The action log now declares six. `targetUserId` and the half-open `from`/`to`
+// window were added by the backend uptake and compose with moderator scoping
+// rather than bypassing it. See uptake-contract-verification.md 4.3.
+const ACTIONS_QUERY_KEYS = ['adminId', 'actionType', 'targetUserId', 'from', 'to', 'cursor', 'limit'];
 // The account list declares status and role; search declares only q. Both take
 // keyset paging. See accounts-contract-verification.md 3.2.
 const USERS_QUERY_KEYS = ['status', 'role', 'cursor', 'limit'];
@@ -71,12 +75,28 @@ export const adminApi = {
   },
 
   /**
-   * Resolves a user id to a username via the content endpoint. A moderator may
-   * call this, which is what makes the report queue renderable without
-   * administrator access.
+   * Resolves up to a hundred account ids to display names in one request. A
+   * moderator may call this, which is what makes the report queue renderable
+   * without administrator access.
+   *
+   * Two wire details are pinned here rather than left to Axios:
+   *
+   * - The array must serialise to repeated bare `ids=` keys. Axios's default is
+   *   `ids[]=`, which this endpoint rejects with 400, so `indexes: null` is not
+   *   a style preference — without it every call fails.
+   * - `pickParams` is not used. It exists to drop undeclared *filter* keys, and
+   *   `ids` is the endpoint's one declared, required parameter, passed as the
+   *   array the caller assembled.
+   *
+   * Returns one entry per requested id, in request order, each
+   * `{ userId, found, user }` with `found: false` and a null `user` for an
+   * unknown or deleted id. Callers index by `userId`; see `lib/userSummaries`.
    */
-  async getUserContent(userId) {
-    const res = await axiosClient.get(`/admin/content/user/${userId}`);
+  async getUserSummaries(ids) {
+    const res = await axiosClient.get('/admin/user-summaries', {
+      params: { ids },
+      paramsSerializer: { indexes: null },
+    });
     return unwrap(res);
   },
 
@@ -133,8 +153,14 @@ export const adminApi = {
   },
 
   /**
-   * Restore a post. Returns a wrapper `{ action, droppedHashtags }`, unlike
-   * every other action endpoint, and the dropped hashtags must be surfaced.
+   * Restore a post. Returns a wrapper `{ action, remainingBannedHashtags }`,
+   * unlike every other action endpoint.
+   *
+   * `remainingBannedHashtags` is the post's **present state** — the banned tags
+   * its caption still carries after the restore — not the set this call
+   * changed. Restoring the same post twice returns the same names both times,
+   * which is correct and must not read as a bug. Verified in
+   * `uptake-contract-verification.md` §3.
    */
   async restorePost(postId, reason, reportId) {
     const res = await axiosClient.patch(
@@ -166,13 +192,75 @@ export const adminApi = {
   },
 
   /**
+   * Remove a story. Returns an AdminActionResponse directly. A moderator may
+   * call this. 409 means the story is already removed.
+   */
+  async removeStory(storyId, reason, reportId) {
+    const res = await axiosClient.patch(
+      `/admin/stories/${storyId}/remove`,
+      buildBody({ reason, reportId })
+    );
+    return unwrap(res);
+  },
+
+  /**
+   * Restore a story. Returns an AdminActionResponse directly.
+   *
+   * A success here lifts the removal and nothing else. Expiry keeps deciding
+   * visibility: a story that expired while removed comes back to a live row no
+   * feed shows, and the response is an ordinary success that says nothing about
+   * it. Once a story is both removed and expired the cleanup job deletes it and
+   * this answers 404. See `uptake-contract-verification.md` §1.1.
+   */
+  async restoreStory(storyId, reason, reportId) {
+    const res = await axiosClient.patch(
+      `/admin/stories/${storyId}/restore`,
+      buildBody({ reason, reportId })
+    );
+    return unwrap(res);
+  },
+
+  /**
+   * Remove a message. Returns an AdminActionResponse directly. Withholds the
+   * text, media, and any shared post or story from both participants; the
+   * reviewer's own view of the target still carries the text, marked removed.
+   */
+  async removeMessage(messageId, reason, reportId) {
+    const res = await axiosClient.patch(
+      `/admin/messages/${messageId}/remove`,
+      buildBody({ reason, reportId })
+    );
+    return unwrap(res);
+  },
+
+  /**
+   * Restore a message. Returns an AdminActionResponse directly.
+   *
+   * This lifts moderation's removal only. A sender's own deletion is a separate
+   * column and survives untouched, so restoring a message the sender had
+   * already deleted succeeds while leaving it invisible to both participants.
+   * See `uptake-contract-verification.md` §1.2.
+   */
+  async restoreMessage(messageId, reason, reportId) {
+    const res = await axiosClient.patch(
+      `/admin/messages/${messageId}/restore`,
+      buildBody({ reason, reportId })
+    );
+    return unwrap(res);
+  },
+
+  /**
    * One page of an account's violation history. The result set differs by role:
    * a moderator sees warnings only, an administrator sees warnings and strikes.
-   * Rows are a discriminated union on `kind`; the cursor is scoped to the role
-   * variant, so replaying it across roles returns INVALID_CURSOR.
+   * Rows are a discriminated union on `kind`.
+   *
+   * `includeRevoked` adds revoked warnings and strikes, each carrying
+   * `revokedAt` and `revokedBy`. The cursor is scoped on the flag as well as on
+   * the role, so a cursor from one setting is rejected by the other with
+   * INVALID_CURSOR — toggling restarts pagination rather than replaying.
    */
-  async getViolations({ userId, cursor, limit } = {}) {
-    const params = pickParams({ cursor, limit }, CURSOR_QUERY_KEYS);
+  async getViolations({ userId, cursor, limit, includeRevoked } = {}) {
+    const params = pickParams({ cursor, limit, includeRevoked }, VIOLATIONS_QUERY_KEYS);
     const res = await axiosClient.get(`/admin/violations/for-user/${userId}`, { params });
     return unwrap(res);
   },
@@ -226,8 +314,11 @@ export const adminApi = {
    * actions; an administrator sees all. Rows never carry `metadata`. The only
    * declared filters are `adminId` and `actionType`.
    */
-  async getActions({ adminId, actionType, cursor, limit } = {}) {
-    const params = pickParams({ adminId, actionType, cursor, limit }, ACTIONS_QUERY_KEYS);
+  async getActions({ adminId, actionType, targetUserId, from, to, cursor, limit } = {}) {
+    const params = pickParams(
+      { adminId, actionType, targetUserId, from, to, cursor, limit },
+      ACTIONS_QUERY_KEYS
+    );
     const res = await axiosClient.get('/admin/actions', { params });
     return unwrap(res);
   },
@@ -337,6 +428,50 @@ export const adminApi = {
       `/admin/users/${userId}/force-logout`,
       buildBody({ reason, reportId })
     );
+    return unwrap(res);
+  },
+
+  /**
+   * End one session and leave the account's others alone. Administrator only;
+   * a moderator receives 403.
+   *
+   * Revoking an already-revoked session answers 200, not an error, so a double
+   * click is safe. The audit row's `metadata.alreadyRevoked` says which of the
+   * two happened, which is how the panel avoids reporting that it ended a live
+   * session when it ended nothing. A session id belonging to another account
+   * answers 404. A revoked session cannot be un-revoked.
+   */
+  async revokeSession(userId, sessionId, { reason, reportId } = {}) {
+    const res = await axiosClient.delete(`/admin/users/${userId}/sessions/${sessionId}`, {
+      data: buildBody({ reason, reportId }),
+    });
+    return unwrap(res);
+  },
+
+  /**
+   * Which session the caller is using, so its own row in an account's session
+   * list can be marked.
+   *
+   * Answers `{ sessionId: null }` — a 200, not an error — whenever the request
+   * carried no usable refresh token, which includes a token a later login has
+   * rotated. Null means "cannot be determined", never "no session", and no row
+   * is marked in that case. There is no per-row marker in the session payload
+   * and none may be invented; correlating this id is the only mechanism.
+   */
+  async getCurrentSession(refreshToken) {
+    const res = await axiosClient.post('/auth/session', buildBody({ refreshToken }));
+    return unwrap(res);
+  },
+
+  /**
+   * The reports this caller escalated. Declares `cursor` and `limit` only —
+   * there is deliberately no status filter, so a report an administrator has
+   * since closed still appears, which is the outcome the escalation was for.
+   * An administrator calling it gets its own escalations, not everyone's.
+   */
+  async getMyEscalations({ cursor, limit } = {}) {
+    const params = pickParams({ cursor, limit }, CURSOR_QUERY_KEYS);
+    const res = await axiosClient.get('/reports/escalated/mine', { params });
     return unwrap(res);
   },
 

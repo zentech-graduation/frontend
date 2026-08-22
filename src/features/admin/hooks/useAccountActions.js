@@ -57,5 +57,18 @@ export function useAccountActions(userId) {
     onSuccess: afterAction,
   });
 
-  return { ban, unban, suspend, unsuspend, changeRole, forceLogout };
+  /**
+   * End one session and leave the account's others alone.
+   *
+   * The server answers 200 whether or not the session was already revoked, so a
+   * double click cannot produce an error. `metadata.alreadyRevoked` tells the
+   * two apart, which is the only way the panel can avoid reporting that it just
+   * ended a live session when the second click ended nothing.
+   */
+  const revokeSession = useMutation({
+    mutationFn: ({ sessionId, reason }) => adminApi.revokeSession(userId, sessionId, { reason }),
+    onSuccess: afterAction,
+  });
+
+  return { ban, unban, suspend, unsuspend, changeRole, forceLogout, revokeSession };
 }

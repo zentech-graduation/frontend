@@ -12,6 +12,7 @@ import { LocalTime } from '../components/LocalTime';
 import { ReporterName } from '../components/ReporterName';
 import { ActionDetailDrawer } from '../components/ActionDetailDrawer';
 import { AccountSearchPicker } from '../components/AccountSearchPicker';
+import { DateRangeControl } from '../components/DateRangeControl';
 import { useActions } from '../hooks/useActions';
 import { useVocabularies } from '../hooks/useVocabularies';
 import { useResolveUsername } from '../hooks/useResolveUsername';
@@ -59,17 +60,76 @@ function ActorFilter({ actorId, onChange }) {
 }
 
 /**
+ * The widest window the range control offers here.
+ *
+ * Unlike the activity log, this endpoint imposes **no span limit at all** — a
+ * 3650-day window is accepted (`uptake-contract-verification.md` §4.3). The only
+ * rule it enforces is that `to` must be later than `from`, which the control
+ * already enforces. So this number is the control's widest preset rather than a
+ * server refusal being anticipated, and no larger value would be rejected.
+ */
+const MAX_WINDOW_DAYS = 365;
+
+/**
+ * The target filter. Offered to both roles, unlike the actor filter: it narrows
+ * the log to actions taken **against** one account, and that question is as
+ * meaningful for a moderator reviewing what it did to someone as it is for an
+ * administrator.
+ *
+ * It does not widen what a moderator may see. The server composes this with the
+ * role scoping, so a moderator filtering by an account another administrator
+ * acted on gets an empty page rather than that administrator's rows — verified,
+ * not assumed.
+ */
+function TargetFilter({ targetUserId, onChange }) {
+  const { username } = useResolveUsername(targetUserId);
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '12px 16px',
+        borderBottom: `1px solid ${v.border}`,
+        flexWrap: 'wrap',
+      }}
+    >
+      <LxIcon name="flag" size={14} color={v.ink3} />
+      <span
+        style={{
+          fontFamily: v.fontMono,
+          fontSize: 10,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: v.ink3,
+        }}
+      >
+        target
+      </span>
+      <AccountSearchPicker
+        value={targetUserId ? { id: targetUserId, username } : null}
+        onSelect={(account) => onChange(account?.id || '')}
+        placeholder="filter by who was acted on…"
+        id="audit-target-picker"
+      />
+    </div>
+  );
+}
+
+/**
  * The moderation action log. One implementation serves two views: a moderator
  * sees only its own actions, an administrator sees all. The result set is
  * role-scoped at the backend, so the two are the same screen with different
  * copy, not two screens.
  *
- * The only filter is `actionType`, because that is the only filter the endpoint
- * declares besides `adminId` (which needs an account picker this phase does not
- * build); no filter is offered that the endpoint does not support, and nothing
- * is filtered client-side. Rows never show `metadata` — it exists only on the
- * per-action fetch, which opens in the drawer. The open action is held in the
- * `action` query parameter so a specific action is a shareable link.
+ * Four filters are offered and each is one the endpoint declares: `actionType`,
+ * `adminId` (administrator only, since a moderator already sees only its own
+ * actions), `targetUserId`, and a half-open time window. Nothing is filtered
+ * client-side, and no filter the endpoint does not support is drawn.
+ *
+ * Every filter lives in the URL, so a filtered view is a shareable link. Rows
+ * never show `metadata` — it exists only on the per-action fetch, which opens
+ * in the drawer.
  */
 function ActionTypeFilter({ actions, value, onChange }) {
   return (
@@ -164,7 +224,16 @@ export function AuditLogScreen() {
 
   const actionType = searchParams.get('type') || '';
   const actorId = searchParams.get('actor') || '';
+  const targetUserId = searchParams.get('target') || '';
   const openActionId = searchParams.get('action') || null;
+
+  // The window lives in the URL as two ISO instants so a filtered view is a
+  // shareable link, and is read back as milliseconds for the range control.
+  // Both must be present or neither is applied: a half-specified window would
+  // silently mean something different from what the reviewer set.
+  const fromIso = searchParams.get('from') || '';
+  const toIso = searchParams.get('to') || '';
+  const range = fromIso && toIso ? { fromMs: Date.parse(fromIso), toMs: Date.parse(toIso) } : null;
 
   const { moderationActions, actionLabel, actionKnown } = useVocabularies();
   const {
@@ -179,6 +248,9 @@ export function AuditLogScreen() {
   } = useActions({
     actionType: actionType || undefined,
     adminId: isAdmin ? actorId || undefined : undefined,
+    targetUserId: targetUserId || undefined,
+    from: range ? new Date(range.fromMs).toISOString() : undefined,
+    to: range ? new Date(range.toMs).toISOString() : undefined,
   });
 
   const setParam = (key, value) => {
@@ -191,6 +263,25 @@ export function AuditLogScreen() {
           next.delete(key);
         }
         return next;
+      },
+      { replace: false }
+    );
+  };
+
+  // Both bounds move together, in one history entry, so back undoes the whole
+  // window rather than half of it.
+  const commitRange = (next) => {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next) {
+          params.set('from', new Date(next.fromMs).toISOString());
+          params.set('to', new Date(next.toMs).toISOString());
+        } else {
+          params.delete('from');
+          params.delete('to');
+        }
+        return params;
       },
       { replace: false }
     );
@@ -311,6 +402,15 @@ export function AuditLogScreen() {
         {isAdmin ? (
           <ActorFilter actorId={actorId} onChange={(value) => setParam('actor', value)} />
         ) : null}
+        <TargetFilter targetUserId={targetUserId} onChange={(value) => setParam('target', value)} />
+        <div style={{ padding: '4px 4px 0' }}>
+          <DateRangeControl
+            value={range}
+            maxDays={MAX_WINDOW_DAYS}
+            onCommit={commitRange}
+            unsetHint="no time window is applied — the log is showing every action. set both ends and apply to narrow it."
+          />
+        </div>
         <RecordTable
           columns={columns}
           rows={rows}

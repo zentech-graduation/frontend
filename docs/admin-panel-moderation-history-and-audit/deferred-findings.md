@@ -12,8 +12,14 @@ Everything noticed and deliberately not acted on, tagged with the phase it belon
   5.1.6; the panel treats it honestly (the record leaves; the revocation is preserved in the action
   log). If in-place marking is ever required, the backend would need to return revoked records with
   `revokedAt`/`revokedBy`. Recorded as a documentation/product divergence, not a frontend defect.
+
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** **Delivered.** `GET /admin/violations/for-user/{id}?includeRevoked=true` exists and returns revoked records carrying `revokedAt` and `revokedBy`. The panel now has an *include revoked records* toggle, off by default, and marks a revoked record in place. The cursor is scoped on the flag, so toggling restarts pagination.
+
 - BACKEND: **the per-account content row carries no media field** (posts carry `caption`, comments
   carry `content`; neither carries a media array). Requirement 7.1.5 assumes one. The panel renders
+
+> **Superseded by `docs/admin-panel-backend-capability-uptake/` (backend capability uptake).** **Partly delivered.** `AdminPostSummaryResponse` now carries `mediaUrls` and the panel renders it. Comment rows still carry no media, because comments have no media in this schema — that half is not a gap and is not coming.
+
   no media because the row has none. Recorded, not a defect.
 - BACKEND: **the audit log declares only `actionType` and `adminId` filters** — no date range, no
   target filter. The panel offers only `actionType` (the `adminId` filter needs an account picker).

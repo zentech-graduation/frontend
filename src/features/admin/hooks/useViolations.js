@@ -21,15 +21,33 @@ const PAGE_LIMIT = 20;
  * Rows are a discriminated union on `kind`; the caller renders by branching on
  * `kind`, never on the presence of a field.
  *
+ * The cursor is scoped on `includeRevoked` as well as on the role: a cursor
+ * issued by one setting of the flag is rejected by the other with
+ * INVALID_CURSOR. The flag is therefore part of the query key, so flipping the
+ * toggle starts a fresh sequence instead of replaying a cursor the other
+ * listing will refuse.
+ *
  * @param {string} userId the account whose history to read
+ * @param {boolean} includeRevoked whether revoked records are listed too;
+ *   false by default, matching the server
  */
-export function useViolations(userId) {
+export function useViolations(userId, includeRevoked = false) {
   const role = useAuthStore((state) => state.role);
 
   const query = useInfiniteQuery({
-    queryKey: listQueryKey('violations', role, { userId: userId ?? null }),
+    queryKey: listQueryKey('violations', role, {
+      userId: userId ?? null,
+      includeRevoked: Boolean(includeRevoked),
+    }),
     queryFn: ({ pageParam }) =>
-      adminApi.getViolations({ userId, cursor: pageParam, limit: PAGE_LIMIT }),
+      adminApi.getViolations({
+        userId,
+        cursor: pageParam,
+        limit: PAGE_LIMIT,
+        // Sent only when true: false is the server's own default and the
+        // request contract carries no redundant keys.
+        includeRevoked: includeRevoked ? true : undefined,
+      }),
     initialPageParam: undefined,
     getNextPageParam,
     retry: panelQueryRetry,
