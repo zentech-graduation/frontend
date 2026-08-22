@@ -42,6 +42,13 @@ const NAV_SECTIONS = [
         roles: [ROLES.MODERATOR, ROLES.ADMIN],
       },
       {
+        key: 'my-escalations',
+        label: 'my escalations',
+        icon: 'alert',
+        to: ROUTES.ADMIN_MY_ESCALATIONS,
+        roles: [ROLES.MODERATOR, ROLES.ADMIN],
+      },
+      {
         key: 'actions',
         label: 'actions',
         icon: 'clock',

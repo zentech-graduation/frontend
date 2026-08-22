@@ -12,29 +12,50 @@ const PAGE_LIMIT = 20;
 /**
  * The moderation action log as an infinite cursor list. A moderator sees only
  * its own actions and an administrator sees all; the result set is role-scoped,
- * so the role is part of the query key. The only declared filter is
- * `actionType`; no date range and no target filter exist on this endpoint, so
- * none is offered. Rows never carry `metadata` — it exists only on the
- * per-action fetch, opened from the drawer.
+ * so the role is part of the query key. Rows never carry `metadata` — it exists
+ * only on the per-action fetch, opened from the drawer.
  *
- * The `adminId` filter narrows the log to one actor; it is meaningful only for an
- * administrator, since a moderator already sees only its own actions. The actor
- * is chosen through the account search built for this phase.
+ * Four filters are declared and all four are offered: `actionType`, `adminId`,
+ * `targetUserId`, and a half-open `from`/`to` window.
  *
- * @param {{actionType?: string, adminId?: string}} filters
+ * **None of them widens what the caller may see.** They compose with the
+ * role scoping rather than bypassing it: a moderator filtering by a target
+ * still sees only its own actions against that target, which is why filtering a
+ * moderator's log by an account another administrator acted on returns nothing
+ * rather than that administrator's rows.
+ *
+ * The window is half-open — `from` inclusive, `to` exclusive — verified at the
+ * boundary against a real row's timestamp rather than assumed.
+ *
+ * @param {{actionType?: string, adminId?: string, targetUserId?: string,
+ *          from?: string, to?: string}} filters
  */
 export function useActions(filters = {}) {
   const role = useAuthStore((state) => state.role);
   const actionType = filters.actionType || undefined;
   const adminId = filters.adminId || undefined;
+  const targetUserId = filters.targetUserId || undefined;
+  const from = filters.from || undefined;
+  const to = filters.to || undefined;
 
   const query = useInfiniteQuery({
     queryKey: listQueryKey('actions', role, {
       actionType: actionType ?? null,
       adminId: adminId ?? null,
+      targetUserId: targetUserId ?? null,
+      from: from ?? null,
+      to: to ?? null,
     }),
     queryFn: ({ pageParam }) =>
-      adminApi.getActions({ actionType, adminId, cursor: pageParam, limit: PAGE_LIMIT }),
+      adminApi.getActions({
+        actionType,
+        adminId,
+        targetUserId,
+        from,
+        to,
+        cursor: pageParam,
+        limit: PAGE_LIMIT,
+      }),
     initialPageParam: undefined,
     getNextPageParam,
     retry: panelQueryRetry,

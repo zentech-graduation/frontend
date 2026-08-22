@@ -28,6 +28,9 @@ const EscalatedQueueScreen = lazy(() =>
 const ReportDetailScreen = lazy(() =>
   import('./screens/ReportDetailScreen').then((m) => ({ default: m.ReportDetailScreen }))
 );
+const MyEscalationsScreen = lazy(() =>
+  import('./screens/MyEscalationsScreen').then((m) => ({ default: m.MyEscalationsScreen }))
+);
 const AuditLogScreen = lazy(() =>
   import('./screens/AuditLogScreen').then((m) => ({ default: m.AuditLogScreen }))
 );
@@ -64,6 +67,9 @@ export const adminRoute = {
         // violations, content, and issue a warning, so neither sits behind the
         // administrator-only guard.
         { path: rel(ROUTES.ADMIN_ACTIONS), element: <AuditLogScreen /> },
+        // Both roles: the endpoint scopes by caller, not by role, so an
+        // administrator reaches its own escalations here too.
+        { path: rel(ROUTES.ADMIN_MY_ESCALATIONS), element: <MyEscalationsScreen /> },
         { path: rel(ROUTES.ADMIN_USER), element: <AccountModerationScreen /> },
         // Administrator-only: the account list and search and the hashtag
         // registry sit behind the second guard because the backend answers the

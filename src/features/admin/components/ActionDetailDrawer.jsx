@@ -33,7 +33,10 @@ const FIELD_LABEL = {
   strikeNumber: 'strike number',
   resultingStatus: 'resulting status',
   consequenceApplied: 'consequence applied',
-  strippedHashtags: 'dropped hashtags',
+  // Renamed from `strippedHashtags`, and the label changed with it because the
+  // meaning did: it is the banned tags the caption still carries after the
+  // restore — the post's state — not what that call removed.
+  remainingBannedHashtags: 'banned hashtags still in the caption',
   warningIds: 'warnings rolled up',
   triggeredByModeratorId: 'triggered by',
 };
@@ -84,11 +87,11 @@ function MetaValue({ fieldKey, value, reasonLabel }) {
   if (fieldKey === 'triggeredByModeratorId') {
     return <ReporterName userId={value} prefix="@" />;
   }
-  if (fieldKey === 'strippedHashtags' || fieldKey === 'warningIds') {
+  if (fieldKey === 'remainingBannedHashtags' || fieldKey === 'warningIds') {
     if (!Array.isArray(value) || value.length === 0) {
       return <span style={{ color: v.ink3 }}>none</span>;
     }
-    if (fieldKey === 'strippedHashtags') {
+    if (fieldKey === 'remainingBannedHashtags') {
       return <>{value.map((tag) => `#${tag}`).join(', ')}</>;
     }
     return (
@@ -305,24 +308,39 @@ export function ActionDetailDrawer({ actionId, onClose }) {
                 <LocalTime value={action.createdAt} />
               </MetaRow>
 
+              {/* The originating report is shown for every action that has one,
+                  but an `escalate_report` row deliberately does not link.
+                  Following your own escalations was the job this link was doing
+                  before a dedicated endpoint existed, and "my escalations" does
+                  it now — with the outcome, which a link to one report at a time
+                  never gave. Two routes to one job is the defect this phase is
+                  removing, so the id stays as the record and the route is the
+                  screen. */}
               {action.reportId ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <MetaLabel>originating report</MetaLabel>
-                  <Link
-                    to={routeTo.adminReportDetail(action.reportId)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontFamily: v.fontBody,
-                      fontSize: 14,
-                      color: v.accentText,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <LxIcon name="external" size={14} color={v.accentText} />
-                    open report {action.reportId.slice(0, 8)}
-                  </Link>
+                  {action.actionType === 'escalate_report' ? (
+                    <span style={{ fontFamily: v.fontMono, fontSize: 13, color: v.ink2 }}>
+                      {action.reportId.slice(0, 8)} — listed under “my escalations”, with what
+                      became of it
+                    </span>
+                  ) : (
+                    <Link
+                      to={routeTo.adminReportDetail(action.reportId)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontFamily: v.fontBody,
+                        fontSize: 14,
+                        color: v.accentText,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <LxIcon name="external" size={14} color={v.accentText} />
+                      open report {action.reportId.slice(0, 8)}
+                    </Link>
+                  )}
                 </div>
               ) : null}
 
