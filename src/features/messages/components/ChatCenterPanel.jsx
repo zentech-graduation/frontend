@@ -239,6 +239,8 @@ export function ChatCenterPanel({
                         itemIndex
                       )
                     }
+                    onDeleteItem={handleDeleteToggle}
+                    onReplyItem={setReplyingTo}
                   />
                 </div>
               );
@@ -265,12 +267,6 @@ export function ChatCenterPanel({
                   onPreviewMedia={(media) => openPreview?.([media], 0)}
                   onDeleteToggle={handleDeleteToggle}
                   onReplyMessage={setReplyingTo}
-                  canDelete={
-                    row.from === 'me' &&
-                    row.kind !== 'deleted' &&
-                    activeThread.messages.findIndex((message) => message.id === row.id) >=
-                      activeThread.messages.length - 2
-                  }
                 />
               </div>
             );
