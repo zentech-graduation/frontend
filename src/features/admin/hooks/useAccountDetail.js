@@ -17,12 +17,16 @@ export const accountDetailKey = (userId) => ['admin', 'userDetail', userId];
  * capabilities arrive.
  *
  * @param {string} userId
+ * @param {{enabled?: boolean}} options pass `enabled: false` from a surface both
+ *   roles reach, so a moderator never fires the request that would 403. The
+ *   query key is unchanged, so an administrator's copy is still shared and
+ *   deduplicated with every other reader of the same account.
  */
-export function useAccountDetail(userId) {
+export function useAccountDetail(userId, { enabled = true } = {}) {
   const query = useQuery({
     queryKey: accountDetailKey(userId),
     queryFn: () => adminApi.getUserDetail(userId),
-    enabled: Boolean(userId),
+    enabled: Boolean(userId) && enabled,
     staleTime: STALE_TIME.SHORT,
     retry: panelQueryRetry,
   });

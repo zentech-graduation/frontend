@@ -8,6 +8,7 @@ import { LxBtn } from '@/features/luvax/components/primitives';
 import { toast } from '@/features/luvax/components/Toast';
 
 import { useViolations } from '../hooks/useViolations';
+import { useAccountDetail } from '../hooks/useAccountDetail';
 import { useDisciplineActions } from '../hooks/useDisciplineActions';
 import { useVocabularies } from '../hooks/useVocabularies';
 import { describeError } from '../lib/errors';
@@ -63,6 +64,27 @@ function KindBadge({ kind }) {
   );
 }
 
+/**
+ * The revoke confirmation's wording.
+ *
+ * Revoking a strike undoes the record, not its consequence: the suspension the
+ * strike produced is a separate state change and stays in force until somebody
+ * lifts it. A confirmation that stops at "the strike will be revoked" invites a
+ * reviewer to believe they have restored the account, and they will not find out
+ * otherwise until the person complains. The current status is named when it is
+ * one the revocation will not change.
+ */
+const revokeDescription = (kind, status) => {
+  const base = `this ${kind} will be revoked and removed from the account's history. the reason is recorded in the action log.`;
+  if (status === 'suspended') {
+    return `${base} the account stays suspended — revoking the record does not lift the suspension, which must be lifted separately.`;
+  }
+  if (status === 'banned') {
+    return `${base} the account stays banned — revoking the record does not lift the ban, which must be lifted separately.`;
+  }
+  return base;
+};
+
 export function ViolationHistory({ userId }) {
   const role = useAuthStore((state) => state.role);
   const isAdmin = isAdminRole(role);
@@ -70,6 +92,10 @@ export function ViolationHistory({ userId }) {
   const { rows, isLoading, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
     useViolations(userId);
   const discipline = useDisciplineActions(userId);
+  // Read only as an administrator: revoke controls are administrator-only, so
+  // this is exactly the audience that needs the account's current status, and a
+  // moderator never fires a request that would answer 403.
+  const { detail } = useAccountDetail(userId, { enabled: isAdmin });
 
   const [revoking, setRevoking] = useState(null);
   const [serverError, setServerError] = useState(null);
@@ -193,11 +219,7 @@ export function ViolationHistory({ userId }) {
       <ReasonConfirmDialog
         open={Boolean(revoking)}
         title={revoking ? `revoke ${revoking.kind}` : 'revoke'}
-        description={
-          revoking
-            ? `this ${revoking.kind} will be revoked and removed from the account's history. the reason is recorded in the action log.`
-            : ''
-        }
+        description={revoking ? revokeDescription(revoking.kind, detail?.status) : ''}
         confirmLabel="revoke"
         tone="danger"
         busy={revokeBusy}

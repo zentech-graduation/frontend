@@ -54,9 +54,16 @@ export function AccountDisciplinePanel({ userId }) {
           // from a partial page.
           const count = data?.activeWarningCount;
           const suffix = typeof count === 'number' ? ` — ${count} active warning${count === 1 ? '' : 's'} now` : '';
+          // The strike is not the whole outcome: it also moves the account's
+          // status. `resultingStatus` is the server's own word for where the
+          // account ended up, so it is quoted rather than inferred — a message
+          // that says only "a strike was applied" leaves the reviewer to guess
+          // whether the account is still able to sign in.
+          const status = data?.resultingStatus;
+          const outcome = status ? `, and the account is now ${String(status).toLowerCase()}` : '';
           toast(
             data?.strikeIssued
-              ? `warning issued — a strike was applied${suffix}`
+              ? `warning issued — this was the third active warning, so a strike was applied${outcome}${suffix}`
               : `warning issued${suffix}`
           );
           closeWarn();
