@@ -417,7 +417,10 @@ function StateSummary({ detail, isSelf }) {
               suspension ends <LocalTime value={detail.suspendedUntil} />
             </span>
           ) : (
-            <span>suspended indefinitely — no end date is recorded</span>
+            <span>
+              suspended indefinitely — there is no end date, and it lasts until an administrator
+              lifts it
+            </span>
           )}
         </div>
       ) : null}

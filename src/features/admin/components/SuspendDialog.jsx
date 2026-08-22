@@ -12,17 +12,26 @@ import { LocalTime } from './LocalTime';
  *
  * It quotes the shared reason-confirm dialogue's shape — the 500ms arming delay,
  * portalled overlay, Escape-to-close, and cancel-then-confirm pair — but carries
- * the two fields the suspend endpoint accepts: a required reason and a duration
- * in days. The server takes `durationDays` (1..3650), not an end time; the
- * resulting end is `now + durationDays`, shown here in the reviewer's local
- * timezone before they confirm so a duration is never confirmed blind. The
- * bounds are enforced before submission, matching the server's 400 on an
- * out-of-range value.
+ * the fields the suspend endpoint accepts: a required reason and an optional
+ * duration in days.
+ *
+ * **A suspension with no end date is a supported choice, not an incomplete
+ * form.** Omitting `durationDays` suspends indefinitely: the account's end time
+ * is null, the sweep that lifts lapsed suspensions never matches it, and it
+ * stays suspended until an administrator lifts it by hand. The panel used to
+ * treat the duration as required because the endpoint's optionality had been
+ * read as an oversight. Both are offered here, and the consequence of each is
+ * stated before it is confirmed.
+ *
+ * When a duration is given the server takes `durationDays` (1..3650), not an end
+ * time; the resulting end is `now + durationDays`, shown in the reviewer's local
+ * timezone so a duration is never confirmed blind. The bounds are enforced
+ * before submission, matching the server's 400 on an out-of-range value.
  *
  * @param {boolean} open
  * @param {boolean} busy
  * @param {string} serverError a non-field server message to show inline
- * @param {(payload:{reason:string, durationDays:number})=>void} onConfirm
+ * @param {(payload:{reason:string, durationDays:number|undefined})=>void} onConfirm
  * @param {()=>void} onClose
  */
 const ARMING_DELAY_MS = 500;
@@ -32,6 +41,10 @@ const MAX_DAYS = 3650;
 
 export function SuspendDialog({ open, busy = false, serverError = null, onConfirm, onClose }) {
   const [reason, setReason] = useState('');
+  // 'dated' | 'indefinite'. Dated is the default because it is the ordinary
+  // case; indefinite is a deliberate escalation and is chosen, never defaulted
+  // into by leaving a field blank.
+  const [mode, setMode] = useState('dated');
   const [days, setDays] = useState('7');
   const [armed, setArmed] = useState(false);
   const [localErrors, setLocalErrors] = useState({});
@@ -44,6 +57,8 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
       setReason('');
 
       setDays('7');
+
+      setMode('dated');
 
       setArmed(false);
 
@@ -68,9 +83,13 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
     return null;
   }
 
+  const isIndefinite = mode === 'indefinite';
   const daysNum = Number.parseInt(days, 10);
   const daysValid = Number.isFinite(daysNum) && daysNum >= MIN_DAYS && daysNum <= MAX_DAYS;
-  const endDate = daysValid ? new Date(nowMs + daysNum * 24 * 60 * 60 * 1000).toISOString() : null;
+  const endDate =
+    !isIndefinite && daysValid
+      ? new Date(nowMs + daysNum * 24 * 60 * 60 * 1000).toISOString()
+      : null;
   const reasonError = localErrors.reason || serverError || '';
   const daysError = localErrors.days || '';
   const overLimit = reason.length > REASON_MAX;
@@ -83,7 +102,7 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
     if (!reason.trim()) {
       next.reason = 'a reason is required';
     }
-    if (!daysValid) {
+    if (!isIndefinite && !daysValid) {
       next.days = `enter a whole number of days between ${MIN_DAYS} and ${MAX_DAYS}`;
     }
     if (Object.keys(next).length > 0) {
@@ -93,7 +112,13 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
     if (overLimit) {
       return;
     }
-    onConfirm({ reason: reason.trim(), durationDays: daysNum });
+    // Omitted entirely for an indefinite suspension. `buildBody` drops an
+    // undefined field, so the request carries no `durationDays` key at all
+    // rather than a null the endpoint does not declare.
+    onConfirm({
+      reason: reason.trim(),
+      durationDays: isIndefinite ? undefined : daysNum,
+    });
   };
 
   const confirmInert = !armed || busy;
@@ -145,12 +170,66 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
             suspend this account
           </div>
           <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55 }}>
-            the account cannot sign in until the suspension ends. it lifts automatically at the time
-            below, or an administrator can unsuspend it sooner.
+            {isIndefinite
+              ? 'the account cannot sign in. an indefinite suspension has no end date and never lifts on its own — it lasts until an administrator unsuspends it.'
+              : 'the account cannot sign in until the suspension ends. it lifts automatically at the time below, or an administrator can unsuspend it sooner.'}
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <fieldset style={{ border: 'none', padding: 0, margin: 0, display: 'flex', gap: 16 }}>
+          <legend
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: v.ink3,
+              padding: 0,
+              marginBottom: 6,
+            }}
+          >
+            how long
+          </legend>
+          {[
+            { key: 'dated', label: 'for a set number of days' },
+            { key: 'indefinite', label: 'indefinitely' },
+          ].map((option) => (
+            <label
+              key={option.key}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: v.fontBody,
+                fontSize: 13,
+                color: v.ink2,
+                cursor: busy ? 'default' : 'pointer',
+              }}
+            >
+              <input
+                type="radio"
+                name="suspend-mode"
+                value={option.key}
+                checked={mode === option.key}
+                disabled={busy}
+                onChange={() => {
+                  setMode(option.key);
+                  setLocalErrors((prev) => ({ ...prev, days: undefined }));
+                }}
+                style={{ accentColor: v.accentText }}
+              />
+              {option.label}
+            </label>
+          ))}
+        </fieldset>
+
+        <div
+          style={{
+            display: isIndefinite ? 'none' : 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
           <label
             htmlFor="suspend-days"
             style={{
@@ -312,7 +391,7 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
               transition: 'opacity 0.25s, background 0.25s, color 0.25s',
             }}
           >
-            {busy ? 'suspending...' : 'suspend account'}
+            {busy ? 'suspending...' : isIndefinite ? 'suspend indefinitely' : 'suspend account'}
           </button>
         </div>
       </div>
