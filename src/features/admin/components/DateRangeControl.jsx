@@ -1,0 +1,275 @@
+import { useEffect, useMemo, useState } from 'react';
+
+import { v } from '@/config/tokens';
+import { LxBtn } from '@/features/luvax/components/primitives';
+
+import { clampRange, localZone } from '../lib/statistics';
+
+/**
+ * Derived pattern: a bounded date-range control that commits on submit.
+ *
+ * Two things make this control what it is, and both come from the endpoints
+ * behind it rather than from taste.
+ *
+ * **It fires on commit, not on change.** The two endpoints this control drives
+ * allow 20 requests a minute in production, the tightest budget in the system. A
+ * range control wired to its own `onChange` issues a request for every
+ * intermediate value a reviewer passes through while dragging or typing, and
+ * exhausts that budget in seconds. So every edit here changes a draft, and only
+ * "apply" turns the draft into a request.
+ *
+ * **It clamps before submitting.** The maximum span is enforced by the control
+ * and stated on it, so a reviewer meets a bound rather than a 400. The window
+ * slider cannot be dragged past the limit at all, and a range typed into the
+ * two fields is corrected on commit with a note saying what was changed and why,
+ * rather than being altered silently.
+ *
+ * @param {number} maxDays the endpoint's verified maximum span
+ * @param {(range: {fromMs:number,toMs:number}) => void} onCommit
+ * @param {boolean} disabled
+ * @param {string} disabledReason shown in place of the limit while disabled
+ */
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Window lengths the slider steps through, in days. Discrete rather than
+// continuous because a reviewer wants "the last week", not "the last 6.4 days",
+// and because a discrete track cannot land on a value the endpoint refuses.
+const WINDOW_STEPS = [0.25, 0.5, 1, 2, 3, 7, 14, 30, 60, 90, 180, 365];
+
+const pad = (n) => String(n).padStart(2, '0');
+
+/** A millisecond instant as the local wall-clock string a datetime-local input takes. */
+const toLocalInput = (ms) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
+    d.getMinutes()
+  )}`;
+};
+
+/** The reverse. Returns null for an incomplete or unparseable entry. */
+const fromLocalInput = (text) => {
+  const ms = new Date(text).getTime();
+  return Number.isFinite(ms) ? ms : null;
+};
+
+const describeSpan = (days) => {
+  if (days < 1) {
+    return `${Math.round(days * 24)} hours`;
+  }
+  return `${days} day${days === 1 ? '' : 's'}`;
+};
+
+const fieldStyle = {
+  fontFamily: v.fontMono,
+  fontSize: 12,
+  color: v.ink,
+  background: v.base,
+  border: `1px solid ${v.border}`,
+  borderRadius: 'var(--radius-md)',
+  padding: '7px 8px',
+  minWidth: 0,
+};
+
+const labelStyle = {
+  fontFamily: v.fontMono,
+  fontSize: 10,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  color: v.ink3,
+};
+
+export function DateRangeControl({
+  value,
+  maxDays,
+  onCommit,
+  disabled = false,
+  disabledReason = null,
+}) {
+  const steps = useMemo(() => WINDOW_STEPS.filter((d) => d <= maxDays), [maxDays]);
+
+  // `value` is null before a range has ever been committed. The activity log
+  // starts that way on purpose: both bounds are mandatory there, so the screen
+  // must be able to exist in a state where it has neither and has asked for
+  // nothing.
+  const [draftFrom, setDraftFrom] = useState(() => (value ? toLocalInput(value.fromMs) : ''));
+  const [draftTo, setDraftTo] = useState(() => (value ? toLocalInput(value.toMs) : ''));
+  const [note, setNote] = useState(null);
+
+  const committedFrom = value?.fromMs ?? null;
+  const committedTo = value?.toMs ?? null;
+
+  // The committed range is the source of truth; the draft follows it whenever it
+  // changes from outside, such as a preset being applied elsewhere.
+  useEffect(() => {
+    if (committedFrom === null || committedTo === null) {
+      return;
+    }
+    setDraftFrom(toLocalInput(committedFrom));
+    setDraftTo(toLocalInput(committedTo));
+    setNote(null);
+  }, [committedFrom, committedTo]);
+
+  const draftFromMs = fromLocalInput(draftFrom);
+  const draftToMs = fromLocalInput(draftTo);
+  const draftSpanDays =
+    draftFromMs !== null && draftToMs !== null ? (draftToMs - draftFromMs) / DAY_MS : null;
+
+  // The slider index is derived from the draft rather than held separately, so
+  // typing a date and dragging the slider cannot disagree with one another.
+  const sliderIndex = useMemo(() => {
+    if (draftSpanDays === null) {
+      return steps.length - 1;
+    }
+    let closest = 0;
+    for (let i = 1; i < steps.length; i += 1) {
+      if (Math.abs(steps[i] - draftSpanDays) < Math.abs(steps[closest] - draftSpanDays)) {
+        closest = i;
+      }
+    }
+    return closest;
+  }, [draftSpanDays, steps]);
+
+  const dirty =
+    draftFromMs !== committedFrom ||
+    draftToMs !== committedTo ||
+    draftFromMs === null ||
+    draftToMs === null;
+
+  const handleSlider = (event) => {
+    const days = steps[Number(event.target.value)] ?? steps[steps.length - 1];
+    // With no end entered yet the slider anchors on now, so dragging it composes
+    // a whole range rather than doing nothing.
+    const anchor = draftToMs ?? committedTo ?? Date.now();
+    if (draftToMs === null) {
+      setDraftTo(toLocalInput(anchor));
+    }
+    setDraftFrom(toLocalInput(anchor - days * DAY_MS));
+    setNote(null);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (disabled) {
+      return;
+    }
+    if (draftFromMs === null || draftToMs === null) {
+      setNote('enter both a start and an end before applying.');
+      return;
+    }
+    const clamped = clampRange(draftFromMs, draftToMs);
+    setNote(clamped.note);
+    onCommit({ fromMs: clamped.fromMs, toMs: clamped.toMs });
+  };
+
+  const applyPreset = (days) => {
+    if (disabled) {
+      return;
+    }
+    const to = Date.now();
+    setNote(null);
+    onCommit({ fromMs: to - days * DAY_MS, toMs: to });
+  };
+
+  const presets = steps.filter((d) => [1, 7, 30, 90].includes(d));
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+      aria-label="date range"
+    >
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 190px' }}>
+          <span style={labelStyle}>from</span>
+          <input
+            type="datetime-local"
+            value={draftFrom}
+            onChange={(event) => setDraftFrom(event.target.value)}
+            disabled={disabled}
+            style={fieldStyle}
+          />
+        </label>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 190px' }}>
+          <span style={labelStyle}>to</span>
+          <input
+            type="datetime-local"
+            value={draftTo}
+            onChange={(event) => setDraftTo(event.target.value)}
+            disabled={disabled}
+            style={fieldStyle}
+          />
+        </label>
+        <LxBtn type="submit" variant={dirty ? 'primary' : 'secondary'} size="sm" disabled={disabled}>
+          apply
+        </LxBtn>
+      </div>
+
+      <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={labelStyle}>
+          window length — {describeSpan(steps[sliderIndex])} — at most {maxDays} days
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={steps.length - 1}
+          step={1}
+          value={sliderIndex}
+          onChange={handleSlider}
+          disabled={disabled}
+          aria-label={`window length, at most ${maxDays} days`}
+          style={{ width: '100%', accentColor: v.accent }}
+        />
+      </label>
+
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+          <span style={labelStyle}>jump to</span>
+          {presets.map((days) => (
+            <LxBtn
+              key={days}
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => applyPreset(days)}
+              disabled={disabled}
+            >
+              last {describeSpan(days)}
+            </LxBtn>
+          ))}
+        </div>
+        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+          times are {localZone()}
+        </span>
+      </div>
+
+      {dirty && !disabled ? (
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+          {value === null
+            ? 'nothing has been requested yet — set both ends and apply.'
+            : 'the range has been edited and not applied yet — nothing is requested until you apply it.'}
+        </p>
+      ) : null}
+
+      {note ? (
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.warningText }}>
+          {note}
+        </p>
+      ) : null}
+
+      {disabled && disabledReason ? (
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.warningText }}>
+          {disabledReason}
+        </p>
+      ) : null}
+    </form>
+  );
+}

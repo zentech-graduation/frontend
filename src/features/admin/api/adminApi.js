@@ -31,6 +31,14 @@ const USER_SEARCH_QUERY_KEYS = ['q', 'cursor', 'limit'];
 // See accounts-contract-verification.md 3.4.
 const HASHTAGS_QUERY_KEYS = ['status', 'cursor', 'limit'];
 const HASHTAG_SEARCH_QUERY_KEYS = ['q', 'status', 'cursor', 'limit'];
+// The timeseries declares exactly these four. There is no cursor and no limit:
+// the endpoint is not paginated, it returns the whole window in one response.
+// See observability-contract-verification.md 1.4.
+const STATS_TIMESERIES_QUERY_KEYS = ['metric', 'granularity', 'from', 'to'];
+// The activity log declares six. `from` and `to` are mandatory and the caller
+// must supply both; the server refuses a request carrying only one of them.
+// See observability-contract-verification.md 2.1.
+const USER_EVENTS_QUERY_KEYS = ['userId', 'from', 'to', 'eventType', 'cursor', 'limit'];
 
 export const adminApi = {
   /** The one-hour-cached vocabulary lists (report reasons, moderation actions). */
@@ -390,6 +398,59 @@ export const adminApi = {
     const res = await axiosClient.delete(`/admin/hashtags/${hashtagId}`, {
       data: buildBody({ reason }),
     });
+    return unwrap(res);
+  },
+
+  /**
+   * The newest stored statistics snapshot. Administrator only; a moderator
+   * receives 403. Takes no parameters at all.
+   *
+   * `computedAt` is null when nothing has ever been collected, which is a
+   * first-class state and not an error: the collection job writes one bucket
+   * every 30 minutes and never backfills, so a freshly started or freshly reset
+   * deployment genuinely has nothing to show. The figures are read from the last
+   * completed bucket, so they are a snapshot up to 30 minutes old, never live.
+   */
+  async getCurrentStats() {
+    const res = await axiosClient.get('/admin/stats/current');
+    return unwrap(res);
+  },
+
+  /**
+   * One metric's stored series over a window. Administrator only.
+   *
+   * Every parameter is optional to the server, but omitting both bounds means
+   * the last 24 hours and supplying exactly one is refused, so the caller always
+   * sends both or neither. `granularity` is omitted rather than guessed when the
+   * caller has no preference, because the server resolves the only one that has
+   * rows behind it.
+   *
+   * The response restates `metric`, `granularity`, `from`, and `to` as the
+   * server resolved them. Read the axis label off the response, never off the
+   * request: the server may answer at a different granularity from the one that
+   * was asked for.
+   */
+  async getStatsTimeseries({ metric, granularity, from, to } = {}) {
+    const params = pickParams({ metric, granularity, from, to }, STATS_TIMESERIES_QUERY_KEYS);
+    const res = await axiosClient.get('/admin/stats/timeseries', { params });
+    return unwrap(res);
+  },
+
+  /**
+   * One cursor page of behavioural events. Administrator only.
+   *
+   * `from` and `to` are both mandatory — the table is partitioned by time and an
+   * unbounded read would scan every partition ever created — and the window may
+   * span at most 30 days, inclusive. `userId` is optional; omitting it reads
+   * across every account. Rate limited (prod 20/min), the tightest budget in the
+   * panel, so the caller fires on commit and never on change.
+   */
+  async getUserEvents({ userId, from, to, eventType, cursor, limit } = {}) {
+    const params = pickParams(
+      { userId, from, to, eventType, cursor, limit },
+      USER_EVENTS_QUERY_KEYS
+    );
+    const res = await axiosClient.get('/admin/user-events', { params });
     return unwrap(res);
   },
 };

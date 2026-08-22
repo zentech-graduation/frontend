@@ -40,6 +40,12 @@ const AccountListScreen = lazy(() =>
 const HashtagRegistryScreen = lazy(() =>
   import('./screens/HashtagRegistryScreen').then((m) => ({ default: m.HashtagRegistryScreen }))
 );
+const StatisticsScreen = lazy(() =>
+  import('./screens/StatisticsScreen').then((m) => ({ default: m.StatisticsScreen }))
+);
+const ActivityLogScreen = lazy(() =>
+  import('./screens/ActivityLogScreen').then((m) => ({ default: m.ActivityLogScreen }))
+);
 
 const rel = (fullPath) => fullPath.slice(ROUTES.ADMIN.length + 1);
 
@@ -69,6 +75,8 @@ export const adminRoute = {
             { path: rel(ROUTES.ADMIN_ESCALATED), element: <EscalatedQueueScreen /> },
             { path: rel(ROUTES.ADMIN_USERS), element: <AccountListScreen /> },
             { path: rel(ROUTES.ADMIN_HASHTAGS), element: <HashtagRegistryScreen /> },
+            { path: rel(ROUTES.ADMIN_STATISTICS), element: <StatisticsScreen /> },
+            { path: rel(ROUTES.ADMIN_ACTIVITY), element: <ActivityLogScreen /> },
           ],
         },
         {

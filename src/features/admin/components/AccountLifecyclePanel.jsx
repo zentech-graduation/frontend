@@ -9,6 +9,7 @@ import { toast } from '@/features/luvax/components/Toast';
 import { StatusBadge } from './StatusBadge';
 import { LocalTime } from './LocalTime';
 import { LoadingState, FailedState } from './ListStates';
+import { ReportsAgainstList, SessionList } from './AccountSessionsPanel';
 import { ReasonConfirmDialog } from './ReasonConfirmDialog';
 import { SuspendDialog } from './SuspendDialog';
 import { RoleChangeDialog } from './RoleChangeDialog';
@@ -168,6 +169,23 @@ export function AccountLifecyclePanel({ userId }) {
         </LxBtn>
       </div>
 
+      {/* Sessions and reports-against were surfaced as counts by the previous
+          phase. Both are full arrays in this payload, so both are rendered as
+          what they are. They sit here rather than on their own screen because
+          the only revocation that exists is the account-wide force logout whose
+          confirmation is already in this component. */}
+      <div style={{ borderTop: `1px solid ${v.borderSubtle}`, paddingTop: 16 }}>
+        <SessionList
+          sessions={detail.sessions}
+          isSelf={isSelf}
+          onRevokeAll={() => openDialog('forceLogout')}
+        />
+      </div>
+
+      <div style={{ borderTop: `1px solid ${v.borderSubtle}`, paddingTop: 16 }}>
+        <ReportsAgainstList reports={detail.reportsAgainst} />
+      </div>
+
       <ReasonConfirmDialog
         open={dialog === 'ban'}
         title="ban this account"
@@ -274,17 +292,40 @@ function StateSummary({ detail, isSelf }) {
         ) : null}
       </div>
 
-      {detail.status === 'suspended' && detail.suspendedUntil ? (
+      {/* `suspendedUntil` is null for two different things: an account that is
+          not suspended, and one suspended with no end date. Reading it alone
+          cannot tell them apart, so the status is read first and the null branch
+          says "indefinitely" rather than rendering nothing, which would leave a
+          suspended account looking unsuspended. */}
+      {detail.status === 'suspended' ? (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: v.fontBody, fontSize: 13, color: v.warningText, background: v.warningDim, borderRadius: 10, padding: '8px 12px', width: 'fit-content' }}>
           <LxIcon name="clock" size={14} color={v.warningText} />
-          suspension ends <LocalTime value={detail.suspendedUntil} />
+          {detail.suspendedUntil ? (
+            <span>
+              suspension ends <LocalTime value={detail.suspendedUntil} />
+            </span>
+          ) : (
+            <span>suspended indefinitely — no end date is recorded</span>
+          )}
         </div>
       ) : null}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14 }}>
         <Field label="email">{detail.email || '—'}</Field>
-        <Field label="active sessions">{detail.sessions?.length ?? 0}</Field>
-        <Field label="reports against">{detail.reportsAgainst?.length ?? 0}</Field>
+        <Field label="registration address">
+          {detail.registrationIp ? (
+            <span style={{ fontFamily: v.fontMono, fontSize: 12 }}>{detail.registrationIp}</span>
+          ) : (
+            'none recorded'
+          )}
+        </Field>
+        <Field label="last login address">
+          {detail.lastLoginIp ? (
+            <span style={{ fontFamily: v.fontMono, fontSize: 12 }}>{detail.lastLoginIp}</span>
+          ) : (
+            'none recorded'
+          )}
+        </Field>
         <Field label="joined">
           <LocalTime value={detail.createdAt} showZone={false} />
         </Field>
