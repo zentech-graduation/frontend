@@ -111,10 +111,22 @@ export const useUpdatePost = () => {
 
   return useMutation({
     mutationFn: ({ postId, data }) => postService.updatePost(postId, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
+      const updated = response?.data || response;
+      if (updated?.id) {
+        patchCachedPost(queryClient, variables.postId, {
+          caption: updated.caption,
+          tags: updated.tags,
+          updatedAt: updated.updatedAt,
+          editedAt: updated.editedAt,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['post', variables.postId] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['explore'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: savedPostsKey });
+      queryClient.invalidateQueries({ queryKey: likedPostsKey });
     },
   });
 };

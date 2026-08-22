@@ -556,6 +556,7 @@ export function PostDetailScreen({ overlay = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
+  const [editError, setEditError] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -734,14 +735,25 @@ export function PostDetailScreen({ overlay = false }) {
 
   const handleEditOpen = useCallback(() => {
     setEditCaption(post?.caption || post?.text || '');
+    setEditError('');
     setEditSheetOpen(true);
   }, [post.caption, post.text]);
 
   const handleEditSubmit = () => {
-    if (editCaption.trim() !== '') {
-      updatePost.mutate({ postId, data: { caption: editCaption } });
-      setEditSheetOpen(false);
-    }
+    if (updatePost.isPending) return;
+    setEditError('');
+    updatePost.mutate(
+      { postId, data: { caption: editCaption } },
+      {
+        onSuccess: () => {
+          setEditSheetOpen(false);
+          toast('post updated');
+        },
+        onError: (error) => {
+          setEditError(error?.message || "we couldn't update this post. try again.");
+        },
+      }
+    );
   };
 
   const handleDeleteRequest = useCallback(() => {
@@ -1484,17 +1496,20 @@ export function PostDetailScreen({ overlay = false }) {
       {isSelf ? (
         <LxModal
           open={editSheetOpen}
-          onClose={() => setEditSheetOpen(false)}
+          onClose={() => {
+            if (!updatePost.isPending) setEditSheetOpen(false);
+          }}
           title="edit post"
           actions={
-            <LxBtn variant="primary" onClick={handleEditSubmit}>
-              save changes
+            <LxBtn variant="primary" onClick={handleEditSubmit} disabled={updatePost.isPending}>
+              {updatePost.isPending ? 'saving...' : 'save changes'}
             </LxBtn>
           }
         >
           <textarea
             value={editCaption}
             onChange={(event) => setEditCaption(event.target.value)}
+            maxLength={CHAR_LIMITS.caption}
             placeholder="write a caption..."
             style={{
               width: '100%',
@@ -1510,6 +1525,14 @@ export function PostDetailScreen({ overlay = false }) {
               background: v.base,
             }}
           />
+          {editError ? (
+            <div
+              role="alert"
+              style={{ marginTop: 10, fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}
+            >
+              {editError}
+            </div>
+          ) : null}
         </LxModal>
       ) : null}
 

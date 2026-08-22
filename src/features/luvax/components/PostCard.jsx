@@ -43,6 +43,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
+  const [editError, setEditError] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [saveBurst, setSaveBurst] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -109,14 +110,25 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
 
   const handleEditOpen = () => {
     setEditCaption(post.caption ?? '');
+    setEditError('');
     setEditSheetOpen(true);
   };
 
   const handleEditSubmit = () => {
-    if (editCaption.trim() !== '') {
-      updatePost.mutate({ postId: post.id, data: { caption: editCaption } });
-      setEditSheetOpen(false);
-    }
+    if (updatePost.isPending) return;
+    setEditError('');
+    updatePost.mutate(
+      { postId: post.id, data: { caption: editCaption } },
+      {
+        onSuccess: () => {
+          setEditSheetOpen(false);
+          toast('post updated');
+        },
+        onError: (error) => {
+          setEditError(error?.message || "we couldn't update this post. try again.");
+        },
+      }
+    );
   };
 
   const handleDeleteRequest = () => {
@@ -472,7 +484,13 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
 
         <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
 
-        <LxBottomSheet open={editSheetOpen} onClose={() => setEditSheetOpen(false)} height="40vh">
+        <LxBottomSheet
+          open={editSheetOpen}
+          onClose={() => {
+            if (!updatePost.isPending) setEditSheetOpen(false);
+          }}
+          height="40vh"
+        >
           <div
             style={{
               padding: '4px 16px 8px',
@@ -503,10 +521,19 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
                 padding: 12,
                 resize: 'none',
                 outline: 'none',
+                background: v.base,
               }}
             />
-            <LxBtn variant="primary" onClick={handleEditSubmit}>
-              save changes
+            {editError ? (
+              <div
+                role="alert"
+                style={{ fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}
+              >
+                {editError}
+              </div>
+            ) : null}
+            <LxBtn variant="primary" onClick={handleEditSubmit} disabled={updatePost.isPending}>
+              {updatePost.isPending ? 'saving...' : 'save changes'}
             </LxBtn>
           </div>
         </LxBottomSheet>
