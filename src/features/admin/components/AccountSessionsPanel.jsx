@@ -27,28 +27,68 @@ import { shortId } from '../hooks/useResolveUsername';
  * inventing a fact from a string — and an address in particular is the kind of
  * invented fact a reviewer would then act on.
  *
- * **There is no per-session revocation.** The whole backend surface was searched
- * for one; the only revocation that exists ends every session of the account at
- * once. So no per-row revoke control is rendered — a control that cannot exist
- * is not drawn and then disabled — and the account-wide action is offered
- * instead, named for what it actually does.
+ * **A session is ended one at a time, or all at once.** Both exist and they do
+ * different jobs, so both are offered and each is named for what it does:
+ * revoking one row ends that session and leaves the rest signed in, while the
+ * account-wide action ends every session the account holds.
+ *
+ * **The reader's own row is marked by correlation, not by invention.** The
+ * payload carries no "this is you" field. `POST /api/v1/auth/session` names the
+ * caller's session and that id is matched against `row.id`. When the server
+ * cannot determine it — which it reports as a null id, not an error — no row is
+ * marked and the list says the determination was not possible, because an
+ * unmarked list would otherwise read as "none of these is yours".
+ *
+ * **A revoked session cannot be un-revoked.** Nothing here implies otherwise:
+ * the row leaves the list on the next read and the person signs in again, which
+ * is the whole recovery path.
  */
 
-export function SessionList({ sessions, isSelf, onRevokeAll }) {
+export function SessionList({
+  sessions,
+  isSelf,
+  onRevokeAll,
+  onRevokeSession,
+  currentSessionId,
+  currentSessionKnown,
+}) {
   const rows = sessions ?? [];
 
   const columns = [
     {
       key: 'createdAt',
       header: 'signed in',
-      width: '20%',
+      width: '22%',
       nowrap: true,
-      render: (row) => <LocalTime value={row.createdAt} showZone={false} />,
+      render: (row) => (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <LocalTime value={row.createdAt} showZone={false} />
+          {/* Marked only when the server named the caller's session and it is
+              this row. Never inferred from anything else. */}
+          {currentSessionKnown && row.id === currentSessionId ? (
+            <span
+              style={{
+                fontFamily: v.fontMono,
+                fontSize: 10,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: v.accentText,
+                border: `1px solid ${v.accentText}`,
+                borderRadius: 'var(--radius-sm)',
+                padding: '1px 5px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              this session
+            </span>
+          ) : null}
+        </span>
+      ),
     },
     {
       key: 'expiresAt',
       header: 'expires',
-      width: '20%',
+      width: '16%',
       nowrap: true,
       render: (row) => <LocalTime value={row.expiresAt} showZone={false} />,
     },
@@ -87,7 +127,7 @@ export function SessionList({ sessions, isSelf, onRevokeAll }) {
     {
       key: 'deviceId',
       header: 'device id',
-      width: '14%',
+      width: '12%',
       nowrap: true,
       render: (row) =>
         row.deviceId ? (
@@ -99,6 +139,27 @@ export function SessionList({ sessions, isSelf, onRevokeAll }) {
         ),
     },
   ];
+
+  // Rendered only where the caller may actually revoke. An administrator-only
+  // action is not drawn for a moderator and then refused.
+  if (onRevokeSession) {
+    columns.push({
+      key: 'revoke',
+      header: 'end',
+      width: '11%',
+      nowrap: true,
+      render: (row) => (
+        <LxBtn
+          variant="ghost"
+          size="sm"
+          onClick={() => onRevokeSession(row)}
+          aria-label={`end the session signed in on ${row.userAgent || 'an unrecorded client'}`}
+        >
+          end
+        </LxBtn>
+      ),
+    });
+  }
 
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -121,6 +182,16 @@ export function SessionList({ sessions, isSelf, onRevokeAll }) {
         are shown as they are: the record does not say where the person was or what device they
         held, and this panel does not guess.
       </p>
+
+      {/* Said only when the reader is looking at their own account and the
+          server could not name which row is theirs, so an unmarked list is not
+          read as "none of these is mine". */}
+      {rows.length > 0 && isSelf && !currentSessionKnown ? (
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+          which of these is the session you are reading this in could not be determined, so none is
+          marked. ending any one of them may sign you out.
+        </p>
+      ) : null}
 
       {rows.length > 0 ? (
         <div
@@ -145,8 +216,8 @@ export function SessionList({ sessions, isSelf, onRevokeAll }) {
             }}
           >
             {isSelf
-              ? 'these are your own sessions, and one of them is the session you are reading this in. the record does not say which, so ending them ends that one too and signs you out immediately.'
-              : 'sessions cannot be ended one at a time — the only revocation available ends every session this account holds at once.'}
+              ? 'these are your own sessions, and one of them is the session you are reading this in. ending them all ends that one too and signs you out immediately.'
+              : 'ending one session leaves this account signed in everywhere else. the action below ends every session it holds, at once.'}
           </span>
           {onRevokeAll ? (
             <LxBtn variant="secondary" size="sm" onClick={onRevokeAll}>
