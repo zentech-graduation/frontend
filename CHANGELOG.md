@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Administrators can find any account from a new accounts screen, filtering by status and role and searching by name, and open an account to see its state and act on it.
+- From an account, administrators can ban, unban, suspend for a set number of days, lift a suspension, change role, and force every session to sign out, with each control shown only when the server permits it for that account and a mandatory recorded reason; suspending shows the resulting end time in local time before confirming.
+- Promoting an account to administrator is marked as a one-way action that cannot be undone, with its own confirmation wording, and an administrator can never act on their own account except to sign their own sessions out.
+- Administrators can manage the hashtag vocabulary from a new registry screen: list and search hashtags, create one, ban or unban it, and delete it, with the ban and delete confirmations stating what happens to posts that carry the tag.
+- The moderation action log can now be filtered by which administrator or moderator took the action, chosen through account search.
 - The panel now shows an account's discipline history — its warnings, and strikes for an administrator — reached from an account view and shown on the report detail, so a reviewer can see whether an account has been actioned before.
 - Moderators and administrators can issue a formal warning against an account, choosing a reason from the report-reason list and recording a note; administrators can also revoke a warning or strike.
 - The panel now lists everything an account has posted or commented, as posts and comments tabs on one screen, with removed items visibly marked and the same remove/restore controls used elsewhere.
