@@ -36,8 +36,12 @@ const STATUS_OPTIONS = [
   { value: 'deleted', label: 'deleted' },
 ];
 
+// The sentence that matters most here is the one about what banning does *not*
+// do. A reviewer who bans a tag believing the posts carrying it have come down
+// will stop looking, and the content stays up. So the limit is stated first and
+// plainly, before the consequences that do follow.
 const BAN_CONSEQUENCE =
-  'a banned hashtag is blocked from new posts, and a post restored later that carries this tag drops it. unbanning returns the tag to active.';
+  'this does not take down any existing post. posts already carrying this tag stay published and visible; banning only removes the tag from discovery and refuses it on new posts. a post removed and restored later drops the tag while it stays banned. unbanning returns the tag to active.';
 const DELETE_CONSEQUENCE =
   'delete marks this hashtag deleted rather than removing it: it stops being usable and the record remains, findable under the deleted filter. it can be restored to active afterward.';
 
