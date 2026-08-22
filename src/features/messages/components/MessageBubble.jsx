@@ -59,7 +59,7 @@ export function MessageBubble({
               onClick: () => copyToClipboard(textForCopy),
             }
           : null,
-        canDelete && isMine && message.kind !== 'deleted'
+        isMine && message.kind !== 'deleted'
           ? {
               id: 'delete',
               icon: 'trash',

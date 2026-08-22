@@ -1,7 +1,6 @@
 import { v } from '@/config/tokens';
 import { bubbleCornerRadius } from '../utils/bubbleShape';
 import { MediaPlaceholder } from './MediaPlaceholder';
-import { LxIcon } from '@/components/ui/lx-icon';
 
 // Four tiles read as a grid at a glance; a fifth would either shrink every tile to fit or force
 // the album taller than a normal bubble, so it stays hidden behind the "+N" on the fourth instead.
@@ -17,15 +16,7 @@ const ALBUM_WIDTH = 210;
  * Takes the same run-position props as a text bubble and shapes its own corners the same way, so
  * an album sitting between two bubbles from the same run reads as part of one continuous shape.
  */
-export function MessageAlbum({
-  items,
-  onOpenViewer,
-  onDeleteItem,
-  canDeleteItem,
-  isMine,
-  isFirstInRun,
-  isLastInRun,
-}) {
+export function MessageAlbum({ items, onOpenViewer, isMine, isFirstInRun, isLastInRun }) {
   const visible = items.slice(0, MAX_VISIBLE_TILES);
   const overflow = items.length - MAX_VISIBLE_TILES;
   const caption = items.find((item) => item.text)?.text || '';
@@ -63,35 +54,6 @@ export function MessageAlbum({
                 item={item.media || { label: item.text }}
                 onClick={() => onOpenViewer(items, index)}
               />
-              {isMine && canDeleteItem?.(item) ? (
-                <button
-                  type="button"
-                  aria-label="delete attachment message"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onDeleteItem?.(item.id);
-                  }}
-                  style={{
-                    position: 'absolute',
-                    top: 5,
-                    right: 5,
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    border: `1px solid ${v.borderSubtle}`,
-                    background: 'rgba(26, 24, 22, 0.72)',
-                    color: v.white,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 0,
-                    zIndex: 2,
-                  }}
-                >
-                  <LxIcon name="trash" size={12} color="currentColor" />
-                </button>
-              ) : null}
               {isLastTile && overflow > 0 ? (
                 <div
                   onClick={() => onOpenViewer(items, index)}

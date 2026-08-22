@@ -80,12 +80,6 @@ export function ChatCenterPanel({
   // hook count between renders, which React resolves by binding state to the wrong slot.
   if (!activeThread) return null;
 
-  const canDeleteMessage = (message) =>
-    message?.from === 'me' &&
-    message.kind !== 'deleted' &&
-    activeThread.messages.findIndex((row) => row.id === message.id) >=
-      activeThread.messages.length - 2;
-
   const mobileHeaderIconButton = {
     width: 28,
     height: 28,
@@ -239,8 +233,6 @@ export function ChatCenterPanel({
                     isMine={isMine}
                     isFirstInRun={row.isFirstInRun}
                     isLastInRun={row.isLastInRun}
-                    canDeleteItem={canDeleteMessage}
-                    onDeleteItem={handleDeleteToggle}
                     onOpenViewer={(items, itemIndex) =>
                       openPreview?.(
                         items.map((item) => item.media || { label: item.text }),
@@ -273,7 +265,12 @@ export function ChatCenterPanel({
                   onPreviewMedia={(media) => openPreview?.([media], 0)}
                   onDeleteToggle={handleDeleteToggle}
                   onReplyMessage={setReplyingTo}
-                  canDelete={canDeleteMessage(row)}
+                  canDelete={
+                    row.from === 'me' &&
+                    row.kind !== 'deleted' &&
+                    activeThread.messages.findIndex((message) => message.id === row.id) >=
+                      activeThread.messages.length - 2
+                  }
                 />
               </div>
             );
