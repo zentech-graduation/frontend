@@ -42,6 +42,8 @@ const NAV_SECTIONS = [
     heading: 'administration',
     items: [
       { key: 'escalated', label: 'escalated', icon: 'alert', to: ROUTES.ADMIN_ESCALATED, roles: [ROLES.ADMIN], badge: 'escalated' },
+      { key: 'accounts', label: 'accounts', icon: 'profile', to: ROUTES.ADMIN_USERS, roles: [ROLES.ADMIN] },
+      { key: 'hashtags', label: 'hashtags', icon: 'hash', to: ROUTES.ADMIN_HASHTAGS, roles: [ROLES.ADMIN] },
     ],
   },
 ];

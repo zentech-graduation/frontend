@@ -17,16 +17,21 @@ const PAGE_LIMIT = 20;
  * none is offered. Rows never carry `metadata` — it exists only on the
  * per-action fetch, opened from the drawer.
  *
- * @param {{actionType?: string}} filters
+ * The `adminId` filter narrows the log to one actor; it is meaningful only for an
+ * administrator, since a moderator already sees only its own actions. The actor
+ * is chosen through the account search built for this phase.
+ *
+ * @param {{actionType?: string, adminId?: string}} filters
  */
 export function useActions(filters = {}) {
   const role = useAuthStore((state) => state.role);
   const actionType = filters.actionType || undefined;
+  const adminId = filters.adminId || undefined;
 
   const query = useInfiniteQuery({
-    queryKey: listQueryKey('actions', role, { actionType: actionType ?? null }),
+    queryKey: listQueryKey('actions', role, { actionType: actionType ?? null, adminId: adminId ?? null }),
     queryFn: ({ pageParam }) =>
-      adminApi.getActions({ actionType, cursor: pageParam, limit: PAGE_LIMIT }),
+      adminApi.getActions({ actionType, adminId, cursor: pageParam, limit: PAGE_LIMIT }),
     initialPageParam: undefined,
     getNextPageParam,
     retry: panelQueryRetry,

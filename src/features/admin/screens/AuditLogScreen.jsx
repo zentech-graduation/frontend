@@ -11,8 +11,35 @@ import { LoadMore } from '../components/LoadMore';
 import { LocalTime } from '../components/LocalTime';
 import { ReporterName } from '../components/ReporterName';
 import { ActionDetailDrawer } from '../components/ActionDetailDrawer';
+import { AccountSearchPicker } from '../components/AccountSearchPicker';
 import { useActions } from '../hooks/useActions';
 import { useVocabularies } from '../hooks/useVocabularies';
+import { useResolveUsername } from '../hooks/useResolveUsername';
+
+/**
+ * The actor filter, administrator only. Selecting an actor sets the `adminId`
+ * query the log endpoint declares, using the account search built this phase —
+ * the previous phase declared this filter but rendered no control for want of a
+ * picker. The selected actor is held in the `actor` URL parameter so a
+ * filtered-by-actor view is shareable, and its username is resolved for the chip.
+ */
+function ActorFilter({ actorId, onChange }) {
+  const { username } = useResolveUsername(actorId);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: `1px solid ${v.border}`, flexWrap: 'wrap' }}>
+      <LxIcon name="profile" size={14} color={v.ink3} />
+      <span style={{ fontFamily: v.fontMono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: v.ink3 }}>
+        actor
+      </span>
+      <AccountSearchPicker
+        value={actorId ? { id: actorId, username } : null}
+        onSelect={(account) => onChange(account?.id || '')}
+        placeholder="filter by who acted…"
+        id="audit-actor-picker"
+      />
+    </div>
+  );
+}
 
 /**
  * The moderation action log. One implementation serves two views: a moderator
@@ -84,11 +111,12 @@ export function AuditLogScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const actionType = searchParams.get('type') || '';
+  const actorId = searchParams.get('actor') || '';
   const openActionId = searchParams.get('action') || null;
 
   const { moderationActions, actionLabel, actionKnown } = useVocabularies();
   const { rows, isLoading, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage, refetch } =
-    useActions({ actionType: actionType || undefined });
+    useActions({ actionType: actionType || undefined, adminId: isAdmin ? actorId || undefined : undefined });
 
   const setParam = (key, value) => {
     setSearchParams(
@@ -194,6 +222,9 @@ export function AuditLogScreen() {
           value={actionType}
           onChange={(value) => setParam('type', value)}
         />
+        {isAdmin ? (
+          <ActorFilter actorId={actorId} onChange={(value) => setParam('actor', value)} />
+        ) : null}
         <RecordTable
           columns={columns}
           rows={rows}

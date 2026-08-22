@@ -34,6 +34,12 @@ const AuditLogScreen = lazy(() =>
 const AccountModerationScreen = lazy(() =>
   import('./screens/AccountModerationScreen').then((m) => ({ default: m.AccountModerationScreen }))
 );
+const AccountListScreen = lazy(() =>
+  import('./screens/AccountListScreen').then((m) => ({ default: m.AccountListScreen }))
+);
+const HashtagRegistryScreen = lazy(() =>
+  import('./screens/HashtagRegistryScreen').then((m) => ({ default: m.HashtagRegistryScreen }))
+);
 
 const rel = (fullPath) => fullPath.slice(ROUTES.ADMIN.length + 1);
 
@@ -53,9 +59,17 @@ export const adminRoute = {
         // administrator-only guard.
         { path: rel(ROUTES.ADMIN_ACTIONS), element: <AuditLogScreen /> },
         { path: rel(ROUTES.ADMIN_USER), element: <AccountModerationScreen /> },
+        // Administrator-only: the account list and search and the hashtag
+        // registry sit behind the second guard because the backend answers the
+        // whole account surface and the hashtag admin surface with 403 for a
+        // moderator, so the screens never mount to fire one.
         {
           element: <AdminOnlyRoute />,
-          children: [{ path: rel(ROUTES.ADMIN_ESCALATED), element: <EscalatedQueueScreen /> }],
+          children: [
+            { path: rel(ROUTES.ADMIN_ESCALATED), element: <EscalatedQueueScreen /> },
+            { path: rel(ROUTES.ADMIN_USERS), element: <AccountListScreen /> },
+            { path: rel(ROUTES.ADMIN_HASHTAGS), element: <HashtagRegistryScreen /> },
+          ],
         },
         {
           path: '*',
