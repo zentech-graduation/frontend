@@ -404,7 +404,12 @@ export function AuditLogScreen() {
         ) : null}
         <TargetFilter targetUserId={targetUserId} onChange={(value) => setParam('target', value)} />
         <div style={{ padding: '4px 4px 0' }}>
-          <DateRangeControl value={range} maxDays={MAX_WINDOW_DAYS} onCommit={commitRange} />
+          <DateRangeControl
+            value={range}
+            maxDays={MAX_WINDOW_DAYS}
+            onCommit={commitRange}
+            unsetHint="no time window is applied — the log is showing every action. set both ends and apply to narrow it."
+          />
         </div>
         <RecordTable
           columns={columns}
