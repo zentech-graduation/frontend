@@ -38,6 +38,12 @@ export function useVocabularies() {
   const data = query.data;
 
   return useMemo(() => {
+    // Every reason is offered, for every report type. A reason carries an
+    // `appliesTo` list, and an **empty** one means every type rather than none
+    // — `spam`, `harassment`, `scam`, and `other` all carry an empty list
+    // (`uptake-contract-verification.md` §6). Filtering this list by the type
+    // being reported and treating empty as "matches nothing" would silently
+    // drop those four, which is why no such filter exists here.
     const reportReasons = toSortedByOrder(data?.reportReasons ?? []);
     const moderationActions = toSortedByOrder(data?.moderationActions ?? []);
     const reasonMap = toLabelMap(data?.reportReasons ?? []);
