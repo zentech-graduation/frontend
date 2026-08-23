@@ -28,9 +28,9 @@ const NOTIFICATION_TEXT = {
   story_view: 'viewed your story',
   message: 'sent you a message',
   post_removed: 'removed your post',
-  report_post_removed: 'removed a post you reported',
+  report_post_removed: 'removed content you reported',
   post_restored: 'restored your post',
-  report_dismissed: 'dismissed your report',
+  report_dismissed: 'reviewed your report and took no action',
 };
 
 const TYPE_ICON = {
@@ -86,6 +86,12 @@ function notifBucket(createdAt) {
   if (t >= startOfToday) return 'today';
   if (t >= startOfToday - 6 * 24 * 60 * 60 * 1000) return 'this week';
   return 'earlier';
+}
+
+function notificationMessageLabel(type) {
+  if (type === 'report_dismissed') return 'decision';
+  if (type === 'report_post_removed') return 'outcome';
+  return 'reason';
 }
 
 const BUCKET_ORDER = ['today', 'this week', 'earlier'];
@@ -216,7 +222,7 @@ function NotifRow({ n, onAccept, onDecline }) {
         </div>
         {n.message ? (
           <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2, marginTop: 4 }}>
-            reason: {n.message}
+            {notificationMessageLabel(n.type)}: {n.message}
           </div>
         ) : null}
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>
