@@ -84,6 +84,25 @@ export function extractPageInfo(page) {
 }
 
 /**
+ * Reports whether a cursor page told us its results may be incomplete.
+ *
+ * The flag sits on the page itself, beside `content` and `pageInfo`, not
+ * inside `pageInfo`. Verified against the running server.
+ *
+ * It rides on every cursor-paginated response because they share one envelope,
+ * and it is false everywhere except post search with its search backend down.
+ * It is not a general health signal and must not be read as one on any other
+ * endpoint. Hashtag search deliberately never sets it: its fallback answers
+ * from the primary database, so those results are complete and only the
+ * ranking differs.
+ * @param {{data?: {degraded?: boolean}, degraded?: boolean}} page
+ * @returns {boolean}
+ */
+export function isPageDegraded(page) {
+  return Boolean(page?.data?.degraded ?? page?.degraded);
+}
+
+/**
  * Returns the next cursor for an infinite query, or undefined when the
  * server reports no further page.
  * @param {object} page a raw ApiResponse page wrapping a CursorPageResponse
@@ -254,4 +273,45 @@ export async function sharePost(postId, title) {
  */
 export function isVideoMedia(media) {
   return media?.mediaType === 'video';
+}
+
+// Frame ratio bounds, as width divided by height. Derived rather than taken from
+// the design: the design authors a pixel height per mock post and carries no real
+// assets. 0.5 is 1:2 and 3.0 is 3:1, both chosen to sit outside every format the
+// application accepts, so real media always renders at its true ratio and the
+// clamp only catches a pathological asset.
+export const FRAME_RATIO_MIN = 0.5;
+export const FRAME_RATIO_MAX = 3.0;
+
+// Used when an asset carries no usable dimensions. Square is the neutral choice
+// and matches the profile grid tile.
+export const MEDIA_FALLBACK_RATIO = 1;
+
+/**
+ * The post's ordered media array, always an array.
+ *
+ * The backend orders by post_media.position and the Post entity carries an
+ * @OrderBy, so index order is carousel order.
+ * @param {{media?: unknown}} post
+ * @returns {Array<object>}
+ */
+export function getMediaList(post) {
+  return Array.isArray(post?.media) ? post.media : [];
+}
+
+/**
+ * Aspect ratio to reserve for a media frame, as width divided by height.
+ *
+ * Reads the dimensions the backend already returns so the box exists before the
+ * file arrives and nothing below it shifts when the media decodes.
+ * @param {{width?: number, height?: number}} media
+ * @returns {number}
+ */
+export function getFrameRatio(media) {
+  const width = Number(media?.width);
+  const height = Number(media?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return MEDIA_FALLBACK_RATIO;
+  }
+  return Math.min(Math.max(width / height, FRAME_RATIO_MIN), FRAME_RATIO_MAX);
 }

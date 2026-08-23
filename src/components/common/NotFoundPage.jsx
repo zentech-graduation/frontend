@@ -1,8 +1,19 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 
 import { ROUTES } from '@/config/constants';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function NotFoundPage() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  // A signed-in user who mistypes a top-level address should not be pushed back
+  // to the login page, which reads as a forced logout. They are sent into the
+  // app instead, where the shell keeps the navigation bar and shows an
+  // in-context notice before returning them to their feed.
+  if (isAuthenticated) {
+    return <Navigate to={`${ROUTES.APP}/not-found`} replace />;
+  }
+
   return (
     <main className="not-found-page">
       <p>404</p>

@@ -93,10 +93,16 @@
   /* Radius */
   --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px; --radius-pill: 999px;
 
-  /* Motion */
+  /* Motion vocabulary. One set of durations and easings for the whole app, so
+     every surface enters and leaves with the same feel. Fast is for taps and
+     hovers, normal for overlays, menus, toasts and the carousel, slow for the
+     larger bottom sheet. Out decelerates on entry, in accelerates on exit.
+     See docs/layout-overhaul/motion-vocabulary.md. */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --duration-fast: 150ms;
   --duration-normal: 200ms;
+  --duration-slow: 300ms;
 }
 
 /* ─── DARK THEME ─────────────────────────────────────────────────────── */
@@ -224,6 +230,26 @@ select {
   outline: none;
 }
 
+/* Clickable elements signal that they can be clicked, with the pointer cursor.
+   Disabled controls keep the default arrow, since they cannot be actioned. */
+button:not(:disabled),
+a[href],
+label[for],
+summary,
+[role="button"],
+[role="tab"],
+[role="menuitem"] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+.lx-tab-btn {
+  background: none;
+}
+
 .lx-tab-btn,
 .lx-header-icon-btn,
 .lx-avatar-btn,
@@ -256,6 +282,7 @@ select {
 
 .lx-tab-btn:hover {
   color: var(--lx-ink-2);
+  background: var(--lx-surface);
 }
 
 .lx-header-icon-btn:hover {
@@ -368,6 +395,210 @@ select {
   }
   100% {
     transform: scale(1);
+  }
+}
+
+/* Story media crossfades in on every story change, rather than cutting
+   straight to the next photo or frame. */
+.lx-story-fade-in {
+  animation: lx-story-fade-in var(--duration-normal) var(--ease-out);
+}
+
+@keyframes lx-story-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The message lightbox crossfades between items on next/prev, the same treatment as story media,
+   instead of the next photo cutting in instantly. Keyed by asset id so React remounts (and thus
+   replays this animation) on every step, not just the first open. */
+.lx-lightbox-media {
+  animation: lx-story-fade-in var(--duration-normal) var(--ease-out);
+}
+
+/* The big centred heart a double-tap pops over the media, in the manner of
+   Instagram: it appears already at full size and fades out as it settles,
+   rather than growing in. */
+.lx-story-heart-pop {
+  animation: lx-story-heart-pop 700ms var(--ease-out);
+}
+
+@keyframes lx-story-heart-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  30% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+/* Overlay and modal entry: a small rise and scale so the eye follows the panel
+   arriving rather than finding it already there. */
+@keyframes lx-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Centred modal entry. Keeps the translate that centres the panel so the base
+   transform is never dropped mid-animation. */
+@keyframes lx-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Scrim behind an overlay fading in with it. */
+@keyframes lx-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Bottom sheet sliding up from below the fold as it mounts. */
+@keyframes lx-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Toast entry and exit, a short vertical travel with a fade. */
+@keyframes lx-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lx-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Content appearing rather than snapping in, used for loaded cards and panes. */
+@keyframes lx-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A comment reached from a notification flashes an accent tint, then fades so the
+   comment settles back into the thread. Applied for a fixed span by the caller. */
+.lx-comment-flash {
+  animation: lx-comment-flash 2.2s ease-out;
+}
+
+@keyframes lx-comment-flash {
+  0% {
+    background: color-mix(in srgb, var(--lx-accent) 30%, transparent);
+  }
+  35% {
+    background: color-mix(in srgb, var(--lx-accent) 22%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* Report modal completion, transcribed from the design source. The panel rises
+   and fades, the confirmation mark pops. */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.lx-overlay-panel {
+  animation: lx-overlay-in var(--duration-normal) var(--ease-out);
+}
+
+.lx-modal-panel {
+  animation: lx-modal-in var(--duration-normal) var(--ease-out);
+}
+
+.lx-scrim {
+  animation: lx-scrim-in var(--duration-normal) var(--ease-out);
+}
+
+.lx-fade-in {
+  animation: lx-fade-in var(--duration-normal) var(--ease-out);
+}
+
+/* Reduced motion. Everything that moves is turned off cleanly, leaving instant
+   state changes. Verified with the emulated preference, not assumed. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -525,3 +756,4 @@ select:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+

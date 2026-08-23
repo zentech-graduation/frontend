@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+import { normalizeRole } from '@/config/roles';
+
+/**
+ * Drops the `role` from a user object before it is persisted. The role is a
+ * server fact restored from the boot refresh, never a value read back from
+ * browser storage, so it must not ride along inside the persisted `user`. The
+ * in-memory `user` keeps its role; only the on-disk copy is stripped.
+ */
+const stripPersistedRole = (user) => {
+  if (!user || typeof user !== 'object') {
+    return user;
+  }
+  const { role: _role, ...rest } = user;
+  return rest;
+};
+
 // Keys used for Google OAuth PKCE-style state and nonce — kept in sessionStorage
 // (tab-scoped, never written to the persisted store).
 export const GOOGLE_OAUTH_STATE_KEY = 'luvax-google-oauth-state';
@@ -56,6 +72,15 @@ const migrateLegacyPersistedTokens = () => {
   }
 };
 
+/**
+ * Normalises a token to either a non-blank string or null.
+ *
+ * Every setter derives `isAuthenticated` from the result of this rather than from its own raw
+ * argument. Deriving it from the argument let a blank token persist `isAuthenticated: true`
+ * alongside `accessToken: null`, and `isAuthenticated` is the half that reaches localStorage.
+ */
+const normalizeToken = (value) => (typeof value === 'string' && value.trim() ? value : null);
+
 const initialState = {
   // Access token is in-memory only — never persisted to localStorage.
   accessToken: null,
@@ -63,6 +88,10 @@ const initialState = {
   // flow; it is stripped from the persist partialize function below.
   refreshToken: null,
   user: null,
+  // Normalised lowercase role captured from the login and refresh responses
+  // only. In-memory, never persisted; restored from the boot refresh. Null
+  // until the first login or refresh populates it.
+  role: null,
   isAuthenticated: false,
   isBootstrapping: true,
   // Starts false; set to true only after persist middleware rehydrates.
@@ -74,24 +103,24 @@ export const useAuthStore = create(
     (set) => ({
       ...initialState,
 
-      setAuth: ({ accessToken, refreshToken, user }) =>
-        set({
-          accessToken: typeof accessToken === 'string' && accessToken.trim() ? accessToken : null,
+      setAuth: ({ accessToken, refreshToken, user }) => {
+        const nextAccessToken = normalizeToken(accessToken);
+
+        return set({
+          accessToken: nextAccessToken,
           // refreshToken stays in memory; not persisted (see partialize below).
-          refreshToken:
-            typeof refreshToken === 'string' && refreshToken.trim() ? refreshToken : null,
+          refreshToken: normalizeToken(refreshToken),
           user: user ?? null,
-          isAuthenticated: Boolean(accessToken),
-        }),
+          // Captured here at login and at refresh, normalised once.
+          role: normalizeRole(user?.role),
+          isAuthenticated: Boolean(nextAccessToken),
+        });
+      },
 
       setTokens: ({ accessToken, refreshToken }) =>
         set((state) => {
-          const nextAccessToken =
-            typeof accessToken === 'string' && accessToken.trim() ? accessToken : null;
-          const nextRefreshToken =
-            typeof refreshToken === 'string' && refreshToken.trim()
-              ? refreshToken
-              : state.refreshToken ?? null;
+          const nextAccessToken = normalizeToken(accessToken);
+          const nextRefreshToken = normalizeToken(refreshToken) ?? state.refreshToken ?? null;
 
           return {
             accessToken: nextAccessToken,
@@ -100,22 +129,27 @@ export const useAuthStore = create(
           };
         }),
 
-      setAccessToken: (accessToken) =>
-        set({
-          accessToken:
-            typeof accessToken === 'string' && accessToken.trim() ? accessToken : null,
-          isAuthenticated: Boolean(accessToken),
-        }),
+      setAccessToken: (accessToken) => {
+        const nextAccessToken = normalizeToken(accessToken);
+
+        return set({
+          accessToken: nextAccessToken,
+          isAuthenticated: Boolean(nextAccessToken),
+        });
+      },
 
       setRefreshToken: (refreshToken) =>
         set({
-          refreshToken:
-            typeof refreshToken === 'string' && refreshToken.trim() ? refreshToken : null,
+          refreshToken: normalizeToken(refreshToken),
         }),
 
       setUser: (user) =>
         set({
           user: user ?? null,
+          // The boot refresh and login both flow their user through here or
+          // through setAuth; either way the role is recaptured from the same
+          // server object, so a reloaded session restores the role.
+          role: normalizeRole(user?.role),
         }),
 
       setBootstrapping: (isBootstrapping) =>
@@ -147,14 +181,16 @@ export const useAuthStore = create(
        * Persist only `user` and `isAuthenticated` to localStorage so the UI
        * can render an optimistic "logged-in" shell immediately on reload.
        * `accessToken` and `refreshToken` are intentionally excluded — they
-       * live in memory only. A full page reload will clear both tokens from
-       * memory, so a live session does NOT survive a reload; the user must
-       * sign in again. ProtectedRoute checks both flags (isAuthenticated + a
-       * live accessToken) together because one persisted flag is not enough
-       * to guarantee a working session.
+       * live in memory only. A reload does clear both from memory, but the
+       * session is not lost: the HttpOnly refresh cookie is replayed by the
+       * browser and AuthSessionBootstrap exchanges it for a fresh access token
+       * on mount. ProtectedRoute checks both flags (isAuthenticated + a live
+       * accessToken) together because the persisted flag alone is true during
+       * the window before that exchange completes, and is not evidence of a
+       * working session.
        */
       partialize: (state) => ({
-        user: state.user,
+        user: stripPersistedRole(state.user),
         isAuthenticated: state.isAuthenticated,
       }),
 

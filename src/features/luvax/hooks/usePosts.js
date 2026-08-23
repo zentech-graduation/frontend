@@ -2,11 +2,14 @@ import { useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { postService } from '@/services/post.service';
 import { getNextCursor } from '@/utils/helpers';
+import { patchCachedPost, removeCachedPost } from './usePostLikeState';
+import { beginSelfPostLike, endSelfPostLike, noteSelfCommentLike } from './useLivePostUpdates';
 
 export const useFeed = (params = {}) => {
   return useInfiniteQuery({
     queryKey: ['feed', params],
-    queryFn: ({ pageParam = null, signal }) => postService.getFeed({ ...params, cursor: pageParam, limit: 10, signal }),
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getFeed({ ...params, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -20,7 +23,8 @@ export const useFeed = (params = {}) => {
 export const useExplore = (params = {}) => {
   return useInfiniteQuery({
     queryKey: ['explore', params],
-    queryFn: ({ pageParam = null, signal }) => postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10, signal }),
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -31,10 +35,27 @@ export const useExplore = (params = {}) => {
   });
 };
 
-export const useUserPosts = (userId, params = {}) => {
+/**
+ * A user's posts, optionally narrowed to a set of post types.
+ *
+ * `types` is part of the query key on purpose. A cursor issued under one type
+ * filter is rejected under any other, so the filter and the cursor sequence
+ * have to live and die together. Keying on the filter makes React Query treat
+ * a filter change as a different query, which starts it at a null cursor and
+ * makes replaying a foreign cursor impossible by construction.
+ * This hook deliberately takes no open parameter bag. The endpoint rejects any
+ * parameter it does not declare, so forwarding arbitrary caller keys into the
+ * query string would turn a harmless call site mistake into a 400.
+ * @param {string} userId - The profile being read.
+ * @param {string[]} [types] - Post types to include; omit or pass an empty array for all.
+ * @param {{enabled?: boolean}} [options] - Set enabled false when the profile is unreadable.
+ */
+export const useUserPosts = (userId, types = [], { enabled = true } = {}) => {
+  const type = types.length > 0 ? types : undefined;
   return useInfiniteQuery({
-    queryKey: ['userPosts', userId, params],
-    queryFn: ({ pageParam = null, signal }) => postService.getUserPosts(userId, { ...params, cursor: pageParam, limit: 10, signal }),
+    queryKey: ['userPosts', userId, type ?? 'all'],
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getUserPosts(userId, { type, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
@@ -42,7 +63,7 @@ export const useUserPosts = (userId, params = {}) => {
     refetchIntervalInBackground: false,
     getNextPageParam: getNextCursor,
     initialPageParam: null,
-    enabled: !!userId,
+    enabled: enabled && !!userId,
   });
 };
 
@@ -90,10 +111,22 @@ export const useUpdatePost = () => {
 
   return useMutation({
     mutationFn: ({ postId, data }) => postService.updatePost(postId, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (response, variables) => {
+      const updated = response?.data || response;
+      if (updated?.id) {
+        patchCachedPost(queryClient, variables.postId, {
+          caption: updated.caption,
+          tags: updated.tags,
+          updatedAt: updated.updatedAt,
+          editedAt: updated.editedAt,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['post', variables.postId] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['explore'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: savedPostsKey });
+      queryClient.invalidateQueries({ queryKey: likedPostsKey });
     },
   });
 };
@@ -103,31 +136,146 @@ export const useDeletePost = () => {
 
   return useMutation({
     mutationFn: (postId) => postService.deletePost(postId),
-    onSuccess: () => {
+    onSuccess: (_data, postId) => {
+      removeCachedPost(queryClient, postId);
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['explore'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: savedPostsKey });
+      queryClient.invalidateQueries({ queryKey: likedPostsKey });
     },
   });
 };
 
+/**
+ * Likes or unlikes a post.
+ *
+ * The optimistic update is applied to every cache entry holding the post rather
+ * than to the component that fired it, because the feed card and post detail can
+ * be on screen at the same time and must agree. A failure restores every entry
+ * to the value it held before.
+ */
 export const useLikePost = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({ postId, liked }) =>
       liked ? postService.unlikePost(postId) : postService.likePost(postId),
+    // Two mechanisms cooperate on the like path. The optimistic patch gives the
+    // tap an immediate result across every rendering of the post at once. The
+    // in-flight guard tells the live post-like handler to skip the broadcast
+    // frame for this post until the mutation settles, because that frame carries
+    // an absolute count that may not yet include this viewer's tap and would
+    // otherwise visibly undo it.
+    onMutate: async ({ postId, liked }) => {
+      beginSelfPostLike(postId);
+      await queryClient.cancelQueries({ queryKey: ['post', postId] });
+      const nextLiked = !liked;
+
+      const restore = patchCachedPost(queryClient, postId, (post) => ({
+        isLiked: nextLiked,
+        likeCount: Math.max(0, (post.likeCount ?? 0) + (nextLiked ? 1 : -1)),
+      }));
+
+      return { restore };
+    },
+    onSuccess: (data, { postId }) => {
+      // The endpoint may answer with the authoritative count. Applying it
+      // through the same patch reaches both renderings, which is what the
+      // per-component reconciliation could not do.
+      const result = data?.data || data;
+      if (typeof result?.likeCount === 'number') {
+        patchCachedPost(queryClient, postId, { likeCount: result.likeCount });
+      }
+    },
+    onError: (_error, _variables, context) => {
+      context?.restore?.();
+    },
+    onSettled: (_data, _error, { postId }) => {
+      endSelfPostLike(postId);
+      // The profile "liked" tab is a distinct list keyed on likedAt, so a like
+      // or unlike must refetch it; the optimistic post patch alone never adds or
+      // removes the row there.
+      queryClient.invalidateQueries({ queryKey: likedPostsKey });
+    },
   });
 };
 
+export const savedPostsKey = ['savedPosts'];
+
+/**
+ * The viewer's saved posts.
+ *
+ * Rows are SavedPostResponse, so consumers unwrap `row.post` rather than
+ * reading the post fields off the row.
+ */
+export const useSavedPosts = () => {
+  return useInfiniteQuery({
+    queryKey: savedPostsKey,
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getSavedPosts({ cursor: pageParam ?? undefined, limit: 12, signal }),
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+  });
+};
+
+export const likedPostsKey = ['likedPosts'];
+
+/**
+ * The viewer's liked posts.
+ *
+ * Always the authenticated account's own likes. The endpoint takes no path
+ * parameter for another user, so this cannot be pointed at a profile the
+ * viewer is looking at.
+ *
+ * Rows are LikedPostResponse, so consumers unwrap `row.post`. The row
+ * timestamp is `likedAt`, not `savedAt`.
+ */
+export const useLikedPosts = (enabled = true) => {
+  return useInfiniteQuery({
+    queryKey: likedPostsKey,
+    queryFn: ({ pageParam = null, signal }) =>
+      postService.getLikedPosts({ cursor: pageParam ?? undefined, limit: 12, signal }),
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+    enabled,
+  });
+};
+
+/**
+ * Saves or unsaves a post.
+ *
+ * Carries no counter of its own, so the patch is a single flag, but it spans the
+ * same set of cache entries for the same reason.
+ */
 export const useSavePost = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ postId, saved }) =>
       saved ? postService.unsavePost(postId) : postService.savePost(postId),
+    onMutate: async ({ postId, saved }) => {
+      await queryClient.cancelQueries({ queryKey: ['post', postId] });
+      const restore = patchCachedPost(queryClient, postId, { isSaved: !saved });
+      return { restore };
+    },
+    onError: (_error, _variables, context) => {
+      context?.restore?.();
+    },
+    // The saved list is server state, so it is re-read rather than patched.
+    // This is what makes saving from anywhere in the application show up on the
+    // saved screen, and unsaving from the saved screen drop the row without a
+    // reload.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: savedPostsKey });
+    },
   });
 };
 
 export const useTopLevelComments = (postId) => {
   return useInfiniteQuery({
     queryKey: ['comments', postId],
-    queryFn: ({ pageParam = null }) => postService.getComments(postId, { cursor: pageParam, limit: 20 }),
+    queryFn: ({ pageParam = null }) =>
+      postService.getComments(postId, { cursor: pageParam, limit: 20 }),
     getNextPageParam: getNextCursor,
     initialPageParam: null,
     enabled: !!postId,
@@ -139,6 +287,24 @@ export const useCommentReplies = (commentId, enabled) => {
     queryKey: ['commentReplies', commentId],
     queryFn: () => postService.getCommentReplies(commentId, { limit: 50 }),
     enabled: !!commentId && enabled,
+  });
+};
+
+/**
+ * How many comments deleting this one would remove, for the confirmation copy.
+ *
+ * Fetched only while the dialogue is open. It is not retried: the dialogue has
+ * wording that works without a number, so a second attempt would keep the user
+ * waiting for something the screen does not need.
+ */
+export const useCommentDeletionScope = (commentId, enabled) => {
+  return useQuery({
+    queryKey: ['commentDeletionScope', commentId],
+    queryFn: () => postService.getCommentDeletionScope(commentId),
+    enabled: !!commentId && enabled,
+    retry: false,
+    gcTime: 0,
+    staleTime: 0,
   });
 };
 
@@ -227,6 +393,13 @@ export const useToggleCommentLike = (postId) => {
     mutationFn: ({ commentId, isLiked }) =>
       isLiked ? postService.unlikeComment(commentId) : postService.likeComment(commentId),
     onMutate: async ({ commentId, isLiked, parentId }) => {
+      // The like broadcast carries no count and does not say who liked, so the
+      // live handler moves the count by one for every frame it sees. This
+      // viewer's own like comes back as such a frame, and the optimistic change
+      // below has already accounted for it. Recording it here lets the live
+      // handler skip that one echo instead of counting the like twice.
+      noteSelfCommentLike(commentId, !isLiked);
+
       const queryKey = commentListKey(postId, parentId);
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData(queryKey);
@@ -257,10 +430,14 @@ export const useToggleCommentLike = (postId) => {
 /**
  * Replaces the body of a comment the viewer authored.
  *
- * Only the body and its timestamp are copied out of the response. A
+ * Only the body and its timestamps are copied out of the response. A
  * single-comment response always reports `pinned` as false, so spreading the
  * whole object would silently strip the pinned marker from a comment that is in
  * the pinned block.
+ *
+ * `editedAt` is among them because it is what the edited marker reads. Copying
+ * only the body would leave the marker absent until the list happened to be
+ * refetched.
  */
 export const useEditComment = (postId) => {
   const queryClient = useQueryClient();
@@ -277,7 +454,12 @@ export const useEditComment = (postId) => {
         commentListKey(postId, parentId),
         mapCachedComments((comment) =>
           comment.id === updated.id
-            ? { ...comment, content: updated.content, updatedAt: updated.updatedAt }
+            ? {
+                ...comment,
+                content: updated.content,
+                updatedAt: updated.updatedAt,
+                editedAt: updated.editedAt,
+              }
             : comment
         )
       );
@@ -288,16 +470,29 @@ export const useEditComment = (postId) => {
 /**
  * Soft-deletes a comment and every descendant.
  *
- * The number of descendants removed is not known to the client, so the affected
- * lists are refetched rather than patched. The post is refetched too because its
- * comment count drops by the size of the whole subtree.
+ * The response now reports how many comments were removed, but the affected
+ * lists are still refetched rather than patched. The count says how many rows
+ * went, not which ones, and the descendants are spread across nested replies
+ * entries the client never enumerated. Patching the post's comment count from
+ * the number would also mean computing a denormalised counter client-side,
+ * which the workspace counter policy reserves to the database.
+ *
+ * The count is used to drop the deleted subtree's own replies entry, which can
+ * no longer be fetched and would otherwise sit in the cache until collected.
  */
 export const useDeleteComment = (postId) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ commentId }) => postService.deleteComment(commentId),
-    onSuccess: (_response, { parentId }) => {
+    onSuccess: (response, { commentId, parentId }) => {
+      const removedCount = response?.data?.deletedCommentCount ?? 0;
+
+      if (removedCount > 1) {
+        queryClient.removeQueries({ queryKey: ['commentReplies', commentId] });
+      }
+      queryClient.removeQueries({ queryKey: ['commentDeletionScope', commentId] });
+
       if (parentId) {
         queryClient.invalidateQueries({ queryKey: ['commentReplies', parentId] });
       }

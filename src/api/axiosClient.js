@@ -3,7 +3,9 @@ import axios from 'axios';
 import { useAuthStore } from '@/store/useAuthStore';
 
 const ENV_API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
-const API_BASE_URL = import.meta.env.DEV ? '/api/v1' : ENV_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = import.meta.env.DEV
+  ? '/api/v1'
+  : ENV_API_URL || 'http://localhost:8080/api/v1';
 // The refresh token is delivered as an HttpOnly cookie, so every endpoint that
 // issues, rotates, or clears it must send credentials. In dev the browser talks
 // to the Vite proxy, which is same-origin and would carry the cookie anyway; a
@@ -55,6 +57,12 @@ export const getRefreshTokenFromResponse = (payload) =>
   payload?.data?.refresh_token ??
   payload?.refresh_token ??
   null;
+
+// The refresh response carries the same `user` object as login, including the
+// role. Pulling it out here lets the interceptor-driven refresh repopulate the
+// role, not only the tokens; without it a background refresh would leave the
+// role stale because setTokens does not touch the user.
+export const getUserFromResponse = (payload) => payload?.data?.user ?? payload?.user ?? null;
 
 const isSkippableRequest = (config = {}) => {
   const url = config.url || '';
@@ -123,18 +131,15 @@ const refreshAccessToken = async () => {
   // rides along with the request and the server falls back to it when the body
   // omits the field. Sending an empty body is what lets a reloaded tab, which
   // has lost the in-memory copy, still rotate a session.
-  const response = await publicClient.post(
-    REFRESH_PATH,
-    refreshToken ? { refreshToken } : {},
-    {
-      skipAuthRefresh: true,
-      withCredentials: AUTH_WITH_CREDENTIALS,
-    }
-  );
+  const response = await publicClient.post(REFRESH_PATH, refreshToken ? { refreshToken } : {}, {
+    skipAuthRefresh: true,
+    withCredentials: AUTH_WITH_CREDENTIALS,
+  });
 
   const payload = response?.data;
   const nextAccessToken = getTokenFromResponse(payload);
   const nextRefreshToken = getRefreshTokenFromResponse(payload) || refreshToken;
+  const nextUser = getUserFromResponse(payload);
 
   if (!nextAccessToken) {
     throw new Error('Refresh response did not include an access token.');
@@ -143,6 +148,9 @@ const refreshAccessToken = async () => {
   persistAuthSession({
     accessToken: nextAccessToken,
     refreshToken: nextRefreshToken,
+    // Only pass `user` when the response carried one, so persistAuthSession
+    // routes to setAuth (which restores the role) rather than setTokens.
+    ...(nextUser ? { user: nextUser } : {}),
   });
 
   return {
@@ -201,7 +209,7 @@ const REDACTED_PATTERNS = [
   /com\.postgres/i,
   /\bSQL\b/i,
   /\bselect\b.*\bfrom\b/i,
-  /at [a-z]+\.[a-z]+\.[A-Z]/,  // Java stack trace line: "at com.example.Service"
+  /at [a-z]+\.[a-z]+\.[A-Z]/, // Java stack trace line: "at com.example.Service"
   /\bINACTIVE\b/,
   /\bBANNED\b/,
   /\bSUSPENDED\b/,
@@ -240,17 +248,10 @@ const normalizeAxiosError = (error) => {
   const data = error.response.data ?? {};
 
   // Candidate message from backend — prefer the most specific field.
-  const rawMessage =
-    data.message ||
-    data.error ||
-    data.detail ||
-    data.errors?.[0]?.message ||
-    null;
+  const rawMessage = data.message || data.error || data.detail || data.errors?.[0]?.message || null;
 
   // Check if the raw message leaks internal implementation details.
-  const isRedacted =
-    rawMessage &&
-    REDACTED_PATTERNS.some((pattern) => pattern.test(rawMessage));
+  const isRedacted = rawMessage && REDACTED_PATTERNS.some((pattern) => pattern.test(rawMessage));
 
   // Final user-facing message: use raw message only if it is safe,
   // otherwise fall back to the status-code lookup, then a generic fallback.

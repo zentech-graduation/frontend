@@ -4,29 +4,33 @@ import { getNextCursor } from '@/utils/helpers';
 
 export const socialKeys = {
   all: ['social'],
-  followers: (userId) => userId ? [...socialKeys.all, 'followers', userId] : [...socialKeys.all, 'followers'],
-  following: (userId) => userId ? [...socialKeys.all, 'following', userId] : [...socialKeys.all, 'following'],
+  followers: (userId) =>
+    userId ? [...socialKeys.all, 'followers', userId] : [...socialKeys.all, 'followers'],
+  following: (userId) =>
+    userId ? [...socialKeys.all, 'following', userId] : [...socialKeys.all, 'following'],
   requests: () => [...socialKeys.all, 'follow-requests'],
   blocked: () => [...socialKeys.all, 'blocked'],
 };
 
 // --- Queries ---
 
-export const useFollowers = (userId) => {
+export const useFollowers = (userId, enabled = true) => {
   return useInfiniteQuery({
     queryKey: socialKeys.followers(userId),
-    queryFn: ({ pageParam = null, signal }) => socialService.getFollowers(userId, pageParam, undefined, signal),
+    queryFn: ({ pageParam = null, signal }) =>
+      socialService.getFollowers(userId, pageParam, undefined, signal),
     getNextPageParam: getNextCursor,
-    enabled: !!userId,
+    enabled: !!userId && enabled,
   });
 };
 
-export const useFollowing = (userId) => {
+export const useFollowing = (userId, enabled = true) => {
   return useInfiniteQuery({
     queryKey: socialKeys.following(userId),
-    queryFn: ({ pageParam = null, signal }) => socialService.getFollowing(userId, pageParam, undefined, signal),
+    queryFn: ({ pageParam = null, signal }) =>
+      socialService.getFollowing(userId, pageParam, undefined, signal),
     getNextPageParam: getNextCursor,
-    enabled: !!userId,
+    enabled: !!userId && enabled,
   });
 };
 

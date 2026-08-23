@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
 import { ROUTES } from '@/config/constants';
+import { landingPathForRole } from '@/config/roles';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authPageRegisterSchema, emailSchema, loginSchema } from '../utils/authSchemas';
 import Field from './AuthField';
@@ -21,6 +22,43 @@ const WELCOMES = [
   { main: 'discover your next ', accent: 'obsession' },
   { main: 'bring your passions ', accent: 'here' },
 ];
+
+// The registration form calls its display-name input `name`; the server calls
+// the same field `displayName`. Every other name matches.
+const SERVER_FIELD_TO_FORM_FIELD = {
+  username: 'username',
+  email: 'email',
+  password: 'password',
+  displayName: 'name',
+};
+
+/**
+ * Places a rejected field's own message beside the field it belongs to.
+ *
+ * The backend answers a rejected registration with `errors` keyed by field name,
+ * naming the specific rule that failed, while `message` says only that
+ * validation failed. Returns whether anything was placed, so the caller can fall
+ * back to the banner when the failure was not field-level.
+ */
+const applyServerFieldErrors = (form, fieldErrors) => {
+  if (!fieldErrors || typeof fieldErrors !== 'object' || Array.isArray(fieldErrors)) {
+    return false;
+  }
+
+  let applied = false;
+
+  Object.entries(fieldErrors).forEach(([serverField, message]) => {
+    const formField = SERVER_FIELD_TO_FORM_FIELD[serverField];
+    if (!formField || typeof message !== 'string' || !message.trim()) {
+      return;
+    }
+
+    form.setError(formField, { type: 'server', message: message.trim() });
+    applied = true;
+  });
+
+  return applied;
+};
 
 const getSuccessMessage = (state) => {
   if (typeof state?.registerSuccess === 'string') return state.registerSuccess;
@@ -186,7 +224,10 @@ export default function AuthPage() {
 
       setAuth({ accessToken, refreshToken, user });
 
-      const nextPath = location.state?.from?.pathname || ROUTES.APP;
+      // Where the user lands is decided by role: a moderator or administrator
+      // lands in the panel, an ordinary user in the application. A remembered
+      // origin from a redirected navigation still wins over the role default.
+      const nextPath = location.state?.from?.pathname || landingPathForRole(user?.role);
       navigate(nextPath, { replace: true });
     } catch (error) {
       // The backend returns 403 with code AUTH_EMAIL_NOT_VERIFIED on the
@@ -220,9 +261,18 @@ export default function AuthPage() {
 
       navigate(ROUTES.VERIFY_EMAIL_NOTICE, { replace: true, state: { email: values.email } });
     } catch (error) {
-      setRegServerError(
-        authApi.normalizeMessage(error, 'Unable to create your account right now.')
-      );
+      // A rejected field carries the specific rule that failed in `errors`,
+      // keyed by field name, while `message` only says validation failed.
+      // Showing the rule beside the field it belongs to beats repeating the
+      // generic sentence in the banner.
+      const fieldErrors = error?.response?.data?.errors;
+      const applied = applyServerFieldErrors(registerForm, fieldErrors);
+
+      if (!applied) {
+        setRegServerError(
+          authApi.normalizeMessage(error, 'Unable to create your account right now.')
+        );
+      }
     }
   };
 

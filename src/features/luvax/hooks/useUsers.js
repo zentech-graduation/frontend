@@ -4,6 +4,7 @@ import * as userService from '../../../services/user.service';
 export const userKeys = {
   all: ['users'],
   profile: (userId) => [...userKeys.all, 'profile', userId],
+  me: () => [...userKeys.all, 'me'],
 };
 
 export const useUserProfile = (userId, enabled = true) => {
@@ -11,6 +12,16 @@ export const useUserProfile = (userId, enabled = true) => {
     queryKey: userKeys.profile(userId),
     queryFn: () => userService.getUserProfile(userId),
     enabled: !!userId && enabled,
+  });
+};
+
+// The self view: carries fields (isPrivate among them) the public profile
+// endpoint omits or restricts, so settings screens read from here rather
+// than the auth store's lean session user or another user's public shape.
+export const useMyProfile = () => {
+  return useQuery({
+    queryKey: userKeys.me(),
+    queryFn: () => userService.getMyProfile(),
   });
 };
 

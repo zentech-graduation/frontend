@@ -14,6 +14,13 @@ export default defineConfig(({ mode }) => {
   return {
     cacheDir: path.resolve(__dirname, '.vite-cache'),
     plugins: [react(), tailwindcss()],
+    // sockjs-client is written for a CommonJS environment and dereferences the
+    // Node `global` object at module scope, which does not exist in a browser
+    // bundle. SockJS is not optional here: the backend refuses a raw WebSocket
+    // upgrade, so this alias is what allows the live tier to load at all.
+    define: {
+      global: 'globalThis',
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
