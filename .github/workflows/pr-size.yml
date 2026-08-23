@@ -7,7 +7,6 @@ on:
 permissions:
   pull-requests: write
   contents: read
-  issues: write
 
 jobs:
   label-size:
@@ -30,7 +29,3 @@ jobs:
           message_if_xl: >
             This PR is very large (>2000 lines changed). Review it carefully and
             split it into smaller changes when practical.
-          files_to_ignore: |
-            docs/**
-            CHANGELOG.md
-            *.md
