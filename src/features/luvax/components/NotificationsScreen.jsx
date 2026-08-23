@@ -27,6 +27,10 @@ const NOTIFICATION_TEXT = {
   mention_comment: 'mentioned you in a comment',
   story_view: 'viewed your story',
   message: 'sent you a message',
+  post_removed: 'removed your post',
+  report_post_removed: 'removed content you reported',
+  post_restored: 'restored your post',
+  report_dismissed: 'reviewed your report and took no action',
 };
 
 const TYPE_ICON = {
@@ -36,6 +40,7 @@ const TYPE_ICON = {
   comment: 'reply',
   mention: 'hash',
   story: 'eye',
+  moderation: 'flag',
 };
 
 const TYPE_COLOR = {
@@ -45,6 +50,7 @@ const TYPE_COLOR = {
   comment: v.accent,
   mention: v.avatar2,
   story: v.avatar3,
+  moderation: v.warningText,
 };
 
 // The maps above are keyed by category, but the backend sends full enum values
@@ -58,6 +64,15 @@ function notifCategory(type) {
   if (type.startsWith('comment') || type.startsWith('reply')) return 'comment';
   if (type.startsWith('mention')) return 'mention';
   if (type.startsWith('story')) return 'story';
+  if (
+    type === 'post_removed' ||
+    type === 'report_post_removed' ||
+    type === 'post_restored' ||
+    type === 'report_dismissed' ||
+    type === 'warning'
+  ) {
+    return 'moderation';
+  }
   return 'comment';
 }
 
@@ -71,6 +86,12 @@ function notifBucket(createdAt) {
   if (t >= startOfToday) return 'today';
   if (t >= startOfToday - 6 * 24 * 60 * 60 * 1000) return 'this week';
   return 'earlier';
+}
+
+function notificationMessageLabel(type) {
+  if (type === 'report_dismissed') return 'decision';
+  if (type === 'report_post_removed') return 'outcome';
+  return 'reason';
 }
 
 const BUCKET_ORDER = ['today', 'this week', 'earlier'];
@@ -111,7 +132,14 @@ function NotifRow({ n, onAccept, onDecline }) {
   const filledBadge = category === 'like';
 
   const actorName = getDisplayName(actor, 'Someone');
+  const isSystemModeration =
+    n.type === 'post_removed' ||
+    n.type === 'report_post_removed' ||
+    n.type === 'post_restored' ||
+    n.type === 'report_dismissed';
+  const displayName = isSystemModeration ? 'Luvax' : actorName;
   const avatarSrc = actor.avatarUrl;
+  const canOpenTarget = !isSystemModeration;
 
   // Route by what the notification points at. A content notification now carries
   // postId, the post it concerns, so it opens that post directly. When the
@@ -121,6 +149,9 @@ function NotifRow({ n, onAccept, onDecline }) {
   // that path is kept. A follow or a content notification predating postId carries
   // no post to open and falls back to the actor's profile.
   const openTarget = () => {
+    if (!canOpenTarget) {
+      return;
+    }
     if (n.postId) {
       const highlightComment = n.entityType === 'comment' ? n.entityId : null;
       openOverlay(
@@ -138,7 +169,8 @@ function NotifRow({ n, onAccept, onDecline }) {
     }
   };
   const isClickable =
-    Boolean(n.postId) || (n.entityType === 'post' && Boolean(n.entityId)) || Boolean(actor?.id);
+    canOpenTarget &&
+    (Boolean(n.postId) || (n.entityType === 'post' && Boolean(n.entityId)) || Boolean(actor?.id));
 
   return (
     <div
@@ -184,10 +216,15 @@ function NotifRow({ n, onAccept, onDecline }) {
               if (actor?.id) navigate(routeTo.userProfile(actor.id));
             }}
           >
-            {actorName}
+            {displayName}
           </strong>{' '}
           <span style={{ color: v.ink2 }}>{text}</span>
         </div>
+        {n.message ? (
+          <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2, marginTop: 4 }}>
+            {notificationMessageLabel(n.type)}: {n.message}
+          </div>
+        ) : null}
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>
           {timeStr}
         </div>

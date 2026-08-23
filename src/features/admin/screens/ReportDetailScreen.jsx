@@ -133,7 +133,6 @@ function TargetRegion({ target, isLoading, isError }) {
           ))}
         </div>
       ) : null}
-
     </div>
   );
 }
