@@ -20,7 +20,6 @@ export function MessageBubble({
   onPreviewMedia,
   onDeleteToggle,
   onReplyMessage,
-  canDelete,
   viewport,
 }) {
   const isMine = message.from === 'me';
@@ -69,7 +68,7 @@ export function MessageBubble({
             }
           : null,
       ].filter(Boolean),
-    [canDelete, message, onDeleteToggle, onReplyMessage, textForCopy]
+    [canCopyText, isMine, message, onDeleteToggle, onReplyMessage, textForCopy]
   );
   const supportsHover =
     typeof window !== 'undefined' &&

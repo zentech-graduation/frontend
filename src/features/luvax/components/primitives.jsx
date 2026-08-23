@@ -150,7 +150,7 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
   );
 }
 
-export function LxModal({ open, onClose, title, children, actions }) {
+export function LxModal({ open, onClose, title, children, actions, zIndex = 1000 }) {
   useEscapeKey(open, onClose);
 
   if (!open) return null;
@@ -163,7 +163,7 @@ export function LxModal({ open, onClose, title, children, actions }) {
           position: 'fixed',
           inset: 0,
           background: v.scrim,
-          zIndex: 1000,
+          zIndex,
         }}
       />
       <div
@@ -179,7 +179,7 @@ export function LxModal({ open, onClose, title, children, actions }) {
           maxWidth: 320,
           boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`,
           overflow: 'hidden',
-          zIndex: 1001,
+          zIndex: zIndex + 1,
           display: 'flex',
           flexDirection: 'column',
         }}
