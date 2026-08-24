@@ -8,6 +8,7 @@ import { APP_SCREENS, DEFAULT_BASE_SCREEN } from '@/routes/appScreens';
 import { LuvaxTweaksProvider } from './LuvaxTweaksContext';
 import { ToastHost } from './components/Toast';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useLiveNotifications } from './hooks/useNotifications';
 import { useUserProfile } from './hooks/useUsers';
 
 /**
@@ -81,6 +82,7 @@ export function LuvaxApp() {
   const location = useLocation();
   const navigate = useNavigate();
   const matches = useMatches();
+  useLiveNotifications();
 
   // The login/refresh session carries a lean user without avatarUrl, so the
   // shell and comment composer would show a blank avatar while profile pages

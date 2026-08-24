@@ -26,7 +26,15 @@ const VIOLATIONS_QUERY_KEYS = ['cursor', 'limit', 'includeRevoked'];
 // The action log now declares six. `targetUserId` and the half-open `from`/`to`
 // window were added by the backend uptake and compose with moderator scoping
 // rather than bypassing it. See uptake-contract-verification.md 4.3.
-const ACTIONS_QUERY_KEYS = ['adminId', 'actionType', 'targetUserId', 'from', 'to', 'cursor', 'limit'];
+const ACTIONS_QUERY_KEYS = [
+  'adminId',
+  'actionType',
+  'targetUserId',
+  'from',
+  'to',
+  'cursor',
+  'limit',
+];
 // The account list declares status and role; search declares only q. Both take
 // keyset paging. See accounts-contract-verification.md 3.2.
 const USERS_QUERY_KEYS = ['status', 'role', 'cursor', 'limit'];

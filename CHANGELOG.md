@@ -52,6 +52,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
 ### Fixed
+- Story captions, post comments, message replies, bios, and long direct-message text now wrap inside their containers instead of overflowing the UI.
+- Direct-message reply and draft state now stays scoped to the active conversation, so switching threads clears the old reply target while preserving each thread's unsent text.
+- Direct messages now support pasted image attachments and expose the same hover actions for media messages as text messages, including delete and copy-image actions where available.
+- Blocked users now show the correct blocked/unblock state and hint from profiles and messages, even after navigating away and returning.
+- Search now returns matching people as well as posts from the shared search bar.
+- Moderation notifications now explain removed, restored, and dismissed report outcomes with distinct text instead of showing the same removal wording for every decision.
 - A date-range preset no longer leaves behind a message asking for a start and an end while a range is applied and results are showing.
 - An account suspended without an end date now reads as "suspended indefinitely" in the panel, where the suspension previously showed nothing at all and the account appeared not to be suspended.
 - The panel no longer offers a warning against an account that cannot receive one, such as a moderator or an administrator, explaining instead why the action is unavailable.

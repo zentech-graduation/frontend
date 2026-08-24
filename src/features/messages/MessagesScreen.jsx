@@ -75,11 +75,33 @@ const lightboxArrowStyle = (side) => ({
   zIndex: 2,
 });
 
+const messagingUnavailableStorageKey = (userId) =>
+  `luvax:messages:unavailable:${userId || 'anonymous'}`;
+
+const readMessagingUnavailableKeys = (storageKey) => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(storageKey) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((key) => typeof key === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeMessagingUnavailableKeys = (storageKey, keys) => {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(storageKey, JSON.stringify(Array.from(new Set(keys))));
+};
+
 export function MessagesScreen() {
   const { viewport } = useLuvaxTweaks();
   const location = useLocation();
   const navigate = useNavigate();
   const currentUserId = useAuthStore((state) => state.user?.id);
+  const unavailableStorageKey = useMemo(
+    () => messagingUnavailableStorageKey(currentUserId),
+    [currentUserId]
+  );
   const { conversations, isLoading: conversationsLoading } = useConversations();
   // The adapter owns every mapping from the API shape onto what these panels render.
   const threads = useMemo(
@@ -102,6 +124,9 @@ export function MessagesScreen() {
   const [reportTarget, setReportTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
   const [locallyBlockedUserIds, setLocallyBlockedUserIds] = useState([]);
+  const [messagingUnavailableByStorageKey, setMessagingUnavailableByStorageKey] = useState(() => ({
+    [unavailableStorageKey]: readMessagingUnavailableKeys(unavailableStorageKey),
+  }));
   const [nicknameTarget, setNicknameTarget] = useState(null);
   const [nicknameValue, setNicknameValue] = useState('');
   // Set only by a profile's "message" button, before any conversation exists between the two
@@ -166,6 +191,15 @@ export function MessagesScreen() {
   }, [blockedRows, locallyBlockedUserIds]);
   const isThreadBlocked = (thread) =>
     Boolean(thread?.counterpartId && blockedUserIdSet.has(thread.counterpartId));
+  const messagingUnavailableKeys =
+    messagingUnavailableByStorageKey[unavailableStorageKey] ||
+    readMessagingUnavailableKeys(unavailableStorageKey);
+  const isMessagingUnavailable = Boolean(
+    activeComposerKey && messagingUnavailableKeys.includes(activeComposerKey)
+  );
+  const messageBlockHint = isThreadBlocked(activeThread)
+    ? `you blocked ${activeThread?.username ? `@${activeThread.username}` : activeThread?.name}. messaging is paused until you unblock them.`
+    : 'messaging is unavailable for this conversation.';
 
   useLiveMessages(activeConversation?.id);
 
@@ -525,6 +559,16 @@ export function MessagesScreen() {
       setActiveThreadId(conversationId);
       setPendingTargetUserId(null);
     } catch (error) {
+      const code = error?.response?.data?.code;
+      if (sendingComposerKey && (code === 'CONVERSATION_NOT_FOUND' || code === 'NOT_FOUND')) {
+        setMessagingUnavailableByStorageKey((byKey) => {
+          const keys =
+            byKey[unavailableStorageKey] || readMessagingUnavailableKeys(unavailableStorageKey);
+          const next = keys.includes(sendingComposerKey) ? keys : [...keys, sendingComposerKey];
+          writeMessagingUnavailableKeys(unavailableStorageKey, next);
+          return { ...byKey, [unavailableStorageKey]: next };
+        });
+      }
       toast(error?.uploadMessage || error?.message || "couldn't send that. try again.");
     } finally {
       setIsSending(false);
@@ -671,6 +715,8 @@ export function MessagesScreen() {
           onStageAttachments={handleStageAttachments}
           onRemovePendingAttachment={handleRemovePendingAttachment}
           isSending={isSending}
+          isBlocked={isThreadBlocked(activeThread) || isMessagingUnavailable}
+          blockedHint={messageBlockHint}
         />
       ) : null}
 

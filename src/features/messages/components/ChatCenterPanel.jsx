@@ -42,17 +42,29 @@ export function ChatCenterPanel({
   onStageAttachments,
   onRemovePendingAttachment,
   isSending,
+  isBlocked = false,
+  blockedHint,
 }) {
   const draftInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
 
   const handleAttachmentChange = (event) => {
+    if (isBlocked) {
+      event.target.value = '';
+      return;
+    }
+
     const files = Array.from(event.target.files || []);
     event.target.value = '';
     if (files.length) onStageAttachments?.(files);
   };
 
   const handleDraftPaste = (event) => {
+    if (isBlocked) {
+      event.preventDefault();
+      return;
+    }
+
     const imageFiles = Array.from(event.clipboardData?.items || [])
       .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
       .map((item) => item.getAsFile())
@@ -70,7 +82,7 @@ export function ChatCenterPanel({
     onStageAttachments?.(imageFiles);
   };
 
-  const canSend = Boolean(draft.trim() || pendingAttachments?.length) && !isSending;
+  const canSend = Boolean(draft.trim() || pendingAttachments?.length) && !isSending && !isBlocked;
 
   useEffect(() => {
     autoResizeDraft(draftInputRef.current);
@@ -79,6 +91,10 @@ export function ChatCenterPanel({
   // Hooks above this line. Both previously sat below it, so opening or closing a thread changed the
   // hook count between renders, which React resolves by binding state to the wrong slot.
   if (!activeThread) return null;
+
+  const blockedHandle = activeThread.username ? `@${activeThread.username}` : activeThread.name;
+  const blockedMessage =
+    blockedHint || `you blocked ${blockedHandle}. messaging is paused until you unblock them.`;
 
   const mobileHeaderIconButton = {
     width: 28,
@@ -284,6 +300,28 @@ export function ChatCenterPanel({
           minWidth: 0,
         }}
       >
+        {isBlocked ? (
+          <div
+            style={{
+              borderTop: `1px solid ${v.borderSubtle}`,
+              borderBottom: `1px solid ${v.borderSubtle}`,
+              background: v.surface,
+              color: v.ink2,
+              fontFamily: v.fontBody,
+              fontSize: 12.5,
+              lineHeight: 1.35,
+              padding: '9px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              minWidth: 0,
+            }}
+          >
+            <LxIcon name="ban" size={14} color={v.error} />
+            <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{blockedMessage}</span>
+          </div>
+        ) : null}
+
         {replyingTo ? (
           <div
             style={{
@@ -410,7 +448,7 @@ export function ChatCenterPanel({
           <button
             type="button"
             onClick={() => attachmentInputRef.current?.click()}
-            disabled={isSending}
+            disabled={isSending || isBlocked}
             aria-label="attach a photo, video, or gif"
             style={{
               width: 32,
@@ -421,8 +459,8 @@ export function ChatCenterPanel({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: isSending ? 'wait' : 'pointer',
-              opacity: isSending ? 0.6 : 1,
+              cursor: isSending ? 'wait' : isBlocked ? 'default' : 'pointer',
+              opacity: isSending || isBlocked ? 0.6 : 1,
               flexShrink: 0,
             }}
           >
@@ -449,13 +487,15 @@ export function ChatCenterPanel({
               onChange={(event) => setDraft(event.target.value)}
               onPaste={handleDraftPaste}
               maxLength={CHAR_LIMITS.message}
+              disabled={isBlocked}
               onKeyDown={(event) => {
+                if (isBlocked) return;
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault();
                   handleSend();
                 }
               }}
-              placeholder={replyingTo ? 'write a reply...' : 'Message...'}
+              placeholder={isBlocked ? 'blocked' : replyingTo ? 'write a reply...' : 'Message...'}
               rows={1}
               style={{
                 flex: 1,
@@ -466,7 +506,7 @@ export function ChatCenterPanel({
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                color: v.ink,
+                color: isBlocked ? v.ink3 : v.ink,
                 fontFamily: v.fontBody,
                 fontSize: 13.5,
                 lineHeight: 1.4,

@@ -9,6 +9,7 @@ import { useExplore } from '../hooks/usePosts';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { routeTo } from '@/config/constants';
+import { getUserSearchTerms, useUserSearch } from '@/features/search/hooks/useSearch';
 
 function MiniCard({ p }) {
   const navigate = useNavigate();
@@ -195,6 +196,10 @@ export function ExploreScreen() {
 
   const { ref, inView } = useInView();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExplore({ q: query });
+  const userSearchTerms = getUserSearchTerms(query);
+  const primaryUserResult = useUserSearch(userSearchTerms[0] || '');
+  const secondaryUserResult = useUserSearch(userSearchTerms[1] || '');
+  const tertiaryUserResult = useUserSearch(userSearchTerms[2] || '');
 
   // Adjusted during render, not in an effect: the field is user-editable so it cannot be derived,
   // but resetting it from an effect rendered the screen twice on every address change.
@@ -220,8 +225,27 @@ export function ExploreScreen() {
   const posts = data?.pages?.flatMap((page) => extractPageContent(page)) || [];
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
-  // Every distinct author among the matches, not just the first. The prior
-  // slice(0, 1) showed one person however many matched.
+  const userResults = [primaryUserResult, secondaryUserResult, tertiaryUserResult].filter(
+    (_, index) => Boolean(userSearchTerms[index])
+  );
+  const userRows = userResults.flatMap(
+    (result) => result.data?.pages?.flatMap((page) => extractPageContent(page)) || []
+  );
+  const searchedPeople = userRows.reduce((acc, item) => {
+    const user = getUserSummary(item, 'user');
+    if (!user.id || acc.some((person) => person.id === user.id)) return acc;
+    acc.push({
+      id: user.id,
+      username: user.username,
+      displayName: getDisplayName(user),
+      avatarUrl: user.avatarUrl,
+      bio: user.bio,
+    });
+    return acc;
+  }, []);
+  // Include both direct account matches and distinct authors from matched posts.
+  // Without the direct account search, the Explore field could only find a user
+  // when one of their posts happened to match the same query.
   const people = posts.reduce((acc, post) => {
     const author = getUserSummary(post);
     if (!author.id || acc.some((user) => user.id === author.id)) return acc;
@@ -232,8 +256,9 @@ export function ExploreScreen() {
       avatarUrl: author.avatarUrl,
     });
     return acc;
-  }, []);
+  }, searchedPeople);
   const foundCount = people.length + posts.length;
+  const isFindingPeople = isSearching && userResults.some((result) => result.isLoading);
 
   // Enter commits the query to the address so a search can be shared and
   // survives a reload, which a bare input could not do.
@@ -354,7 +379,21 @@ export function ExploreScreen() {
               </span>
             </div>
 
-            {foundCount === 0 ? (
+            {foundCount === 0 && isFindingPeople ? (
+              <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: v.fontBody,
+                    fontSize: 15,
+                    fontWeight: 500,
+                    color: v.ink2,
+                    marginBottom: 4,
+                  }}
+                >
+                  searching people...
+                </div>
+              </div>
+            ) : foundCount === 0 ? (
               // Search empty state, on the design's own empty-state geometry.
               <div style={{ padding: '48px 24px', textAlign: 'center' }}>
                 <div

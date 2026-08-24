@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as notifService from '../../../services/notification.service';
+import { NOTIFICATION_ENDPOINT, subscribeTopic } from '@/services/realtime/stompConnection';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getNextCursor } from '@/utils/helpers';
 
 export const notifKeys = {
@@ -22,6 +25,25 @@ export const useUnreadCount = () => {
     queryFn: notifService.getUnreadCount,
     refetchInterval: 30000, // poll every 30s
   });
+};
+
+export const useLiveNotifications = () => {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((state) => state.user?.id);
+
+  useEffect(() => {
+    if (!userId) {
+      return undefined;
+    }
+
+    return subscribeTopic(
+      `/topic/notifications.${userId}`,
+      () => {
+        queryClient.invalidateQueries({ queryKey: notifKeys.all });
+      },
+      { endpoint: NOTIFICATION_ENDPOINT }
+    );
+  }, [queryClient, userId]);
 };
 
 export const useMarkAsRead = () => {

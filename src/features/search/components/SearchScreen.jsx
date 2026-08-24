@@ -10,7 +10,12 @@ import { UserCard } from '@/features/luvax/components/UserCard';
 import { useOverlayNavigate } from '@/features/luvax/hooks/useOverlayNavigate';
 import { useViewport } from '@/features/luvax/hooks/useViewport';
 
-import { useHashtagSearch, usePostSearch, useUserSearch } from '../hooks/useSearch';
+import {
+  getUserSearchTerms,
+  useHashtagSearch,
+  usePostSearch,
+  useUserSearch,
+} from '../hooks/useSearch';
 import {
   SearchDegraded,
   SearchEmpty,
@@ -130,7 +135,26 @@ export function SearchScreen() {
   };
 
   const postResult = usePostSearch(query);
-  const userResult = useUserSearch(query);
+  const userSearchTerms = getUserSearchTerms(query);
+  const primaryUserResult = useUserSearch(userSearchTerms[0] || '');
+  const secondaryUserResult = useUserSearch(userSearchTerms[1] || '');
+  const tertiaryUserResult = useUserSearch(userSearchTerms[2] || '');
+  const userResults = [primaryUserResult, secondaryUserResult, tertiaryUserResult].filter(
+    (_, index) => Boolean(userSearchTerms[index])
+  );
+  const userResult = {
+    data: {
+      pages: userResults.flatMap((result) => result.data?.pages || []),
+    },
+    isLoading: userResults.some((result) => result.isLoading),
+    isError: userResults.length > 0 && userResults.every((result) => result.isError),
+    fetchNextPage: () =>
+      userResults.forEach((result) => {
+        if (result.hasNextPage) result.fetchNextPage();
+      }),
+    hasNextPage: userResults.some((result) => result.hasNextPage),
+    isFetchingNextPage: userResults.some((result) => result.isFetchingNextPage),
+  };
   const hashtagResult = useHashtagSearch(query);
 
   return (
@@ -271,22 +295,31 @@ export function SearchScreen() {
             result={userResult}
             renderRows={(rows) => (
               <div style={{ padding: '4px 16px' }}>
-                {rows.map((item) => {
-                  // Rows are UserListItemResponse: the account nests under `user`
-                  // and the relationship travels alongside it, so the follow
-                  // control starts in the state the server reports rather than
-                  // always reading "follow".
-                  const rowUser = getUserSummary(item, 'user');
-                  return (
-                    <UserCard
-                      key={rowUser.id}
-                      user={rowUser}
-                      initiallyFollowing={item.viewerState?.isFollowing ?? false}
-                      initiallyRequested={item.viewerState?.isFollowRequested ?? false}
-                      onAvatarClick={(u) => navigate(routeTo.userProfile(u.id))}
-                    />
-                  );
-                })}
+                {rows
+                  .filter((item, index, allRows) => {
+                    const rowUser = getUserSummary(item, 'user');
+                    return (
+                      rowUser.id &&
+                      allRows.findIndex((row) => getUserSummary(row, 'user').id === rowUser.id) ===
+                        index
+                    );
+                  })
+                  .map((item) => {
+                    // Rows are UserListItemResponse: the account nests under `user`
+                    // and the relationship travels alongside it, so the follow
+                    // control starts in the state the server reports rather than
+                    // always reading "follow".
+                    const rowUser = getUserSummary(item, 'user');
+                    return (
+                      <UserCard
+                        key={rowUser.id}
+                        user={rowUser}
+                        initiallyFollowing={item.viewerState?.isFollowing ?? false}
+                        initiallyRequested={item.viewerState?.isFollowRequested ?? false}
+                        onAvatarClick={(u) => navigate(routeTo.userProfile(u.id))}
+                      />
+                    );
+                  })}
               </div>
             )}
           />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { ROUTES, CHAR_LIMITS } from '@/config/constants';
@@ -29,11 +29,9 @@ export function LxHeaderSearch({ navigate, viewport }) {
     if (focusSearch) {
       next.set('focusSearch', '1');
     }
+    next.set('type', 'people');
     const search = next.toString();
-    // Submitting goes to the explore search, which keeps the navigation bar, so
-    // the header field and the explore field are one search experience rather
-    // than two, and the nav never disappears on a results page.
-    navigate(search ? `${ROUTES.EXPLORE}?${search}` : ROUTES.EXPLORE);
+    navigate(search ? `${ROUTES.SEARCH}?${search}` : `${ROUTES.SEARCH}?type=people`);
   };
 
   const submitSearch = () => {
@@ -74,7 +72,7 @@ export function LxHeaderSearch({ navigate, viewport }) {
         type="search"
         value={query}
         maxLength={CHAR_LIMITS.search}
-        aria-label="search posts"
+        aria-label="search people"
         placeholder="search"
         onChange={(event) => {
           setQuery(event.target.value);
