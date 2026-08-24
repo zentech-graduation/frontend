@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Moderators and administrators reach the panel from a navigation entry in the application, directly above settings, and return to the application from the panel header; ordinary accounts never see it.
+- The panel has a theme control of its own, so dark and light can be chosen without leaving it.
+- Media in the panel opens into a full viewer with forward and back navigation across the media attached to that record, closed with Escape and moved through with the arrow keys.
 - A reported story or message can now be taken down and put back, with the same recorded-reason confirmation used for posts and comments, available to moderators as well as administrators.
 - Moderators and administrators get a "my escalations" screen listing the reports they escalated together with what became of each one, including reports an administrator has since closed.
 - An account's sessions can now be ended one at a time, leaving every other session signed in, and the row for the session the reader is currently using is marked.
@@ -33,6 +36,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Administrators get an escalated-report queue with a live count that moderators cannot reach.
 
 ### Changed
+- The reports and accounts screens show the list and the selected record side by side, so moving between records no longer means navigating back to the list; the record keeps its own address, every address that worked before still works, and at a narrow width the two collapse to one screen at a time.
+- Panel screens use the full width of the window instead of stopping short of it.
+- Every select and date control in the panel now matches the buttons beside it in height, shape, border, focus and disabled treatment.
+- Filter conditions are each shown in their own labelled group with real separation, wrapping onto the next line rather than compressing, with a clear control set apart from them.
+- Muted text throughout the panel moved to the readable secondary ink and small labels moved up one step on the type scale, bringing every text role above the accessible contrast threshold in both themes.
+- Status badges carry their colour in the fill and border with the label in ordinary ink, which makes every status readable in the light theme.
 - Account names throughout the panel are now resolved in a single request per page instead of one request per person, cutting a page of twenty action-log rows from five identifier requests to one.
 - The message shown after restoring a post now describes the post's present state — the banned hashtags its caption still carries — so restoring the same post twice reads as correct rather than as a repeated action.
 - Restoring a story or a message now states what the action does and does not do before it is confirmed: a story past its expiry stays out of every feed, and a message the sender also deleted stays hidden from both participants.
@@ -52,6 +61,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
 ### Fixed
+- A chosen dark or light theme is applied correctly on load. The stored choice was read as though the flag recording that a choice existed were the choice itself, so every manual selection resolved to light: the application briefly showed the wrong theme before correcting itself, and the panel, which has nothing to correct it, stayed light permanently.
+- Primary buttons no longer render a near-white label on the light accent fill, which was unreadable in the light theme.
+- Selecting an option in the panel's action-type filter shows a focus outline again when reached from the keyboard.
+- Filter options are no longer clipped out of reach at narrow widths.
 - A loaded marker message in an open conversation no longer disappears when the other participant
   sends enough new messages to push it out of the newest history page during a live refresh.
 - Message threads now clear the blocked-user composer hint after an unblock from another surface,
@@ -132,6 +145,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Application screens and the signed-in shell are now downloaded on demand. A visitor on the sign-in page no longer downloads the composer, story viewer, and message pane before the form is usable; the initial download is roughly a third smaller.
 
 ### Tests
+- The panel's record selection is covered by unit tests, including a link naming a record the list no longer contains.
 - Continuous integration now runs lint and unit tests in addition to the build.
 
 ### Added
