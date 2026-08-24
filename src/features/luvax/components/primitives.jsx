@@ -57,7 +57,11 @@ export function LxBtn({
     lg: { fontSize: 16, padding: '12px 28px' },
   };
   const variants = {
-    primary: { background: v.accent, color: v.inkInverse, border: 'none' },
+    // The accent fill is the same colour in both themes, so the label cannot
+    // use a token that flips with it. --lx-ink-inverse is near-white in the
+    // light theme and measured 2.08:1 on the accent; --lx-black is
+    // theme-invariant and clears 9:1 on the accent in both.
+    primary: { background: v.accent, color: v.black, border: 'none' },
     secondary: { background: v.surface, color: v.ink, border: `1px solid ${v.border}` },
     ghost: { background: 'transparent', color: v.ink, border: `1px solid ${v.border}` },
     danger: { background: 'transparent', color: v.error, border: `1px solid ${v.error}` },

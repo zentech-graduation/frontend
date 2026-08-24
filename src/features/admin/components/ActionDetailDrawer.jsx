@@ -52,10 +52,10 @@ function MetaLabel({ children }) {
     <span
       style={{
         fontFamily: v.fontMono,
-        fontSize: 10,
+        fontSize: 11,
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
-        color: v.ink3,
+        color: v.ink2,
       }}
     >
       {children}
@@ -89,7 +89,7 @@ function MetaValue({ fieldKey, value, reasonLabel }) {
   }
   if (fieldKey === 'remainingBannedHashtags' || fieldKey === 'warningIds') {
     if (!Array.isArray(value) || value.length === 0) {
-      return <span style={{ color: v.ink3 }}>none</span>;
+      return <span style={{ color: v.ink2 }}>none</span>;
     }
     if (fieldKey === 'remainingBannedHashtags') {
       return <>{value.map((tag) => `#${tag}`).join(', ')}</>;
@@ -101,7 +101,7 @@ function MetaValue({ fieldKey, value, reasonLabel }) {
     );
   }
   if (value === null || value === undefined) {
-    return <span style={{ color: v.ink3 }}>none</span>;
+    return <span style={{ color: v.ink2 }}>none</span>;
   }
   if (typeof value === 'object') {
     return (
@@ -120,7 +120,7 @@ function ActionMetadata({ metadata, reasonLabel }) {
     (typeof metadata === 'object' && Object.keys(metadata).length === 0)
   ) {
     return (
-      <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+      <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>
         no additional detail recorded.
       </span>
     );
@@ -220,13 +220,13 @@ export function ActionDetailDrawer({ actionId, onClose }) {
               borderRadius: 8,
             }}
           >
-            <LxIcon name="close" size={18} color={v.ink3} />
+            <LxIcon name="close" size={18} color={v.ink2} />
           </button>
         </header>
 
         <div style={{ padding: 20 }}>
           {isLoading ? (
-            <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3 }}>
+            <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2 }}>
               loading action...
             </div>
           ) : notFound ? (
@@ -249,7 +249,7 @@ export function ActionDetailDrawer({ actionId, onClose }) {
                     title="this action type is not in the moderation-action vocabulary"
                     style={{
                       fontFamily: v.fontMono,
-                      fontSize: 10,
+                      fontSize: 11,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       color: v.warningText,
@@ -267,7 +267,7 @@ export function ActionDetailDrawer({ actionId, onClose }) {
                 {action.adminId ? (
                   <ReporterName userId={action.adminId} prefix="@" />
                 ) : (
-                  <span style={{ color: v.ink3, fontStyle: 'italic' }}>system</span>
+                  <span style={{ color: v.ink2, fontStyle: 'italic' }}>system</span>
                 )}
               </MetaRow>
 
@@ -292,7 +292,7 @@ export function ActionDetailDrawer({ actionId, onClose }) {
                   {action.targetEntityType}
                   {action.targetEntityId ? (
                     <span
-                      style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink3, marginLeft: 8 }}
+                      style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink2, marginLeft: 8 }}
                     >
                       {action.targetEntityId.slice(0, 8)}
                     </span>
@@ -301,7 +301,7 @@ export function ActionDetailDrawer({ actionId, onClose }) {
               )}
 
               <MetaRow label="reason">
-                {action.reason ? action.reason : <span style={{ color: v.ink3 }}>none</span>}
+                {action.reason ? action.reason : <span style={{ color: v.ink2 }}>none</span>}
               </MetaRow>
 
               <MetaRow label="when">

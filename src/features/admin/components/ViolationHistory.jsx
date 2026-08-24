@@ -40,7 +40,7 @@ const KIND_TONES = {
 };
 
 function KindBadge({ kind }) {
-  const tone = KIND_TONES[kind] ?? { bg: v.surface, color: v.ink3, icon: 'flag', label: kind };
+  const tone = KIND_TONES[kind] ?? { bg: v.surface, color: v.ink2, icon: 'flag', label: kind };
   return (
     <span
       style={{
@@ -48,7 +48,7 @@ function KindBadge({ kind }) {
         alignItems: 'center',
         gap: 5,
         fontFamily: v.fontMono,
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 500,
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
@@ -234,13 +234,13 @@ export function ViolationHistory({ userId }) {
                 <span
                   style={{
                     fontFamily: v.fontMono,
-                    fontSize: 10,
+                    fontSize: 11,
                     textTransform: 'uppercase',
                     letterSpacing: '0.06em',
                     borderRadius: 999,
                     padding: '3px 9px',
                     background: v.surface,
-                    color: v.ink3,
+                    color: v.ink2,
                     border: `1px solid ${v.border}`,
                     whiteSpace: 'nowrap',
                   }}
@@ -271,7 +271,7 @@ export function ViolationHistory({ userId }) {
                 gap: 8,
                 fontFamily: v.fontBody,
                 fontSize: 12,
-                color: v.ink3,
+                color: v.ink2,
                 flexWrap: 'wrap',
               }}
             >
@@ -289,7 +289,7 @@ export function ViolationHistory({ userId }) {
                   gap: 8,
                   fontFamily: v.fontBody,
                   fontSize: 12,
-                  color: v.ink3,
+                  color: v.ink2,
                   flexWrap: 'wrap',
                 }}
               >

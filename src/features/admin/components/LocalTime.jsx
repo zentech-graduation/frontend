@@ -16,11 +16,11 @@ const localZone = () => {
 
 export function LocalTime({ value, showZone = true }) {
   if (!value) {
-    return <span style={{ color: v.ink3 }}>-</span>;
+    return <span style={{ color: v.ink2 }}>-</span>;
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return <span style={{ color: v.ink3 }}>-</span>;
+    return <span style={{ color: v.ink2 }}>-</span>;
   }
   const label = date.toLocaleString(undefined, {
     year: 'numeric',
@@ -34,7 +34,7 @@ export function LocalTime({ value, showZone = true }) {
     <span title={`${value} (UTC)`} style={{ fontFamily: v.fontBody, color: v.ink2 }}>
       {label}
       {showZone ? (
-        <span style={{ color: v.ink3, fontSize: '0.85em', marginLeft: 6 }}>{localZone()}</span>
+        <span style={{ color: v.ink2, fontSize: '0.85em', marginLeft: 6 }}>{localZone()}</span>
       ) : null}
     </span>
   );

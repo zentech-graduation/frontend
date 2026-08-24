@@ -58,10 +58,10 @@ export function ReasonSelect({
         htmlFor={id}
         style={{
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
         }}
       >
         reason
@@ -82,7 +82,7 @@ export function ReasonSelect({
             gap: 8,
             fontFamily: v.fontBody,
             fontSize: 14,
-            color: selected ? v.ink : v.ink3,
+            color: selected ? v.ink : v.ink2,
             background: v.surfaceSunken,
             border: `1px solid ${error ? v.error : open ? v.accent : v.border}`,
             borderRadius: 10,
@@ -92,7 +92,7 @@ export function ReasonSelect({
           }}
         >
           <span>{selected ? selected.displayName : 'select a reason'}</span>
-          <LxIcon name="chevronDown" size={16} color={v.ink3} />
+          <LxIcon name="chevronDown" size={16} color={v.ink2} />
         </button>
 
         {open ? (
@@ -143,7 +143,7 @@ export function ReasonSelect({
                     borderRadius: 8,
                     fontFamily: v.fontBody,
                     fontSize: 14,
-                    color: isDisabled ? v.ink3 : v.ink,
+                    color: isDisabled ? v.ink2 : v.ink,
                     background: isSelected ? v.accentDim : 'transparent',
                     cursor: isDisabled ? 'not-allowed' : 'pointer',
                     opacity: isDisabled ? 0.55 : 1,
@@ -154,9 +154,9 @@ export function ReasonSelect({
                     <span
                       style={{
                         fontFamily: v.fontMono,
-                        fontSize: 10,
+                        fontSize: 11,
                         textTransform: 'uppercase',
-                        color: v.ink3,
+                        color: v.ink2,
                       }}
                     >
                       unavailable

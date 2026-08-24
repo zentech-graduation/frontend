@@ -327,7 +327,7 @@ const Field = ({ label, children }) => (
         fontSize: 9,
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
-        color: v.ink3,
+        color: v.ink2,
       }}
     >
       {label}
@@ -351,7 +351,7 @@ function StateSummary({ detail, isSelf }) {
               alignItems: 'center',
               gap: 4,
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               color: v.accentText,
             }}
@@ -366,21 +366,21 @@ function StateSummary({ detail, isSelf }) {
               alignItems: 'center',
               gap: 4,
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
-            <LxIcon name="lock" size={12} color={v.ink3} /> private
+            <LxIcon name="lock" size={12} color={v.ink2} /> private
           </span>
         ) : null}
         {isSelf ? (
           <span
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
-              color: v.ink3,
+              color: v.ink2,
               background: v.surface,
               borderRadius: 999,
               padding: '2px 8px',

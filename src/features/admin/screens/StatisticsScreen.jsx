@@ -255,7 +255,7 @@ function SeriesBody({ cooling, remaining, timeseries, state, metric, granularity
         toMs={range.toMs}
       />
 
-      <p style={{ margin: '12px 0 0', fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+      <p style={{ margin: '12px 0 0', fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
         {timeseries.points.length} bucket{timeseries.points.length === 1 ? '' : 's'} returned,{' '}
         {granularity.label}, times shown in {localZone()}. every point is a stored measurement; the
         chart draws nothing between them.
@@ -270,15 +270,15 @@ function MetricSelector({ value, onChange, disabled }) {
       <span
         style={{
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
         }}
       >
         {label}
       </span>
-      <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>{hint}</span>
+      <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>{hint}</span>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {metrics.map((m) => (
           <LxTag
@@ -309,7 +309,7 @@ function MetricSelector({ value, onChange, disabled }) {
         'each point is how much happened inside that bucket.',
         FLOW_METRICS
       )}
-      <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+      <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
         one metric is read at a time. the series endpoint allows a small number of reads a minute
         and there are {METRICS.length} metrics, so a screen that drew them all at once would exhaust
         its budget in two page loads.
@@ -324,10 +324,10 @@ function GranularitySelector({ options, value, onChange, disabled }) {
       <span
         style={{
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
         }}
       >
         bucket width
@@ -351,17 +351,17 @@ function GranularitySelector({ options, value, onChange, disabled }) {
         ))}
       </div>
       {options.some((option) => !option.available) ? (
-        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           fine buckets are kept for {FINE_HORIZON_DAYS} days and then rolled up into daily rows and
           deleted. a range starting before that can only be read daily, so the half-hour option is
           offered as unavailable rather than allowed and then refused.
         </span>
       ) : (
-        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           both widths are available for this range. fine buckets survive {FINE_HORIZON_DAYS} days.
         </span>
       )}
-      <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+      <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
         {GRANULARITIES.length} widths exist; the server accepts no other.
       </span>
     </div>
@@ -410,12 +410,12 @@ function SnapshotPanel({ current }) {
     <PanelCard
       title="snapshot"
       right={
-        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           as of <LocalTime value={snapshot.computedAt} />
         </span>
       }
     >
-      <p style={{ margin: '0 0 16px', fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+      <p style={{ margin: '0 0 16px', fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>
         read from the last completed bucket, which began at{' '}
         <LocalTime value={snapshot.bucketStart} showZone={false} />. these figures are up to 30
         minutes behind the platform and are not live — an account banned a moment ago will not
@@ -469,10 +469,10 @@ function Figure({ label, value }) {
       <div
         style={{
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
         }}
       >
         {label}
@@ -500,17 +500,17 @@ function Breakdown({ label, map }) {
       <div
         style={{
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
           marginBottom: 8,
         }}
       >
         {label}
       </div>
       {entries.length === 0 ? (
-        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>
           no rows in this bucket
         </div>
       ) : (
@@ -552,10 +552,10 @@ function TopHashtags({ entries, live }) {
         <span
           style={{
             fontFamily: v.fontMono,
-            fontSize: 10,
+            fontSize: 11,
             textTransform: 'uppercase',
             letterSpacing: '0.06em',
-            color: v.ink3,
+            color: v.ink2,
           }}
         >
           most used hashtags
@@ -577,7 +577,7 @@ function TopHashtags({ entries, live }) {
         ) : null}
       </div>
       {(entries ?? []).length === 0 ? (
-        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>
           no active hashtags carry a post
         </div>
       ) : (
@@ -597,9 +597,9 @@ function TopHashtags({ entries, live }) {
                 color: v.ink2,
               }}
             >
-              <LxIcon name="hash" size={11} color={v.ink3} />
+              <LxIcon name="hash" size={11} color={v.ink2} />
               {tag.name}
-              <span style={{ fontFamily: v.fontMono, color: v.ink3 }}>{tag.postCount}</span>
+              <span style={{ fontFamily: v.fontMono, color: v.ink2 }}>{tag.postCount}</span>
             </span>
           ))}
         </div>

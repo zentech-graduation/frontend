@@ -37,12 +37,12 @@ export function NotAvailable({
           justifyContent: 'center',
         }}
       >
-        <LxIcon name="lock" size={22} color={v.ink3} />
+        <LxIcon name="lock" size={22} color={v.ink2} />
       </div>
       <div style={{ fontFamily: v.fontDisplay, fontSize: 20, fontWeight: 700, color: v.ink }}>
         {title}
       </div>
-      <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, maxWidth: 360 }}>
+      <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, maxWidth: 360 }}>
         {message}
       </div>
       <Link

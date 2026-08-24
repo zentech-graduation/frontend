@@ -139,7 +139,7 @@ export function AccountDisciplinePanel({ userId }) {
             issue warning
           </LxBtn>
         ) : (
-          <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+          <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
             a warning cannot be issued against {detail?.role === 'admin' ? 'an' : 'a'}{' '}
             {detail?.role ?? 'staff'} account.
           </span>

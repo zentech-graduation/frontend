@@ -91,7 +91,7 @@ export function MyEscalationsScreen() {
             margin: '10px 2px 0',
             fontFamily: v.fontBody,
             fontSize: 12,
-            color: v.ink3,
+            color: v.ink2,
           }}
         >
           a report stays on this list after it is closed, with the status it ended in. that is

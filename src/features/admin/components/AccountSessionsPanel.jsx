@@ -69,7 +69,7 @@ export function SessionList({
             <span
               style={{
                 fontFamily: v.fontMono,
-                fontSize: 10,
+                fontSize: 11,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
                 color: v.accentText,
@@ -177,7 +177,7 @@ export function SessionList({
         emptyHint="this account is not signed in anywhere. either it has never signed in, or every session has been revoked or has expired."
       />
 
-      <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+      <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
         the address and the user agent are the strings recorded when each session was issued. they
         are shown as they are: the record does not say where the person was or what device they
         held, and this panel does not guess.
@@ -187,7 +187,7 @@ export function SessionList({
           server could not name which row is theirs, so an unmarked list is not
           read as "none of these is mine". */}
       {rows.length > 0 && isSelf && !currentSessionKnown ? (
-        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           which of these is the session you are reading this in could not be determined, so none is
           marked. ending any one of them may sign you out.
         </p>
@@ -205,12 +205,12 @@ export function SessionList({
             background: isSelf ? v.warningDim : v.surface,
           }}
         >
-          <LxIcon name="alert" size={14} color={isSelf ? v.warningText : v.ink3} />
+          <LxIcon name="alert" size={14} color={isSelf ? v.warningText : v.ink2} />
           <span
             style={{
               fontFamily: v.fontBody,
               fontSize: 12,
-              color: isSelf ? v.warningText : v.ink3,
+              color: isSelf ? v.warningText : v.ink2,
               flex: '1 1 260px',
               minWidth: 0,
             }}
@@ -310,7 +310,7 @@ export function ReportsAgainstList({ reports }) {
       />
 
       {rows.length > 0 ? (
-        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           this is the recent set the account detail carries, not a full history — there is no
           paginated list of reports against one account, so an older report may exist without
           appearing here.
@@ -329,20 +329,20 @@ function SubHeading({ icon, title, note }) {
           alignItems: 'center',
           gap: 6,
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
         }}
       >
-        <LxIcon name={icon} size={12} color={v.ink3} />
+        <LxIcon name={icon} size={12} color={v.ink2} />
         {title}
       </span>
-      <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>{note}</span>
+      <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>{note}</span>
     </div>
   );
 }
 
 const Muted = ({ children }) => (
-  <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>{children}</span>
+  <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>{children}</span>
 );

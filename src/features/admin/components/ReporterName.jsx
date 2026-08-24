@@ -21,7 +21,7 @@ export function ReporterName({ userId, prefix = '' }) {
   }
 
   return (
-    <span style={{ fontFamily: v.fontMono, color: v.ink3, fontSize: '0.92em' }} title={userId}>
+    <span style={{ fontFamily: v.fontMono, color: v.ink2, fontSize: '0.92em' }} title={userId}>
       {isLoading ? shortId(userId) + '...' : shortId(userId)}
     </span>
   );

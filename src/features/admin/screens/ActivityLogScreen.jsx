@@ -228,13 +228,13 @@ export function ActivityLogScreen() {
 
 const mono = {
   fontFamily: v.fontMono,
-  fontSize: 10,
+  fontSize: 11,
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
-  color: v.ink3,
+  color: v.ink2,
 };
 
-const hint = { fontFamily: v.fontBody, fontSize: 12, color: v.ink3 };
+const hint = { fontFamily: v.fontBody, fontSize: 12, color: v.ink2 };
 
 function EventTag({ type }) {
   const known = WRITTEN_EVENT_TYPES.find((entry) => entry.key === type);
@@ -252,7 +252,7 @@ function EventTag({ type }) {
       <LxIcon
         name={type === 'search' ? 'explore' : type === 'profile_view' ? 'eye' : 'logout'}
         size={12}
-        color={v.ink3}
+        color={v.ink2}
       />
       {known?.label ?? String(type ?? '').replace(/_/g, ' ')}
     </span>
@@ -267,7 +267,7 @@ function EventTag({ type }) {
 function AccountCell({ userId }) {
   const { username } = useResolveUsername(userId);
   if (!userId) {
-    return <span style={{ color: v.ink3 }}>-</span>;
+    return <span style={{ color: v.ink2 }}>-</span>;
   }
   return (
     <Link
@@ -283,7 +283,7 @@ function AccountCell({ userId }) {
       <span style={username ? undefined : { fontFamily: v.fontMono, fontSize: 12 }}>
         {username ? `@${username}` : shortId(userId)}
       </span>
-      <LxIcon name="chevronRight" size={12} color={v.ink3} />
+      <LxIcon name="chevronRight" size={12} color={v.ink2} />
     </Link>
   );
 }
@@ -307,7 +307,7 @@ function EventDetail({ row }) {
         <span style={{ fontFamily: v.fontMono, color: v.ink }}>
           {query ? `"${query}"` : 'an unrecorded term'}
         </span>
-        {scope ? <span style={{ color: v.ink3 }}> in {scope}</span> : null}
+        {scope ? <span style={{ color: v.ink2 }}> in {scope}</span> : null}
       </span>
     );
   }
@@ -337,5 +337,5 @@ function EventDetail({ row }) {
 }
 
 const Muted = ({ children }) => (
-  <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>{children}</span>
+  <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>{children}</span>
 );

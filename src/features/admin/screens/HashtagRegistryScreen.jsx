@@ -142,10 +142,10 @@ export function HashtagRegistryScreen() {
     const buttons = [];
     if (tag.status === 'active') {
       buttons.push(['ban', 'ban', v.error]);
-      buttons.push(['delete', 'trash', v.ink3]);
+      buttons.push(['delete', 'trash', v.ink2]);
     } else if (tag.status === 'banned') {
       buttons.push(['unban', 'check', v.successText]);
-      buttons.push(['delete', 'trash', v.ink3]);
+      buttons.push(['delete', 'trash', v.ink2]);
     } else if (tag.status === 'deleted') {
       buttons.push(['restore', 'check', v.successText]);
     }
@@ -199,7 +199,7 @@ export function HashtagRegistryScreen() {
             fontWeight: 500,
           }}
         >
-          <LxIcon name="hash" size={13} color={v.ink3} />
+          <LxIcon name="hash" size={13} color={v.ink2} />
           {row.name}
         </span>
       ),
@@ -316,7 +316,7 @@ export function HashtagRegistryScreen() {
               padding: '8px 14px',
             }}
           >
-            <LxIcon name="explore" size={15} color={v.ink3} />
+            <LxIcon name="explore" size={15} color={v.ink2} />
             <input
               type="text"
               value={search.text}
@@ -351,7 +351,7 @@ export function HashtagRegistryScreen() {
                   padding: 2,
                 }}
               >
-                <LxIcon name="close" size={14} color={v.ink3} />
+                <LxIcon name="close" size={14} color={v.ink2} />
               </button>
             ) : null}
           </div>
