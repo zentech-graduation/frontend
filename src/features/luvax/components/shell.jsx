@@ -7,6 +7,7 @@ import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
 import { useAuthStore } from '@/store/useAuthStore';
+import { isPanelRole } from '@/config/roles';
 
 // `id` still identifies the active tab for the shell's own styling; `path` is
 // where the tab actually goes.
@@ -423,7 +424,13 @@ const RAIL_ICON_SIZE = 20;
 // Instagram's own collapsed sidebar uses.
 export function LxSideRail({ active, navigate, visible = true }) {
   const currentUser = useAuthStore((state) => state.user);
+  const role = useAuthStore((state) => state.role);
   const [expanded, setExpanded] = useState(false);
+  // The role is held in memory only and is absent until the session is
+  // established, so this reads false first and turns true once the role
+  // arrives. The entry appears late for a privileged account rather than
+  // appearing for an ordinary one and then vanishing.
+  const canReachPanel = isPanelRole(role);
   const { data: requestsResponse } = usePendingFollowRequests();
   const requests = extractPageContent(requestsResponse);
   const { data: unreadResponse } = useUnreadCount();
@@ -556,6 +563,20 @@ export function LxSideRail({ active, navigate, visible = true }) {
           );
         })}
       </div>
+
+      {canReachPanel ? (
+        <button
+          onClick={() => navigate(ROUTES.ADMIN)}
+          aria-label="panel"
+          className="lx-tab-btn"
+          style={rowStyle(false)}
+        >
+          <span style={iconWrapStyle}>
+            <LxIcon name="shield" size={RAIL_ICON_SIZE} color={v.ink3} stroke={1.5} />
+          </span>
+          <span style={labelStyle(false)}>panel</span>
+        </button>
+      ) : null}
 
       <button
         onClick={() => navigate(ROUTES.SETTINGS)}
