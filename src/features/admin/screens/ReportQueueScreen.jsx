@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
-import { routeTo } from '@/config/constants';
 import { isAdminRole } from '@/config/roles';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -9,7 +8,10 @@ import { PageHeader } from '../components/PanelPage';
 import { FilterBar } from '../components/FilterBar';
 import { RecordTable } from '../components/RecordTable';
 import { LoadMore } from '../components/LoadMore';
+import { SplitView } from '../components/SplitView';
 import { buildReportColumns } from '../components/reportColumns';
+import { getSplitSelection, withSelection } from '../lib/splitSelection';
+import { ReportDetailScreen } from './ReportDetailScreen';
 import { useReportQueue } from '../hooks/useReportQueue';
 import { useVocabularies } from '../hooks/useVocabularies';
 import {
@@ -34,7 +36,6 @@ import {
 const DEFAULT_STATUS = 'pending';
 
 export function ReportQueueScreen() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { reasonLabel } = useVocabularies();
   const role = useAuthStore((state) => state.role);
@@ -79,6 +80,12 @@ export function ReportQueueScreen() {
   const clearFilters = () => setSearchParams({}, { replace: true });
   const isDirty = status !== DEFAULT_STATUS || reportType !== '';
 
+  // The open record is a history entry of its own, so back walks from one
+  // record to the record before it and finally to the bare list.
+  const { selectedId, hasSelection } = getSplitSelection(searchParams, rows);
+  const openRecord = (id) => setSearchParams(withSelection(searchParams, id));
+  const closeRecord = () => setSearchParams(withSelection(searchParams, null));
+
   const groups = [
     {
       key: 'status',
@@ -94,7 +101,7 @@ export function ReportQueueScreen() {
     },
   ];
 
-  return (
+  const list = (
     <div>
       <PageHeader
         title="reports"
@@ -107,7 +114,8 @@ export function ReportQueueScreen() {
           columns={columns}
           rows={rows}
           keyField="id"
-          onRowClick={(row) => navigate(routeTo.adminReportDetail(row.id))}
+          onRowClick={(row) => openRecord(row.id)}
+          selectedKey={selectedId}
           isLoading={isLoading}
           isError={isError}
           errorMessage={error?.message}
@@ -125,5 +133,20 @@ export function ReportQueueScreen() {
         />
       </div>
     </div>
+  );
+
+  return (
+    <SplitView
+      list={list}
+      hasSelection={hasSelection}
+      onClose={closeRecord}
+      backLabel="back to the queue"
+      emptyIcon="flag"
+      emptyTitle="no report open"
+      emptyHint="pick a report from the queue to see what was reported, who reported it, and what can be done about it."
+      detail={
+        selectedId ? <ReportDetailScreen key={selectedId} reportId={selectedId} embedded /> : null
+      }
+    />
   );
 }

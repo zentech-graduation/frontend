@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 import { v } from '@/config/tokens';
-import { routeTo } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 
 import { PageHeader, PanelCard } from '../components/PanelPage';
@@ -10,7 +9,10 @@ import { RecordTable } from '../components/RecordTable';
 import { FilterBar } from '../components/FilterBar';
 import { LoadMore } from '../components/LoadMore';
 import { LocalTime } from '../components/LocalTime';
+import { SplitView } from '../components/SplitView';
 import { StatusBadge } from '../components/StatusBadge';
+import { getSplitSelection, withSelection } from '../lib/splitSelection';
+import { AccountModerationScreen } from './AccountModerationScreen';
 import { useAccountList, useAccountSearch } from '../hooks/useAccounts';
 import { useDebouncedSearch } from '../hooks/useDebouncedSearch';
 import { describeError } from '../lib/errors';
@@ -41,7 +43,6 @@ const ROLE_OPTIONS = [
 ];
 
 export function AccountListScreen() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const status = searchParams.get('status') || '';
   const role = searchParams.get('role') || '';
@@ -60,6 +61,12 @@ export function AccountListScreen() {
 
   const searching = searchResult.active || search.tooShort || search.cooling;
   const view = searchResult.active ? searchResult : list;
+
+  // The open account is a history entry of its own, so back walks from one
+  // account to the account before it and finally to the bare list.
+  const { selectedId, hasSelection } = getSplitSelection(searchParams, view.rows);
+  const openRecord = (id) => setSearchParams(withSelection(searchParams, id), { replace: false });
+  const closeRecord = () => setSearchParams(withSelection(searchParams, null), { replace: false });
 
   const setFilter = (key, value) => {
     setSearchParams(
@@ -90,7 +97,7 @@ export function AccountListScreen() {
               style={{
                 fontFamily: v.fontBody,
                 fontSize: 12,
-                color: v.ink3,
+                color: v.ink2,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -107,7 +114,7 @@ export function AccountListScreen() {
       key: 'email',
       header: 'email',
       nowrap: true,
-      render: (row) => <span style={{ color: v.ink3 }}>{row.email}</span>,
+      render: (row) => <span style={{ color: v.ink2 }}>{row.email}</span>,
     },
     {
       key: 'role',
@@ -135,7 +142,7 @@ export function AccountListScreen() {
         row.lastLoginAt ? (
           <LocalTime value={row.lastLoginAt} showZone={false} />
         ) : (
-          <span style={{ color: v.ink3 }}>never</span>
+          <span style={{ color: v.ink2 }}>never</span>
         ),
     },
     {
@@ -143,13 +150,13 @@ export function AccountListScreen() {
       header: '',
       align: 'right',
       width: 40,
-      render: () => <LxIcon name="chevronRight" size={14} color={v.ink3} />,
+      render: () => <LxIcon name="chevronRight" size={14} color={v.ink2} />,
     },
   ];
 
   const isDirty = Boolean(status || role);
 
-  return (
+  const listPane = (
     <div>
       <PageHeader title="accounts" subtitle="find an account, see its state, and open it to act." />
 
@@ -176,7 +183,7 @@ export function AccountListScreen() {
               padding: '8px 14px',
             }}
           >
-            <LxIcon name="explore" size={15} color={v.ink3} />
+            <LxIcon name="explore" size={15} color={v.ink2} />
             <input
               type="text"
               value={search.text}
@@ -211,7 +218,7 @@ export function AccountListScreen() {
                   padding: 2,
                 }}
               >
-                <LxIcon name="close" size={14} color={v.ink3} />
+                <LxIcon name="close" size={14} color={v.ink2} />
               </button>
             ) : null}
           </div>
@@ -242,7 +249,7 @@ export function AccountListScreen() {
               borderBottom: `1px solid ${v.border}`,
               fontFamily: v.fontBody,
               fontSize: 13,
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             keep typing — search needs at least two characters.
@@ -254,7 +261,7 @@ export function AccountListScreen() {
               borderBottom: `1px solid ${v.border}`,
               fontFamily: v.fontBody,
               fontSize: 13,
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             showing search results. status and role filters apply to the full list, not to search.
@@ -274,7 +281,8 @@ export function AccountListScreen() {
         <RecordTable
           columns={columns}
           rows={view.rows}
-          onRowClick={(row) => navigate(routeTo.adminUser(row.id))}
+          onRowClick={(row) => openRecord(row.id)}
+          selectedKey={selectedId}
           isLoading={view.isLoading}
           isError={view.isError}
           errorMessage={view.error?.message}
@@ -298,5 +306,22 @@ export function AccountListScreen() {
         />
       </PanelCard>
     </div>
+  );
+
+  return (
+    <SplitView
+      list={listPane}
+      hasSelection={hasSelection}
+      onClose={closeRecord}
+      backLabel="back to accounts"
+      emptyIcon="profile"
+      emptyTitle="no account open"
+      emptyHint="pick an account from the list to see its state, its history, and what can be done about it."
+      detail={
+        selectedId ? (
+          <AccountModerationScreen key={selectedId} userId={selectedId} embedded />
+        ) : null
+      }
+    />
   );
 }
