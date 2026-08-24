@@ -52,6 +52,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
 ### Fixed
+- A loaded marker message in an open conversation no longer disappears when the other participant
+  sends enough new messages to push it out of the newest history page during a live refresh.
+- Message threads now clear the blocked-user composer hint after an unblock from another surface,
+  so mutual block/unblock flows no longer leave one side seeing a stale chat block state.
+- Message threads now re-check a stored "messaging unavailable" hint when the conversation becomes
+  active again, clearing stale blocked-by hints after the other person unblocks the viewer.
+- Follow request actions now use the request's requester id, so private-account owners can accept
+  or decline pending requests even when the embedded follower summary is incomplete.
+- Follow-request notifications now only show accept and decline actions while the request is still
+  pending, preventing old notifications from submitting stale request ids.
+- Live follow-request notifications now refresh the pending request cache too, so accept and
+  decline actions appear without reloading the notifications screen.
+- User follow buttons now sync back to refreshed relationship state, so a pending private-account
+  request changes to following after the request owner approves it.
 - Story captions, post comments, message replies, bios, and long direct-message text now wrap inside their containers instead of overflowing the UI.
 - Direct-message reply and draft state now stays scoped to the active conversation, so switching threads clears the old reply target while preserving each thread's unsent text.
 - Direct messages now support pasted image attachments and expose the same hover actions for media messages as text messages, including delete and copy-image actions where available.

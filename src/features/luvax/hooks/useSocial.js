@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import * as socialService from '../../../services/social.service';
 import { getNextCursor } from '@/utils/helpers';
+import { notifKeys } from './useNotifications';
 
 export const socialKeys = {
   all: ['social'],
@@ -128,6 +129,7 @@ export const useApproveFollowRequest = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: socialKeys.requests() });
       queryClient.invalidateQueries({ queryKey: socialKeys.followers() });
+      queryClient.invalidateQueries({ queryKey: notifKeys.all });
     },
   });
 };
@@ -138,6 +140,7 @@ export const useRejectFollowRequest = () => {
     mutationFn: (requesterId) => socialService.rejectFollowRequest(requesterId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: socialKeys.requests() });
+      queryClient.invalidateQueries({ queryKey: notifKeys.all });
     },
   });
 };
