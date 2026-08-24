@@ -12,11 +12,19 @@ import './index.css';
  *
  * Applies data-theme synchronously, before React mounts, so first paint never
  * flashes the wrong theme for users with a manual override or a dark OS preference.
+ *
+ * `lxDarkManual` is a flag recording only that a choice was made; the chosen
+ * value lives in `lxDark`. Reading the flag as though it carried the value
+ * resolved every manual choice to light, which flashed the wrong theme in the
+ * user-facing application and left the panel — where nothing mounts to correct
+ * it afterwards — permanently light. Both keys are read here exactly as the
+ * application writes them.
  */
 function applyTheme() {
   const manual = window.localStorage.getItem('lxDarkManual');
   if (manual !== null) {
-    document.documentElement.setAttribute('data-theme', manual === 'true' ? 'dark' : 'light');
+    const stored = window.localStorage.getItem('lxDark');
+    document.documentElement.setAttribute('data-theme', stored === 'true' ? 'dark' : 'light');
     return;
   }
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
