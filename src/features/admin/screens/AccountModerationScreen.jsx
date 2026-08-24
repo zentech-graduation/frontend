@@ -24,8 +24,16 @@ import { useResolveUsername, shortId } from '../hooks/useResolveUsername';
  * owner, an audit row's target, and the account list, so a specific account's
  * record is a shareable link.
  */
-export function AccountModerationScreen() {
-  const { userId } = useParams();
+/**
+ * Rendered two ways from one implementation. On its own route it is the whole
+ * screen and reads the account from the path — the form a moderator reaches
+ * from the action log. Inside the account list's right region it is handed the
+ * id and drops its own "all accounts" link, because the split carries the way
+ * back. Neither form changes what is fetched.
+ */
+export function AccountModerationScreen({ userId: userIdProp, embedded = false }) {
+  const params = useParams();
+  const userId = userIdProp ?? params.userId;
   const role = useAuthStore((state) => state.role);
   const isAdmin = isAdminRole(role);
   const { username, isLoading: nameLoading } = useResolveUsername(userId);
@@ -42,7 +50,7 @@ export function AccountModerationScreen() {
         title="account"
         subtitle={nameLabel}
         right={
-          isAdmin ? (
+          isAdmin && !embedded ? (
             <Link
               to={ROUTES.ADMIN_USERS}
               style={{
@@ -51,11 +59,11 @@ export function AccountModerationScreen() {
                 gap: 6,
                 fontFamily: v.fontBody,
                 fontSize: 13,
-                color: v.ink3,
+                color: v.ink2,
                 textDecoration: 'none',
               }}
             >
-              <LxIcon name="chevronLeft" size={14} color={v.ink3} />
+              <LxIcon name="chevronLeft" size={14} color={v.ink2} />
               all accounts
             </Link>
           ) : null

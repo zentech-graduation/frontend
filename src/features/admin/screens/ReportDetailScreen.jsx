@@ -9,6 +9,7 @@ import { LxBtn } from '@/features/luvax/components/primitives';
 import { toast } from '@/features/luvax/components/Toast';
 
 import { PageHeader, PanelCard } from '../components/PanelPage';
+import { AdminMediaGrid } from '../components/AdminMediaViewer';
 import { StatusBadge } from '../components/StatusBadge';
 import { LocalTime } from '../components/LocalTime';
 import { ReporterName } from '../components/ReporterName';
@@ -33,10 +34,10 @@ const Field = ({ label, children }) => (
     <span
       style={{
         fontFamily: v.fontMono,
-        fontSize: 10,
+        fontSize: 11,
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
-        color: v.ink3,
+        color: v.ink2,
       }}
     >
       {label}
@@ -48,12 +49,12 @@ const Field = ({ label, children }) => (
 function TargetRegion({ target, isLoading, isError }) {
   if (isLoading) {
     return (
-      <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>loading content...</div>
+      <div style={{ color: v.ink2, fontFamily: v.fontBody, fontSize: 13 }}>loading content...</div>
     );
   }
   if (isError || !target) {
     return (
-      <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 13 }}>
+      <div style={{ color: v.ink2, fontFamily: v.fontBody, fontSize: 13 }}>
         the reported content could not be loaded.
       </div>
     );
@@ -90,7 +91,7 @@ function TargetRegion({ target, isLoading, isError }) {
         {target.ownerUsername ? (
           `@${target.ownerUsername}`
         ) : (
-          <span style={{ fontFamily: v.fontMono, color: v.ink3 }} title={target.ownerId ?? ''}>
+          <span style={{ fontFamily: v.fontMono, color: v.ink2 }} title={target.ownerId ?? ''}>
             {target.ownerId ? target.ownerId.slice(0, 8) : 'unknown'}
           </span>
         )}
@@ -115,30 +116,20 @@ function TargetRegion({ target, isLoading, isError }) {
         </div>
       ) : null}
 
-      {media.length > 0 ? (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {media.map((url) => (
-            <img
-              key={url}
-              src={url}
-              alt="reported media"
-              style={{
-                width: 96,
-                height: 96,
-                objectFit: 'cover',
-                borderRadius: 8,
-                border: `1px solid ${v.border}`,
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
+      <AdminMediaGrid urls={media} label="reported media" />
     </div>
   );
 }
 
-export function ReportDetailScreen() {
-  const { reportId } = useParams();
+/**
+ * Rendered two ways from one implementation. On its own route it is the whole
+ * screen and reads the report from the path. Inside the queue's right region it
+ * is handed the id and drops its own "back to reports" link, because the split
+ * carries the way back. Neither form changes what is fetched.
+ */
+export function ReportDetailScreen({ reportId: reportIdProp, embedded = false }) {
+  const params = useParams();
+  const reportId = reportIdProp ?? params.reportId;
   const role = useAuthStore((state) => state.role);
   const isAdmin = isAdminRole(role);
   const { reasonLabel } = useVocabularies();
@@ -186,7 +177,7 @@ export function ReportDetailScreen() {
     return (
       <div>
         <PageHeader title="report" />
-        <div style={{ color: v.ink3, fontFamily: v.fontBody, fontSize: 14, padding: 24 }}>
+        <div style={{ color: v.ink2, fontFamily: v.fontBody, fontSize: 14, padding: 24 }}>
           loading report...
         </div>
       </div>
@@ -248,17 +239,19 @@ export function ReportDetailScreen() {
         title="report"
         subtitle={`report ${reportId?.slice(0, 8)}`}
         right={
-          <Link
-            to={ROUTES.ADMIN_REPORTS}
-            style={{
-              fontFamily: v.fontBody,
-              fontSize: 14,
-              color: v.accentText,
-              textDecoration: 'none',
-            }}
-          >
-            back to reports
-          </Link>
+          embedded ? null : (
+            <Link
+              to={ROUTES.ADMIN_REPORTS}
+              style={{
+                fontFamily: v.fontBody,
+                fontSize: 14,
+                color: v.accentText,
+                textDecoration: 'none',
+              }}
+            >
+              back to reports
+            </Link>
+          )
         }
       />
 

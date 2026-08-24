@@ -169,7 +169,7 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
           >
             suspend this account
           </div>
-          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55 }}>
+          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.55 }}>
             {isIndefinite
               ? 'the account cannot sign in. an indefinite suspension has no end date and never lifts on its own — it lasts until an administrator unsuspends it.'
               : 'the account cannot sign in until the suspension ends. it lifts automatically at the time below, or an administrator can unsuspend it sooner.'}
@@ -180,10 +180,10 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
           <legend
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
               padding: 0,
               marginBottom: 6,
             }}
@@ -234,10 +234,10 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
             htmlFor="suspend-days"
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             duration (days)
@@ -274,7 +274,7 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
               minHeight: 20,
               fontFamily: v.fontBody,
               fontSize: 13,
-              color: daysError ? v.errorText : v.ink3,
+              color: daysError ? v.errorText : v.ink2,
             }}
           >
             {daysError ? (
@@ -294,10 +294,10 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
             htmlFor="suspend-reason"
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             reason (recorded)
@@ -343,7 +343,7 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
               style={{
                 fontFamily: v.fontMono,
                 fontSize: 11,
-                color: overLimit ? v.errorText : v.ink3,
+                color: overLimit ? v.errorText : v.ink2,
               }}
             >
               {reason.length}/{REASON_MAX}
@@ -386,7 +386,7 @@ export function SuspendDialog({ open, busy = false, serverError = null, onConfir
               fontFamily: v.fontBody,
               fontSize: 14,
               fontWeight: 600,
-              color: confirmInert ? v.ink3 : v.white,
+              color: confirmInert ? v.ink2 : v.white,
               opacity: !armed ? 0.5 : 1,
               transition: 'opacity 0.25s, background 0.25s, color 0.25s',
             }}

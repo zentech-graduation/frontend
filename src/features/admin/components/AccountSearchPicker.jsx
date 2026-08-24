@@ -113,7 +113,7 @@ export function AccountSearchPicker({
           padding: '6px 12px',
         }}
       >
-        <LxIcon name="explore" size={14} color={v.ink3} />
+        <LxIcon name="explore" size={14} color={v.ink2} />
         <input
           id={id}
           type="text"
@@ -136,7 +136,7 @@ export function AccountSearchPicker({
             color: v.ink,
           }}
         />
-        {isLoading && active ? <LxIcon name="clock" size={13} color={v.ink3} /> : null}
+        {isLoading && active ? <LxIcon name="clock" size={13} color={v.ink2} /> : null}
       </div>
 
       {showDropdown ? (
@@ -204,7 +204,7 @@ export function AccountSearchPicker({
                       style={{
                         fontFamily: v.fontBody,
                         fontSize: 12,
-                        color: v.ink3,
+                        color: v.ink2,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -226,7 +226,7 @@ export function AccountSearchPicker({
 }
 
 const Hint = ({ children }) => (
-  <div style={{ padding: '10px 12px', fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+  <div style={{ padding: '10px 12px', fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>
     {children}
   </div>
 );

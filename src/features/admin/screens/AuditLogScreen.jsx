@@ -37,14 +37,14 @@ function ActorFilter({ actorId, onChange }) {
         flexWrap: 'wrap',
       }}
     >
-      <LxIcon name="profile" size={14} color={v.ink3} />
+      <LxIcon name="profile" size={14} color={v.ink2} />
       <span
         style={{
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
         }}
       >
         actor
@@ -94,14 +94,14 @@ function TargetFilter({ targetUserId, onChange }) {
         flexWrap: 'wrap',
       }}
     >
-      <LxIcon name="flag" size={14} color={v.ink3} />
+      <LxIcon name="flag" size={14} color={v.ink2} />
       <span
         style={{
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
         }}
       >
         target
@@ -143,36 +143,27 @@ function ActionTypeFilter({ actions, value, onChange }) {
         flexWrap: 'wrap',
       }}
     >
-      <LxIcon name="filter" size={14} color={v.ink3} />
+      <LxIcon name="filter" size={14} color={v.ink2} />
       <span
         style={{
           fontFamily: v.fontMono,
-          fontSize: 10,
+          fontSize: 11,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
-          color: v.ink3,
+          color: v.ink2,
         }}
       >
         action type
       </span>
       <div style={{ position: 'relative' }}>
+        {/* The shared control class, so this sits in the same row as the
+            buttons and the date inputs and looks like one of them. The chevron
+            stays the icon component's rather than a painted one. */}
         <select
+          className="lx-admin-control"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          style={{
-            appearance: 'none',
-            WebkitAppearance: 'none',
-            MozAppearance: 'none',
-            fontFamily: v.fontBody,
-            fontSize: 13,
-            color: value ? v.ink : v.ink2,
-            background: v.surfaceSunken,
-            border: `1px solid ${v.border}`,
-            borderRadius: 999,
-            padding: '6px 30px 6px 14px',
-            outline: 'none',
-            cursor: 'pointer',
-          }}
+          style={{ paddingRight: 30 }}
         >
           <option value="">all actions</option>
           {actions.map((action) => (
@@ -190,7 +181,7 @@ function ActionTypeFilter({ actions, value, onChange }) {
             pointerEvents: 'none',
           }}
         >
-          <LxIcon name="chevronDown" size={14} color={v.ink3} />
+          <LxIcon name="chevronDown" size={14} color={v.ink2} />
         </span>
       </div>
       {value ? (
@@ -206,10 +197,10 @@ function ActionTypeFilter({ actions, value, onChange }) {
             cursor: 'pointer',
             fontFamily: v.fontBody,
             fontSize: 12,
-            color: v.ink3,
+            color: v.ink2,
           }}
         >
-          <LxIcon name="close" size={12} color={v.ink3} />
+          <LxIcon name="close" size={12} color={v.ink2} />
           clear
         </button>
       ) : null}
@@ -333,7 +324,7 @@ export function AuditLogScreen() {
           <ReporterName userId={row.adminId} prefix="@" />
         ) : (
           <span
-            style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3, fontStyle: 'italic' }}
+            style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, fontStyle: 'italic' }}
           >
             system
           </span>
@@ -350,7 +341,7 @@ export function AuditLogScreen() {
           <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2 }}>
             {row.targetEntityType}
             {row.targetEntityId ? (
-              <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3, marginLeft: 6 }}>
+              <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink2, marginLeft: 6 }}>
                 {row.targetEntityId.slice(0, 8)}
               </span>
             ) : null}
@@ -363,9 +354,9 @@ export function AuditLogScreen() {
       nowrap: true,
       render: (row) =>
         row.reportId ? (
-          <LxIcon name="flag" size={13} color={v.ink3} />
+          <LxIcon name="flag" size={13} color={v.ink2} />
         ) : (
-          <span style={{ color: v.ink3 }}>—</span>
+          <span style={{ color: v.ink2 }}>—</span>
         ),
     },
     {
@@ -379,7 +370,7 @@ export function AuditLogScreen() {
       header: '',
       align: 'right',
       width: 40,
-      render: () => <LxIcon name="chevronRight" size={14} color={v.ink3} />,
+      render: () => <LxIcon name="chevronRight" size={14} color={v.ink2} />,
     },
   ];
 

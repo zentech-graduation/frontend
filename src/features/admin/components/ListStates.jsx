@@ -42,13 +42,13 @@ export function EmptyState({ icon = 'check', title, hint }) {
           justifyContent: 'center',
         }}
       >
-        <LxIcon name={icon} size={20} color={v.ink3} />
+        <LxIcon name={icon} size={20} color={v.ink2} />
       </div>
       <div style={{ fontFamily: v.fontBody, fontSize: 15, fontWeight: 500, color: v.ink }}>
         {title}
       </div>
       {hint ? (
-        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3, maxWidth: 340 }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, maxWidth: 340 }}>
           {hint}
         </div>
       ) : null}
@@ -108,7 +108,7 @@ export function FailedState({ message, onRetry }) {
         something went wrong
       </div>
       {message ? (
-        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3, maxWidth: 340 }}>
+        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, maxWidth: 340 }}>
           {message}
         </div>
       ) : null}

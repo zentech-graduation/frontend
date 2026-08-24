@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import { v } from '@/config/tokens';
 import { ROUTES } from '@/config/constants';
 import { ROLES } from '@/config/roles';
 import { authApi } from '@/api/authApi';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useThemeChoice } from '@/hooks/useThemeChoice';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { LxAvatar } from '@/components/ui/lx-avatar';
 import { ToastHost, toast } from '@/features/luvax/components/Toast';
@@ -133,7 +134,7 @@ function HeaderIdentity() {
           {displayName}
         </span>
         {username ? (
-          <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>@{username}</span>
+          <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink2 }}>@{username}</span>
         ) : null}
       </div>
     </div>
@@ -144,6 +145,7 @@ export default function AdminShell() {
   const role = useAuthStore((state) => state.role);
   const navigate = useNavigate();
   const { count: escalatedCount } = useEscalatedCount();
+  const { dark, toggleTheme } = useThemeChoice();
 
   // Fetched once here so every screen has the vocabulary labels available.
   useVocabularies();
@@ -198,7 +200,7 @@ export default function AdminShell() {
                           <LxIcon
                             name={item.icon}
                             size={17}
-                            color={isActive ? v.accentText : v.ink3}
+                            color={isActive ? v.accentText : v.ink2}
                           />
                           <span>{item.label}</span>
                           {badge !== null ? <span className="lx-admin-badge">{badge}</span> : null}
@@ -216,10 +218,32 @@ export default function AdminShell() {
       <div className="lx-admin-main">
         <header className="lx-admin-header">
           <HeaderIdentity />
-          <button type="button" className="lx-admin-signout" onClick={handleSignOut}>
-            <LxIcon name="logout" size={16} color={v.ink3} />
-            <span>sign out</span>
-          </button>
+          <div className="lx-admin-header-actions">
+            {/* Leaving the panel is as reachable as entering it. */}
+            <Link to={ROUTES.APP} className="lx-admin-signout" aria-label="back to luvax">
+              <LxIcon name="chevronLeft" size={14} color={v.ink2} />
+              <span>back to luvax</span>
+            </Link>
+            <button
+              type="button"
+              className="lx-admin-signout"
+              onClick={toggleTheme}
+              aria-pressed={dark}
+              aria-label={dark ? 'switch to light theme' : 'switch to dark theme'}
+            >
+              <LxIcon name={dark ? 'sun' : 'moon'} size={14} color={v.ink2} />
+              <span>{dark ? 'light' : 'dark'}</span>
+            </button>
+            <button
+              type="button"
+              className="lx-admin-signout"
+              onClick={handleSignOut}
+              aria-label="sign out"
+            >
+              <LxIcon name="logout" size={14} color={v.ink2} />
+              <span>sign out</span>
+            </button>
+          </div>
         </header>
 
         <main className="lx-admin-content">

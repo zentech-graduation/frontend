@@ -21,6 +21,7 @@ export function RecordTable({
   rows = [],
   keyField = 'id',
   onRowClick,
+  selectedKey = null,
   isLoading = false,
   isError = false,
   errorMessage,
@@ -63,11 +64,11 @@ export function RecordTable({
                   padding: '10px 16px',
                   borderBottom: `1px solid ${v.border}`,
                   fontFamily: v.fontMono,
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: 500,
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
-                  color: v.ink3,
+                  color: v.ink2,
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -77,11 +78,29 @@ export function RecordTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {rows.map((row) => {
+            const isSelected = selectedKey != null && row[keyField] === selectedKey;
+            return (
             <tr
               key={row[keyField]}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              className="lx-admin-row"
+              // The row is the control, so it takes focus and answers Enter and
+              // Space the way a button would. Without this the selection in a
+              // split screen would be reachable only with a pointer.
+              tabIndex={onRowClick ? 0 : undefined}
+              role={onRowClick ? 'button' : undefined}
+              aria-current={isSelected ? 'true' : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onRowClick(row);
+                      }
+                    }
+                  : undefined
+              }
+              className={`lx-admin-row${isSelected ? ' is-selected' : ''}`}
               style={{
                 cursor: onRowClick ? 'pointer' : 'default',
                 transition: 'background var(--duration-fast) var(--ease-out)',
@@ -104,7 +123,8 @@ export function RecordTable({
                 </td>
               ))}
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
       {footer}

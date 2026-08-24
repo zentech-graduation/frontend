@@ -185,7 +185,7 @@ export function TimeseriesChart({ points, metric, granularity, fromMs, toMs }) {
                 x={pad.left - 6}
                 y={y(tick) + 3.5}
                 textAnchor="end"
-                fill={v.ink3}
+                fill={v.ink2}
                 style={{ fontFamily: v.fontMono, fontSize: narrow ? 9 : 10 }}
               >
                 {tick}
@@ -221,7 +221,7 @@ export function TimeseriesChart({ points, metric, granularity, fromMs, toMs }) {
               x={x(tick)}
               y={pad.top + plotHeight + 16}
               textAnchor={index === 0 ? 'start' : index === timeTicks.length - 1 ? 'end' : 'middle'}
-              fill={v.ink3}
+              fill={v.ink2}
               style={{ fontFamily: v.fontMono, fontSize: narrow ? 9 : 10 }}
             >
               {formatAxisTime(tick, granularity.key)}
@@ -268,7 +268,7 @@ export function TimeseriesChart({ points, metric, granularity, fromMs, toMs }) {
           <text
             x={pad.left}
             y={pad.top - 4}
-            fill={v.ink3}
+            fill={v.ink2}
             style={{ fontFamily: v.fontMono, fontSize: narrow ? 9 : 10 }}
           >
             {metric.unit}
@@ -277,7 +277,7 @@ export function TimeseriesChart({ points, metric, granularity, fromMs, toMs }) {
             x={pad.left + plotWidth}
             y={height - 4}
             textAnchor="end"
-            fill={v.ink3}
+            fill={v.ink2}
             style={{ fontFamily: v.fontMono, fontSize: narrow ? 9 : 10 }}
           >
             {`time — ${granularity.label} — ${zone}`}
@@ -330,7 +330,7 @@ function ChartLegend({ series, metric, omitted, gaps, granularity }) {
       ) : null}
 
       {gaps.length > 0 ? (
-        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           the hatched {gaps.length === 1 ? 'band marks an interval' : 'bands mark intervals'} in
           which no bucket was collected — {gaps.reduce((total, gap) => total + gap.missing, 0)}{' '}
           missing {granularity.key === 'day' ? 'day' : 'half-hour'} bucket
@@ -341,7 +341,7 @@ function ChartLegend({ series, metric, omitted, gaps, granularity }) {
       ) : null}
 
       {omitted.length > 0 ? (
-        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           {omitted.length} further {omitted.length === 1 ? 'breakdown is' : 'breakdowns are'}{' '}
           present in the data and not drawn, because the chart has {MAX_SERIES} distinguishable
           colours: {omitted.join(', ')}.

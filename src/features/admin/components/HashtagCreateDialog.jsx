@@ -149,10 +149,10 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
             htmlFor="hashtag-name"
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             name
@@ -168,7 +168,7 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
               padding: '10px 12px',
             }}
           >
-            <LxIcon name="hash" size={15} color={v.ink3} />
+            <LxIcon name="hash" size={15} color={v.ink2} />
             <input
               id="hashtag-name"
               type="text"
@@ -211,10 +211,10 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
           <span
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             initial status
@@ -246,7 +246,7 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
                   >
                     {option.label}
                   </span>
-                  <span style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink3 }}>
+                  <span style={{ fontFamily: v.fontBody, fontSize: 11, color: v.ink2 }}>
                     {option.hint}
                   </span>
                 </button>
@@ -260,10 +260,10 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
             htmlFor="hashtag-note"
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             note (recorded)
@@ -309,7 +309,7 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
               style={{
                 fontFamily: v.fontMono,
                 fontSize: 11,
-                color: overNote ? v.errorText : v.ink3,
+                color: overNote ? v.errorText : v.ink2,
               }}
             >
               {note.length}/{NOTE_MAX}
@@ -352,7 +352,7 @@ export function HashtagCreateDialog({ open, busy = false, nameError = '', onConf
               fontFamily: v.fontBody,
               fontSize: 14,
               fontWeight: 600,
-              color: confirmInert ? v.ink3 : v.white,
+              color: confirmInert ? v.ink2 : v.white,
               opacity: !armed ? 0.5 : 1,
               transition: 'opacity 0.25s, background 0.25s, color 0.25s',
             }}

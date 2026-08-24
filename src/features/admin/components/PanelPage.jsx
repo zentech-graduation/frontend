@@ -32,7 +32,7 @@ export function PageHeader({ title, subtitle, right }) {
           {title}
         </h1>
         {subtitle ? (
-          <p style={{ margin: '6px 0 0', fontFamily: v.fontBody, fontSize: 14, color: v.ink3 }}>
+          <p style={{ margin: '6px 0 0', fontFamily: v.fontBody, fontSize: 14, color: v.ink2 }}>
             {subtitle}
           </p>
         ) : null}
@@ -63,7 +63,7 @@ export function PanelCard({ title, right, children, padded = true }) {
               fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             {title}

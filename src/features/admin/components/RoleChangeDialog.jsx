@@ -157,7 +157,7 @@ export function RoleChangeDialog({
           >
             change role
           </div>
-          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55 }}>
+          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.55 }}>
             this account is currently <strong style={{ color: v.ink2 }}>{currentRole}</strong>.
             choose the role to move it to.
           </div>
@@ -199,7 +199,7 @@ export function RoleChangeDialog({
                 <LxIcon
                   name={oneWay ? 'shield' : 'check'}
                   size={16}
-                  color={selected ? (oneWay ? v.errorText : v.accentText) : v.ink3}
+                  color={selected ? (oneWay ? v.errorText : v.accentText) : v.ink2}
                 />
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                   <span
@@ -211,7 +211,7 @@ export function RoleChangeDialog({
                     <span
                       style={{
                         fontFamily: v.fontMono,
-                        fontSize: 10,
+                        fontSize: 11,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         color: v.errorText,
@@ -262,10 +262,10 @@ export function RoleChangeDialog({
             htmlFor="role-reason"
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             reason (recorded)
@@ -311,7 +311,7 @@ export function RoleChangeDialog({
               style={{
                 fontFamily: v.fontMono,
                 fontSize: 11,
-                color: overLimit ? v.errorText : v.ink3,
+                color: overLimit ? v.errorText : v.ink2,
               }}
             >
               {reason.length}/{REASON_MAX}
@@ -354,7 +354,7 @@ export function RoleChangeDialog({
               fontFamily: v.fontBody,
               fontSize: 14,
               fontWeight: 600,
-              color: confirmInert ? v.ink3 : v.white,
+              color: confirmInert ? v.ink2 : v.white,
               opacity: !armed ? 0.5 : 1,
               transition: 'opacity 0.25s, background 0.25s, color 0.25s',
             }}

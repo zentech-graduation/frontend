@@ -165,7 +165,7 @@ export function WarnDialog({
           >
             warn this account
           </div>
-          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink3, lineHeight: 1.55 }}>
+          <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.55 }}>
             a formal warning is recorded against this account.
           </div>
           <WarningConsequence activeWarningCount={activeWarningCount} />
@@ -190,10 +190,10 @@ export function WarnDialog({
             htmlFor="warn-note"
             style={{
               fontFamily: v.fontMono,
-              fontSize: 10,
+              fontSize: 11,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: v.ink3,
+              color: v.ink2,
             }}
           >
             note (recorded)
@@ -239,7 +239,7 @@ export function WarnDialog({
               style={{
                 fontFamily: v.fontMono,
                 fontSize: 11,
-                color: overLimit ? v.errorText : v.ink3,
+                color: overLimit ? v.errorText : v.ink2,
               }}
             >
               {note.length}/{NOTE_MAX}
@@ -282,7 +282,7 @@ export function WarnDialog({
               fontFamily: v.fontBody,
               fontSize: 14,
               fontWeight: 600,
-              color: confirmInert ? v.ink3 : v.white,
+              color: confirmInert ? v.ink2 : v.white,
               opacity: !armed ? 0.5 : 1,
               transition: 'opacity 0.25s, background 0.25s, color 0.25s',
             }}
@@ -328,7 +328,7 @@ function WarningConsequence({ activeWarningCount }) {
         fontFamily: v.fontBody,
         fontSize: 13,
         lineHeight: 1.55,
-        color: isThird ? v.warningText : v.ink3,
+        color: isThird ? v.warningText : v.ink2,
       }}
     >
       {!known ? (
