@@ -12,6 +12,13 @@ import { LxIcon } from '@/components/ui/lx-icon';
  * A disabled option renders as unavailable and unselectable rather than hidden,
  * so a value that a historical record still references stays visible.
  *
+ * Each condition sits on its own labelled plate rather than in one continuous
+ * run of chips, because adjacent conditions with only a gap between them read
+ * as a single row and are easy to hit by mistake. Groups never compress: they
+ * wrap onto the next line at their natural width. The clear affordance is
+ * pushed to the end of the bar so it never occupies a position where a
+ * condition control is expected.
+ *
  * @param {Object[]} groups each `{ key, label, value, options: [{value,label,disabled}] }`
  * @param {(key:string, value:string)=>void} onChange
  * @param {()=>void} onClear
@@ -19,73 +26,48 @@ import { LxIcon } from '@/components/ui/lx-icon';
  */
 export function FilterBar({ groups, onChange, onClear, isDirty }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        gap: 18,
-        padding: '14px 16px',
-        borderBottom: `1px solid ${v.border}`,
-      }}
-    >
-      <LxIcon name="filter" size={14} color={v.ink3} />
+    <div className="lx-admin-filterbar">
       {groups.map((group) => (
-        <div
-          key={group.key}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
-        >
-          <span
-            style={{
-              fontFamily: v.fontMono,
-              fontSize: 10,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: v.ink3,
-            }}
-          >
+        <div key={group.key} className="lx-admin-filter-group">
+          <span className="lx-admin-filter-label" id={`filter-${group.key}`}>
             {group.label}
           </span>
-          <LxTag size="sm" active={!group.value} onClick={() => onChange(group.key, '')}>
-            all
-          </LxTag>
-          {group.options.map((option) => (
-            <span
-              key={option.value}
-              style={option.disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
-              title={option.disabled ? 'unavailable' : undefined}
-            >
-              <LxTag
-                size="sm"
-                active={group.value === option.value}
-                onClick={option.disabled ? undefined : () => onChange(group.key, option.value)}
+          <div
+            className="lx-admin-filter-options"
+            role="group"
+            aria-labelledby={`filter-${group.key}`}
+          >
+            <LxTag size="sm" active={!group.value} onClick={() => onChange(group.key, '')}>
+              all
+            </LxTag>
+            {group.options.map((option) => (
+              <span
+                key={option.value}
+                style={option.disabled ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                title={option.disabled ? 'unavailable' : undefined}
               >
-                {option.label}
-                {option.disabled ? ' (unavailable)' : ''}
-              </LxTag>
-            </span>
-          ))}
+                <LxTag
+                  size="sm"
+                  active={group.value === option.value}
+                  onClick={option.disabled ? undefined : () => onChange(group.key, option.value)}
+                >
+                  {option.label}
+                  {option.disabled ? ' (unavailable)' : ''}
+                </LxTag>
+              </span>
+            ))}
+          </div>
         </div>
       ))}
+
       {isDirty ? (
         <button
           type="button"
           onClick={onClear}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4,
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            fontFamily: v.fontBody,
-            fontSize: 12,
-            color: v.ink3,
-            padding: '2px 4px',
-          }}
+          className="lx-admin-signout lx-admin-filter-clear"
         >
-          <LxIcon name="close" size={12} color={v.ink3} />
-          clear
+          <LxIcon name="close" size={12} color={v.ink2} />
+          clear filters
         </button>
       ) : null}
     </div>

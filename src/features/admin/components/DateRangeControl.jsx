@@ -65,23 +65,26 @@ const describeSpan = (days) => {
   return `${days} day${days === 1 ? '' : 's'}`;
 };
 
+// The panel's one control shape, so a date input sits in the same row as the
+// apply button without reading as a different kind of thing.
 const fieldStyle = {
   fontFamily: v.fontMono,
   fontSize: 12,
   color: v.ink,
   background: v.base,
   border: `1px solid ${v.border}`,
-  borderRadius: 'var(--radius-md)',
-  padding: '7px 8px',
+  borderRadius: 'var(--radius-pill)',
+  height: 30,
+  padding: '0 var(--space-3)',
   minWidth: 0,
 };
 
 const labelStyle = {
   fontFamily: v.fontMono,
-  fontSize: 10,
+  fontSize: 11,
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
-  color: v.ink3,
+  color: v.ink2,
 };
 
 export function DateRangeControl({
@@ -203,7 +206,7 @@ export function DateRangeControl({
       aria-label="date range"
     >
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 190px' }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 1 240px' }}>
           <span style={labelStyle}>from</span>
           <input
             type="datetime-local"
@@ -216,7 +219,7 @@ export function DateRangeControl({
             style={fieldStyle}
           />
         </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 190px' }}>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 1 240px' }}>
           <span style={labelStyle}>to</span>
           <input
             type="datetime-local"
@@ -280,7 +283,7 @@ export function DateRangeControl({
             </LxBtn>
           ))}
         </div>
-        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           {/* Both endpoints behind this control treat the window as half-open,
               verified at the boundary against a real row's timestamp on each
               rather than assumed from one. Saying so matters because a reviewer
@@ -291,7 +294,7 @@ export function DateRangeControl({
       </div>
 
       {dirty && !disabled ? (
-        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+        <p style={{ margin: 0, fontFamily: v.fontBody, fontSize: 12, color: v.ink2 }}>
           {value === null
             ? unsetHint
             : 'the range has been edited and not applied yet — nothing is requested until you apply it.'}
