@@ -7,6 +7,7 @@ import { toast } from '@/features/luvax/components/Toast';
 import { useUserContent, useContentModeration } from '../hooks/useUserContent';
 import { describeError } from '../lib/errors';
 import { restoreSuccessMessage } from '../lib/contentModeration';
+import { AdminMediaGrid } from './AdminMediaViewer';
 import { EmptyState, FailedState, LoadingState } from './ListStates';
 import { LoadMore } from './LoadMore';
 import { LocalTime } from './LocalTime';
@@ -62,35 +63,17 @@ function ContentRow({ row, kind, onRemove, onRestore, busy }) {
           style={{
             fontFamily: v.fontBody,
             fontSize: 14,
-            color: isRemoved ? v.ink3 : v.ink,
+            color: isRemoved ? v.ink2 : v.ink,
             textDecoration: isRemoved ? 'line-through' : 'none',
             whiteSpace: 'pre-wrap',
             lineHeight: 1.5,
             overflowWrap: 'anywhere',
           }}
         >
-          {text || <span style={{ fontStyle: 'italic', color: v.ink3 }}>no text</span>}
+          {text || <span style={{ fontStyle: 'italic', color: v.ink2 }}>no text</span>}
         </div>
 
-        {media.length > 0 ? (
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {media.map((url) => (
-              <img
-                key={url}
-                src={url}
-                alt=""
-                loading="lazy"
-                style={{
-                  width: 64,
-                  height: 64,
-                  objectFit: 'cover',
-                  borderRadius: 8,
-                  border: `1px solid ${v.border}`,
-                }}
-              />
-            ))}
-          </div>
-        ) : null}
+        <AdminMediaGrid urls={media} label="post media" />
         <div
           style={{
             display: 'flex',
@@ -98,7 +81,7 @@ function ContentRow({ row, kind, onRemove, onRestore, busy }) {
             gap: 10,
             fontFamily: v.fontMono,
             fontSize: 11,
-            color: v.ink3,
+            color: v.ink2,
             flexWrap: 'wrap',
           }}
         >
