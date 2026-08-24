@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { v } from '@/config/tokens';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LxAvatar, LxBtn, LxIcon } from './primitives';
@@ -23,6 +23,14 @@ export function UserCard({
 
   const follow = useFollow();
   const unfollow = useUnfollow();
+
+  useEffect(() => {
+    // Syncs optimistic button state back to the latest relationship state returned by the server.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsFollowing(initiallyFollowing);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRequested(initiallyRequested);
+  }, [initiallyFollowing, initiallyRequested, user?.id]);
 
   const handleFollowClick = () => {
     if (isFollowing || requested) {

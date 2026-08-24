@@ -40,6 +40,10 @@ export const useLiveNotifications = () => {
       `/topic/notifications.${userId}`,
       () => {
         queryClient.invalidateQueries({ queryKey: notifKeys.all });
+        queryClient.invalidateQueries({ queryKey: ['social', 'follow-requests'] });
+        queryClient.invalidateQueries({ queryKey: ['social', 'followers'] });
+        queryClient.invalidateQueries({ queryKey: ['social', 'following'] });
+        queryClient.invalidateQueries({ queryKey: ['users'] });
       },
       { endpoint: NOTIFICATION_ENDPOINT }
     );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
@@ -93,6 +93,12 @@ const writeMessagingUnavailableKeys = (storageKey, keys) => {
   window.sessionStorage.setItem(storageKey, JSON.stringify(Array.from(new Set(keys))));
 };
 
+const removeMessagingUnavailableKey = (storageKey, keyToRemove) => {
+  const next = readMessagingUnavailableKeys(storageKey).filter((key) => key !== keyToRemove);
+  writeMessagingUnavailableKeys(storageKey, next);
+  return next;
+};
+
 export function MessagesScreen() {
   const { viewport } = useLuvaxTweaks();
   const location = useLocation();
@@ -124,6 +130,7 @@ export function MessagesScreen() {
   const [reportTarget, setReportTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
   const [locallyBlockedUserIds, setLocallyBlockedUserIds] = useState([]);
+  const [unavailableProbeTick, setUnavailableProbeTick] = useState(0);
   const [messagingUnavailableByStorageKey, setMessagingUnavailableByStorageKey] = useState(() => ({
     [unavailableStorageKey]: readMessagingUnavailableKeys(unavailableStorageKey),
   }));
@@ -181,23 +188,32 @@ export function MessagesScreen() {
     replyingTo?.conversationId === activeConversation?.id ? replyingTo : null;
   const { data: blockedResponse } = useBlockedUsers();
   const blockedRows = useMemo(() => extractPageContent(blockedResponse), [blockedResponse]);
-  const blockedUserIdSet = useMemo(() => {
-    const ids = new Set(locallyBlockedUserIds);
+  const serverBlockedUserIdSet = useMemo(() => {
+    const ids = new Set();
     blockedRows.forEach((row) => {
       const id = row?.user?.id ?? row?.id;
       if (id) ids.add(id);
     });
     return ids;
-  }, [blockedRows, locallyBlockedUserIds]);
-  const isThreadBlocked = (thread) =>
-    Boolean(thread?.counterpartId && blockedUserIdSet.has(thread.counterpartId));
+  }, [blockedRows]);
+  const blockedUserIdSet = useMemo(() => {
+    const ids = new Set(locallyBlockedUserIds);
+    serverBlockedUserIdSet.forEach((id) => ids.add(id));
+    return ids;
+  }, [locallyBlockedUserIds, serverBlockedUserIdSet]);
+  const isThreadBlocked = useCallback(
+    (thread) => Boolean(thread?.counterpartId && blockedUserIdSet.has(thread.counterpartId)),
+    [blockedUserIdSet]
+  );
+  const activeCounterpartId = activeThread?.counterpartId || null;
+  const isActiveThreadBlocked = isThreadBlocked(activeThread);
   const messagingUnavailableKeys =
     messagingUnavailableByStorageKey[unavailableStorageKey] ||
     readMessagingUnavailableKeys(unavailableStorageKey);
   const isMessagingUnavailable = Boolean(
     activeComposerKey && messagingUnavailableKeys.includes(activeComposerKey)
   );
-  const messageBlockHint = isThreadBlocked(activeThread)
+  const messageBlockHint = isActiveThreadBlocked
     ? `you blocked ${activeThread?.username ? `@${activeThread.username}` : activeThread?.name}. messaging is paused until you unblock them.`
     : 'messaging is unavailable for this conversation.';
 
@@ -267,6 +283,63 @@ export function MessagesScreen() {
   const deleteMessage = useDeleteMessage(activeConversation?.id);
   const { uploadMedia, getMediaMetadata } = useMediaUpload();
   const { constraints: mediaConstraints } = useMediaConstraints();
+
+  useEffect(() => {
+    if (block.isPending) return;
+    // Reconcile optimistic message-panel blocks with unblocks performed from profile/settings.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocallyBlockedUserIds((ids) => ids.filter((id) => serverBlockedUserIdSet.has(id)));
+  }, [block.isPending, serverBlockedUserIdSet]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const retryUnavailableProbe = () => setUnavailableProbeTick((tick) => tick + 1);
+    window.addEventListener('focus', retryUnavailableProbe);
+    document.addEventListener('visibilitychange', retryUnavailableProbe);
+    return () => {
+      window.removeEventListener('focus', retryUnavailableProbe);
+      document.removeEventListener('visibilitychange', retryUnavailableProbe);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      !isMessagingUnavailable ||
+      !activeConversation?.id ||
+      !activeComposerKey ||
+      !activeCounterpartId ||
+      isActiveThreadBlocked
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    messageService
+      .createDirect(activeCounterpartId)
+      .then(() => {
+        if (cancelled) return;
+        setMessagingUnavailableByStorageKey((byKey) => ({
+          ...byKey,
+          [unavailableStorageKey]: removeMessagingUnavailableKey(
+            unavailableStorageKey,
+            activeComposerKey
+          ),
+        }));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeComposerKey,
+    activeConversation?.id,
+    activeCounterpartId,
+    isActiveThreadBlocked,
+    isMessagingUnavailable,
+    unavailableProbeTick,
+    unavailableStorageKey,
+  ]);
 
   useEffect(() => {
     if (activeConversation?.id) {
@@ -715,7 +788,7 @@ export function MessagesScreen() {
           onStageAttachments={handleStageAttachments}
           onRemovePendingAttachment={handleRemovePendingAttachment}
           isSending={isSending}
-          isBlocked={isThreadBlocked(activeThread) || isMessagingUnavailable}
+          isBlocked={isActiveThreadBlocked || isMessagingUnavailable}
           blockedHint={messageBlockHint}
         />
       ) : null}
@@ -756,7 +829,7 @@ export function MessagesScreen() {
               onRename={activeThread.counterpartId ? () => handleRenameThread(activeThread) : null}
               onReport={activeThread.counterpartId ? () => handleReportThread(activeThread) : null}
               onBlock={
-                activeThread.counterpartId && !isThreadBlocked(activeThread)
+                activeThread.counterpartId && !isActiveThreadBlocked
                   ? () => setBlockTarget(activeThread)
                   : null
               }
