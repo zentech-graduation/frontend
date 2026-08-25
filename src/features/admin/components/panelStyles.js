@@ -125,8 +125,14 @@ export const PANEL_CSS = `
   padding: var(--space-6);
   width: 100%;
 }
-/* A split screen manages its own padding and scrolling inside the two regions. */
-.lx-admin-content.is-split { overflow: hidden; padding: 0; }
+/* A split screen manages its own padding and scrolling inside the two regions,
+   so the wrapper's own padding is dropped for it — otherwise the wrapper's
+   band stacks with each region's own inset, doubling the gap along the split's
+   outer edges. Detected structurally with :has() rather than a class the
+   screen would need to remember to add: :has(> .lx-admin-split) carries higher
+   specificity than the plain .lx-admin-content rules above and in the narrow
+   breakpoint below, so this wins over both without an !important. */
+.lx-admin-content:has(> .lx-admin-split) { overflow: hidden; padding: 0; }
 
 /* ─── Control vocabulary ─────────────────────────────────────────────────
    One shape for every clickable or editable control, taken from the design
