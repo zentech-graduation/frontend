@@ -35,10 +35,7 @@ export function EscalatedQueueScreen() {
 
   return (
     <div>
-      <PageHeader
-        title="escalated"
-        subtitle="reports handed up by a moderator, awaiting an administrator decision."
-      />
+      <PageHeader title="escalated" />
 
       <div className="lx-admin-panel-card">
         <RecordTable

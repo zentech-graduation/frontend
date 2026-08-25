@@ -103,10 +103,7 @@ export function ReportQueueScreen() {
 
   const list = (
     <div>
-      <PageHeader
-        title="reports"
-        subtitle="reports awaiting review. pick one up to see the reported content."
-      />
+      <PageHeader title="reports" />
 
       <div className="lx-admin-panel-card">
         <FilterBar groups={groups} onChange={setFilter} onClear={clearFilters} isDirty={isDirty} />

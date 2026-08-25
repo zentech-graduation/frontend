@@ -60,7 +60,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The message lightbox now crossfades between photos and videos when stepping through a multi-item album instead of cutting to the next one instantly.
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
+### Removed
+- The descriptive subtitle line under a panel screen's title is gone; where it named which record was open (an account, a report), that identity now sits in the title itself instead of a separate line.
+
 ### Fixed
+- The reports and accounts split screens no longer carry a doubled gap along their outer top and left edges. The list and detail panes already inset themselves; the surrounding content wrapper was adding its own padding on top of that instead of stepping aside for them.
+- The audit log's date-range controls (from, to, apply, window length) are inset from the card edge to match the filter rows above them and the same control on the statistics screen, instead of sitting nearly flush against the border.
 - A chosen dark or light theme is applied correctly on load. The stored choice was read as though the flag recording that a choice existed were the choice itself, so every manual selection resolved to light: the application briefly showed the wrong theme before correcting itself, and the panel, which has nothing to correct it, stayed light permanently.
 - Primary buttons no longer render a near-white label on the light accent fill, which was unreadable in the light theme.
 - Selecting an option in the panel's action-type filter shows a focus outline again when reached from the keyboard.

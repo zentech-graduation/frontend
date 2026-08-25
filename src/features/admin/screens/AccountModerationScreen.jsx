@@ -47,8 +47,11 @@ export function AccountModerationScreen({ userId: userIdProp, embedded = false }
   return (
     <div>
       <PageHeader
-        title="account"
-        subtitle={nameLabel}
+        title={
+          <>
+            account <span style={{ color: v.ink2, fontWeight: 500 }}>{nameLabel}</span>
+          </>
+        }
         right={
           isAdmin && !embedded ? (
             <Link

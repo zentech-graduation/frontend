@@ -6,7 +6,7 @@ import { v } from '@/config/tokens';
  * control. Kept small and consistent so a reviewer moving between screens sees
  * the same heading shape everywhere.
  */
-export function PageHeader({ title, subtitle, right }) {
+export function PageHeader({ title, right }) {
   return (
     <div
       style={{
@@ -18,25 +18,19 @@ export function PageHeader({ title, subtitle, right }) {
         flexWrap: 'wrap',
       }}
     >
-      <div style={{ minWidth: 0 }}>
-        <h1
-          style={{
-            margin: 0,
-            fontFamily: v.fontDisplay,
-            fontSize: 26,
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            color: v.ink,
-          }}
-        >
-          {title}
-        </h1>
-        {subtitle ? (
-          <p style={{ margin: '6px 0 0', fontFamily: v.fontBody, fontSize: 14, color: v.ink2 }}>
-            {subtitle}
-          </p>
-        ) : null}
-      </div>
+      <h1
+        style={{
+          margin: 0,
+          minWidth: 0,
+          fontFamily: v.fontDisplay,
+          fontSize: 26,
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          color: v.ink,
+        }}
+      >
+        {title}
+      </h1>
       {right ? <div style={{ flexShrink: 0 }}>{right}</div> : null}
     </div>
   );

@@ -118,10 +118,7 @@ export function ActivityLogScreen() {
 
   return (
     <div>
-      <PageHeader
-        title="activity log"
-        subtitle="what accounts have been doing, from the behavioural event record."
-      />
+      <PageHeader title="activity log" />
 
       <PanelCard title="what to read">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

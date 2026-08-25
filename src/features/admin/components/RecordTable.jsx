@@ -79,50 +79,50 @@ export function RecordTable({
         </thead>
         <tbody>
           {rows.map((row) => {
-            const isSelected = selectedKey != null && row[keyField] === selectedKey;
+            const isSelected = selectedKey !== null && row[keyField] === selectedKey;
             return (
-            <tr
-              key={row[keyField]}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              // The row is the control, so it takes focus and answers Enter and
-              // Space the way a button would. Without this the selection in a
-              // split screen would be reachable only with a pointer.
-              tabIndex={onRowClick ? 0 : undefined}
-              role={onRowClick ? 'button' : undefined}
-              aria-current={isSelected ? 'true' : undefined}
-              onKeyDown={
-                onRowClick
-                  ? (event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        onRowClick(row);
+              <tr
+                key={row[keyField]}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                // The row is the control, so it takes focus and answers Enter and
+                // Space the way a button would. Without this the selection in a
+                // split screen would be reachable only with a pointer.
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? 'button' : undefined}
+                aria-current={isSelected ? 'true' : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onRowClick(row);
+                        }
                       }
-                    }
-                  : undefined
-              }
-              className={`lx-admin-row${isSelected ? ' is-selected' : ''}`}
-              style={{
-                cursor: onRowClick ? 'pointer' : 'default',
-                transition: 'background var(--duration-fast) var(--ease-out)',
-              }}
-            >
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  style={{
-                    textAlign: col.align ?? 'left',
-                    padding: '13px 16px',
-                    borderBottom: `1px solid ${v.borderSubtle}`,
-                    fontSize: 13,
-                    color: v.ink2,
-                    verticalAlign: 'middle',
-                    whiteSpace: col.nowrap ? 'nowrap' : 'normal',
-                  }}
-                >
-                  {col.render ? col.render(row) : row[col.key]}
-                </td>
-              ))}
-            </tr>
+                    : undefined
+                }
+                className={`lx-admin-row${isSelected ? ' is-selected' : ''}`}
+                style={{
+                  cursor: onRowClick ? 'pointer' : 'default',
+                  transition: 'background var(--duration-fast) var(--ease-out)',
+                }}
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    style={{
+                      textAlign: col.align ?? 'left',
+                      padding: '13px 16px',
+                      borderBottom: `1px solid ${v.borderSubtle}`,
+                      fontSize: 13,
+                      color: v.ink2,
+                      verticalAlign: 'middle',
+                      whiteSpace: col.nowrap ? 'nowrap' : 'normal',
+                    }}
+                  >
+                    {col.render ? col.render(row) : row[col.key]}
+                  </td>
+                ))}
+              </tr>
             );
           })}
         </tbody>
