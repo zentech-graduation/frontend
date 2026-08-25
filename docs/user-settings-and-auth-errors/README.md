@@ -1,5 +1,15 @@
 # What changed, for someone who knew the previous settings screen
 
+## The list
+
+Each entry is an icon and a name, with a search field above them. The one you have open sits
+on a slightly lighter fill with its name in a heavier weight; hovering lifts a row a little
+less. What a setting is for is written at the top of the setting itself, not under its name in
+the list.
+
+The list begins immediately beside the navigation rail, so hovering the rail expands it over
+the list rather than over what you are reading or typing.
+
 ## The screen you remember
 
 One long scrolling list at `/app/settings`, in five labelled sections. Four of its rows were

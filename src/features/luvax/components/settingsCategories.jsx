@@ -433,9 +433,6 @@ export function NotificationsCategory() {
 
   return (
     <div>
-      <p className="lx-settings-note" style={{ marginBottom: 12 }}>
-        choose what luvax tells you about. each one saves on its own.
-      </p>
       <SettingToggle
         settings={settings}
         isLoading={isLoading}

@@ -34,6 +34,13 @@ export function LxToggle({ on, onChange, disabled = false, label, busy = false }
       style={{
         width: 38,
         height: 22,
+        // Without this the one-pixel border below is added outside the declared
+        // size, so the track renders 40x24 while the knob is positioned inside a
+        // 38x22 box. The knob then sits a pixel out of true, and only on the
+        // side it has travelled to, which is why some switches looked centred
+        // and others did not.
+        boxSizing: 'border-box',
+        flexShrink: 0,
         borderRadius: 999,
         background: on ? v.accent : v.surfaceRaised,
         // The off fill is --lx-surface-raised, which measures 1.25:1 against the
@@ -53,13 +60,17 @@ export function LxToggle({ on, onChange, disabled = false, label, busy = false }
         flexShrink: 0,
       }}
     >
+      {/* The track is 38x22 including its border, so the box this knob is
+          positioned inside is 36x20. A 16px knob inset by 2 leaves the same two
+          pixels on every side in both states; the 18px it used to be could not,
+          and overhung whichever end it had travelled to. */}
       <div
         style={{
           position: 'absolute',
           top: 2,
           left: on ? 18 : 2,
-          width: 18,
-          height: 18,
+          width: 16,
+          height: 16,
           borderRadius: '50%',
           background: v.white,
           transition: 'left var(--duration-fast) var(--ease-out)',

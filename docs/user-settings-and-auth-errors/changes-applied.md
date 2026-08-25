@@ -37,6 +37,17 @@ settings list, and each is now a category:
 `help center`, `terms & privacy`, `about luvax` (empty handlers), and the unconditional
 verified tick beside the email address.
 
+### Refined after first review
+
+| Change | Detail |
+|---|---|
+| Icons in the list | Each category carries one, from the existing internal icon component. A person-with-plus glyph was added to that component for follow requests, in the export's 24×24 / 1.5-stroke style. |
+| Selection treatment | The accent rule on the leading edge is gone. The open row is a step up the surface scale with its name at weight 600 and its icon in full ink; hovering is one step less. |
+| Straplines moved | The one-line description under every name in the list is gone. It is said once, under the heading of the category it belongs to. |
+| Search | A field above the list filters names and group titles, drops empty groups, and says so when nothing matches. Client-side over a fixed structure; it calls nothing. |
+| Position | Settings takes the full width from the rail's collapsed edge instead of sitting in the centred column, so the rail expands over the list rather than over empty space. |
+| Divider | Both columns are exactly viewport height, so the rule between them runs the whole way down instead of ending with the shorter column's content. |
+
 ---
 
 ## The authentication surface
@@ -87,6 +98,9 @@ Called out separately, with justification, as the brief requires.
 | `user.service.js` | Added `getMyWarnings`. | Nothing read the account's own warnings. Sends only the declared `cursor` and `limit`. |
 | `config.service.js` | New — `getVocabularies`. | Resolves a warning's `reasonKey` to the server's own display name. The admin feature has its own copy; a feature may not import another feature's internals, and moving that file is not permitted this phase. |
 | `ConversationInfoPanel.jsx` | Passes the new `label` to its toggle. | `LxToggle`'s contract changed this phase: it now reports itself as a switch and takes an accessible name. Its only other consumer would otherwise announce a state without saying what it controls. One prop, on the one call site the contract change reaches. |
+| `lx-icon.jsx` | Added a `userPlus` glyph. | Follow requests had no icon in the set. Added to the existing component in the export's own style, which is what the design rules require instead of a second icon set. |
+| `lx-toggle.jsx` | `box-sizing: border-box`, and the knob reduced from 18px to 16px. | The one-pixel border was being added outside the declared 38x22, so the track rendered 40x24 while the knob was positioned inside a 38x22 box — the knob sat out of true on whichever side it had travelled to. The track is now 38x22 including its border, and a 16px knob inset by 2 leaves the same gap on every side in both states. |
+| `shell.jsx` | Settings gets its own full-bleed branch against the rail at desktop and tablet; the now-dead settings widths were removed from the centred and tablet branches. | The list has to begin where the rail ends for the rail to expand over it. |
 | `constants.js` | Category route constants, and `SETTINGS_CATEGORY`. | Every category needs an address. |
 | `appScreens.jsx` | Five settings rows became two; three lazy imports removed. | One screen with a category in the path. |
 
