@@ -65,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Primary buttons no longer render a near-white label on the light accent fill, which was unreadable in the light theme.
 - Selecting an option in the panel's action-type filter shows a focus outline again when reached from the keyboard.
 - Filter options are no longer clipped out of reach at narrow widths.
+- The empty right region on a split screen with nothing selected is now framed like every other panel surface instead of floating as bare, unbordered space beside the list.
 - A loaded marker message in an open conversation no longer disappears when the other participant
   sends enough new messages to push it out of the newest history page during a live refresh.
 - Message threads now clear the blocked-user composer hint after an unblock from another surface,
