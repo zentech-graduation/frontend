@@ -268,6 +268,19 @@ const normalizeAxiosError = (error) => {
     error.response.data.message = safeMessage;
   }
 
+  // A VALIDATION_ERROR carries its detail as a field-name to message map in the
+  // envelope's `data`. Lifting it onto the error here is what lets a form put a
+  // refusal against the field that caused it, without every call site reaching
+  // into `error.response.data` for itself. Only string values are copied, so a
+  // nested or unexpected payload cannot end up rendered as a field message.
+  if (data.code === 'VALIDATION_ERROR' && data.data && typeof data.data === 'object') {
+    const fieldErrors = {};
+    for (const [field, message] of Object.entries(data.data)) {
+      if (typeof message === 'string') fieldErrors[field] = message;
+    }
+    if (Object.keys(fieldErrors).length > 0) error.fieldErrors = fieldErrors;
+  }
+
   return error;
 };
 

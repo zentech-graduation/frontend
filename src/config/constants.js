@@ -28,8 +28,20 @@ export const ROUTES = {
   COMPOSE: '/app/compose',
   NOTIFICATIONS: '/app/notifications',
   MESSAGES: '/app/messages',
+  // Settings is a group list beside a category. The bare path is the list with
+  // no category open; every category has its own address below it, so a
+  // category can be linked, bookmarked and reloaded into the same state.
   SETTINGS: '/app/settings',
+  SETTINGS_CATEGORY: '/app/settings/:category',
   EDIT_PROFILE: '/app/settings/profile',
+  SETTINGS_NOTIFICATIONS: '/app/settings/notifications',
+  SETTINGS_PRIVACY: '/app/settings/privacy',
+  SETTINGS_ACCOUNT: '/app/settings/account',
+  SETTINGS_REQUESTS: '/app/settings/requests',
+  // Kept because it was a published address before the settings rebuild. It now
+  // resolves to the account category, which carries the only password action
+  // the backend actually offers, rather than to a screen that said it was not
+  // built yet.
   CHANGE_PASSWORD: '/app/settings/password',
   BLOCKED_USERS: '/app/settings/blocked',
   // The viewer's saved posts. Filed under settings because the list belongs to
