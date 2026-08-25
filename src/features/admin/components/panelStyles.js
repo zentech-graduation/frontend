@@ -300,8 +300,15 @@ export const PANEL_CSS = `
   overflow-y: auto;
   padding: var(--space-6);
 }
+/* Every other surface in the panel — the list, and each section of a populated
+   detail — sits inside a bordered .lx-admin-panel-card. An empty detail region
+   drawn as bare centred text had no such frame, so it read as leftover space
+   next to the list's contained card rather than as the panel's other half.
+   This gives it the same border and fill, so the pair reads as two matching
+   panes even with nothing selected. */
 .lx-admin-detail-empty {
   height: 100%;
+  min-height: 320px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -310,6 +317,9 @@ export const PANEL_CSS = `
   text-align: center;
   padding: var(--space-8);
   color: var(--lx-ink-2);
+  background: var(--lx-surface-sunken);
+  border: 1px solid var(--lx-border);
+  border-radius: var(--radius-lg);
 }
 .lx-admin-detail-empty h2 {
   font-family: var(--font-display);
