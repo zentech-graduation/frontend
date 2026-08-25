@@ -158,7 +158,7 @@ export function AccountListScreen() {
 
   const listPane = (
     <div>
-      <PageHeader title="accounts" subtitle="find an account, see its state, and open it to act." />
+      <PageHeader title="accounts" />
 
       <PanelCard padded={false}>
         <div

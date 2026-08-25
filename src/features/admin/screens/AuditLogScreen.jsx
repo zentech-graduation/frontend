@@ -376,14 +376,7 @@ export function AuditLogScreen() {
 
   return (
     <div>
-      <PageHeader
-        title={isAdmin ? 'action log' : 'my actions'}
-        subtitle={
-          isAdmin
-            ? 'every moderation action taken, by whom, and why.'
-            : 'the moderation actions you have taken.'
-        }
-      />
+      <PageHeader title={isAdmin ? 'action log' : 'my actions'} />
       <PanelCard padded={false}>
         <ActionTypeFilter
           actions={moderationActions}

@@ -236,8 +236,11 @@ export function ReportDetailScreen({ reportId: reportIdProp, embedded = false })
   return (
     <div>
       <PageHeader
-        title="report"
-        subtitle={`report ${reportId?.slice(0, 8)}`}
+        title={
+          <>
+            report <span style={{ color: v.ink2, fontWeight: 500 }}>{reportId?.slice(0, 8)}</span>
+          </>
+        }
         right={
           embedded ? null : (
             <Link

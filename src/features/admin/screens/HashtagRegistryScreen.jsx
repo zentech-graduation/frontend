@@ -275,7 +275,6 @@ export function HashtagRegistryScreen() {
     <div>
       <PageHeader
         title="hashtags"
-        subtitle="manage the hashtag vocabulary."
         right={
           <LxBtn
             variant="primary"

@@ -53,10 +53,7 @@ export function MyEscalationsScreen() {
 
   return (
     <div>
-      <PageHeader
-        title="my escalations"
-        subtitle="reports you handed up to an administrator, and where each one ended."
-      />
+      <PageHeader title="my escalations" />
 
       <div className="lx-admin-panel-card">
         <RecordTable

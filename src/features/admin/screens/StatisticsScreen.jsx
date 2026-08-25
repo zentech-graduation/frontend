@@ -119,7 +119,6 @@ export function StatisticsScreen() {
     <div>
       <PageHeader
         title="statistics"
-        subtitle="the shape of the platform over time, from stored half-hour buckets."
         right={
           <LxBtn
             variant="secondary"
