@@ -254,3 +254,80 @@ handoff is the document the next team will read.
 - **Four report reasons carry an empty applies-to list while the others enumerate entity types.**
   Whether empty means "all" or "none" is unsettled, so the panel does not filter the reason list by
   entity type. **Needed:** an answer, if that filtering is ever wanted.
+
+---
+
+# Items raised after the panel effort
+
+The panel effort closed with items 1–10 above, all delivered. The two below were found by a later
+phase working on the user-facing application, and are recorded here because this file is where the
+project collects requests to the backend.
+
+## 11. A cancelled Google sign-in ends on a server error page the frontend cannot reach — NOT RAISED BEFORE
+
+**What was observed**, reproduced in a real browser rather than reasoned about.
+
+Google sign-in was started from the application, the consent screen was reached, and Cancel was
+pressed. The full chain:
+
+1. The application sends the browser to the sign-in start address on the server.
+2. Google is reached, with a return address that points at **the server**, not at the frontend.
+3. The consent screen offers cancel or continue. Cancel is pressed.
+4. The browser lands on the server's own return address with `?error=access_denied&state=…` and
+   **stops there**.
+
+What the person is looking at, on the server's address and not the application's:
+
+- **HTTP 500**, `content-type: text/html`
+- the framework's default error page
+- **a Java stack trace, beginning `java.lang.StackOverflowError`, rendered into the page**
+
+No redirect follows it. The browser console records the 500 against that address.
+
+Calling the same return address **without** the flow's own cookie behaves differently: it answers
+**401** with a clean JSON envelope carrying an authentication error code. So the clean refusal exists
+and is reachable in isolation; in an actual cancellation, something recurses until the stack is
+exhausted before that refusal is produced.
+
+**Why the frontend cannot handle this.** The application is not in the chain after step 1. It is
+never redirected to, receives no parameter, and has no route, handler or listener that can observe
+the outcome. There is nothing to intercept. No workaround was attempted — not polling, not watching
+for a navigation the application does not control, and not guessing at a redirect that does not
+exist.
+
+**What the frontend needs.**
+
+1. That a failed or cancelled sign-in **returns the browser to the application** rather than ending
+   on the server's own address — and in particular that it never renders a stack trace to a person.
+2. That the return carries **an indication of which failure it was**, distinguishable at least
+   between *the person cancelled* and *the sign-in genuinely failed*. The application already has a
+   route waiting at the return address, and a page that treats a cancellation as a calm choice
+   rather than as an error; it needs only the parameter to read.
+3. The names and values of whatever that indication turns out to be, so the page reads the real
+   shape rather than an assumed one.
+
+**Priority.** There is no workaround. Every person who starts Google sign-in and changes their mind
+sees a stack trace. This is the most visible remaining defect in the sign-in flow.
+
+## 12. A suspended account is told nothing about when its suspension ends — NOT RAISED BEFORE
+
+**What was observed.** An account was suspended for a fixed period through the panel; the database
+holds both the suspended state and the end date.
+
+From that account's own side:
+
+- every authenticated read answers **401**, including its own profile and its own warnings, so it
+  cannot load any screen that could tell it anything;
+- signing in again is refused with **403** and a message that says the account is *suspended or
+  deactivated*, without distinguishing the two and **without an end date**.
+
+**What the frontend needs.** On the sign-in refusal for a suspended account, **when the suspension
+ends** — and, ideally, suspension distinguished from deactivation, since they are different
+situations for the person and only one of them ends by itself.
+
+**Where it would be shown.** The sign-in screen, which is the only surface a suspended account can
+reach. It currently says plainly that the account is suspended and offers a way to get in touch; it
+says nothing about *until when*, because nothing is returned to say it with.
+
+**Priority.** Lower than item 11. The refusal is already honest and does not leak anything; it is
+simply less useful than it could be.

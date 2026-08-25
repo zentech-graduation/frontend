@@ -7,6 +7,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Settings is now a list of groups beside the setting you are changing: choosing one swaps only the region next to it, so settings can be browsed instead of opened one at a time and backed out of.
+- Every settings category has its own address, so one can be linked and reloaded, and the back button moves between categories rather than out of settings.
+- Settings now shows the account's own standing: whether it is verified, whether it is private, when it was created, and any warning a moderator has issued against it, with the reason and the moderator's own note.
+- Settings now lists the people waiting to follow you, with approve and decline, on the same screen as the rest of your audience settings.
+- The profile link field can now be edited; it is accepted by the server and was previously not offered anywhere.
+- Changing a password is now offered where it belongs, as a reset link sent to the account's own address, which is the only way the server supports it.
+- Moderators and administrators can now reach the panel at phone width, from a control beside the settings control on their own profile, where previously the only entry point was the desktop navigation rail.
+- Each distinct way a Google sign-in can fail now has its own page saying what happened in ordinary language and offering a way onward, instead of one page printing the raw reason with nothing to press.
+
+### Changed
+- Cancelling a Google sign-in reads as a choice rather than an error, with no warning treatment and no error code.
+- Sign-in, sign-up, email verification and password reset now say what went wrong in the application's own words instead of repeating the server's message; a suspended account and a wrong password are each named specifically.
+- An expired email verification link now says that links expire and can only be used once, with the resend button beneath it, instead of stating an error under a heading still telling you to check your inbox.
+- Profile fields are edited where they are shown, and a save that the server refuses keeps what was typed and says why against the field that caused it.
+- The navigation rail opens on keyboard focus as well as on hover, so the labels naming its destinations are no longer reachable only with a mouse.
+- Switches now report themselves as switches, with their state and a name, and carry a visible outline so they can be seen against the page in the dark theme.
+
+### Removed
+- The settings screen no longer offers account deletion, story-view notifications, a help centre, terms, or an about page: none of them did anything, and the server has nothing behind any of them.
+- The verified mark beside the email address is gone; it appeared whether or not anything was verified. The account's verified state is now stated plainly.
+- The theme control has moved off the settings screen, which is otherwise entirely backed by stored settings; the theme remains a per-device preference and still works where it already did.
+
+### Fixed
+- Opening the profile editor no longer shows an empty biography to someone who has one.
+- A settings screen at a narrow width no longer shows its title twice.
 - Moderators and administrators reach the panel from a navigation entry in the application, directly above settings, and return to the application from the panel header; ordinary accounts never see it.
 - The panel has a theme control of its own, so dark and light can be chosen without leaving it.
 - Media in the panel opens into a full viewer with forward and back navigation across the media attached to that record, closed with Escape and moved through with the arrow keys.
