@@ -394,7 +394,10 @@ export function AuditLogScreen() {
           <ActorFilter actorId={actorId} onChange={(value) => setParam('actor', value)} />
         ) : null}
         <TargetFilter targetUserId={targetUserId} onChange={(value) => setParam('target', value)} />
-        <div style={{ padding: '4px 4px 0' }}>
+        {/* The rows above inset their content 16px from the card edge; this wrapper
+            matches that and the statistics screen's own DateRangeControl, which sits
+            in a padded PanelCard rather than one tightened to 4px like this was. */}
+        <div style={{ padding: '16px' }}>
           <DateRangeControl
             value={range}
             maxDays={MAX_WINDOW_DAYS}
