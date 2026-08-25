@@ -27,24 +27,9 @@ const PostDetailScreen = lazy(() =>
 const ProfileScreen = lazy(() =>
   import('@/features/luvax/components/ProfileScreen').then((m) => ({ default: m.ProfileScreen }))
 );
-const BlockedUsersScreen = lazy(() =>
-  import('@/features/luvax/components/BlockedUsersScreen').then((m) => ({
-    default: m.BlockedUsersScreen,
-  }))
-);
-const ChangePasswordScreen = lazy(() =>
-  import('@/features/luvax/components/ChangePasswordScreen').then((m) => ({
-    default: m.ChangePasswordScreen,
-  }))
-);
 const ComposerScreen = lazy(() =>
   import('@/features/luvax/components/ComposerScreen').then((m) => ({
     default: m.ComposerScreen,
-  }))
-);
-const EditProfileScreen = lazy(() =>
-  import('@/features/luvax/components/EditProfileScreen').then((m) => ({
-    default: m.EditProfileScreen,
   }))
 );
 const ExploreScreen = lazy(() =>
@@ -70,11 +55,6 @@ const NotificationsScreen = lazy(() =>
 const OnboardingScreen = lazy(() =>
   import('@/features/luvax/components/OnboardingScreen').then((m) => ({
     default: m.OnboardingScreen,
-  }))
-);
-const SavedPostsScreen = lazy(() =>
-  import('@/features/luvax/components/SavedPostsScreen').then((m) => ({
-    default: m.SavedPostsScreen,
   }))
 );
 const SearchScreen = lazy(() =>
@@ -146,26 +126,17 @@ export const APP_SCREENS = [
     chrome: 'shell',
   },
   { screen: 'messages', path: ROUTES.MESSAGES, element: <MessagesScreen />, chrome: 'messages' },
+  // Settings is one screen with a category in the path. The bare address is the
+  // group list with nothing open; `:category` is every category, including the
+  // three that were separate screens before the rebuild, so their published
+  // addresses keep resolving.
   { screen: 'settings', path: ROUTES.SETTINGS, element: <SettingsScreen />, chrome: 'shell' },
   {
-    screen: 'edit-profile',
-    path: ROUTES.EDIT_PROFILE,
-    element: <EditProfileScreen />,
+    screen: 'settings',
+    path: ROUTES.SETTINGS_CATEGORY,
+    element: <SettingsScreen />,
     chrome: 'shell',
   },
-  {
-    screen: 'change-password',
-    path: ROUTES.CHANGE_PASSWORD,
-    element: <ChangePasswordScreen />,
-    chrome: 'shell',
-  },
-  {
-    screen: 'blocked',
-    path: ROUTES.BLOCKED_USERS,
-    element: <BlockedUsersScreen />,
-    chrome: 'shell',
-  },
-  { screen: 'saved', path: ROUTES.SAVED, element: <SavedPostsScreen />, chrome: 'shell' },
   { screen: 'profile', path: ROUTES.PROFILE, element: <ProfileScreen />, chrome: 'shell' },
   { screen: 'profile', path: ROUTES.USER_PROFILE, element: <ProfileScreen />, chrome: 'shell' },
   {
