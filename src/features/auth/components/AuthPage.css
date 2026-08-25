@@ -55,7 +55,11 @@
 .lx-field input:-webkit-autofill:focus { -webkit-box-shadow: 0 0 0 1000px var(--lx-base) inset, 0 0 0 3px var(--lx-accent-dim); box-shadow: 0 0 0 1000px var(--lx-base) inset, 0 0 0 3px var(--lx-accent-dim); }
 .lx-field input:-webkit-autofill ~ label { top: 0; font-size: 11px; letter-spacing: 0.04em; color: var(--lx-ink-2); padding: 0 6px; background: var(--lx-surface-sunken); }
 
-.lx-btn-primary { width: 100%; height: 52px; border: none; border-radius: var(--radius-pill); background: var(--lx-accent); color: var(--lx-ink-inverse); font-size: 15px; font-weight: 600; letter-spacing: 0.01em; cursor: pointer; box-shadow: var(--shadow-sm); transition: background var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out); }
+/* The accent fill is the same colour in both themes, so the label cannot use a token that
+   flips with it. --lx-ink-inverse is near-white in the light theme and measured 2.08:1 on the
+   accent; --lx-black is theme-invariant and clears 9:1 on the accent in both. Same correction
+   the panel made to its own primary button. */
+.lx-btn-primary { width: 100%; height: 52px; border: none; border-radius: var(--radius-pill); background: var(--lx-accent); color: var(--lx-black); font-size: 15px; font-weight: 600; letter-spacing: 0.01em; cursor: pointer; box-shadow: var(--shadow-sm); transition: background var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out); }
 .lx-btn-primary:hover { background: var(--lx-accent-dark); }
 .lx-btn-primary:active { transform: translateY(1px); }
 .lx-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }

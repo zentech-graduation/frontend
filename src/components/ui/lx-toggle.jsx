@@ -1,10 +1,28 @@
 import { v } from '@/config/tokens';
 
-export function LxToggle({ on, onChange, disabled = false }) {
+/**
+ * A two-state switch.
+ *
+ * It reports itself as a switch rather than as a plain button, so its on/off
+ * state is announced and it is operable from the keyboard like every other
+ * control on the page. `label` gives it an accessible name; without one a
+ * switch reads as an unlabelled control, since the text describing it sits in a
+ * sibling element rather than inside the button.
+ *
+ * The knob transition uses the shared duration and easing, so the global
+ * prefers-reduced-motion rule neutralises it along with the rest of the
+ * application.
+ */
+export function LxToggle({ on, onChange, disabled = false, label, busy = false }) {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={Boolean(on)}
+      aria-label={label}
+      aria-busy={busy || undefined}
       disabled={disabled}
+      className="lx-toggle"
       onClick={
         disabled
           ? undefined
@@ -18,11 +36,20 @@ export function LxToggle({ on, onChange, disabled = false }) {
         height: 22,
         borderRadius: 999,
         background: on ? v.accent : v.surfaceRaised,
-        border: 'none',
+        // The off fill is --lx-surface-raised, which measures 1.25:1 against the
+        // page in the dark theme - the switch simply disappears. Neither border
+        // token is enough to rescue it there (--lx-border 1.44:1,
+        // --lx-border-strong 1.82:1), so the boundary is drawn in --lx-ink-2,
+        // which measures 7.92:1 in dark and 5.90:1 in light and clears the 3:1
+        // a UI component's visible boundary needs. --lx-ink-3 would also clear
+        // it at 3.74:1, but it is the role this product measured as failing and
+        // is not used here. The on state keeps a border too, so both states are
+        // the same size and nothing shifts when it flips.
+        border: `1px solid ${on ? v.accent : v.ink2}`,
         position: 'relative',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
-        transition: 'background 150ms ease-out',
+        transition: 'background var(--duration-fast) var(--ease-out)',
         flexShrink: 0,
       }}
     >
@@ -35,7 +62,7 @@ export function LxToggle({ on, onChange, disabled = false }) {
           height: 18,
           borderRadius: '50%',
           background: v.white,
-          transition: 'left 150ms ease-out',
+          transition: 'left var(--duration-fast) var(--ease-out)',
           boxShadow: `0 1px 3px ${v.shadow18}`,
         }}
       />

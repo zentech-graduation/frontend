@@ -19,6 +19,7 @@ import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { FollowListModal } from './FollowListModal';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { ROUTES, routeTo } from '@/config/constants';
+import { isPanelRole } from '@/config/roles';
 
 /**
  * The post types the photos tab asks the server for.
@@ -58,6 +59,8 @@ export function ProfileScreen() {
   // address constructible before the user object has loaded.
   const { userId: targetUserId } = useParams();
   const isSelf = !targetUserId || targetUserId === currentUser?.id;
+  const role = useAuthStore((state) => state.role);
+  const canReachPanel = isPanelRole(role);
 
   const queryUserId = targetUserId || currentUser?.id;
   const {
@@ -568,14 +571,36 @@ export function ProfileScreen() {
             />
           )}
           {isSelf && (
-            <LxBtn
-              variant="secondary"
-              size="sm"
-              style={{ marginBottom: 2, transform: 'translateY(6px)' }}
-              onClick={() => navigate(ROUTES.SETTINGS)}
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                marginBottom: 2,
+                transform: 'translateY(6px)',
+              }}
             >
-              edit profile
-            </LxBtn>
+              {/* The phone-width way into the panel.
+                  The side rail carries a panel entry above its settings entry,
+                  but the rail does not exist at phone width and the bottom bar
+                  has no settings slot for one to sit beside. This pill is where
+                  settings is actually reached at that width, so the panel entry
+                  sits next to it, in the same shape, rather than being invented
+                  somewhere the person has no reason to look.
+
+                  Role comes from the same store field and the same predicate the
+                  rail uses. It is held in memory and absent until the session is
+                  established, so this reads false first and turns true once the
+                  role arrives: the entry appears late for a privileged account
+                  rather than flashing into view for an ordinary one. */}
+              {canReachPanel && (
+                <LxBtn variant="secondary" size="sm" onClick={() => navigate(ROUTES.ADMIN)}>
+                  panel
+                </LxBtn>
+              )}
+              <LxBtn variant="secondary" size="sm" onClick={() => navigate(ROUTES.SETTINGS)}>
+                settings
+              </LxBtn>
+            </div>
           )}
         </div>
 

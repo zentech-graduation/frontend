@@ -33,12 +33,12 @@ const BOTTOM_TABS = [
 // because it has no side rail - it is the only place carrying the back button for a
 // subpage, the current page's title, and the notification bell.
 export function LxAppBar({ screen, navigate }) {
+  // Every settings category is the same screen with a category in the path, so
+  // one entry covers what used to be four separate screen ids. The category's
+  // own name is carried by the region's heading rather than by this bar.
   const subpages = {
     post: 'post',
     settings: 'settings',
-    'edit-profile': 'edit profile',
-    'change-password': 'change password',
-    blocked: 'blocked users',
   };
   const isSubpage = Boolean(subpages[screen]);
   const subpageLabel = subpages[screen];
@@ -460,7 +460,10 @@ export function LxSideRail({ active, navigate, visible = true }) {
     fontFamily: v.fontBody,
     fontSize: 13,
     fontWeight: 600,
-    color: isActive ? v.accent : v.ink3,
+    // --lx-ink-3 measures below 4.5:1 on this surface in both themes, and these
+    // labels are the rail's only readable naming of its destinations rather
+    // than a decorative mark. --lx-ink-2 is the same role above the threshold.
+    color: isActive ? v.accent : v.ink2,
     textTransform: 'capitalize',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -481,6 +484,15 @@ export function LxSideRail({ active, navigate, visible = true }) {
       aria-hidden={!visible}
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
+      // The labels are the rail's only way of naming its destinations, so
+      // revealing them cannot be a mouse-only affordance. Focus entering the
+      // rail opens it exactly as hover does and focus leaving closes it, which
+      // makes tabbing through the nav show the same labels a pointer does.
+      // React's focus events bubble, so this covers every button inside.
+      onFocus={() => setExpanded(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setExpanded(false);
+      }}
       style={{
         position: 'fixed',
         top: 0,
@@ -599,6 +611,12 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
 
   if (vp === 'desktop') {
     const LEFT_W = 280;
+    // Settings is two regions side by side rather than one reading column, so
+    // it takes the width the right rail would otherwise occupy. The tablet
+    // branch below already made this exception for the same screen; this is the
+    // same rule applied at the width where the split actually renders.
+    const isWideSettingsPane = screen === 'settings';
+    const mainWidth = isWideSettingsPane ? 960 : 680;
     return (
       // No min-height: 100vh here - it would carry the same zoom-vs-vh mismatch <main> below
       // has to correct for, and nothing in this row needs it: the rail is fixed-positioned and
@@ -622,7 +640,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             key={screen}
             className="lx-fade-in"
             style={{
-              width: 680,
+              width: mainWidth,
               flexShrink: 0,
               minWidth: 0,
               // No column rules. The feed is one continuous surface on the page
@@ -636,7 +654,9 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             {children}
           </main>
           {showRightRail && <LxRightRail navigate={navigate} />}
-          {!showRightRail && <div style={{ width: 280, flexShrink: 0 }} aria-hidden="true" />}
+          {!showRightRail && !isWideSettingsPane && (
+            <div style={{ width: 280, flexShrink: 0 }} aria-hidden="true" />
+          )}
         </div>
       </div>
     );
@@ -644,9 +664,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
 
   if (vp === 'tablet') {
     const LEFT_W = 82;
-    const isWideSettingsPane = ['settings', 'edit-profile', 'change-password', 'blocked'].includes(
-      screen
-    );
+    const isWideSettingsPane = screen === 'settings';
     const tabletMainWidth = screen === 'compose' ? 784 : isWideSettingsPane ? 704 : 604;
     const tabletShellWidth = screen === 'compose' ? 1090 : isWideSettingsPane ? 1010 : 910;
     const tabletRightSpacer = isWideSettingsPane ? LEFT_W : 206;

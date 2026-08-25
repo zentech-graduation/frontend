@@ -15,7 +15,7 @@ export default function EmailVerificationPage() {
   const email = searchParams.get('email') || '';
   const tokenFromUrl = searchParams.get('token') || '';
   const [resendState, setResendState] = useState({ error: '', success: '' });
-  const [tokenError, setTokenError] = useState('');
+  const [tokenError, setTokenError] = useState(false);
   const setAuth = useAuthStore((state) => state.setAuth);
   const {
     secondsLeft: countdown,
@@ -54,10 +54,12 @@ export default function EmailVerificationPage() {
             state: { verificationSuccess: 'Your email has been verified. Sign in to continue.' },
           });
         }
-      } catch (error) {
-        setTokenError(
-          authApi.normalizeMessage(error, 'The verification link is invalid or has expired.')
-        );
+      } catch {
+        // The backend distinguishes nothing useful here - an expired link, a
+        // replayed one and a malformed one all answer AUTH_VERIFY_TOKEN_INVALID
+        // - and its own sentence is written in a voice this surface does not
+        // use. The outcome is stated below in the product's words instead.
+        setTokenError(true);
       }
     };
 
@@ -76,14 +78,11 @@ export default function EmailVerificationPage() {
       restartCountdown();
       setResendState({
         error: '',
-        success: 'A new verification email has been sent.',
+        success: 'a new verification link is on its way.',
       });
-    } catch (error) {
+    } catch {
       setResendState({
-        error: authApi.normalizeMessage(
-          error,
-          'Unable to resend the verification email right now.'
-        ),
+        error: "we couldn't send that email just now. try again in a moment.",
         success: '',
       });
     }
@@ -94,19 +93,15 @@ export default function EmailVerificationPage() {
       <div className="lx-col lx-enter">
         <div className="lx-card">
           <div className="lx-head">
-            <h1 className="lx-h2">verify your email.</h1>
+            <h1 className="lx-h2">{tokenError ? 'that link has expired' : 'verify your email.'}</h1>
             <p className="lx-sub">
-              {email
-                ? `we sent a verification link to ${email}.`
-                : 'check your inbox for a verification link.'}
+              {tokenError
+                ? 'verification links stop working after a while, and each one can only be used once. send yourself a fresh one and it will work.'
+                : email
+                  ? `we sent a verification link to ${email}.`
+                  : 'check your inbox for a verification link.'}
             </p>
           </div>
-
-          {tokenError ? (
-            <p style={{ color: 'var(--lx-error-text)', fontSize: '14px', margin: 0 }}>
-              {tokenError}
-            </p>
-          ) : null}
           {resendState.error ? (
             <p style={{ color: 'var(--lx-error-text)', fontSize: '14px', margin: 0 }}>
               {resendState.error}
