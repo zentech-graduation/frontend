@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Each setting in the list now carries an icon, and the list can be searched by name.
+- The setting you have open is centred in the space beside the list instead of sitting against its left edge, so a wide screen no longer leaves all the empty space on one side.
 - The settings list sits directly beside the navigation rail, so hovering the rail opens it over the list rather than over empty space.
 - The open setting is marked by a lighter row and a heavier name instead of a coloured rule down its edge, and hovering lifts a row slightly.
 - What a setting is for is now written at the top of that setting rather than under its name in the list, so the list reads as a list of names.

@@ -42,11 +42,21 @@ export const SETTINGS_CSS = `
   padding: var(--space-6) var(--space-3) var(--space-8) var(--space-4);
 }
 .lx-settings-category {
-  padding: var(--space-6) var(--space-6) var(--space-12);
+  /* The measure is centred by growing the region's own side padding rather than
+     by giving the content auto margins. Everything inside - the back button at a
+     narrow width as well as the fields - then shares one leading edge, which
+     auto margins on each child could not do without stretching the button's hit
+     area across the whole column. The floor keeps the ordinary gutter once the
+     region is narrower than the measure. */
+  padding: var(--space-6) max(var(--space-6), (100% - 560px) / 2) var(--space-12);
 }
 /* The region fills the width it is given, but the content inside it keeps a
    readable measure: a text field stretched to the full region is harder to
-   scan and read back than one held near the export's reading width. */
+   scan and read back than one held near the export's reading width.
+   It is centred in the region rather than pinned to its leading edge, so the
+   space left over by the measure falls on both sides instead of pooling on the
+   right. Below the split breakpoint the region is narrower than the measure, so
+   the auto margins collapse and this changes nothing. */
 .lx-settings-measure {
   outline: none;
   max-width: 560px;
@@ -406,7 +416,9 @@ export const SETTINGS_CSS = `
     border-right: none;
     padding: var(--space-4) var(--space-4) var(--space-8);
   }
-  .lx-settings-category { padding: var(--space-4) var(--space-4) var(--space-12); }
+  .lx-settings-category {
+    padding: var(--space-4) max(var(--space-4), (100% - 560px) / 2) var(--space-12);
+  }
   .lx-settings-groups,
   .lx-settings-category { height: auto; overflow-y: visible; }
   .lx-settings.has-category .lx-settings-groups { display: none; }

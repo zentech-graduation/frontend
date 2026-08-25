@@ -172,6 +172,15 @@ below the threshold in both themes.
 The design export covers a reading surface. It has no settings screen, so each of these is
 built from the export's own tokens and labelled as derived in the source:
 
+- **The centred measure.** The category region fills whatever width it is given,
+  but the content inside it is held to a readable measure and centred in that
+  region rather than pinned to its leading edge — at a wide viewport the leftover
+  space otherwise pooled entirely on the right. The centring is done by growing
+  the region's own side padding, not by giving each child auto margins: that way
+  the back button at a narrow width and the fields share one leading edge, which
+  per-child margins could not do without stretching the button's hit area across
+  the whole column. A floor on the padding keeps the ordinary gutter once the
+  region is narrower than the measure.
 - **The two-region layout** (`.lx-settings`) — a group list beside a category, each region
   scrolling on its own, collapsing to one full-width region at a narrow width. Derived.
 - **The settings row** (`.lx-settings-row`) — label and explanation on the left, control on
