@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { LxIcon } from '@/components/ui/lx-icon';
@@ -39,6 +39,11 @@ const CATEGORY_VIEWS = {
  * category changes, only the right region swaps: the list keeps its scroll
  * offset and issues no request when the selection moves.
  *
+ * The list carries a name and an icon per category and nothing else. What a
+ * category is for is said once, at the top of the category itself, rather than
+ * under every name in the list where seven straplines compete with the names
+ * they describe.
+ *
  * At a narrow width this is not a split. The stylesheet removes whichever
  * region is not in play, so the group list is the whole width until a category
  * is opened and the category is the whole width afterwards, with a way back.
@@ -50,6 +55,25 @@ export function SettingsScreen() {
   const unknown = isUnknownCategory(segment);
   const regionRef = useRef(null);
   const headingRef = useRef(null);
+  const [query, setQuery] = useState('');
+
+  // Filters the list to categories whose name contains what was typed, and
+  // drops any group left with nothing in it. Purely a filter over a static
+  // list - it asks the server nothing and can invent nothing.
+  const trimmedQuery = query.trim().toLowerCase();
+  const visibleGroups = useMemo(() => {
+    if (!trimmedQuery) return SETTINGS_GROUPS;
+    return SETTINGS_GROUPS.map((group) => ({
+      ...group,
+      categories: group.categories.filter(
+        (entry) =>
+          entry.label.toLowerCase().includes(trimmedQuery) ||
+          group.title.toLowerCase().includes(trimmedQuery)
+      ),
+    })).filter((group) => group.categories.length > 0);
+  }, [trimmedQuery]);
+
+  const matchCount = visibleGroups.reduce((total, group) => total + group.categories.length, 0);
 
   // When the open category changes, the region returns to its own top and takes
   // focus. Without this, choosing a second category from the list would leave
@@ -73,41 +97,62 @@ export function SettingsScreen() {
         <div className="lx-settings-groups">
           {/* Hidden at the narrow width, where the app bar already carries the
               word and two copies of it would stack. */}
-          <h1
-            className="lx-settings-title"
-            style={{
-              fontFamily: v.fontDisplay,
-              fontSize: 20,
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              color: v.ink,
-              margin: '0 0 16px',
-              paddingLeft: 8,
-            }}
-          >
-            settings
-          </h1>
+          <h1 className="lx-settings-title">settings</h1>
 
-          {SETTINGS_GROUPS.map((group) => (
-            <div className="lx-settings-group" key={group.id}>
-              <h2 className="lx-settings-group-title">{group.title}</h2>
-              {group.categories.map((entry) => {
-                const isOpen = category?.id === entry.id;
-                return (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    className="lx-settings-link"
-                    aria-current={isOpen ? 'page' : undefined}
-                    onClick={() => navigate(entry.path)}
-                  >
-                    <span className="lx-settings-link-label">{entry.label}</span>
-                    <span className="lx-settings-link-hint">{entry.hint}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+          <div className="lx-settings-search">
+            <LxIcon name="explore" size={15} color={v.ink2} />
+            <input
+              type="search"
+              className="lx-settings-search-input"
+              placeholder="search settings"
+              aria-label="search settings"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {query ? (
+              <button
+                type="button"
+                className="lx-settings-search-clear"
+                aria-label="clear the search"
+                onClick={() => setQuery('')}
+              >
+                <LxIcon name="close" size={14} color={v.ink2} />
+              </button>
+            ) : null}
+          </div>
+
+          {matchCount === 0 ? (
+            <p className="lx-settings-no-match">
+              nothing here is called “{query.trim()}”. try another word, or clear the search to see
+              everything.
+            </p>
+          ) : (
+            visibleGroups.map((group) => (
+              <div className="lx-settings-group" key={group.id}>
+                <h2 className="lx-settings-group-title">{group.title}</h2>
+                {group.categories.map((entry) => {
+                  const isOpen = category?.id === entry.id;
+                  return (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      className="lx-settings-link"
+                      aria-current={isOpen ? 'page' : undefined}
+                      onClick={() => navigate(entry.path)}
+                    >
+                      <LxIcon
+                        name={entry.icon}
+                        size={18}
+                        color={isOpen ? v.ink : v.ink2}
+                        stroke={isOpen ? 1.8 : 1.5}
+                      />
+                      <span className="lx-settings-link-label">{entry.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))
+          )}
         </div>
 
         <div className="lx-settings-category" ref={regionRef}>
@@ -125,7 +170,12 @@ export function SettingsScreen() {
             {category && CategoryView ? (
               <>
                 {category.ownsHeading ? null : (
-                  <h2 className="lx-settings-heading">{category.label}</h2>
+                  <div className="lx-settings-category-head">
+                    <h2 className="lx-settings-heading">{category.label}</h2>
+                    {category.description ? (
+                      <p className="lx-settings-description">{category.description}</p>
+                    ) : null}
+                  </div>
                 )}
                 <CategoryView />
               </>

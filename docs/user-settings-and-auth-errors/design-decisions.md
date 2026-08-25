@@ -65,6 +65,39 @@ keeps working where it already lived; the panel's own header still carries a the
 
 ---
 
+## 1a. What a row in the list carries
+
+**Decision.** An icon and a name. Nothing else.
+
+The list first shipped with a one-line strapline under every name — "your name, picture and
+bio" under profile, and six more like it. Seven straplines in a column compete with the seven
+names they describe, and a person scanning for a name reads twice as much to find it. What a
+category is for is now said **once, at the top of the category itself**, where somebody has
+actually chosen to read it. The strings did not change; only where they are said did.
+
+The icon is the same internal inline-SVG component the rest of the product uses. One glyph was
+missing — a person-with-plus for follow requests — and was added to that component in the
+export's own 24×24, 1.5-stroke style, which is what the design rules say to do rather than
+reaching for a second icon set.
+
+**The open row is not marked with an accent rule on its leading edge.** It was, and that read
+as a highlight colour on a navigation list. It now sits one step up the surface scale with its
+name in the heavier weight and its icon in full ink at a heavier stroke — three signals, none
+of them a colour the product reserves for something else. Hovering lifts a row one step less.
+Neither fill is load-bearing on its own: the selection survives being unable to tell the two
+surfaces apart.
+
+## 1b. Searching the list
+
+**Decision.** A field above the group list that filters the names already on screen.
+
+It matches a category's name or its group's title, hides any group left with nothing in it,
+and says so plainly when nothing matches. It asks the server nothing, because there is nothing
+to ask: the list of settings is a fixed structure, not a collection. That also means it cannot
+invent a result — a thing this screen is otherwise careful about.
+
+---
+
 ## 2. The category URL strategy
 
 **Decision.** One screen, with the category as a path segment: `/app/settings/:category`. The
@@ -106,9 +139,16 @@ link no longer points at a setting, rather than a broken screen or a 404 out of 
 
 The rail already overlaid rather than pushed: it is `position: fixed`, so expanding it cannot
 reflow the page. That was verified rather than assumed — with the rail closed and then
-hovered, every content coordinate is identical (main, group list and category region all
-unmoved at 249, 249 and 550), and the expanded rail's right edge stops short of the content
-entirely, so it does not cover anything either.
+hovered, every content coordinate is identical.
+
+**Settings sits flush against the rail, and is therefore what the rail expands over.** Every
+other screen is a reading column centred in the page, which left a wide gap between the rail
+and the settings list and meant the expanded rail covered nothing. Settings now takes the full
+width from the rail's collapsed edge instead, so the group list begins exactly where the rail
+ends. Measured closed and hovered: the rail goes 68 → 223 rendered pixels and overlaps the
+list, while the group list and the category region stay at 68 and 374 — the layout does not
+move, which was always the requirement. The form fields the person types into are in the
+category region, well clear of the expanded rail.
 
 **What was missing was the keyboard.** The rail expanded on `mouseenter` only, so the labels —
 its only readable naming of its destinations — were a mouse-only affordance. Focus entering

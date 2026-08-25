@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Each distinct way a Google sign-in can fail now has its own page saying what happened in ordinary language and offering a way onward, instead of one page printing the raw reason with nothing to press.
 
 ### Changed
+- Each setting in the list now carries an icon, and the list can be searched by name.
+- The settings list sits directly beside the navigation rail, so hovering the rail opens it over the list rather than over empty space.
+- The open setting is marked by a lighter row and a heavier name instead of a coloured rule down its edge, and hovering lifts a row slightly.
+- What a setting is for is now written at the top of that setting rather than under its name in the list, so the list reads as a list of names.
 - Cancelling a Google sign-in reads as a choice rather than an error, with no warning treatment and no error code.
 - Sign-in, sign-up, email verification and password reset now say what went wrong in the application's own words instead of repeating the server's message; a suspended account and a wrong password are each named specifically.
 - An expired email verification link now says that links expire and can only be used once, with the resend button beneath it, instead of stating an error under a heading still telling you to check your inbox.
@@ -30,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The theme control has moved off the settings screen, which is otherwise entirely backed by stored settings; the theme remains a per-device preference and still works where it already did.
 
 ### Fixed
+- Switches are centred in their track again; the knob sat a pixel out of true on whichever side it had travelled to.
+- The rule between the settings list and the setting itself now runs the full height of the screen instead of stopping where the shorter column's content ended.
 - Opening the profile editor no longer shows an empty biography to someone who has one.
 - A settings screen at a narrow width no longer shows its title twice.
 - Moderators and administrators reach the panel from a navigation entry in the application, directly above settings, and return to the application from the panel header; ordinary accounts never see it.

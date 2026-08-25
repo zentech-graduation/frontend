@@ -609,14 +609,35 @@ export function LxSideRail({ active, navigate, visible = true }) {
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
   const vp = useViewport();
 
+  // Settings is the one screen that is not a reading column. It is a list of
+  // groups beside the category that is open, and the list belongs immediately
+  // against the navigation rail: that is what lets the rail expand over it
+  // rather than over the content the person came to read. So it takes the full
+  // width from the rail's collapsed edge instead of sitting in the centred
+  // column the rest of the application uses.
+  if (vp !== 'mobile' && screen === 'settings') {
+    return (
+      <div style={{ background: v.base }}>
+        <LxSideRail active={screen} navigate={navigate} />
+        <main
+          key={screen}
+          className="lx-fade-in"
+          style={{
+            marginLeft: RAIL_COLLAPSED_W,
+            minHeight: 'calc(100vh / var(--lx-scale))',
+            display: 'flex',
+            flexDirection: 'column',
+            background: v.base,
+          }}
+        >
+          {children}
+        </main>
+      </div>
+    );
+  }
+
   if (vp === 'desktop') {
     const LEFT_W = 280;
-    // Settings is two regions side by side rather than one reading column, so
-    // it takes the width the right rail would otherwise occupy. The tablet
-    // branch below already made this exception for the same screen; this is the
-    // same rule applied at the width where the split actually renders.
-    const isWideSettingsPane = screen === 'settings';
-    const mainWidth = isWideSettingsPane ? 960 : 680;
     return (
       // No min-height: 100vh here - it would carry the same zoom-vs-vh mismatch <main> below
       // has to correct for, and nothing in this row needs it: the rail is fixed-positioned and
@@ -640,7 +661,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             key={screen}
             className="lx-fade-in"
             style={{
-              width: mainWidth,
+              width: 680,
               flexShrink: 0,
               minWidth: 0,
               // No column rules. The feed is one continuous surface on the page
@@ -654,9 +675,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             {children}
           </main>
           {showRightRail && <LxRightRail navigate={navigate} />}
-          {!showRightRail && !isWideSettingsPane && (
-            <div style={{ width: 280, flexShrink: 0 }} aria-hidden="true" />
-          )}
+          {!showRightRail && <div style={{ width: 280, flexShrink: 0 }} aria-hidden="true" />}
         </div>
       </div>
     );
@@ -664,10 +683,10 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
 
   if (vp === 'tablet') {
     const LEFT_W = 82;
-    const isWideSettingsPane = screen === 'settings';
-    const tabletMainWidth = screen === 'compose' ? 784 : isWideSettingsPane ? 704 : 604;
-    const tabletShellWidth = screen === 'compose' ? 1090 : isWideSettingsPane ? 1010 : 910;
-    const tabletRightSpacer = isWideSettingsPane ? LEFT_W : 206;
+    // Settings never reaches here: it is handled above, against the rail.
+    const tabletMainWidth = screen === 'compose' ? 784 : 604;
+    const tabletShellWidth = screen === 'compose' ? 1090 : 910;
+    const tabletRightSpacer = 206;
     return (
       // No min-height: 100vh here - see the desktop branch above for why.
       <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
