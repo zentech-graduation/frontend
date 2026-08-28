@@ -43,6 +43,7 @@ function AlbumTile({
   onOpenViewer,
   onDeleteItem,
   onReplyItem,
+  forceShowActions = false,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -53,7 +54,8 @@ function AlbumTile({
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const showActions = menuOpen || (supportsHover && hovered) || (!supportsHover && touchRevealed);
+  const showActions =
+    forceShowActions || menuOpen || (supportsHover && hovered) || (!supportsHover && touchRevealed);
   const textForCopy = item.text || item.media?.label || '';
   const isVideo = (item.media?.mediaType || '').toUpperCase() === 'VIDEO';
   const canCopyImage = Boolean(item.media?.cdnUrl && !isVideo);
@@ -61,14 +63,6 @@ function AlbumTile({
   const menuItems = useMemo(
     () =>
       [
-        item.kind !== 'deleted'
-          ? {
-              id: 'reply',
-              icon: 'reply',
-              label: 'Reply',
-              onClick: () => onReplyItem?.(item),
-            }
-          : null,
         canCopyImage
           ? {
               id: 'copy-image',
@@ -95,7 +89,7 @@ function AlbumTile({
             }
           : null,
       ].filter(Boolean),
-    [canCopyImage, canDelete, item, onDeleteItem, onReplyItem, textForCopy]
+    [canCopyImage, canDelete, item, onDeleteItem, textForCopy]
   );
 
   useEffect(() => {
@@ -159,37 +153,71 @@ function AlbumTile({
           +{overflow}
         </div>
       ) : null}
-      {menuItems.length > 0 && showActions ? (
-        <button
-          ref={menuButtonRef}
-          type="button"
-          aria-label="message image actions"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.stopPropagation();
-            setTouchRevealed(false);
-            setMenuOpen((open) => !open);
-          }}
-          style={{
-            position: 'absolute',
-            top: 6,
-            right: 6,
-            width: 23,
-            height: 23,
-            borderRadius: '50%',
-            border: 'none',
-            background: 'rgba(0,0,0,0.48)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 0,
-            cursor: 'pointer',
-            zIndex: 3,
-            boxShadow: 'none',
-          }}
-        >
-          <LxIcon name="more" size={10} color="#fff" />
-        </button>
+      {showActions && (menuItems.length > 0 || item.kind !== 'deleted') ? (
+        <>
+          {item.kind !== 'deleted' ? (
+            <button
+              type="button"
+              aria-label="reply to message image"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onReplyItem?.(item);
+              }}
+              style={{
+                position: 'absolute',
+                top: 6,
+                right: 33,
+                width: 23,
+                height: 23,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'rgba(0,0,0,0.48)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                cursor: 'pointer',
+                zIndex: 3,
+                boxShadow: 'none',
+              }}
+            >
+              <LxIcon name="reply" size={12} color="#fff" />
+            </button>
+          ) : null}
+          {menuItems.length > 0 ? (
+            <button
+              ref={menuButtonRef}
+              type="button"
+              aria-label="message image actions"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                setTouchRevealed(false);
+                setMenuOpen((open) => !open);
+              }}
+              style={{
+                position: 'absolute',
+                top: 6,
+                right: 6,
+                width: 23,
+                height: 23,
+                borderRadius: '50%',
+                border: 'none',
+                background: 'rgba(0,0,0,0.48)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                cursor: 'pointer',
+                zIndex: 3,
+                boxShadow: 'none',
+              }}
+            >
+              <LxIcon name="more" size={10} color="#fff" />
+            </button>
+          ) : null}
+        </>
       ) : null}
       <LxDropdownMenu
         anchorRef={menuButtonRef}
@@ -219,6 +247,7 @@ export function MessageAlbum({
   isLastInRun,
   onDeleteItem,
   onReplyItem,
+  forceShowActions = false,
 }) {
   const visible = items.slice(0, MAX_VISIBLE_TILES);
   const overflow = items.length - MAX_VISIBLE_TILES;
@@ -263,6 +292,7 @@ export function MessageAlbum({
               onOpenViewer={onOpenViewer}
               onDeleteItem={onDeleteItem}
               onReplyItem={onReplyItem}
+              forceShowActions={forceShowActions}
             />
           );
         })}

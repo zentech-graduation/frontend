@@ -8,6 +8,8 @@ import { usePendingFollowRequests } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
 import { useAuthStore } from '@/store/useAuthStore';
 import { isPanelRole } from '@/config/roles';
+import { useConversations } from '@/features/messages/hooks/useConversations';
+import { toThreadSummary } from '@/features/messages/utils/messageViewModel';
 
 // `id` still identifies the active tab for the shell's own styling; `path` is
 // where the tab actually goes.
@@ -25,6 +27,60 @@ const BOTTOM_TABS = [
   ...PRIMARY_TABS,
   { id: 'profile', path: ROUTES.PROFILE, icon: 'profile', label: 'profile' },
 ];
+
+const MESSAGE_PREVIEW_LIMIT = 3;
+
+function MessagePreviewPopup({ threads = [] }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        left: RAIL_ICON_INSET + RAIL_ICON_SIZE + 12,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        height: 28,
+        padding: '0 9px',
+        borderRadius: 999,
+        border: `1px solid ${v.border}`,
+        background: v.surface,
+        color: v.ink,
+        boxShadow: `0 10px 26px ${v.shadow12}`,
+        pointerEvents: 'none',
+        zIndex: 2,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span
+        style={{
+          fontFamily: v.fontBody,
+          fontSize: 12,
+          fontWeight: 700,
+        }}
+      >
+        Message
+      </span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+        {threads.map((thread, index) => (
+          <span
+            key={thread.id}
+            style={{
+              marginLeft: index === 0 ? 0 : -5,
+              border: `1px solid ${v.surface}`,
+              borderRadius: '50%',
+              display: 'inline-flex',
+            }}
+          >
+            <LxAvatar size={18} src={thread.avatarUrl} />
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
 
 // ─── Persistent App Bar (mobile only) ──────────────────────────────────────
 // Desktop and tablet render no top bar at all: the side rail already carries every
@@ -193,7 +249,7 @@ export function LxAppBar({ screen, navigate }) {
                     width: 7,
                     height: 7,
                     borderRadius: '50%',
-                    background: v.accent,
+                    background: v.error,
                   }}
                 />
               )}
@@ -274,7 +330,7 @@ export function LxBottomNav({ active, navigate }) {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  background: v.accent,
+                  background: v.error,
                 }}
               />
             )}
@@ -371,6 +427,63 @@ export function LxRightRail({ compact = false }) {
   );
 }
 
+function LxFloatingMessagePreview({ navigate, currentUserId, hidden = false }) {
+  const { conversations } = useConversations();
+  const recentMessageThreads = conversations
+    .slice(0, MESSAGE_PREVIEW_LIMIT)
+    .map((conversation) => toThreadSummary(conversation, currentUserId));
+
+  if (hidden) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(ROUTES.MESSAGES)}
+      aria-label="open messages"
+      style={{
+        position: 'fixed',
+        right: 28,
+        bottom: 26,
+        zIndex: 90,
+        height: 34,
+        borderRadius: 999,
+        border: `1px solid ${v.border}`,
+        background: v.surface,
+        color: v.ink,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '0 9px',
+        cursor: 'pointer',
+        boxShadow: `0 10px 28px ${v.shadow12}`,
+        fontFamily: v.fontBody,
+        fontSize: 12,
+        fontWeight: 700,
+      }}
+    >
+      <LxIcon name="message" size={14} color={v.ink2} />
+      <span>Message</span>
+      {recentMessageThreads.length ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 2 }}>
+          {recentMessageThreads.map((thread, index) => (
+            <span
+              key={thread.id}
+              style={{
+                marginLeft: index === 0 ? 0 : -6,
+                border: `1px solid ${v.surface}`,
+                borderRadius: '50%',
+                display: 'inline-flex',
+              }}
+            >
+              <LxAvatar size={18} src={thread.avatarUrl} />
+            </span>
+          ))}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
 // ─── Mark (icon-only) ───────────────────────────────────────────────────────
 // The favicon PNG is the only icon-only Luvax mark in the project - the app
 // otherwise only ever renders the "luvax" wordmark - so the rail reuses that
@@ -426,6 +539,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
   const currentUser = useAuthStore((state) => state.user);
   const role = useAuthStore((state) => state.role);
   const [expanded, setExpanded] = useState(false);
+  const [messagePreviewOpen, setMessagePreviewOpen] = useState(false);
   // The role is held in memory only and is absent until the session is
   // established, so this reads false first and turns true once the role
   // arrives. The entry appears late for a privileged account rather than
@@ -436,6 +550,10 @@ export function LxSideRail({ active, navigate, visible = true }) {
   const { data: unreadResponse } = useUnreadCount();
   const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
+  const { conversations } = useConversations();
+  const recentMessageThreads = conversations
+    .slice(0, MESSAGE_PREVIEW_LIMIT)
+    .map((conversation) => toThreadSummary(conversation, currentUser?.id));
 
   const rowStyle = (disabled) => ({
     width: '100%',
@@ -479,11 +597,20 @@ export function LxSideRail({ active, navigate, visible = true }) {
     justifyContent: 'center',
   };
 
+  const renderTabLabel = (tab, isActive) => {
+    if (tab.id === 'messages' && messagePreviewOpen && recentMessageThreads.length) return null;
+
+    return <span style={labelStyle(isActive)}>{tab.label}</span>;
+  };
+
   return (
     <nav
       aria-hidden={!visible}
       onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
+      onMouseLeave={() => {
+        setExpanded(false);
+        setMessagePreviewOpen(false);
+      }}
       // The labels are the rail's only way of naming its destinations, so
       // revealing them cannot be a mouse-only affordance. Focus entering the
       // rail opens it exactly as hover does and focus leaving closes it, which
@@ -500,7 +627,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
         bottom: 0,
         width: expanded ? RAIL_EXPANDED_W : RAIL_COLLAPSED_W,
         zIndex: 100,
-        overflow: 'hidden',
+        overflow: 'visible',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
@@ -543,6 +670,11 @@ export function LxSideRail({ active, navigate, visible = true }) {
               aria-label={t.label}
               className="lx-tab-btn"
               style={rowStyle(t.disabled)}
+              onMouseEnter={() => setMessagePreviewOpen(t.id === 'messages')}
+              onFocus={() => setMessagePreviewOpen(t.id === 'messages')}
+              onMouseLeave={() => {
+                if (t.id === 'messages') setMessagePreviewOpen(false);
+              }}
             >
               <span style={iconWrapStyle}>
                 {isProfile ? (
@@ -557,7 +689,10 @@ export function LxSideRail({ active, navigate, visible = true }) {
                   />
                 )}
               </span>
-              <span style={labelStyle(isActive)}>{t.label}</span>
+              {t.id === 'messages' && messagePreviewOpen && recentMessageThreads.length ? (
+                <MessagePreviewPopup threads={recentMessageThreads} />
+              ) : null}
+              {renderTabLabel(t, isActive)}
               {t.id === 'notifications' && hasNotifications && (
                 <span
                   style={{
@@ -567,7 +702,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    background: v.accent,
+                    background: v.error,
                   }}
                 />
               )}
@@ -608,6 +743,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
 // ─── App Shell ─────────────────────────────────────────────────────────────
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
   const vp = useViewport();
+  const currentUserId = useAuthStore((state) => state.user?.id);
 
   // Settings is the one screen that is not a reading column. It is a list of
   // groups beside the category that is open, and the list belongs immediately
@@ -619,6 +755,11 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
     return (
       <div style={{ background: v.base }}>
         <LxSideRail active={screen} navigate={navigate} />
+        <LxFloatingMessagePreview
+          navigate={navigate}
+          currentUserId={currentUserId}
+          hidden={screen === 'messages'}
+        />
         <main
           key={screen}
           className="lx-fade-in"
@@ -644,6 +785,11 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
       // <main> establishes the page's real height on its own.
       <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxSideRail active={screen} navigate={navigate} />
+        <LxFloatingMessagePreview
+          navigate={navigate}
+          currentUserId={currentUserId}
+          hidden={screen === 'messages'}
+        />
         <div
           style={{
             display: 'flex',
@@ -691,6 +837,11 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
       // No min-height: 100vh here - see the desktop branch above for why.
       <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxSideRail active={screen} navigate={navigate} />
+        <LxFloatingMessagePreview
+          navigate={navigate}
+          currentUserId={currentUserId}
+          hidden={screen === 'messages'}
+        />
         <div
           style={{
             display: 'flex',
