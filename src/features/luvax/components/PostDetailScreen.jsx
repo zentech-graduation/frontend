@@ -37,6 +37,7 @@ import { toast } from './Toast';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
+import { PostShareDialog } from './PostShareDialog';
 
 const HEART_COLOR = 'var(--lx-error)';
 const COMMENT_MAX_LENGTH = CHAR_LIMITS.comment;
@@ -198,7 +199,10 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
       id: 'share',
       icon: 'share',
       label: 'Share',
-      onClick: () => sharePost(postId, comment.content),
+      onClick: () =>
+        sharePost(postId)
+          .then(() => toast('link copied'))
+          .catch(() => {}),
     },
     {
       id: 'copy',
@@ -560,6 +564,7 @@ export function PostDetailScreen({ overlay = false }) {
   const [heartBurst, setHeartBurst] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [postReportTarget, setPostReportTarget] = useState(null);
@@ -826,7 +831,7 @@ export function PostDetailScreen({ overlay = false }) {
         id: 'share',
         icon: 'share',
         label: 'Share',
-        onClick: () => sharePost(postId, post.caption),
+        onClick: () => setShareOpen(true),
       },
       {
         id: 'copy',
@@ -1161,7 +1166,7 @@ export function PostDetailScreen({ overlay = false }) {
           </button>
           <button
             type="button"
-            onClick={() => sharePost(postId, post.caption)}
+            onClick={() => setShareOpen(true)}
             style={{
               background: 'none',
               border: 'none',
@@ -1538,6 +1543,7 @@ export function PostDetailScreen({ overlay = false }) {
       ) : null}
 
       <ReportModal target={postReportTarget} onClose={() => setPostReportTarget(null)} />
+      <PostShareDialog open={shareOpen} postId={postId} onClose={() => setShareOpen(false)} />
     </>
   );
 }

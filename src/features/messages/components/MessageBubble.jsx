@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
 import { LxIcon } from '@/components/ui/lx-icon';
-import { copyToClipboard } from '@/utils/helpers';
+import { ROUTES, routeTo } from '@/config/constants';
+import { copyToClipboard, getDisplayName, getUserSummary } from '@/utils/helpers';
+import { usePostDetail } from '@/features/luvax/hooks/usePosts';
 import { bubbleCornerRadius } from '../utils/bubbleShape';
 import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
@@ -18,14 +21,22 @@ export function MessageBubble({
   message,
   activeThread,
   onPreviewMedia,
+  onOpenStory,
   onDeleteToggle,
   onReplyMessage,
   viewport,
   forceShowActions = false,
 }) {
+  const navigate = useNavigate();
   const isMine = message.from === 'me';
   const isMobile = viewport === 'mobile';
   const isTouchLayout = viewport === 'mobile' || viewport === 'tablet';
+  const { data: sharedPostResponse } = usePostDetail(message.sharedPostId);
+  const sharedPost = sharedPostResponse?.data || sharedPostResponse || null;
+  const sharedPostAuthor = sharedPost ? getUserSummary(sharedPost) : null;
+  const sharedPostCaption = sharedPost?.caption || message.title || message.text || 'shared post';
+  const sharedPostMedia = Array.isArray(sharedPost?.media) ? sharedPost.media[0] : null;
+  const sharedPostHandle = sharedPostAuthor?.username ? `@${sharedPostAuthor.username}` : null;
   const [menuOpen, setMenuOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [touchRevealed, setTouchRevealed] = useState(false);
@@ -35,7 +46,7 @@ export function MessageBubble({
     message.kind === 'reply'
       ? `${message.replyText}\n${message.text}`
       : message.kind === 'post'
-        ? [message.handle, message.title, message.meta].filter(Boolean).join('\n')
+        ? [sharedPostHandle, sharedPostCaption, message.meta].filter(Boolean).join('\n')
         : message.kind === 'file'
           ? message.text
           : message.text;
@@ -69,6 +80,16 @@ export function MessageBubble({
     window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const showActions =
     forceShowActions || menuOpen || (!isTouchLayout && hovered) || (isTouchLayout && touchRevealed);
+
+  const openSharedPost = () => {
+    if (message.sharedPostId) {
+      navigate(routeTo.postDetail(message.sharedPostId), {
+        state: { background: ROUTES.MESSAGES },
+      });
+      return;
+    }
+    onPreviewMedia({ label: sharedPostCaption });
+  };
 
   const handleHoverStart = () => {
     setHovered(true);
@@ -216,6 +237,7 @@ export function MessageBubble({
   if (message.kind === 'file' || message.kind === 'post' || message.kind === 'story') {
     const isFile = message.kind === 'file';
     const isStory = message.kind === 'story';
+    const storyMedia = message.sharedStoryMedia || { label: message.meta || 'shared story' };
     return (
       <div
         style={{
@@ -242,7 +264,73 @@ export function MessageBubble({
           onPointerDown={handleBubbleInteraction}
           onClick={handleTouchMenuToggle}
         >
-          {isFile ? (
+          {isStory ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: isMine ? 'flex-end' : 'flex-start',
+                gap: 8,
+                maxWidth: isMobile ? 300 : 460,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  color: v.ink3,
+                  fontFamily: v.fontBody,
+                  fontSize: 13,
+                  alignSelf: isMine ? 'flex-end' : 'flex-start',
+                }}
+              >
+                <LxIcon name="reply" size={12} color={v.ink3} />
+                <span>
+                  {isMine
+                    ? `you replied to ${activeThread.name}'s story`
+                    : `${message.senderName} replied to your story`}
+                </span>
+              </div>
+              <div
+                style={{
+                  width: isMobile ? 116 : 180,
+                  height: isMobile ? 154 : 240,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  alignSelf: isMine ? 'flex-end' : 'flex-start',
+                  background: v.surface,
+                }}
+              >
+                <MediaPlaceholder
+                  item={storyMedia}
+                  onClick={() =>
+                    message.sharedStoryId
+                      ? onOpenStory?.(message.sharedStoryId)
+                      : onPreviewMedia(storyMedia)
+                  }
+                />
+              </div>
+              {message.text ? (
+                <div
+                  style={{
+                    maxWidth: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 16,
+                    background: isMine ? activeThread.accent || v.accentDim : v.surface,
+                    color: v.ink,
+                    fontFamily: v.fontBody,
+                    fontSize: 14.5,
+                    lineHeight: 1.42,
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {message.text}
+                </div>
+              ) : null}
+            </div>
+          ) : isFile ? (
             // A real photo or video is the bubble - no surrounding card, border, or padding
             // framing it. Chrome around a thumbnail read as over-designed next to a plain photo.
             <div
@@ -297,22 +385,12 @@ export function MessageBubble({
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 <MediaPlaceholder
-                  item={
-                    isStory
-                      ? message.sharedStoryMedia || { label: message.meta || 'shared story' }
-                      : { label: message.handle }
-                  }
-                  onClick={() =>
-                    onPreviewMedia(
-                      isStory
-                        ? message.sharedStoryMedia || { label: message.meta || 'shared story' }
-                        : { label: message.title }
-                    )
-                  }
+                  item={sharedPostMedia || { label: message.meta || 'shared post' }}
+                  onClick={openSharedPost}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                   <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.accent }}>
-                    {isStory ? message.meta : message.handle}
+                    {sharedPostHandle || message.meta || 'shared post'}
                   </div>
                   <div
                     style={{
@@ -322,8 +400,21 @@ export function MessageBubble({
                       wordBreak: 'break-word',
                     }}
                   >
-                    {isStory ? message.text || 'story reply' : message.title}
+                    {sharedPostCaption}
                   </div>
+                  {sharedPostAuthor ? (
+                    <div
+                      style={{
+                        fontFamily: v.fontBody,
+                        fontSize: 11,
+                        color: v.ink3,
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      by {getDisplayName(sharedPostAuthor)}
+                    </div>
+                  ) : null}
                   <div
                     style={{
                       display: 'flex',
@@ -336,13 +427,7 @@ export function MessageBubble({
                     <span>{message.meta}</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        onPreviewMedia(
-                          isStory
-                            ? message.sharedStoryMedia || { label: message.meta || 'shared story' }
-                            : { label: message.title }
-                        )
-                      }
+                      onClick={openSharedPost}
                       style={{
                         background: 'none',
                         border: 'none',

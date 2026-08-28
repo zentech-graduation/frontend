@@ -12,6 +12,9 @@ const messageTime = (message) => {
   return Number.isNaN(value) ? 0 : value;
 };
 
+const isPendingMessage = (message) =>
+  typeof message?.id === 'string' && message.id.startsWith('pending-');
+
 /**
  * Keeps already-loaded history visible when the newest page is re-read.
  *
@@ -30,6 +33,7 @@ export const mergeMessagePages = (oldData, newData) => {
   });
   oldData.pages.forEach((page) => {
     (page?.data?.content || []).forEach((message) => {
+      if (isPendingMessage(message)) return;
       if (!byId.has(message.id)) byId.set(message.id, message);
     });
   });
@@ -115,6 +119,17 @@ export const useSendMessage = () => {
       if (context?.previous !== undefined) {
         queryClient.setQueryData(context.key, context.previous);
       }
+    },
+    onSuccess: (response, variables, context) => {
+      const createdMessage = response?.data;
+      const optimisticId = variables.optimisticMessage?.id;
+      if (!createdMessage?.id || !optimisticId || !context?.key) return;
+
+      queryClient.setQueryData(context.key, (old) =>
+        withFirstPageContent(old, (content) =>
+          content.map((message) => (message.id === optimisticId ? createdMessage : message))
+        )
+      );
     },
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: messagesKey(variables.conversationId) });

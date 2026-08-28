@@ -264,6 +264,54 @@ export function LuvaxApp() {
 
   if (isOverlay) {
     const base = resolveBaseScreen(location.state?.background);
+    if (base.chrome === 'messages') {
+      const msgBottom = viewport === 'mobile' ? 56 : 0;
+      const msgLeft = viewport === 'mobile' ? 0 : RAIL_COLLAPSED_W;
+
+      return (
+        <LuvaxTweaksProvider value={tweakContext}>
+          <div style={{ background: v.base }}>
+            {viewport === 'mobile' ? (
+              !messagesThreadOpen ? (
+                <LxAppBar screen={base.screen} navigate={navigate} />
+              ) : null
+            ) : (
+              <LxSideRail active={base.screen} navigate={navigate} />
+            )}
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                bottom: msgBottom,
+                left: msgLeft,
+                right: 0,
+                background: v.base,
+                zIndex: 10,
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '100%',
+                  height: '100%',
+                  margin: '0 auto',
+                  background: v.base,
+                  overflow: 'hidden',
+                }}
+              >
+                {base.element}
+              </div>
+            </div>
+            {viewport === 'mobile' ? (
+              <LxBottomNav active={base.screen} navigate={navigate} />
+            ) : null}
+          </div>
+          <Outlet />
+          <ToastHost />
+        </LuvaxTweaksProvider>
+      );
+    }
+
     const baseShowRail =
       Boolean(base.rightRail) && (viewport === 'desktop' || viewport === 'tablet');
 

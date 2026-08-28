@@ -4,6 +4,7 @@ import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { copyToClipboard } from '@/utils/helpers';
 import { bubbleCornerRadius } from '../utils/bubbleShape';
+import { isVideoMessageMedia } from '../utils/messageMedia';
 import { MediaPlaceholder } from './MediaPlaceholder';
 
 // Four tiles read as a grid at a glance; a fifth would either shrink every tile to fit or force
@@ -57,7 +58,7 @@ function AlbumTile({
   const showActions =
     forceShowActions || menuOpen || (supportsHover && hovered) || (!supportsHover && touchRevealed);
   const textForCopy = item.text || item.media?.label || '';
-  const isVideo = (item.media?.mediaType || '').toUpperCase() === 'VIDEO';
+  const isVideo = isVideoMessageMedia(item.media);
   const canCopyImage = Boolean(item.media?.cdnUrl && !isVideo);
   const canDelete = isMine && item.kind !== 'deleted';
   const menuItems = useMemo(

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
-import { CHAR_LIMITS } from '@/config/constants';
+import { CHAR_LIMITS, ROUTES, routeTo } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
@@ -25,6 +25,7 @@ import {
 } from './hooks/useConversations';
 import { useMessages, useDeleteMessage, useSendMessage } from './hooks/useMessages';
 import { useLiveMessages } from './hooks/useLiveMessages';
+import { isVideoMessageMedia } from './utils/messageMedia';
 import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
@@ -439,6 +440,10 @@ export function MessagesScreen() {
 
   const openPreview = (items, index = 0) => setPreviewGallery({ items, index });
 
+  const openStory = (storyId) => {
+    if (storyId) navigate(routeTo.storyView(storyId), { state: { background: ROUTES.MESSAGES } });
+  };
+
   const selectThread = (threadId) => {
     setActiveThreadId(threadId);
     setPendingTargetUserId(null);
@@ -778,6 +783,7 @@ export function MessagesScreen() {
           isTablet={isTablet}
           scrollerRef={scrollerRef}
           openPreview={openPreview}
+          openStory={openStory}
           handleDeleteToggle={handleDeleteToggle}
           replyingTo={activeReplyingTo}
           setReplyingTo={setReplyingTo}
@@ -880,7 +886,7 @@ export function MessagesScreen() {
                   </button>
                 ) : null}
                 {current.cdnUrl ? (
-                  (current.mediaType || '').toUpperCase() === 'VIDEO' ? (
+                  isVideoMessageMedia(current) ? (
                     <video
                       key={current.mediaAssetId || current.cdnUrl}
                       src={current.cdnUrl}

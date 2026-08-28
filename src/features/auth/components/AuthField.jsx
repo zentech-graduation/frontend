@@ -12,9 +12,14 @@ export default function Field({
     <div className="lx-fg">
       <div className={`lx-field ${className}`} data-error={error ? 'true' : 'false'}>
         <input id={id} type={type} placeholder={label} autoComplete={autoComplete} {...register} />
-        <label htmlFor={id}>{error || label}</label>
+        <label htmlFor={id}>{label}</label>
         {rightSlot}
       </div>
+      {error ? (
+        <p className="lx-field-error" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -22,6 +22,8 @@ import { toast } from './Toast';
 
 const STORY_CARD_RADIUS = 18;
 const STORY_RATIO = 9 / 16;
+const TEXT_STORY_WIDTH = 1080;
+const TEXT_STORY_HEIGHT = 1920;
 const IMAGE_STORY_DURATION_MS = 5000;
 const HEART_COLOR = 'var(--lx-error)';
 
@@ -30,6 +32,65 @@ const HEART_COLOR = 'var(--lx-error)';
 const CONTROL_BG = 'rgba(255,255,255,0.9)';
 const CONTROL_FG = '#1c1a17';
 const CONTROL_SHADOW = '0 1px 5px rgba(0,0,0,0.3)';
+
+const wrapCanvasText = (context, text, maxWidth) => {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+
+  words.forEach((word) => {
+    const nextLine = line ? `${line} ${word}` : word;
+    if (context.measureText(nextLine).width <= maxWidth) {
+      line = nextLine;
+      return;
+    }
+
+    if (line) lines.push(line);
+    line = word;
+  });
+
+  if (line) lines.push(line);
+  return lines;
+};
+
+const createTextStoryFile = (text) =>
+  new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = TEXT_STORY_WIDTH;
+    canvas.height = TEXT_STORY_HEIGHT;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      reject(new Error('could not create text story.'));
+      return;
+    }
+
+    context.fillStyle = '#171514';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#d5b882';
+    context.fillRect(0, 0, canvas.width, 12);
+    context.fillRect(0, canvas.height - 12, canvas.width, 12);
+
+    context.fillStyle = '#fffaf1';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = '700 72px sans-serif';
+
+    const lines = wrapCanvasText(context, text, canvas.width - 160).slice(0, 12);
+    const lineHeight = 92;
+    const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2;
+    lines.forEach((line, index) => {
+      context.fillText(line, canvas.width / 2, startY + index * lineHeight);
+    });
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('could not create text story.'));
+        return;
+      }
+      resolve(new File([blob], `text-story-${Date.now()}.png`, { type: 'image/png' }));
+    }, 'image/png');
+  });
 
 // A peek shows the immediate neighbour in the sequence - the previous or next
 // story that a chevron click, or clicking the peek itself, would jump to. A
@@ -136,7 +197,7 @@ function NavButton({ side, onClick }) {
 // with a chevron in the gap between each and the main card, matching the
 // desktop reference: a contained card with its neighbours visible at a
 // glance, rather than a near-fullscreen card with nothing around it.
-function StoryStage({ children, onClose, footer, viewport, peeks }) {
+function StoryStage({ children, onClose, footer, viewport, peeks, height }) {
   const isMobile = viewport === 'mobile';
 
   if (isMobile) {
@@ -182,7 +243,7 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
 
   // Contained, not near-fullscreen, so the peeks and chevrons around it have
   // room to read as their own elements rather than crowding the card's edge.
-  const cardHeight = 'min(80vh, 760px)';
+  const cardHeight = height || 'min(80vh, 760px)';
   const cardWidth = `calc(${cardHeight} * ${STORY_RATIO})`;
   const peekHeight = `calc(${cardHeight} * 0.78)`;
 
@@ -886,13 +947,16 @@ export function StoryComposerScreen({ viewport: vpProp }) {
   const measuredViewport = useViewport();
   const vp = vpProp || measuredViewport;
   const fileInputRef = useRef(null);
+  const [composeMode, setComposeMode] = useState('media');
   const [item, setItem] = useState(null);
+  const [textStory, setTextStory] = useState('');
   const [caption, setCaption] = useState('');
   const [formError, setFormError] = useState('');
 
   const { uploadMedia, getMediaMetadata, isUploading } = useMediaUpload();
   const { constraints } = useMediaConstraints();
   const createStory = useCreateStory();
+  const chooserWidth = 'min(380px, calc(100% - 48px))';
 
   const handleFileSelected = async (event) => {
     const file = event.target.files?.[0];
@@ -920,18 +984,27 @@ export function StoryComposerScreen({ viewport: vpProp }) {
     });
   };
 
-  const canShare = Boolean(item) && !isUploading && !createStory.isPending;
+  const canShare =
+    (composeMode === 'media' ? Boolean(item) : Boolean(textStory.trim())) &&
+    !isUploading &&
+    !createStory.isPending;
 
   const handleShare = async () => {
-    if (!item) return;
+    if (!canShare) return;
     setFormError('');
     try {
-      const asset = await uploadMedia(item.file);
+      const file =
+        composeMode === 'media' ? item.file : await createTextStoryFile(textStory.trim());
+      const asset = await uploadMedia(file);
       createStory.mutate(
-        { mediaId: asset.id, caption: caption.trim() || null },
+        {
+          mediaId: asset.id,
+          caption:
+            composeMode === 'media' ? caption.trim() || null : textStory.trim().slice(0, 140),
+        },
         {
           onSuccess: () => {
-            URL.revokeObjectURL(item.previewUrl);
+            if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
             navigate(-1);
           },
           onError: (error) => {
@@ -1014,21 +1087,108 @@ export function StoryComposerScreen({ viewport: vpProp }) {
           />
         </>
       ) : (
-        <button
-          onClick={() => fileInputRef.current?.click()}
+        <div
           style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
             color: v.white65,
             fontFamily: v.fontBody,
-            fontSize: 14,
             textAlign: 'center',
+            width: chooserWidth,
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            gap: 14,
           }}
         >
-          <LxIcon name="image" size={48} color={v.white45} />
-          <div style={{ marginTop: 12 }}>tap to add a photo or video</div>
-        </button>
+          <div
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 8,
+              padding: 4,
+              borderRadius: 999,
+              background: v.black35,
+            }}
+          >
+            {[
+              ['media', 'media'],
+              ['text', 'text'],
+            ].map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => {
+                  setComposeMode(mode);
+                  setFormError('');
+                }}
+                style={{
+                  border: 'none',
+                  borderRadius: 999,
+                  padding: '9px 12px',
+                  background: composeMode === mode ? v.accent : 'transparent',
+                  color: composeMode === mode ? v.ink : v.white65,
+                  fontFamily: v.fontBody,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {composeMode === 'media' ? (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'none',
+                border: `1px dashed ${v.white35}`,
+                borderRadius: 16,
+                cursor: 'pointer',
+                color: v.white65,
+                fontFamily: v.fontBody,
+                fontSize: 14,
+                minHeight: 170,
+                padding: '34px 18px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <LxIcon name="image" size={48} color={v.white45} />
+              <div style={{ marginTop: 12 }}>tap to add a photo or video</div>
+            </button>
+          ) : (
+            <textarea
+              value={textStory}
+              onChange={(event) => setTextStory(event.target.value.slice(0, 280))}
+              placeholder="type your story..."
+              autoFocus
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                minHeight: 170,
+                height: 170,
+                resize: 'none',
+                border: `1px solid ${v.white20}`,
+                borderRadius: 16,
+                background: v.black35,
+                color: v.white,
+                fontFamily: v.fontBody,
+                fontSize: 22,
+                lineHeight: 1.35,
+                padding: '58px 18px 18px',
+                outline: 'none',
+                textAlign: 'center',
+              }}
+            />
+          )}
+        </div>
       )}
       <input
         ref={fileInputRef}
@@ -1046,7 +1206,7 @@ export function StoryComposerScreen({ viewport: vpProp }) {
         display: 'flex',
         flexDirection: 'column',
         gap: 10,
-        padding: vp === 'mobile' ? '14px 16px 20px' : '4px 0',
+        padding: vp === 'mobile' ? '14px 16px 20px' : '8px 0 0',
         background: vp === 'mobile' ? v.black : 'transparent',
       }}
     >
@@ -1080,7 +1240,12 @@ export function StoryComposerScreen({ viewport: vpProp }) {
   );
 
   return (
-    <StoryStage viewport={vp} onClose={() => navigate(-1)} footer={controls}>
+    <StoryStage
+      viewport={vp}
+      onClose={() => navigate(-1)}
+      footer={controls}
+      height="min(72vh, 680px)"
+    >
       {card}
     </StoryStage>
   );
