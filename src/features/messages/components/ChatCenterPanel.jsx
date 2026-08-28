@@ -51,6 +51,7 @@ export function ChatCenterPanel({
   isTablet,
   scrollerRef,
   openPreview,
+  openStory,
   handleDeleteToggle,
   replyingTo,
   setReplyingTo,
@@ -299,6 +300,7 @@ export function ChatCenterPanel({
                     viewport={viewport}
                     activeThread={activeThread}
                     onPreviewMedia={(media) => openPreview?.([media], 0)}
+                    onOpenStory={openStory}
                     onDeleteToggle={handleDeleteToggle}
                     onReplyMessage={setReplyingTo}
                     forceShowActions={rowHovered}

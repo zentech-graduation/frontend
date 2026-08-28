@@ -270,19 +270,22 @@ export async function copyPostLink(postId) {
 }
 
 /**
- * Shares a post via the native Web Share API, falling back to copying
- * the post's link to the clipboard when sharing is unavailable.
+ * Shares a post through the operating system share sheet when available, with
+ * clipboard copy as the universal fallback.
  * @param {string} postId
- * @param {string} [title]
  * @returns {Promise<void>}
  */
-export async function sharePost(postId, title) {
+export async function sharePost(postId) {
   const link = buildPostLink(postId);
-  if (navigator?.share) {
-    await navigator.share({ title: title || 'luvax post', url: link });
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    await navigator.share({
+      title: 'Luvax post',
+      text: 'Check out this post on Luvax',
+      url: link,
+    });
     return;
   }
-  await copyPostLink(postId);
+  await copyToClipboard(link, 'copy link');
 }
 
 /**

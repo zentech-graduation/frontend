@@ -6,7 +6,6 @@ import {
   extractPageContent,
   getDisplayName,
   getUserSummary,
-  sharePost,
 } from '@/utils/helpers';
 import {
   LxAvatar,
@@ -28,6 +27,7 @@ import { ReportModal } from './ReportModal';
 import { toast } from './Toast';
 import { REPORT_TYPES } from '@/services/report.service';
 import { ROUTES, routeTo, CHAR_LIMITS } from '@/config/constants';
+import { PostShareDialog } from './PostShareDialog';
 
 const HEART_COLOR = 'var(--lx-error)';
 
@@ -49,6 +49,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const lastTapRef = useRef(0);
 
@@ -183,7 +184,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         id: 'share',
         icon: 'share',
         label: 'Share',
-        onClick: () => sharePost(post.id, post.caption),
+        onClick: () => setShareOpen(true),
       },
       {
         id: 'copy',
@@ -446,7 +447,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
           <button
             type="button"
             data-lxtap="1"
-            onClick={() => sharePost(post.id, post.caption)}
+            onClick={() => setShareOpen(true)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             <LxIcon name="share" size={17} color={v.ink3} />
@@ -483,6 +484,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         />
 
         <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
+        <PostShareDialog open={shareOpen} postId={post.id} onClose={() => setShareOpen(false)} />
 
         <LxBottomSheet
           open={editSheetOpen}

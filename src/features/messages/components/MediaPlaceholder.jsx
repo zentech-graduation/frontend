@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
+import { isVideoMessageMedia } from '../utils/messageMedia';
 
 // A single-photo bubble is capped to this box rather than forced into a fixed square: the media
 // keeps its own shape (a portrait photo stays tall, a landscape one stays wide) instead of being
@@ -60,7 +61,7 @@ function DurationBadge({ seconds }) {
 export function MediaPlaceholder({ item, large = false, onClick }) {
   const src = item?.cdnUrl || '';
   const [failedSrc, setFailedSrc] = useState('');
-  const isVideo = (item?.mediaType || '').toUpperCase() === 'VIDEO';
+  const isVideo = isVideoMessageMedia(item);
 
   if (src && failedSrc !== src) {
     const ratio =

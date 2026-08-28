@@ -165,11 +165,17 @@ export function ComposerScreen() {
 
   const handlePost = async () => {
     setFormError('');
+    if (createPostMutation.isPending || isUploading) return;
 
     // Captured once, because this list is both the upload set and the order
     // the post is created in. Submitting is blocked while uploads run, so it
     // cannot change underneath this.
     const ordered = items;
+    const trimmedCaption = caption.trim();
+    if (postType === 'TEXT' && !trimmedCaption) {
+      setFormError('text posts need something written first.');
+      return;
+    }
     const assetIds = new Map(
       ordered.filter((item) => item.status === 'done').map((item) => [item.id, item.assetId])
     );
@@ -193,9 +199,9 @@ export function ComposerScreen() {
 
     const mediaIds = ordered.map((item) => assetIds.get(item.id)).filter(Boolean);
     const payload = {
-      caption,
+      caption: postType === 'TEXT' ? trimmedCaption : caption,
       postType,
-      mediaIds: mediaIds.length > 0 ? mediaIds : null,
+      ...(mediaIds.length > 0 ? { mediaIds } : {}),
     };
 
     createPostMutation.mutate(payload, {

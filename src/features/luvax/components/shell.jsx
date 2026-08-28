@@ -30,58 +30,6 @@ const BOTTOM_TABS = [
 
 const MESSAGE_PREVIEW_LIMIT = 3;
 
-function MessagePreviewPopup({ threads = [] }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        left: RAIL_ICON_INSET + RAIL_ICON_SIZE + 12,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-        height: 28,
-        padding: '0 9px',
-        borderRadius: 999,
-        border: `1px solid ${v.border}`,
-        background: v.surface,
-        color: v.ink,
-        boxShadow: `0 10px 26px ${v.shadow12}`,
-        pointerEvents: 'none',
-        zIndex: 2,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      <span
-        style={{
-          fontFamily: v.fontBody,
-          fontSize: 12,
-          fontWeight: 700,
-        }}
-      >
-        Message
-      </span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
-        {threads.map((thread, index) => (
-          <span
-            key={thread.id}
-            style={{
-              marginLeft: index === 0 ? 0 : -5,
-              border: `1px solid ${v.surface}`,
-              borderRadius: '50%',
-              display: 'inline-flex',
-            }}
-          >
-            <LxAvatar size={18} src={thread.avatarUrl} />
-          </span>
-        ))}
-      </span>
-    </span>
-  );
-}
-
 // ─── Persistent App Bar (mobile only) ──────────────────────────────────────
 // Desktop and tablet render no top bar at all: the side rail already carries every
 // destination this bar used to duplicate (nav tabs, search, profile), so a second copy of
@@ -442,22 +390,23 @@ function LxFloatingMessagePreview({ navigate, currentUserId, hidden = false }) {
       aria-label="open messages"
       style={{
         position: 'fixed',
-        right: 28,
-        bottom: 26,
+        right: 32,
+        bottom: 30,
         zIndex: 90,
-        height: 34,
+        minWidth: 142,
+        height: 38,
         borderRadius: 999,
         border: `1px solid ${v.border}`,
         background: v.surface,
         color: v.ink,
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 7,
-        padding: '0 9px',
+        gap: 9,
+        padding: '0 12px',
         cursor: 'pointer',
         boxShadow: `0 10px 28px ${v.shadow12}`,
         fontFamily: v.fontBody,
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: 700,
       }}
     >
@@ -539,7 +488,6 @@ export function LxSideRail({ active, navigate, visible = true }) {
   const currentUser = useAuthStore((state) => state.user);
   const role = useAuthStore((state) => state.role);
   const [expanded, setExpanded] = useState(false);
-  const [messagePreviewOpen, setMessagePreviewOpen] = useState(false);
   // The role is held in memory only and is absent until the session is
   // established, so this reads false first and turns true once the role
   // arrives. The entry appears late for a privileged account rather than
@@ -550,10 +498,6 @@ export function LxSideRail({ active, navigate, visible = true }) {
   const { data: unreadResponse } = useUnreadCount();
   const unreadCount = unreadResponse?.data?.unreadCount ?? 0;
   const hasNotifications = requests.length > 0 || unreadCount > 0;
-  const { conversations } = useConversations();
-  const recentMessageThreads = conversations
-    .slice(0, MESSAGE_PREVIEW_LIMIT)
-    .map((conversation) => toThreadSummary(conversation, currentUser?.id));
 
   const rowStyle = (disabled) => ({
     width: '100%',
@@ -597,20 +541,11 @@ export function LxSideRail({ active, navigate, visible = true }) {
     justifyContent: 'center',
   };
 
-  const renderTabLabel = (tab, isActive) => {
-    if (tab.id === 'messages' && messagePreviewOpen && recentMessageThreads.length) return null;
-
-    return <span style={labelStyle(isActive)}>{tab.label}</span>;
-  };
-
   return (
     <nav
       aria-hidden={!visible}
       onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => {
-        setExpanded(false);
-        setMessagePreviewOpen(false);
-      }}
+      onMouseLeave={() => setExpanded(false)}
       // The labels are the rail's only way of naming its destinations, so
       // revealing them cannot be a mouse-only affordance. Focus entering the
       // rail opens it exactly as hover does and focus leaving closes it, which
@@ -670,11 +605,6 @@ export function LxSideRail({ active, navigate, visible = true }) {
               aria-label={t.label}
               className="lx-tab-btn"
               style={rowStyle(t.disabled)}
-              onMouseEnter={() => setMessagePreviewOpen(t.id === 'messages')}
-              onFocus={() => setMessagePreviewOpen(t.id === 'messages')}
-              onMouseLeave={() => {
-                if (t.id === 'messages') setMessagePreviewOpen(false);
-              }}
             >
               <span style={iconWrapStyle}>
                 {isProfile ? (
@@ -689,10 +619,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
                   />
                 )}
               </span>
-              {t.id === 'messages' && messagePreviewOpen && recentMessageThreads.length ? (
-                <MessagePreviewPopup threads={recentMessageThreads} />
-              ) : null}
-              {renderTabLabel(t, isActive)}
+              <span style={labelStyle(isActive)}>{t.label}</span>
               {t.id === 'notifications' && hasNotifications && (
                 <span
                   style={{
