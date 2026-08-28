@@ -14,6 +14,7 @@ import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useMediaConstraints } from '../hooks/useMediaConstraints';
 import { useAuthStore } from '@/store/useAuthStore';
 import { messageService } from '@/services/message.service';
+import { rememberSharedStoryMedia } from '@/features/messages/utils/messageViewModel';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { buildAcceptAttribute, validateFile, validateDuration } from '../utils/composerMedia';
 import { formatRelativeTime } from '../hooks/useRelativeTime';
@@ -737,6 +738,7 @@ export function StoryViewScreen({ viewport: vpProp }) {
     setReplyDraft('');
 
     try {
+      rememberSharedStoryMedia(story);
       // Resolve-or-create: a direct-conversation pair key means replying to the same author twice
       // reuses the existing thread rather than forking it.
       const conversation = await messageService.createDirect(entry.userId);

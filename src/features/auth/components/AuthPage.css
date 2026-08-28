@@ -34,7 +34,7 @@
 .lx-field input::placeholder { color: transparent; }
 .lx-field input:focus { border-color: var(--lx-accent); background: var(--lx-base); box-shadow: 0 0 0 3px var(--lx-accent-dim); outline: none; }
 .lx-field input:focus::placeholder { color: var(--lx-ink-3); transition: color var(--duration-fast) var(--ease-out); }
-.lx-field label { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-size: 15px; color: var(--lx-ink-3); pointer-events: none; transition: top var(--duration-fast) var(--ease-out), font-size var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
+.lx-field label { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); max-width: calc(100% - 26px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; color: var(--lx-ink-3); pointer-events: none; transition: top var(--duration-fast) var(--ease-out), font-size var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
 .lx-field input:not(:placeholder-shown) ~ label { top: 0; font-size: 11px; letter-spacing: 0.04em; color: var(--lx-ink-2); padding: 0 6px; background: var(--lx-surface-sunken); }
 .lx-field input:focus ~ label { top: 0; font-size: 11px; letter-spacing: 0.04em; color: var(--lx-accent-text); padding: 0 6px; background: var(--lx-base); }
 .lx-pwtoggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; padding: 5px 6px; font-size: 12px; color: var(--lx-ink-2); cursor: pointer; border-radius: var(--radius-sm); opacity: 0; pointer-events: none; transition: opacity var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out); }
@@ -45,7 +45,7 @@
 
 .lx-field[data-error="true"] input { border-color: var(--lx-error); color: var(--lx-ink); }
 .lx-field[data-error="true"] input:focus { box-shadow: 0 0 0 3px var(--lx-error-dim); }
-.lx-field[data-error="true"] label { top: 0; font-size: 11px; letter-spacing: 0.04em; padding: 0 6px; color: var(--lx-error-text); background: var(--lx-surface-sunken); }
+.lx-field[data-error="true"] label { top: 0; max-width: calc(100% - 26px); font-size: 11px; letter-spacing: 0.04em; padding: 0 6px; color: var(--lx-error-text); background: var(--lx-surface-sunken); }
 .lx-field[data-error="true"] input:focus ~ label { background: var(--lx-base); }
 
 /* keep autofilled fields on-theme (no white flash) */

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 
@@ -56,9 +58,11 @@ function DurationBadge({ seconds }) {
  * which is what makes a grid of mixed-shape photos read as a grid.
  */
 export function MediaPlaceholder({ item, large = false, onClick }) {
+  const src = item?.cdnUrl || '';
+  const [failedSrc, setFailedSrc] = useState('');
   const isVideo = (item?.mediaType || '').toUpperCase() === 'VIDEO';
 
-  if (item?.cdnUrl) {
+  if (src && failedSrc !== src) {
     const ratio =
       large && item.width && item.height
         ? Math.max(MIN_RATIO, Math.min(MAX_RATIO, item.width / item.height))
@@ -84,7 +88,8 @@ export function MediaPlaceholder({ item, large = false, onClick }) {
       >
         {isVideo ? (
           <video
-            src={item.cdnUrl}
+            src={src}
+            onError={() => setFailedSrc(src)}
             style={{
               width: '100%',
               height: '100%',
@@ -96,8 +101,9 @@ export function MediaPlaceholder({ item, large = false, onClick }) {
           />
         ) : (
           <img
-            src={item.cdnUrl}
+            src={src}
             alt=""
+            onError={() => setFailedSrc(src)}
             style={{
               width: '100%',
               height: '100%',
@@ -125,6 +131,8 @@ export function MediaPlaceholder({ item, large = false, onClick }) {
     );
   }
 
+  const label = item?.label || 'shared story';
+
   return (
     <button
       type="button"
@@ -145,8 +153,8 @@ export function MediaPlaceholder({ item, large = false, onClick }) {
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         <LxIcon name="image" size={large ? 22 : 18} color={v.ink3} />
-        {large ? (
-          <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>{item.label}</span>
+        {label ? (
+          <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>{label}</span>
         ) : null}
       </div>
     </button>

@@ -21,6 +21,7 @@ export function MessageBubble({
   onDeleteToggle,
   onReplyMessage,
   viewport,
+  forceShowActions = false,
 }) {
   const isMine = message.from === 'me';
   const isMobile = viewport === 'mobile';
@@ -42,14 +43,6 @@ export function MessageBubble({
   const menuItems = useMemo(
     () =>
       [
-        message.kind !== 'deleted'
-          ? {
-              id: 'reply',
-              icon: 'reply',
-              label: 'Reply',
-              onClick: () => onReplyMessage?.(message),
-            }
-          : null,
         canCopyText
           ? {
               id: 'copy',
@@ -68,13 +61,14 @@ export function MessageBubble({
             }
           : null,
       ].filter(Boolean),
-    [canCopyText, isMine, message, onDeleteToggle, onReplyMessage, textForCopy]
+    [canCopyText, isMine, message, onDeleteToggle, textForCopy]
   );
   const supportsHover =
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const showActions = menuOpen || (!isTouchLayout && hovered) || (isTouchLayout && touchRevealed);
+  const showActions =
+    forceShowActions || menuOpen || (!isTouchLayout && hovered) || (isTouchLayout && touchRevealed);
 
   const handleHoverStart = () => {
     setHovered(true);
@@ -181,6 +175,11 @@ export function MessageBubble({
     flexShrink: 0,
   };
 
+  const replyButtonStyle = {
+    ...menuButtonStyle,
+    background: 'rgba(255,255,255,0.06)',
+  };
+
   // The padding/negative-margin pair widens the hover and tap target past the bubble's own edges
   // without shifting this row's siblings apart - hovering "near" a message reveals its actions, not
   // only a precise hover on the bubble pixels themselves.
@@ -214,8 +213,9 @@ export function MessageBubble({
     );
   }
 
-  if (message.kind === 'file' || message.kind === 'post') {
+  if (message.kind === 'file' || message.kind === 'post' || message.kind === 'story') {
     const isFile = message.kind === 'file';
+    const isStory = message.kind === 'story';
     return (
       <div
         style={{
@@ -297,14 +297,33 @@ export function MessageBubble({
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 <MediaPlaceholder
-                  item={{ label: message.handle }}
-                  onClick={() => onPreviewMedia({ label: message.title })}
+                  item={
+                    isStory
+                      ? message.sharedStoryMedia || { label: message.meta || 'shared story' }
+                      : { label: message.handle }
+                  }
+                  onClick={() =>
+                    onPreviewMedia(
+                      isStory
+                        ? message.sharedStoryMedia || { label: message.meta || 'shared story' }
+                        : { label: message.title }
+                    )
+                  }
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                   <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.accent }}>
-                    {message.handle}
+                    {isStory ? message.meta : message.handle}
                   </div>
-                  <div style={{ color: v.ink, fontSize: 12.5 }}>{message.title}</div>
+                  <div
+                    style={{
+                      color: v.ink,
+                      fontSize: 12.5,
+                      overflowWrap: 'anywhere',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {isStory ? message.text || 'story reply' : message.title}
+                  </div>
                   <div
                     style={{
                       display: 'flex',
@@ -317,7 +336,13 @@ export function MessageBubble({
                     <span>{message.meta}</span>
                     <button
                       type="button"
-                      onClick={() => onPreviewMedia({ label: message.title })}
+                      onClick={() =>
+                        onPreviewMedia(
+                          isStory
+                            ? message.sharedStoryMedia || { label: message.meta || 'shared story' }
+                            : { label: message.title }
+                        )
+                      }
                       style={{
                         background: 'none',
                         border: 'none',
@@ -333,7 +358,21 @@ export function MessageBubble({
               </div>
             </div>
           )}
-          {showActions ? (
+          {showActions && message.kind !== 'deleted' ? (
+            <button
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onReplyMessage?.(message);
+              }}
+              aria-label="reply to message"
+              style={replyButtonStyle}
+            >
+              <LxIcon name="reply" size={12} color={v.ink3} />
+            </button>
+          ) : null}
+          {showActions && menuItems.length > 0 ? (
             <button
               ref={menuButtonRef}
               type="button"
@@ -436,15 +475,33 @@ export function MessageBubble({
           )}
         </div>
         {showActions ? (
-          <button
-            ref={menuButtonRef}
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-label="message actions"
-            style={menuButtonStyle}
-          >
-            <LxIcon name="more" size={10} color={isMine ? v.ink2 : v.ink3} />
-          </button>
+          <>
+            {message.kind !== 'deleted' ? (
+              <button
+                type="button"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onReplyMessage?.(message);
+                }}
+                aria-label="reply to message"
+                style={replyButtonStyle}
+              >
+                <LxIcon name="reply" size={12} color={isMine ? v.ink2 : v.ink3} />
+              </button>
+            ) : null}
+            {menuItems.length > 0 ? (
+              <button
+                ref={menuButtonRef}
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                aria-label="message actions"
+                style={menuButtonStyle}
+              >
+                <LxIcon name="more" size={10} color={isMine ? v.ink2 : v.ink3} />
+              </button>
+            ) : null}
+          </>
         ) : null}
       </div>
       <LxDropdownMenu

@@ -218,11 +218,34 @@ export function formatCount(count) {
  */
 export async function copyToClipboard(text, promptMessage = 'copy text') {
   if (!text) return;
-  if (navigator?.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall through to the selection-based copy for browsers that expose the API
+      // but deny it outside a secure/user-gesture path.
+    }
   }
-  window.prompt(promptMessage, text);
+  if (typeof document !== 'undefined') {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+    try {
+      if (document.execCommand('copy')) return;
+    } catch {
+      // Fall through to the manual prompt.
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  }
+  if (typeof window !== 'undefined') window.prompt(promptMessage, text);
 }
 
 /**

@@ -16,6 +16,29 @@
 
 const DELETED_PLACEHOLDER = 'this message was deleted';
 const UNKNOWN_PARTICIPANT = 'unknown';
+const TIME_SEPARATOR_GAP_MS = 60 * 60 * 1000;
+const STORY_MEDIA_CACHE_KEY = 'luvax:message-story-media';
+
+const readStoryMediaCache = () => {
+  if (typeof window === 'undefined') return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(STORY_MEDIA_CACHE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+};
+
+export const rememberSharedStoryMedia = (story) => {
+  if (typeof window === 'undefined' || !story?.id || !story?.media) return;
+  const cache = readStoryMediaCache();
+  cache[story.id] = story.media;
+  window.localStorage.setItem(STORY_MEDIA_CACHE_KEY, JSON.stringify(cache));
+};
+
+const cachedStoryMediaOf = (storyId) => {
+  if (!storyId) return null;
+  return readStoryMediaCache()[storyId] || null;
+};
 
 const participantOf = (participants, userId) =>
   (participants || []).find((participant) => participant.userId === userId) || null;
@@ -103,7 +126,8 @@ const previewTextOf = (message) => {
 const kindOf = (message) => {
   if (message.isDeleted) return 'deleted';
   if (message.replyToId) return 'reply';
-  if (message.sharedPostId || message.sharedStoryId) return 'post';
+  if (message.sharedStoryId) return 'story';
+  if (message.sharedPostId) return 'post';
   if (message.mediaAssetId) return 'file';
   return 'text';
 };
@@ -158,6 +182,7 @@ export const toMessageView = (message, { participants, currentUserId, loadedMess
     senderName: displayNameOf(sender),
     senderAvatarUrl: sender?.avatarUrl || null,
     media: message.media || null,
+    sharedStoryMedia: message.sharedStory?.media || cachedStoryMediaOf(message.sharedStoryId),
     sharedPostId: message.sharedPostId || null,
     sharedStoryId: message.sharedStoryId || null,
     replyTo: repliedTo ? displayNameOf(participantOf(participants, repliedTo.senderId)) : null,
@@ -188,6 +213,12 @@ const inSameRun = (a, b) =>
   b.atMs !== null &&
   b.atMs - a.atMs <= GROUP_GAP_MS;
 
+const needsTimeSeparator = (previous, current) =>
+  !previous ||
+  previous.atMs === null ||
+  current.atMs === null ||
+  current.atMs - previous.atMs >= TIME_SEPARATOR_GAP_MS;
+
 /**
  * Turns the flat message list into thread rows: a separator before the first message of each
  * cluster, every message marked with whether it closes its run of consecutive same-sender
@@ -214,7 +245,7 @@ const toRows = (messages) => {
     const previous = messages[index - 1];
 
     const startsCluster = !inSameRun(previous, current);
-    if (startsCluster) {
+    if (needsTimeSeparator(previous, current)) {
       rows.push({
         rowType: 'separator',
         id: `sep-${current.id}`,

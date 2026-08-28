@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
 import { CHAR_LIMITS } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
@@ -21,6 +21,25 @@ const autoResizeDraft = (element) => {
 
 const ACCEPTED_ATTACHMENT_TYPES = 'image/*,video/*';
 const CLIPBOARD_IMAGE_FALLBACK_NAME = 'pasted-image.png';
+
+function MessageActionRow({ children, isMine, minHeight = 'auto', alignItems = 'stretch' }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        justifyContent: isMine ? 'flex-end' : 'flex-start',
+        minHeight,
+        alignItems,
+      }}
+    >
+      {children(hovered)}
+    </div>
+  );
+}
 
 export function ChatCenterPanel({
   viewport,
@@ -230,61 +249,62 @@ export function ChatCenterPanel({
                   <div style={{ width: ALBUM_AVATAR_SIZE, flexShrink: 0 }} aria-hidden="true" />
                 );
               return (
-                <div
-                  key={row.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    gap: 6,
-                    // `justify-content: flex-end` means the *left* edge once the axis itself is
-                    // reversed, so this always stays in normal row order - never row-reverse. The
-                    // avatar slot is null whenever isMine is true anyway, so there is never
-                    // anything on this row that needs its order flipped.
-                    justifyContent: isMine ? 'flex-end' : 'flex-start',
-                  }}
-                >
-                  {avatarSlot}
-                  <MessageAlbum
-                    items={row.items}
-                    isMine={isMine}
-                    isFirstInRun={row.isFirstInRun}
-                    isLastInRun={row.isLastInRun}
-                    onOpenViewer={(items, itemIndex) =>
-                      openPreview?.(
-                        items.map((item) => item.media || { label: item.text }),
-                        itemIndex
-                      )
-                    }
-                    onDeleteItem={handleDeleteToggle}
-                    onReplyItem={setReplyingTo}
-                  />
-                </div>
+                <MessageActionRow key={row.id} isMine={isMine} alignItems="flex-end">
+                  {(rowHovered) => (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        gap: 6,
+                      }}
+                    >
+                      {avatarSlot}
+                      <MessageAlbum
+                        items={row.items}
+                        isMine={isMine}
+                        isFirstInRun={row.isFirstInRun}
+                        isLastInRun={row.isLastInRun}
+                        onOpenViewer={(items, itemIndex) =>
+                          openPreview?.(
+                            items.map((item) => item.media || { label: item.text }),
+                            itemIndex
+                          )
+                        }
+                        onDeleteItem={handleDeleteToggle}
+                        onReplyItem={setReplyingTo}
+                        forceShowActions={rowHovered}
+                      />
+                    </div>
+                  )}
+                </MessageActionRow>
               );
             }
 
             return (
-              <div
+              <MessageActionRow
                 key={row.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: row.from === 'me' ? 'flex-end' : 'flex-start',
-                  minHeight:
-                    activeThread.messages.length <= 1 && index === 0 && isDesktop ? 360 : 'auto',
-                  alignItems:
-                    activeThread.messages.length <= 1 && index === 0 && isDesktop
-                      ? 'flex-start'
-                      : 'stretch',
-                }}
+                isMine={row.from === 'me'}
+                minHeight={
+                  activeThread.messages.length <= 1 && index === 0 && isDesktop ? 360 : 'auto'
+                }
+                alignItems={
+                  activeThread.messages.length <= 1 && index === 0 && isDesktop
+                    ? 'flex-start'
+                    : 'stretch'
+                }
               >
-                <MessageBubble
-                  message={row}
-                  viewport={viewport}
-                  activeThread={activeThread}
-                  onPreviewMedia={(media) => openPreview?.([media], 0)}
-                  onDeleteToggle={handleDeleteToggle}
-                  onReplyMessage={setReplyingTo}
-                />
-              </div>
+                {(rowHovered) => (
+                  <MessageBubble
+                    message={row}
+                    viewport={viewport}
+                    activeThread={activeThread}
+                    onPreviewMedia={(media) => openPreview?.([media], 0)}
+                    onDeleteToggle={handleDeleteToggle}
+                    onReplyMessage={setReplyingTo}
+                    forceShowActions={rowHovered}
+                  />
+                )}
+              </MessageActionRow>
             );
           })}
         </div>
