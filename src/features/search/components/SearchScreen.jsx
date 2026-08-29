@@ -296,7 +296,7 @@ export function SearchScreen() {
             // back to ResultsSection above; clearing it returns here without
             // a remount, since this is a plain conditional render, not a
             // route change.
-            <RecommendedPostsGrid />
+            <RecommendedPostsGrid surface="search" />
           ))}
 
         {tab === 'people' && (

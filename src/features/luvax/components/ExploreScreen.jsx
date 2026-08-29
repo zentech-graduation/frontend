@@ -407,7 +407,7 @@ export function ExploreScreen() {
             )}
           </div>
         ) : (
-          <RecommendedPostsGrid />
+          <RecommendedPostsGrid surface="explore" />
         )}
       </div>
     </>
