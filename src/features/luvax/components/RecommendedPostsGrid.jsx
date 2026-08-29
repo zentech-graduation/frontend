@@ -7,6 +7,7 @@ import { MediaThumb } from './MediaThumb';
 import { useExplore } from '../hooks/usePosts';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { useRateLimitCooldown } from '@/hooks/useRateLimitCooldown';
+import { useImpressionTracking } from '@/hooks/useImpressionTracking';
 import { routeTo } from '@/config/constants';
 
 /**
@@ -14,15 +15,21 @@ import { routeTo } from '@/config/constants';
  *
  * Moved out of ExploreScreen.jsx so Explore and Search's pre-query state
  * render the identical markup rather than two copies of the same JSX.
+ *
+ * `surface` is omitted by ExploreScreen's own inline caption/people search
+ * results, which reuse this component but are out of the impression-tracked
+ * surface list; useImpressionTracking is a no-op without it.
  */
-export function SearchResultPost({ post }) {
+export function SearchResultPost({ post, surface }) {
   const openOverlay = useOverlayNavigate();
+  const { ref: impressionRef } = useImpressionTracking(post.id, surface);
   const authorName = getDisplayName(getUserSummary(post), 'Unknown');
   const firstTag = Array.isArray(post.tags) && post.tags.length > 0 ? post.tags[0] : null;
 
   return (
     <button
       type="button"
+      ref={impressionRef}
       onClick={() => openOverlay(routeTo.postDetail(post.id))}
       style={{
         width: 210,
@@ -75,8 +82,13 @@ export function SearchResultPost({ post }) {
  * use. Shared by Explore's non-searching state and Search's pre-query
  * state, both through this one component and this one `useExplore()` call,
  * so there is exactly one call path and one cache entry for this content.
+ *
+ * `surface` ('explore' | 'search') is required by both callers and passed
+ * straight through to each tile's impression tracking, so the two surfaces
+ * are told apart in the impressions the backend receives even though they
+ * share this one component and this one feed query.
  */
-export function RecommendedPostsGrid() {
+export function RecommendedPostsGrid({ surface }) {
   const { ref, inView } = useInView();
   const { cooling, remaining, start } = useRateLimitCooldown();
   const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -156,7 +168,7 @@ export function RecommendedPostsGrid() {
     <div style={{ padding: '18px 16px 28px' }}>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         {posts.map((p) => (
-          <SearchResultPost key={p.id} post={p} />
+          <SearchResultPost key={p.id} post={p} surface={surface} />
         ))}
       </div>
       {hasNextPage && (
