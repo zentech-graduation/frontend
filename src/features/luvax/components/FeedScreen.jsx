@@ -317,6 +317,7 @@ function FeedTabPanel({
                 density={tweaks.density}
                 showTags={tweaks.showTags}
                 viewport={viewport}
+                surface="feed"
               />
             ))}
           </div>
