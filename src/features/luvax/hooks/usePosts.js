@@ -1,7 +1,9 @@
 import { useRef } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { postService } from '@/services/post.service';
-import { getNextCursor } from '@/utils/helpers';
+import { recommendationService } from '@/services/recommendation.service';
+import { getNextCursor, dedupeInfinitePagesById } from '@/utils/helpers';
+import { STALE_TIME } from '@/config/constants';
 import { patchCachedPost, removeCachedPost } from './usePostLikeState';
 import { beginSelfPostLike, endSelfPostLike, noteSelfCommentLike } from './useLivePostUpdates';
 
@@ -20,9 +22,17 @@ export const useFeed = (params = {}) => {
   });
 };
 
-export const useExplore = (params = {}) => {
+/**
+ * Explore's own inline caption/people search (the `q`-driven branch), kept
+ * under its previous implementation and endpoint. Renamed from the old
+ * `useExplore` because that name now names the recommendation-backed
+ * discovery feed (see useRecommendedFeed below); this is the unrelated,
+ * pre-existing search-as-you-type path and is out of this task's scope
+ * beyond not breaking it.
+ */
+export const useExploreSearch = (params = {}) => {
   return useInfiniteQuery({
-    queryKey: ['explore', params],
+    queryKey: ['exploreSearch', params],
     queryFn: ({ pageParam = null, signal }) =>
       postService.getExplorePosts({ ...params, cursor: pageParam, limit: 10, signal }),
     staleTime: 0,
@@ -34,6 +44,65 @@ export const useExplore = (params = {}) => {
     initialPageParam: null,
   });
 };
+
+/**
+ * The personalized recommendation feed, in its two variants.
+ *
+ * `excludeFollowed=false` is the "for you" feed (Home's default tab);
+ * `excludeFollowed=true` is the discovery feed that backs Explore and
+ * Search's pre-query state. Both go through the same service call and the
+ * same hook, keyed apart so switching between them never drops either
+ * one's cache.
+ *
+ * Cross-page duplicate ids are removed in `select`, which only reshapes the
+ * data handed to the component; `getNextPageParam` still runs against the
+ * raw, unselected pages, so pagination is unaffected. See
+ * dedupeInfinitePagesById in utils/helpers.js.
+ *
+ * Ranking is refit on the backend every 5 minutes (see
+ * backend/.workspace/reports/rec_onboarding/prompt1_verification.md, "A6
+ * outcome"), so a stale time shorter than that would re-request an order
+ * that has not actually changed; a stale time much longer would leave a
+ * fresh fit invisible for the rest of a session. STALE_TIME.MEDIUM (5
+ * minutes) matches the fit cadence. No polling: a ranked list reordering
+ * itself under the reader every minute (the old refetchInterval) is worse
+ * than a slightly stale order until the next deliberate navigation.
+ *
+ * On a 429, TanStack Query's own retry is disabled so no automatic retry
+ * fires while the caller's rate-limit cooldown (see
+ * src/hooks/useRateLimitCooldown.js and its call sites) is the thing
+ * deciding when to try again.
+ */
+export const useRecommendedFeed = (excludeFollowed) => {
+  return useInfiniteQuery({
+    queryKey: ['recommendedFeed', excludeFollowed],
+    queryFn: ({ pageParam = null, signal }) =>
+      recommendationService.getRecommendedFeed({
+        cursor: pageParam,
+        limit: 10,
+        excludeFollowed,
+        signal,
+      }),
+    select: dedupeInfinitePagesById,
+    getNextPageParam: getNextCursor,
+    initialPageParam: null,
+    staleTime: STALE_TIME.MEDIUM,
+    retry: (failureCount, error) => error?.response?.status !== 429 && failureCount < 1,
+  });
+};
+
+/** Home's "for you" tab: the personalized feed with no follow exclusion. */
+export const useForYouFeed = () => useRecommendedFeed(false);
+
+/**
+ * The discovery feed behind Explore and Search's pre-query state.
+ *
+ * Kept as `useExplore` (rather than renamed) so both existing and new
+ * callers read naturally; it no longer takes a `q` param, since Explore's
+ * own inline caption/people search still runs through `useExploreSearch`
+ * on a separate path this hook does not touch.
+ */
+export const useExplore = () => useRecommendedFeed(true);
 
 /**
  * A user's posts, optionally narrowed to a set of post types.
