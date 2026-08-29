@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Home now offers a for-you tab backed by the personalized recommendation feed, alongside the existing following tab, defaulting to for-you so a new account with no follows still sees content.
 - Settings is now a list of groups beside the setting you are changing: choosing one swaps only the region next to it, so settings can be browsed instead of opened one at a time and backed out of.
 - Every settings category has its own address, so one can be linked and reloaded, and the back button moves between categories rather than out of settings.
 - Settings now shows the account's own standing: whether it is verified, whether it is private, when it was created, and any warning a moderator has issued against it, with the reason and the moderator's own note.
@@ -17,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Each distinct way a Google sign-in can fail now has its own page saying what happened in ordinary language and offering a way onward, instead of one page printing the raw reason with nothing to press.
 
 ### Changed
+- Explore now shows real personalized, follow-excluded recommendations instead of a placeholder message.
+- Search shows the same recommended content as Explore before a query is typed, instead of a generic prompt.
 - Each setting in the list now carries an icon, and the list can be searched by name.
 - The setting you have open is centred in the space beside the list instead of sitting against its left edge, so a wide screen no longer leaves all the empty space on one side.
 - The settings list sits directly beside the navigation rail, so hovering the rail opens it over the list rather than over empty space.
