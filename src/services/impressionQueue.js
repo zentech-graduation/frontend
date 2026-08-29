@@ -4,16 +4,19 @@ import { API_BASE_URL } from '@/api/axiosClient';
 const IMPRESSIONS_PATH = '/recommendations/impressions';
 const MAX_BATCH_SIZE = 100;
 
-// The dev-profile rule for this exact endpoint is 120 requests/60s per IP
-// (backend application-dev.yml, app.rate-limit.endpoint-rules for
-// /api/v1/recommendations/impressions), and that bucket keys on IP rather
-// than on account, so several people behind one NAT'd address share it.
-// Budgeting for 6 such concurrent users with a 3x safety margin for the
+// The per-caller rule for this exact endpoint keys on IP, not account, so
+// several people behind one NAT'd address share one bucket. The dev profile
+// allows 120 requests/60s (application-dev.yml, deliberately loosened so
+// local scroll/impression testing is not throttled), but production is
+// tighter: 30 requests/60s (application-prod.yml). The interval must clear
+// the tighter of the two, since the same build runs in both. Budgeting for
+// 6 concurrent users behind one address with a 3x safety margin for the
 // extra visibilitychange/pagehide-triggered flushes on top of this timer:
-// 120 / 3 = 40 requests/60s of total headroom, 40 / 6 ≈ 6.6 requests/60s
-// per user, i.e. an interval no shorter than 60 / 6.6 ≈ 9s per user. 10s
-// gives 6 req/min per user, 36 req/min for 6 users — 30% of the budget.
-const FLUSH_INTERVAL_MS = 10_000;
+// 30 / 3 = 10 requests/60s of total headroom, 10 / 6 ≈ 1.67 requests/60s
+// per user, i.e. an interval no shorter than 60 / 1.67 ≈ 36s per user. 40s
+// gives 1.5 req/min per user, 9 req/min for 6 users — 30% of the prod
+// budget (and 7.5% of dev's looser one).
+const FLUSH_INTERVAL_MS = 40_000;
 
 // Fallback backoff when a 429 arrives without a readable Retry-After,
 // matching the same 60s fallback src/hooks/useRateLimitCooldown.js uses.
