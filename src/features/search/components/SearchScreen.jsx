@@ -9,6 +9,7 @@ import { LxIcon } from '@/features/luvax/components/primitives';
 import { UserCard } from '@/features/luvax/components/UserCard';
 import { useOverlayNavigate } from '@/features/luvax/hooks/useOverlayNavigate';
 import { useViewport } from '@/features/luvax/hooks/useViewport';
+import { RecommendedPostsGrid } from '@/features/luvax/components/RecommendedPostsGrid';
 
 import {
   getUserSearchTerms,
@@ -230,63 +231,73 @@ export function SearchScreen() {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {tab === 'posts' && (
-          <ResultsSection
-            query={query}
-            label="posts"
-            result={postResult}
-            renderRows={(rows) => (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                  gap: 2,
-                  padding: '2px 0 0',
-                }}
-              >
-                {rows.map((post) => {
-                  const mediaUrl =
-                    post.media && post.media.length > 0 ? post.media[0].cdnUrl : null;
-                  return (
-                    <div
-                      key={post.id}
-                      onClick={() => openOverlay(routeTo.postDetail(post.id))}
-                      style={{
-                        background: mediaUrl
-                          ? `url(${mediaUrl}) center/cover no-repeat`
-                          : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
-                        aspectRatio: '1/1',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 10,
-                        boxSizing: 'border-box',
-                      }}
-                    >
-                      {!mediaUrl && post.caption && (
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontFamily: v.fontBody,
-                            color: v.ink3,
-                            textAlign: 'center',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 3,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {post.caption}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          />
-        )}
+        {tab === 'posts' &&
+          (query ? (
+            <ResultsSection
+              query={query}
+              label="posts"
+              result={postResult}
+              renderRows={(rows) => (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                    gap: 2,
+                    padding: '2px 0 0',
+                  }}
+                >
+                  {rows.map((post) => {
+                    const mediaUrl =
+                      post.media && post.media.length > 0 ? post.media[0].cdnUrl : null;
+                    return (
+                      <div
+                        key={post.id}
+                        onClick={() => openOverlay(routeTo.postDetail(post.id))}
+                        style={{
+                          background: mediaUrl
+                            ? `url(${mediaUrl}) center/cover no-repeat`
+                            : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
+                          aspectRatio: '1/1',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 10,
+                          boxSizing: 'border-box',
+                        }}
+                      >
+                        {!mediaUrl && post.caption && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontFamily: v.fontBody,
+                              color: v.ink3,
+                              textAlign: 'center',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {post.caption}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            />
+          ) : (
+            // Before a query, the posts tab shows the same recommendation
+            // content Explore does, from the same source (useExplore /
+            // GET /recommendations/feed?excludeFollowed=true), sharing one
+            // cache entry with Explore's own mount. Typing a query switches
+            // back to ResultsSection above; clearing it returns here without
+            // a remount, since this is a plain conditional render, not a
+            // route change.
+            <RecommendedPostsGrid />
+          ))}
 
         {tab === 'people' && (
           <ResultsSection
