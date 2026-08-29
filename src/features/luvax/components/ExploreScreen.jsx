@@ -5,11 +5,12 @@ import { v } from '@/config/tokens';
 import { extractPageContent, getDisplayName, getMediaList, getUserSummary } from '@/utils/helpers';
 import { LxIcon, LxAvatar, LxTag } from './primitives';
 import { MediaThumb } from './MediaThumb';
-import { useExplore } from '../hooks/usePosts';
+import { useExploreSearch } from '../hooks/usePosts';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { routeTo } from '@/config/constants';
 import { getUserSearchTerms, useUserSearch } from '@/features/search/hooks/useSearch';
+import { RecommendedPostsGrid, SearchResultPost } from './RecommendedPostsGrid';
 
 function MiniCard({ p }) {
   const navigate = useNavigate();
@@ -128,62 +129,6 @@ function SearchResultPerson({ user }) {
   );
 }
 
-function SearchResultPost({ post }) {
-  const openOverlay = useOverlayNavigate();
-  const authorName = getDisplayName(getUserSummary(post), 'Unknown');
-  const firstTag = Array.isArray(post.tags) && post.tags.length > 0 ? post.tags[0] : null;
-
-  return (
-    <button
-      type="button"
-      onClick={() => openOverlay(routeTo.postDetail(post.id))}
-      style={{
-        width: 210,
-        background: v.surface,
-        border: `1px solid ${v.borderSubtle}`,
-        borderRadius: 12,
-        padding: '12px 12px 14px',
-        cursor: 'pointer',
-        textAlign: 'left',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-      }}
-    >
-      {/* Radius 8 is derived: one step in from the card's own 12, since the tile
-          sits inside the card's 12px padding rather than against its edge. */}
-      {getMediaList(post).length > 0 ? <MediaThumb post={post} radius={8} /> : null}
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <LxAvatar size={20} src={getUserSummary(post).avatarUrl} />
-        <span style={{ fontFamily: v.fontBody, fontSize: 12, fontWeight: 500, color: v.ink2 }}>
-          {authorName}
-        </span>
-      </div>
-      <div
-        style={{
-          fontFamily: v.fontBody,
-          fontSize: 14,
-          lineHeight: 1.45,
-          color: v.ink,
-          display: '-webkit-box',
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-          minHeight: 60,
-        }}
-      >
-        {post.caption}
-      </div>
-      {firstTag ? (
-        <div style={{ fontFamily: v.fontBody, fontSize: 12, fontWeight: 600, color: v.accent }}>
-          #{firstTag}
-        </div>
-      ) : null}
-    </button>
-  );
-}
-
 export function ExploreScreen() {
   // The search terms live in the address, so an explore search can be shared
   // and survives a reload.
@@ -195,7 +140,7 @@ export function ExploreScreen() {
   const searchInputRef = useRef(null);
 
   const { ref, inView } = useInView();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExplore({ q: query });
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExploreSearch({ q: query });
   const userSearchTerms = getUserSearchTerms(query);
   const primaryUserResult = useUserSearch(userSearchTerms[0] || '');
   const secondaryUserResult = useUserSearch(userSearchTerms[1] || '');
@@ -462,38 +407,7 @@ export function ExploreScreen() {
             )}
           </div>
         ) : (
-          // Trending is ranked by the recommendation module, which is still being
-          // built, so there is no real ranking to show. Rather than fabricate one
-          // from a fallback search, this states plainly that trending is not ready
-          // without claiming the feature is broken. See docs/layout-overhaul.
-          <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-            <div
-              style={{
-                fontFamily: v.fontMono,
-                fontSize: 10,
-                color: v.ink3,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                marginBottom: 16,
-              }}
-            >
-              trending today
-            </div>
-            <div
-              style={{
-                fontFamily: v.fontBody,
-                fontSize: 15,
-                fontWeight: 500,
-                color: v.ink2,
-                marginBottom: 4,
-              }}
-            >
-              trending is still warming up
-            </div>
-            <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
-              search for a name, caption, or hashtag to explore
-            </div>
-          </div>
+          <RecommendedPostsGrid />
         )}
       </div>
     </>
