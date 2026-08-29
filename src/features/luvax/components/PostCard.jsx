@@ -21,6 +21,7 @@ import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useImpressionTracking } from '@/hooks/useImpressionTracking';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { ReportModal } from './ReportModal';
@@ -31,7 +32,13 @@ import { PostShareDialog } from './PostShareDialog';
 
 const HEART_COLOR = 'var(--lx-error)';
 
-export function PostCard({ post, density = 'cozy', showTags = true, viewport = 'desktop' }) {
+export function PostCard({
+  post,
+  density = 'cozy',
+  showTags = true,
+  viewport = 'desktop',
+  surface,
+}) {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
   // Read straight from the post the query cache supplies. Holding these in
@@ -55,6 +62,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
 
   const currentUser = useAuthStore((state) => state.user);
   const isOwner = currentUser?.id === post.author?.id;
+  const { ref: impressionRef } = useImpressionTracking(post.id, surface);
 
   const updatePost = useUpdatePost();
   const deletePost = useDeletePost();
@@ -290,6 +298,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
 
   return (
     <article
+      ref={impressionRef}
       onClick={handleCardClick}
       style={{
         // No card chrome. The feed is one continuous surface on the page
