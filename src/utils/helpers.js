@@ -121,6 +121,43 @@ export function getNextCursor(page) {
 }
 
 /**
+ * Removes a post id from every page after the one it first appeared on.
+ *
+ * Compensates for a documented backend limitation: Gorse's own paginated
+ * output cannot be filtered by an exclusion list, so a later page can
+ * resurface an id an earlier page already served. See
+ * backend/.workspace/reports/rec_onboarding/prompt2_verification.md,
+ * "Residual known limitation" - do not remove this as redundant, the
+ * duplication it guards against is real and unclosed on the backend side.
+ *
+ * Used as an infinite query's `select`, which TanStack Query applies only to
+ * the data handed to the component; `getNextPageParam` still runs against
+ * the untouched raw pages, so pagination bookkeeping is unaffected.
+ * @param {{pages: Array, pageParams: Array}} data raw infinite query data
+ * @returns {{pages: Array, pageParams: Array}}
+ */
+export function dedupeInfinitePagesById(data) {
+  const seen = new Set();
+
+  const pages = data.pages.map((page) => {
+    const rows = extractPageContent(page);
+    const deduped = rows.filter((row) => {
+      if (seen.has(row.id)) return false;
+      seen.add(row.id);
+      return true;
+    });
+
+    if (deduped.length === rows.length) return page;
+    if (page?.data?.content) {
+      return { ...page, data: { ...page.data, content: deduped } };
+    }
+    return { ...page, content: deduped };
+  });
+
+  return { ...data, pages };
+}
+
+/**
  * Reports a response that does not carry the field an accessor expected.
  *
  * This is the guard against the defect class these accessors exist to prevent:
