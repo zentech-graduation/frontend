@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Posts on Home, Explore, and Search's pre-query grid are now reported as read once they have been at least half visible for a second, so the recommendation feed stops repeating what a viewer has already seen.
 - Home now offers a for-you tab backed by the personalized recommendation feed, alongside the existing following tab, defaulting to for-you so a new account with no follows still sees content.
 - Settings is now a list of groups beside the setting you are changing: choosing one swaps only the region next to it, so settings can be browsed instead of opened one at a time and backed out of.
 - Every settings category has its own address, so one can be linked and reloaded, and the back button moves between categories rather than out of settings.
@@ -38,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The theme control has moved off the settings screen, which is otherwise entirely backed by stored settings; the theme remains a per-device preference and still works where it already did.
 
 ### Fixed
+- Home's inactive tab no longer fetches on page load; it now fetches only once selected, and keeps its result cached after that.
 - Switches are centred in their track again; the knob sat a pixel out of true on whichever side it had travelled to.
 - The rule between the settings list and the setting itself now runs the full height of the screen instead of stopping where the shorter column's content ended.
 - Opening the profile editor no longer shows an empty biography to someone who has one.
