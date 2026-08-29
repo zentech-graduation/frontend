@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
@@ -358,6 +358,15 @@ export function FeedScreen() {
   // param at all) resolves to "foryou".
   const tab = searchParams.get('tab') === 'following' ? 'following' : 'foryou';
 
+  // Which tabs have ever been the active one this mount. Only an activated
+  // tab's query is enabled, so the inactive tab does not fire a request no
+  // one is looking at — the recommendation rate-limit buckets key on IP, so
+  // several people behind one address share that budget, and a wasted
+  // request on mount is a wasted share of it. Once a tab is added here it
+  // stays here for the life of this mount: the query then stays enabled
+  // permanently, so returning to a previously-visited tab never refetches.
+  const [activatedTabs, setActivatedTabs] = useState(() => new Set([tab]));
+
   const selectTab = (id) => {
     const params = new URLSearchParams(searchParams);
     if (id === 'following') params.set('tab', 'following');
@@ -365,10 +374,11 @@ export function FeedScreen() {
     // A pushed (not replaced) history entry, so the back button steps
     // between tabs rather than leaving the feed entirely.
     setSearchParams(params);
+    setActivatedTabs((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   };
 
-  const followingQuery = useFeed();
-  const forYouQuery = useForYouFeed();
+  const followingQuery = useFeed({}, { enabled: activatedTabs.has('following') });
+  const forYouQuery = useForYouFeed({ enabled: activatedTabs.has('foryou') });
 
   const betweenPosts = isMobile ? 22 : 56;
 

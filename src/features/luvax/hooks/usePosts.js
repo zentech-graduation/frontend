@@ -7,7 +7,7 @@ import { STALE_TIME } from '@/config/constants';
 import { patchCachedPost, removeCachedPost } from './usePostLikeState';
 import { beginSelfPostLike, endSelfPostLike, noteSelfCommentLike } from './useLivePostUpdates';
 
-export const useFeed = (params = {}) => {
+export const useFeed = (params = {}, { enabled = true } = {}) => {
   return useInfiniteQuery({
     queryKey: ['feed', params],
     queryFn: ({ pageParam = null, signal }) =>
@@ -19,6 +19,7 @@ export const useFeed = (params = {}) => {
     refetchIntervalInBackground: false,
     getNextPageParam: getNextCursor,
     initialPageParam: null,
+    enabled,
   });
 };
 
@@ -73,7 +74,7 @@ export const useExploreSearch = (params = {}) => {
  * src/hooks/useRateLimitCooldown.js and its call sites) is the thing
  * deciding when to try again.
  */
-export const useRecommendedFeed = (excludeFollowed) => {
+export const useRecommendedFeed = (excludeFollowed, { enabled = true } = {}) => {
   return useInfiniteQuery({
     queryKey: ['recommendedFeed', excludeFollowed],
     queryFn: ({ pageParam = null, signal }) =>
@@ -88,11 +89,12 @@ export const useRecommendedFeed = (excludeFollowed) => {
     initialPageParam: null,
     staleTime: STALE_TIME.MEDIUM,
     retry: (failureCount, error) => error?.response?.status !== 429 && failureCount < 1,
+    enabled,
   });
 };
 
 /** Home's "for you" tab: the personalized feed with no follow exclusion. */
-export const useForYouFeed = () => useRecommendedFeed(false);
+export const useForYouFeed = ({ enabled = true } = {}) => useRecommendedFeed(false, { enabled });
 
 /**
  * The discovery feed behind Explore and Search's pre-query state.
