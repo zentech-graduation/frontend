@@ -9,9 +9,7 @@ vi.mock('@/services/recommendation.service', () => ({
   getRecommendedFeed: (...args) => getRecommendedFeedMock(...args),
 }));
 
-const { useRecommendedFeed, useForYouFeed, useExplore } = await import(
-  '@/features/luvax/hooks/usePosts'
-);
+const { useForYouFeed, useExplore } = await import('@/features/luvax/hooks/usePosts');
 
 const wrapper = ({ children }) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
