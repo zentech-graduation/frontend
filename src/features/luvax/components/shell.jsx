@@ -291,13 +291,15 @@ export function LxBottomNav({ active, navigate }) {
 
 // ─── Suggested accounts (composition only) ─────────────────────────────────
 // The design's rail carries a suggested block of three user rows. Its version is hardcoded to
-// three invented people, and there is no suggestions endpoint to drive a real one: the
-// recommendation module has no read surface yet.
+// three invented people, and there is no suggested-accounts endpoint to drive a real one: the
+// recommendation module now serves a post feed (GET /recommendations/feed), but nothing
+// recommends accounts to follow.
 //
 // This is the composition, driven entirely by the caller's data. It is deliberately not mounted in
 // the rail. Rendering it with placeholder accounts would put invented people back into the
 // interface, which this project has already removed once. It renders nothing when handed nothing,
-// so the day a suggestions endpoint exists this needs a data hook and a single line in the rail.
+// so the day a suggested-accounts endpoint exists this needs a data hook and a single line in the
+// rail.
 export function LxSuggestedList({ users = [] }) {
   if (users.length === 0) return null;
 
