@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
 import { extractPageContent } from '@/utils/helpers';
 import { LxIcon, LxAvatar } from './primitives';
-import { useFeed } from '../hooks/usePosts';
+import { useFeed, useForYouFeed } from '../hooks/usePosts';
+import { useRateLimitCooldown } from '@/hooks/useRateLimitCooldown';
 import { useStoryFeed } from '../hooks/useStories';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
@@ -192,99 +194,182 @@ const FEED_COLUMN = 412;
 // across the top of the feed rather than sitting inside the post width.
 const STORY_RAIL_WIDTH = 632;
 
+/**
+ * One tab's post list: loading, error, empty, and paginated grid states.
+ *
+ * Both tabs stay mounted at once (see FeedScreen below) so switching tabs
+ * never unmounts either list, which is what keeps each tab's scroll
+ * position from resetting when the other becomes active. `active` only
+ * controls visibility (display: none), never mount/unmount.
+ *
+ * `isRecommended` gates the 429 cooldown handling: the Following tab's
+ * existing follow-based endpoint keeps its unchanged retry/error behavior,
+ * while the recommendation-backed For You tab respects Retry-After and
+ * stops requesting during a cooldown window rather than retrying and
+ * risking a request loop.
+ */
+function FeedTabPanel({
+  active,
+  isMobile,
+  betweenPosts,
+  tweaks,
+  viewport,
+  isRecommended,
+  emptyTitle,
+  emptySubtitle,
+  query,
+}) {
+  const { ref, inView } = useInView();
+  const { cooling, remaining, start } = useRateLimitCooldown();
+  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = query;
+
+  useEffect(() => {
+    if (!active) return;
+    if (inView && hasNextPage && !isFetchingNextPage && !(isRecommended && cooling)) {
+      fetchNextPage();
+    }
+  }, [active, inView, hasNextPage, isFetchingNextPage, isRecommended, cooling, fetchNextPage]);
+
+  useEffect(() => {
+    if (isRecommended && isError && error?.response?.status === 429) {
+      const retryAfter = Number(error.response.headers?.['retry-after']);
+      start(retryAfter);
+    }
+  }, [isRecommended, isError, error, start]);
+
+  const posts = data?.pages?.flatMap((page) => extractPageContent(page)) || [];
+
+  return (
+    <div style={{ display: active ? 'block' : 'none' }}>
+      {isLoading ? (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 40,
+            fontFamily: v.fontMono,
+            fontSize: 12,
+            color: v.ink3,
+          }}
+        >
+          loading feed...
+        </div>
+      ) : isError ? (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 40,
+            fontFamily: v.fontBody,
+            fontSize: 14,
+            color: v.error,
+          }}
+        >
+          {isRecommended && cooling
+            ? `too many requests. try again in ${remaining}s.`
+            : "we couldn't load your feed. check your connection and try again."}
+        </div>
+      ) : posts.length === 0 ? (
+        // Geometry is the design's own empty state, taken from Explore: padding
+        // 48px 24px, title body 15 weight 500 in v.ink2, subtitle body 13 in
+        // v.ink3. Only the copy is new, because the design defines no empty feed.
+        <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+          <div
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 15,
+              fontWeight: 500,
+              color: v.ink2,
+              marginBottom: 4,
+            }}
+          >
+            {emptyTitle}
+          </div>
+          <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>{emptySubtitle}</div>
+        </div>
+      ) : (
+        <div style={{ width: '100%', maxWidth: isMobile ? '100%' : FEED_COLUMN, margin: '0 auto' }}>
+          <div
+            style={{
+              fontFamily: v.fontMono,
+              fontSize: 10,
+              color: v.ink3,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              padding: isMobile ? '0 14px 16px' : '0 4px 16px',
+            }}
+          >
+            today
+          </div>
+
+          <div
+            className="lx-fade-in"
+            style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}
+          >
+            {posts.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                density={tweaks.density}
+                showTags={tweaks.showTags}
+                viewport={viewport}
+              />
+            ))}
+          </div>
+
+          {hasNextPage && (
+            <div
+              ref={ref}
+              style={{
+                padding: '28px 20px',
+                textAlign: 'center',
+                fontFamily: v.fontMono,
+                fontSize: 12,
+                color: v.ink3,
+              }}
+            >
+              {isRecommended && cooling
+                ? `too many requests. try again in ${remaining}s.`
+                : isFetchingNextPage
+                  ? 'loading more...'
+                  : 'scroll for more'}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Feed Screen ───────────────────────────────────────────────────────────
 export function FeedScreen() {
   const { tweaks, viewport } = useLuvaxTweaks();
   const isMobile = viewport === 'mobile';
-  const { ref, inView } = useInView();
-  const {
-    data: feedResponse,
-    isLoading,
-    isError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useFeed();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  // Defaults to "for you": a new account that follows nobody saw an empty
+  // Following feed, which is the exact problem this task exists to solve,
+  // so the tab landed on first is the one that always has something to
+  // show. "following" is the only other valid value; anything else (or no
+  // param at all) resolves to "foryou".
+  const tab = searchParams.get('tab') === 'following' ? 'following' : 'foryou';
 
-  // Flatten the infinite paginated response
-  const posts = feedResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
+  const selectTab = (id) => {
+    const params = new URLSearchParams(searchParams);
+    if (id === 'following') params.set('tab', 'following');
+    else params.delete('tab');
+    // A pushed (not replaced) history entry, so the back button steps
+    // between tabs rather than leaving the feed entirely.
+    setSearchParams(params);
+  };
 
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 40,
-          fontFamily: v.fontMono,
-          fontSize: 12,
-          color: v.ink3,
-        }}
-      >
-        loading feed...
-      </div>
-    );
-  }
+  const followingQuery = useFeed();
+  const forYouQuery = useForYouFeed();
 
-  if (isError) {
-    return (
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 40,
-          fontFamily: v.fontBody,
-          fontSize: 14,
-          color: v.error,
-        }}
-      >
-        we couldn't load your feed. check your connection and try again.
-      </div>
-    );
-  }
-
-  if (posts.length === 0) {
-    return (
-      // Geometry is the design's own empty state, taken from Explore: padding
-      // 48px 24px, title body 15 weight 500 in v.ink2, subtitle body 13 in
-      // v.ink3. Only the copy is new, because the design defines no empty feed.
-      <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-        <div
-          style={{
-            fontFamily: v.fontBody,
-            fontSize: 15,
-            fontWeight: 500,
-            color: v.ink2,
-            marginBottom: 4,
-          }}
-        >
-          your feed is quiet
-        </div>
-        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
-          follow a few people and their posts will appear here
-        </div>
-      </div>
-    );
-  }
-
-  // One centred column, not a masonry. The content column is capped so the feed
-  // reads like a photo-first single stream. Posts are separated by a large gap
-  // between them against a much smaller gap inside each post, so the eye groups a
-  // post without any divider or card. The ratio is roughly 5:1. See
-  // docs/layout-overhaul/layout-decisions.md.
-  // Mobile has little room, so the space between posts is much tighter than the
-  // generous desktop gap. The within-post grouping still reads because the gap
-  // between posts stays clearly larger than the gaps inside one.
   const betweenPosts = isMobile ? 22 : 56;
 
   return (
@@ -309,46 +394,59 @@ export function FeedScreen() {
       <div style={{ width: '100%', maxWidth: isMobile ? '100%' : FEED_COLUMN, margin: '0 auto' }}>
         <div
           style={{
-            fontFamily: v.fontMono,
-            fontSize: 10,
-            color: v.ink3,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            padding: isMobile ? '0 14px 16px' : '0 4px 16px',
+            display: 'flex',
+            marginBottom: isMobile ? 8 : 16,
+            padding: isMobile ? '0 14px' : '0 4px',
           }}
         >
-          today
-        </div>
-
-        <div
-          className="lx-fade-in"
-          style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}
-        >
-          {posts.map((p) => (
-            <PostCard
-              key={p.id}
-              post={p}
-              density={tweaks.density}
-              showTags={tweaks.showTags}
-              viewport={viewport}
-            />
+          {[
+            { id: 'foryou', label: 'for you' },
+            { id: 'following', label: 'following' },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => selectTab(t.id)}
+              style={{
+                flex: 1,
+                fontFamily: v.fontBody,
+                fontSize: 13,
+                fontWeight: 500,
+                color: tab === t.id ? v.ink : v.ink3,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '13px 0 14px',
+                borderBottom: tab === t.id ? '2px solid var(--lx-ink)' : '2px solid transparent',
+                letterSpacing: '0.01em',
+              }}
+            >
+              {t.label}
+            </button>
           ))}
         </div>
 
-        {hasNextPage && (
-          <div
-            ref={ref}
-            style={{
-              padding: '28px 20px',
-              textAlign: 'center',
-              fontFamily: v.fontMono,
-              fontSize: 12,
-              color: v.ink3,
-            }}
-          >
-            {isFetchingNextPage ? 'loading more...' : 'scroll for more'}
-          </div>
-        )}
+        <FeedTabPanel
+          active={tab === 'foryou'}
+          isMobile={isMobile}
+          betweenPosts={betweenPosts}
+          tweaks={tweaks}
+          viewport={viewport}
+          isRecommended
+          query={forYouQuery}
+          emptyTitle="nothing to show yet"
+          emptySubtitle="check back soon"
+        />
+        <FeedTabPanel
+          active={tab === 'following'}
+          isMobile={isMobile}
+          betweenPosts={betweenPosts}
+          tweaks={tweaks}
+          viewport={viewport}
+          isRecommended={false}
+          query={followingQuery}
+          emptyTitle="your feed is quiet"
+          emptySubtitle="follow a few people and their posts will appear here"
+        />
       </div>
     </div>
   );
