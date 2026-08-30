@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Tests
+- Added coverage for the help centre schemas, the declared-key request contract, the support queue role gating, and the campaign recipient cap and variable validation.
+
 ### Added
 - An administrator-only mail campaign composer with read-only samples, a Markdown editor, and a preview rendered by the backend so it cannot drift from the mail that is actually sent.
 

@@ -11,14 +11,18 @@ import { RecordTable } from '../components/RecordTable';
 import { SplitView } from '../components/SplitView';
 import { getSplitSelection, withSelection } from '../lib/splitSelection';
 import {
+  canDecideTicket,
+  canEscalateTicket,
+  holdsClaim as viewerHoldsClaim,
+  isAppealCategory,
+} from '../lib/supportPolicy';
+import {
   useSupportTicket,
   useSupportTicketActions,
   useSupportTickets,
 } from '../hooks/useSupportTickets';
 
 const STATUSES = ['open', 'in_progress', 'escalated', 'answered', 'rejected'];
-
-const isAppeal = (category) => typeof category === 'string' && category.startsWith('appeal_');
 
 const COLUMNS = [
   { key: 'subject', header: 'subject', render: (row) => row.subject },
@@ -132,8 +136,8 @@ function TicketDetail({ ticketId, role }) {
   }
 
   const row = ticket.data;
-  const canDecide = !isAppeal(row.category) || isAdminRole(role);
-  const holdsClaim = Boolean(row.assignedTo) && row.assignedTo === viewerId;
+  const canDecide = canDecideTicket(row, role);
+  const holdsClaim = viewerHoldsClaim(row, viewerId);
   const failure = actions.claim.error ?? actions.respond.error ?? actions.escalate.error;
   const message = describeFailure(failure, row);
 
@@ -148,7 +152,7 @@ function TicketDetail({ ticketId, role }) {
 
       {message ? <Callout tone="error">{message}</Callout> : null}
 
-      {isAppeal(row.category) && !isAdminRole(role) ? (
+      {isAppealCategory(row.category) && !isAdminRole(role) ? (
         <Callout>
           this is an appeal. only an administrator can answer or close it, because reversing the
           decision is an administrator-only action. you can still escalate it.

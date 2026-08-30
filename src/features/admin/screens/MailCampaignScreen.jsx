@@ -6,15 +6,13 @@ import { AccountSearchPicker } from '../components/AccountSearchPicker';
 import { LocalTime } from '../components/LocalTime';
 import { PageHeader } from '../components/PanelPage';
 import { RecordTable } from '../components/RecordTable';
+import { MAX_RECIPIENTS, canAddRecipient, findUnknownVariables } from '../lib/supportPolicy';
 import {
   useCampaignActions,
   useCampaignPreview,
   useCampaigns,
   useMailTemplates,
 } from '../hooks/useMailCampaigns';
-
-/** The backend's cap. Stated here so the count reads against it before a submit is refused. */
-const MAX_RECIPIENTS = 10;
 
 /** The only two tokens the backend accepts. Anything else is refused at save time. */
 const VARIABLES = ['{{username}}', '{{fullName}}'];
@@ -89,13 +87,13 @@ export function MailCampaignScreen() {
 
   const addRecipient = (account) => {
     setLocalError('');
-    if (recipients.some((item) => item.id === account.id)) {
-      return;
-    }
-    if (recipients.length >= MAX_RECIPIENTS) {
-      // Refused here as well as by the backend, so the cap is visible before a
-      // round trip rather than only afterwards.
-      setLocalError(`a campaign may not exceed ${MAX_RECIPIENTS} recipients.`);
+    // Refused here as well as by the backend, so the cap is visible before a
+    // round trip rather than only afterwards. Duplicates are a no-op rather than
+    // a refusal that would blame the cap for the wrong reason.
+    if (!canAddRecipient(recipients, account.id)) {
+      if (!recipients.some((item) => item.id === account.id)) {
+        setLocalError(`a campaign may not exceed ${MAX_RECIPIENTS} recipients.`);
+      }
       return;
     }
     setRecipients((prev) => [...prev, account]);
@@ -105,6 +103,12 @@ export function MailCampaignScreen() {
     setLocalError('');
     if (recipients.length === 0) {
       setLocalError('add at least one recipient.');
+      return;
+    }
+    // Caught before the round trip, and named, matching what the backend raises.
+    const unknown = findUnknownVariables(body);
+    if (unknown.length > 0) {
+      setLocalError(`unknown variable {{${unknown[0]}}}. permitted: ${VARIABLES.join(', ')}.`);
       return;
     }
     const payload = {
