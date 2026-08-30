@@ -7,7 +7,7 @@
  * from the token, and the public form offers only the categories the backend
  * marks as allowed there.
  */
-export function TicketForm({ categorySlot, subject, body, onChange, disabled }) {
+export function TicketForm({ categorySlot, subject, body, errors = {}, onChange, disabled }) {
   return (
     <div className="lx-support__card">
       {categorySlot}
@@ -23,7 +23,11 @@ export function TicketForm({ categorySlot, subject, body, onChange, disabled }) 
           disabled={disabled}
           onChange={(event) => onChange({ subject: event.target.value })}
         />
-        <p className="lx-support__hint">{subject.length} of 200 characters</p>
+        {errors.subject ? (
+          <p className="lx-support__error">{errors.subject}</p>
+        ) : (
+          <p className="lx-support__hint">{subject.length} of 200 characters</p>
+        )}
       </div>
       <div className="lx-support__field">
         <label className="lx-support__label" htmlFor="support-body">
@@ -37,7 +41,11 @@ export function TicketForm({ categorySlot, subject, body, onChange, disabled }) 
           disabled={disabled}
           onChange={(event) => onChange({ body: event.target.value })}
         />
-        <p className="lx-support__hint">{body.length} of 5000 characters</p>
+        {errors.body ? (
+          <p className="lx-support__error">{errors.body}</p>
+        ) : (
+          <p className="lx-support__hint">{body.length} of 5000 characters</p>
+        )}
       </div>
     </div>
   );

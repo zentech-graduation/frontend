@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- A help centre where an account can raise a support request and read the reply, with the one-open-request state shown as a first-class screen rather than as a rejected submit.
+- An appeal page reached from the link in a moderation email, which works while signed out and banned and never asks for a session.
+- A public support form for anyone who cannot sign in, gated by a verification challenge and an email confirmation step, so nothing reaches staff until the address is proved.
+
 ### Fixed
 - Removing content from the account view now says plainly that it closes no report about that content, which was already true but silent, so a moderator no longer believes the queue has been cleared when it has not.
 

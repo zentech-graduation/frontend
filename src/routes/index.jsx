@@ -76,27 +76,27 @@ const SupportHomeScreen = lazy(() =>
   }))
 );
 const SupportTicketScreen = lazy(() =>
-  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+  import('@/features/support/screens/SupportAnonymousScreens').then((m) => ({
     default: m.SupportTicketScreen,
   }))
 );
 const SupportAppealScreen = lazy(() =>
-  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+  import('@/features/support/screens/SupportAnonymousScreens').then((m) => ({
     default: m.SupportAppealScreen,
   }))
 );
 const SupportPublicScreen = lazy(() =>
-  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+  import('@/features/support/screens/SupportAnonymousScreens').then((m) => ({
     default: m.SupportPublicScreen,
   }))
 );
 const SupportConfirmScreen = lazy(() =>
-  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+  import('@/features/support/screens/SupportAnonymousScreens').then((m) => ({
     default: m.SupportConfirmScreen,
   }))
 );
 const SupportUnsubscribeScreen = lazy(() =>
-  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+  import('@/features/support/screens/SupportAnonymousScreens').then((m) => ({
     default: m.SupportUnsubscribeScreen,
   }))
 );

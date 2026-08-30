@@ -4,6 +4,9 @@
  * React shortcuts, spreading a filter object into `params` and handing a form's
  * whole state to a request body, both fail here.
  *
+ * These live at the shared layer rather than inside the panel because the help
+ * centre obeys the same contract, and a feature must not import from another.
+ *
  * These helpers are the single mechanism the panel uses to obey that contract:
  * a query serialiser that keeps only an endpoint's declared parameter keys, and
  * a body builder that is written out field by field at every call site.
