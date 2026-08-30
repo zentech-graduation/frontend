@@ -1,269 +1,223 @@
----
-spec_version: alpha
-brand: "Luvax"
-description: |
-  Luvax is a quiet social network built on a single promise: pure social, no noise.
-  The design philosophy is warm restraint — cream paper, warm ink, generous whitespace,
-  and a single gold accent. Every decision biases toward calm, taste, and the deliberate
-  absence of engagement mechanics. The visual voice is lowercase, plain-spoken, and
-  confident in what it chooses not to do.
+# Design System
 
-colors:
-  primary: "#C8A97E"
-  secondary: "#7A9E7A"
-  canvas: "#F9F7F4"
-  canvas-subtle: "#F0EDE8"
-  ink: "#1A1816"
-  muted: "#9B9088"
-  accent: "#C47168"
-
-typography:
-  display:
-    family: "Syne"
-    size: "48px (lg) / 64px (xl) / 38px (md)"
-    weight: "700–800"
-    line_height: "1.1"
-  heading:
-    family: "Syne"
-    size: "30px (h1) / 24px (h2) / 20px (h3)"
-    weight: "600"
-    line_height: "1.25"
-  body:
-    family: "DM Sans"
-    size: "15px (default) / 17px (lg) / 13px (sm)"
-    weight: "400"
-    line_height: "1.5"
-
-spacing:
-  xs: "4px  (--space-1)"
-  sm: "8px  (--space-2)"
-  md: "16px (--space-4)"
-  lg: "32px (--space-8)"
-  xl: "64px (--space-16)"
-
-shapes:
-  rounded-sm: "4px  (--radius-sm)  — tags, tiny chips"
-  rounded-md: "8px  (--radius-md)  — inputs, menus"
-  rounded-lg: "12px (--radius-lg)  — cards, post media"
----
-
-## 1. Overview & Design Principles
-
-### Visual Character
-Luvax reads as **warm minimalism** — analogue in feel, disciplined in execution. The palette is a cream-paper daylight system: never pure white, never pure black. A single gold-tan accent (`--lx-accent: #C8A97E`) carries all primary interactions. Two brand alternates — sage (`#7A9E7A`) and dusty rose (`#C4847A`) — are used sparingly for theming and the logo mark only.
-
-Structure comes from **hairlines and whitespace**, not boxes or fills. No decorative gradients, no textures, no patterns.
-
-### Light / Dark Mode
-- **Light (default):** Cream base `#F9F7F4`, warm near-black ink `#1A1816`.
-- **Dark:** Warm charcoal base `#1A1816`, never pure black. Surfaces step up through `#25211D` → `#2F2A25`. Applied via `html[data-theme="dark"]`; all tokens remap automatically.
-- **Rule:** both themes share the same accent `#C8A97E` and border logic. Do not invent theme-specific accent overrides.
-
-### Voice
-Everything is **lowercase**. UI labels, headings, buttons, nav. Capitals only for proper nouns in body copy and the logotype asset. No exclamation marks; no hype copy; no emoji anywhere.
+This file describes the design system as it exists in the code.
+Every value below was read from `src/index.css`, `src/config/tokens.js` or `src/features/admin/components/panelStyles.js` rather than from an earlier draft of this document.
+Where the implementation diverges from an ideal, the divergence is recorded as a divergence.
 
 ---
 
-## 2. Component Specifications
+## 1. Token System
 
-### Buttons
-| Property | Value |
-|---|---|
-| Border radius | `--radius-pill` (999px) — all variants |
-| Padding | `10px 20px` (default) · `8px 16px` (sm) · `12px 24px` (lg) |
-| Font | `--font-body`, `--fw-medium` (500), `--text-body` (15px), `--tracking-label` |
-| **Primary** background | `--lx-accent` (#C8A97E) |
-| **Primary** text | `--lx-ink` (#1A1816) |
-| **Primary** hover | background → `--lx-accent-dark` (#A8885A) |
-| **Ghost** background | transparent · border `1px solid --lx-border` |
-| **Ghost** hover | background → `--lx-surface-raised` |
-| **Danger** background | `--lx-error` (#C47168) · text `--lx-ink-inverse` |
-| Transition | `background var(--duration-fast) var(--ease-out)` |
-| Disabled | opacity 0.4, `cursor: not-allowed` |
-| Text casing | **lowercase** always |
+Tokens are CSS custom properties on `:root` in `src/index.css`.
+They are mirrored as a plain JavaScript object, `v`, in `src/config/tokens.js`, because large parts of the panel and the application shell style with inline objects rather than classes and need the same values in JavaScript.
 
-### Cards / Containers
-| Property | Value |
-|---|---|
-| Background | `--lx-surface` (#F0EDE8) |
-| Border radius | `--radius-lg` (12px) |
-| Shadow | `--shadow-card` = `0 2px 8px rgba(26,24,22,0.06)` |
-| Inner padding | `--lx-card-pad` (16px default, 12px dense) |
-| Border | none by default; dividers use `1px solid --lx-border` (#DDD7CF) |
-| Media bleed | images bleed to card edge (no inner radius on media) |
-| Gap between cards | `--lx-feed-gap` (12px) |
+The mirror is maintained by hand.
+A token added to `index.css` and not to `tokens.js` is invisible to every inline style, which is the failure mode to watch for.
 
-### Inputs / Forms
-| Property | Value |
-|---|---|
-| Background | `--lx-surface-sunken` (#EAE6E0) |
-| Border | `1px solid --lx-border` (#DDD7CF) |
-| Border radius | `--radius-md` (8px) |
-| Padding | `10px 14px` |
-| Font | `--font-body`, `--fw-regular`, `--text-body` |
-| Placeholder color | `--lx-ink-3` (#9B9088) |
-| Focus border | `--lx-accent` (#C8A97E) · no box-shadow ring |
-| Error border | `--lx-error` (#C47168) · helper text in `--lx-error-text` |
-| Error background | `--lx-error-dim` (#F5E8E7) |
-| Label | `--font-body`, `--fw-medium`, `--text-label` (13px), `--tracking-label` |
-| Microcopy style | lowercase, human ("that doesn't look like an email") |
+### Colour
 
-### Modals / Sheets
-| Property | Value |
-|---|---|
-| Border radius | `--radius-xl` (16px) sheets · `--radius-2xl` (20px) auth modals |
-| Shadow | `--shadow-xl` |
-| Scrim | `--lx-scrim` = `rgba(26,24,22,0.45)` |
-| Background | `--lx-base` or `--lx-surface` |
+Colour tokens are the only tokens that change between themes.
+Spacing, radius, typography and motion are theme-independent.
 
-### Glass Chrome (sticky nav, bottom bar)
-Apply the `.lx-glass` utility class:
-```css
-background: var(--lx-glass-bg);   /* rgba(249,247,244,0.88) */
-backdrop-filter: blur(10px);
-border: 1px solid var(--lx-glass-border);
-```
-Reserved for floating-over-content surfaces only — never for static cards.
+| Group | Tokens |
+|-------|--------|
+| Surface | `--lx-base`, `--lx-surface`, `--lx-surface-raised`, `--lx-surface-sunken` |
+| Ink | `--lx-ink`, `--lx-ink-2`, `--lx-ink-3`, `--lx-ink-inverse` |
+| Border | `--lx-border`, `--lx-border-strong`, `--lx-border-subtle` |
+| Accent | `--lx-accent`, `--lx-accent-dark`, `--lx-accent-dim`, `--lx-accent-text` |
+| Semantic | `--lx-error`, `--lx-success`, `--lx-warning`, each with a `-dim` fill and a `-text` foreground |
+| Utility | `--lx-white-*` and `--lx-black-*` alpha ramps, `--lx-glass-*`, `--lx-scrim` |
 
-### Icons
-- Lucide-style, 24×24 grid, `currentColor` stroke, **1.5px default weight**.
-- Use `<Icon name="…" />` from `window.LuvaxDesignSystem_cae09a.Icon`. Never hand-roll inline SVG paths.
-- Active states: bump stroke to 1.8–2px; `heart` and `bookmark` switch to filled variant.
-- Active nav item: gold accent color + thin underline. **Never** a filled pill highlight.
+### Light palette
+
+| Token | Value |
+|-------|-------|
+| `--lx-base` | `#F9F7F4` |
+| `--lx-surface` | `#F0EDE8` |
+| `--lx-surface-raised` | `#E8E3DC` |
+| `--lx-surface-sunken` | `#EAE6E0` |
+| `--lx-ink` | `#1A1816` |
+| `--lx-ink-2` | `#574F47` |
+| `--lx-ink-3` | `#9B9088` |
+| `--lx-border` | `#DDD7CF` |
+| `--lx-border-strong` | `#C4BCB2` |
+| `--lx-accent` | `#C8A97E` |
+| `--lx-accent-text` | `#7A5C34` |
+| `--lx-error` | `#C47168` |
+| `--lx-success` | `#7A9E7A` |
+| `--lx-warning` | `#C4A85A` |
+
+### Dark palette
+
+Dark mode is driven by `html[data-theme="dark"]`, set by an explicit toggle.
+It deliberately does **not** follow `prefers-color-scheme`: the theme is a choice the user makes and it persists, rather than changing under them when the operating system does.
+
+| Token | Value |
+|-------|-------|
+| `--lx-base` | `#1A1816` |
+| `--lx-surface` | `#25211D` |
+| `--lx-surface-raised` | `#2F2A25` |
+| `--lx-surface-sunken` | `#1F1C19` |
+| `--lx-ink` | `#F0EDE8` |
+| `--lx-ink-2` | `#B5ACA3` |
+| `--lx-ink-3` | `#7A7268` |
+| `--lx-border` | `#3A342E` |
+| `--lx-border-strong` | `#4A433B` |
+
+The dark palette is a warm inversion rather than a neutral grey ramp: the base is the light theme's ink, and the ink is the light theme's surface.
+That is what keeps the accent legible without a second accent value.
 
 ---
 
-## 3. Layout & Grid Rules
+## 2. Typography
 
-### Page Structure
-```
-┌────────────────── max 1200px (--width-page) ──────────────────┐
-│  300px rail  │  680px feed (--width-feed)  │  300px rail  │
-└───────────────────────────────────────────────────────────────┘
-```
-- Feed column: `--width-feed` = 680px, centered.
-- Side rails: `--width-rail` = 300px (sticky nav left, suggestions/trending right).
-- Marketing / prose: `--width-reading` = 720px max measure.
-- Page outer: `--width-page` = 1200px.
+Four families are loaded from Google Fonts in a single `@import` at the top of `index.css`.
 
-### Safe Padding
-- Page horizontal padding: `--space-6` (24px) at ≥ 1200px; `--space-4` (16px) at tablet; `--space-3` (12px) at mobile.
-- Section vertical rhythm: `--space-12` (48px) between major sections on marketing pages.
-- Feed gap: `--lx-feed-gap` (12px default, 8px dense).
+| Token | Family | Used for |
+|-------|--------|----------|
+| `--font-display` | Syne | Headings and the brand mark |
+| `--font-body` | DM Sans | Body text, controls, everything by default |
+| `--font-mono` | DM Mono | Panel labels, identifiers, timestamps, code |
+| (unnamed) | Instrument Serif, Inter | Loaded but not bound to a token |
 
-### Responsive Breakpoints
-| Breakpoint | Width | Behavior |
-|---|---|---|
-| Mobile | < 600px | Single column. Side rails collapse. Bottom nav replaces sidebar. |
-| Tablet | 600px – 959px | Feed + one rail (left nav only). Right rail hidden. |
-| Desktop | ≥ 960px | Three-column layout: left rail + feed + right rail. |
-| Wide | ≥ 1200px | Centered within `--width-page`; outer gutters grow. |
+There is **no type scale token set**.
+Font sizes are literal pixel values at the point of use.
+The panel converges on a small vocabulary in practice - 11px for uppercase mono labels, 12px for body and controls, 13px for reading text, 16px for a detail heading, 22px for a page title - but nothing enforces it.
 
-### Grid / Flex Conventions
-- Use `display: flex` + `gap` for all row/column groupings of sibling elements. Never rely on inline flow spacing.
-- Masonry post grid (Explore): CSS `columns` or JS masonry, `--space-3` (12px) gap.
-- Story rail: horizontal flex, `overflow-x: auto`, `scrollbar-width: none`, `gap: --space-3`.
+Uppercase mono labels carry `letter-spacing: 0.06em`.
+This is the panel's most recognisable typographic signature and is applied by hand at each site.
 
 ---
 
-## 4. Do's and Don'ts
+## 3. Spacing, Radius, Shadow and Motion
 
-### ✓ Do
+| Scale | Values |
+|-------|--------|
+| Spacing | `--space-1` 4px, `--space-2` 8px, `--space-3` 12px, `--space-4` 16px, `--space-6` 24px, `--space-8` 32px, `--space-12` 48px, `--space-16` 64px |
+| Radius | `--radius-sm` 4px, `--radius-md` 8px, `--radius-lg` 12px, `--radius-xl` 16px, `--radius-pill` 999px |
+| Shadow | `--shadow-sm`, `--shadow-md`, `--shadow-lg`, all warm-tinted from the ink colour rather than pure black |
 
-1. **Always reference design tokens.** Use `var(--lx-accent)`, `var(--font-body)`, `var(--space-4)`, etc. Never hardcode raw hex values, pixel sizes, or font strings in component styles.
+The scale skips 5, 7, 9, 10 and 11 on purpose: a gap you have to reach for is a gap you have to justify.
 
-2. **Use pill radius for all interactive affordances.** Buttons, avatars, chips, toggles, and search inputs always use `--radius-pill` (999px). Reserve `--radius-lg` for cards and `--radius-md` for form inputs.
+### Motion
 
-3. **Write all copy in lowercase.** Labels, headings, button text, nav items — everything. Sentence-case or Title Case breaks brand voice immediately.
+| Token | Value |
+|-------|-------|
+| `--duration-fast` | taps and hovers |
+| `--duration-normal` | overlays, menus, toasts, the carousel |
+| `--duration-slow` | the bottom sheet |
+| `--ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)`, decelerating, for entry |
+| `--ease-in` | accelerating, for exit |
 
-4. **Keep shadows warm.** All shadow values use `rgba(26,24,22,…)` (the ink hue), never `rgba(0,0,0,…)`. Always pull from the named `--shadow-*` tokens.
-
-5. **Apply motion with restraint.** Use `--ease-out` (`cubic-bezier(0.16,1,0.3,1)`) and durations of 150–250ms. Fades and gentle translates only. No bounces, no spins, no infinite decorative loops.
-
-6. **Use `--lx-surface-sunken` for inset fields** (inputs, wells, code blocks) and `--lx-surface` for raised surfaces (cards, chips). This maintains the tactile depth hierarchy.
-
----
-
-### ✗ Don't
-
-1. **Don't use decorative gradients.** The only acceptable gradient is a subtle warm tonal fill inside image *placeholders*. No gradient backgrounds, hero fills, button fills, or card fills — ever.
-
-2. **Don't use emoji.** Not in copy, not in UI, not in notifications. Use the `Icon` component exclusively for visual communication.
-
-3. **Don't use pure black (`#000000`) or pure white (`#FFFFFF`).** All surfaces and ink values are warm-toned. The darkest ink is `--lx-ink` (#1A1816); the lightest base is `--lx-base` (#F9F7F4).
-
-4. **Don't add a filled-pill active state to nav items.** Active navigation uses the gold accent color + a thin hairline underline. The filled-pill pattern is reserved for buttons only.
-
-5. **Don't use a color not in the palette for borders.** All hairlines must use `--lx-border` (#DDD7CF), `--lx-border-strong` (#C4BCB2), or `--lx-border-subtle` (#ECEAE5). Never invent new border colors.
-
-6. **Don't import external icon libraries.** All icons come from `<Icon name="…" />`. If a glyph is missing, add it to `Icon.jsx` in the same 24×24 / 1.5-stroke Lucide style rather than importing a second icon set.
-
-7. **Don't use Title Case or ALL CAPS in UI text.** The mono eyebrow exception (`DM Mono`, `text-transform: uppercase`, `--tracking-caps`) exists only for metadata labels, timestamps, and section dividers — applied via the `.t-mono-sm` utility class, never hand-rolled.
+One vocabulary for the whole application, so every surface enters and leaves with the same feel.
+A global `prefers-reduced-motion` rule in `index.css` neutralises transitions that use these tokens, which is why a hand-rolled duration is a bug rather than a style: it escapes that rule.
 
 ---
 
-## 5. Token Quick Reference
+## 4. Primitive Inventory
 
-### Color tokens (CSS custom properties)
-```
---lx-base             #F9F7F4   page background
---lx-surface          #F0EDE8   cards, chips
---lx-surface-raised   #E8E3DC   hover fills
---lx-surface-sunken   #EAE6E0   inputs, wells
---lx-ink              #1A1816   primary text
---lx-ink-2            #574F47   secondary text
---lx-ink-3            #9B9088   placeholder / tertiary
---lx-ink-inverse      #F9F7F4   text on accent/dark
---lx-border           #DDD7CF   hairlines
---lx-border-strong    #C4BCB2   emphasized borders
---lx-accent           #C8A97E   gold — primary brand action
---lx-accent-dark      #A8885A   hover / press state
---lx-accent-dim       #F2EAD9   tint backgrounds
---lx-accent-text      #7A5C34   accent text on paper
---lx-sage             #7A9E7A   brand green alternate
---lx-rose             #C4847A   brand rose alternate
---lx-error            #C47168   error state
---lx-success          #7A9E7A   success state
---lx-warning          #C4A85A   warning state
-```
+Everything is hand-rolled. There is no table library, no chart library, no rich-text editor, no date library, no icon package and no virtualisation.
 
-### Typography tokens
-```
---font-display   'Syne'              display / headlines
---font-body      'DM Sans'           body / UI text
---font-mono      'DM Mono'           metadata / labels
---font-serif     'Instrument Serif'  editorial pull-quotes
+### Shared primitives, `src/components/ui/`
 
---text-display-xl  64px    --text-h1  30px
---text-display-lg  48px    --text-h2  24px
---text-display-md  38px    --text-h3  20px
---text-body-lg     17px    --text-body 15px   --text-body-sm 13px
+| Primitive | Notes |
+|-----------|-------|
+| `button.jsx` | shadcn-style variants |
+| `card.jsx`, `input.jsx`, `label.jsx` | shadcn scaffolds |
+| `lx-avatar.jsx` | Deterministic colour from one of seven `--lx-avatar-*` tokens |
+| `lx-icon.jsx` | Inline SVG sprite, no icon package |
+| `lx-dropdown-menu.jsx` | Radix primitive |
+| `lx-toggle.jsx` | The switch used throughout settings |
 
---tracking-display  -0.03em    --tracking-body   -0.01em
---tracking-tight    -0.02em    --tracking-caps    0.1em
-```
+Two Radix packages are the only component dependencies.
 
-### Spacing tokens
-```
---space-1   4px    --space-6   24px
---space-2   8px    --space-8   32px
---space-3   12px   --space-10  40px
---space-4   16px   --space-12  48px
---space-5   20px   --space-16  64px
-```
+### Panel components, `src/features/admin/components/`
 
-### Effects tokens
-```
---radius-sm    4px     --radius-xl    16px
---radius-md    8px     --radius-2xl   20px
---radius-lg    12px    --radius-pill  999px
+| Component | Notes |
+|-----------|-------|
+| `RecordTable` | Hand-rolled table with keyboard-operable rows |
+| `LoadMore` | Keyset only. No list endpoint returns a total, so numbered pagination cannot exist |
+| `ListStates` | `EmptyState`, `LoadingState`, `FailedState` |
+| `SplitView` | List beside detail; moves focus to the detail region on selection |
+| `FilterBar` | Tag-style filter groups |
+| `AccountSearchPicker` | Debounced account lookup with a cooldown |
+| `DateRangeControl`, `LocalTime` | Native inputs; `LocalTime` names the timezone |
+| `ReasonConfirmDialog` | The reason-capturing confirm used by every moderation action |
 
---shadow-card  0 2px 8px rgba(26,24,22,0.06)
---shadow-md    0 2px 8px rgba(26,24,22,0.09)
---shadow-xl    0 20px 60px rgba(26,24,22,0.25), 0 4px 16px rgba(26,24,22,0.12)
+### Help centre, `src/features/support/components/`
 
---ease-out         cubic-bezier(0.16, 1, 0.3, 1)
---duration-fast    150ms
---duration-normal  200ms
---duration-slow    250ms
-```
+`SupportLayout` frames the six help centre screens and carries `SUPPORT_CSS` inline, the same way the panel carries `panelStyles`.
+It is deliberately independent of both the panel shell and the authenticated chrome, because three of its screens are anonymous and are reached by an account that cannot sign in.
+
+---
+
+## 5. Layout Systems
+
+### The panel
+
+`panelStyles.js` is a single exported template string, injected by `AdminShell`.
+No `lx-admin` selector exists in `index.css`; the panel's CSS lives entirely in that file.
+
+The shell is a fixed 232px navigation rail beside a content column.
+Two vocabularies are held there deliberately:
+
+- **Controls.** One shape for anything clickable: a pill at `--radius-pill`, a 1px `--lx-border`, 12px/500 body type, and a control height around 28-30px. Native selects, native date inputs and the panel's own buttons are all brought onto that shape, so a control never looks foreign beside the one next to it.
+- **Muted text.** `--lx-ink-3` measures about 2.8:1 on the light base and 3.6:1 on the dark one, below the 4.5:1 this surface is held to. Every label the panel treats as readable content uses `--lx-ink-2` instead. This is a recorded divergence from the design export, not an oversight; `--lx-ink-3` remains in use for genuinely decorative marks.
+
+### Breakpoints
+
+Three, all in `panelStyles.js`:
+
+| Width | Change |
+|-------|--------|
+| 1100px | Split view collapses to a single column |
+| 860px | Navigation rail becomes a horizontal bar at the top |
+| 560px | Densest layout |
+
+The panel is desktop-first. Below 860px the rail becomes a top bar rather than adopting the user-facing application's bottom navigation, so the two surfaces stay visibly distinct.
+
+The help centre and the two new panel screens are **desktop only** by decision. They do not regress the three breakpoints above, but they were not designed for them.
+
+---
+
+## 6. Tables and Charts
+
+**Tables** are `RecordTable`, hand-rolled. Columns are declared as `{ key, header, render }`. Rows are keyboard-operable and clicking one opens the detail region.
+
+**Pagination** is keyset only, through `LoadMore`. No list endpoint returns a total count, so numbered pagination is not merely absent - it is not expressible.
+
+**Charts** are hand-rolled inline SVG in the statistics screen. There is no chart library. `platform_stats` is never seeded, so that screen has no series until the collection job has run; an empty statistics screen in development is expected and is not a defect.
+
+---
+
+## 7. Accessibility - conventions in use, and the gaps
+
+In use:
+
+- Every interactive element has a visible focus ring, at `2px` in `--lx-accent` with `1px` offset.
+- `SplitView` moves focus to the detail region when a record opens and scrolls it to its own top, so opening a second record does not leave focus on the row.
+- Filter groups are wrapped in `role="group"` with `aria-labelledby` pointing at their label.
+- Form controls are associated with their labels by `htmlFor` and `id` throughout.
+- `prefers-reduced-motion` is honoured globally for any transition using the motion tokens.
+- The theme toggle is explicit rather than following the system, so a user's choice is not overridden.
+
+### Known gaps
+
+These are gaps, recorded as gaps. None is fixed by this document.
+
+- **`<th>` carries no `scope`.** `RecordTable` renders header cells without `scope="col"`, so a screen reader cannot reliably associate a data cell with its column.
+- **`RecordTable` sets `role="button"` on `<tr>`.** That overrides the native row semantics entirely: the row stops being announced as a table row, and the table stops being navigable as a table. It buys keyboard operability at the cost of the structure that made the table worth using.
+- **No `<caption>` and no table label.** Nothing names what a given table contains.
+- **Exactly one live region in the whole panel.** Almost every asynchronous outcome - a claim collision, a save failure, a rate-limited refusal - changes the screen without announcing anything.
+
+The first three are all in `RecordTable`, so a single component carries most of the table accessibility debt.
+
+---
+
+## 8. Conventions
+
+- **Plain JavaScript.** No TypeScript. Data shapes are validated at runtime with Zod; `src/features/auth/utils/authSchemas.js` is the canonical example and `src/features/support/utils/supportSchemas.js` follows it.
+- **Feature-first.** A feature never imports from another feature. Shared code moves to `src/components/`, `src/hooks/`, `src/utils/` or `src/services/` first. `src/utils/requestContract.js` was extracted for exactly this reason when the help centre needed the panel's declared-key helpers.
+- **Colour only through tokens.** No raw hex in feature code. Spacing and radius use the scale variables; literal pixel values appear only for typography and for one-off geometry.
+- **Routes are central.** Every route is declared in `src/routes/index.jsx` using a constant from `src/config/constants.js`.
+- **Server state is TanStack Query.** Zustand holds the auth session and cross-feature client state only. Tokens are never persisted.
