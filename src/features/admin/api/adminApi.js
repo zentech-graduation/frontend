@@ -151,6 +151,117 @@ export const adminApi = {
     return unwrap(res);
   },
 
+  /**
+   * The staff support queue.
+   *
+   * Never returns a ticket awaiting email confirmation; the backend excludes
+   * those from every staff read, so an unconfirmed public submission cannot
+   * reach a moderator.
+   */
+  async listSupportTickets(filters) {
+    const res = await axiosClient.get('/admin/support/tickets', {
+      params: pickParams(filters, ['status', 'limit']),
+    });
+    return unwrap(res);
+  },
+
+  /** One ticket as staff, including its internal note. */
+  async getSupportTicket(ticketId) {
+    const res = await axiosClient.get(`/admin/support/tickets/${ticketId}`);
+    return unwrap(res);
+  },
+
+  /**
+   * Claim a ticket.
+   *
+   * Refused with SUPPORT_TICKET_ALREADY_CLAIMED when another staff member got
+   * there first; the backend guards the update rather than overwriting.
+   */
+  async claimSupportTicket(ticketId) {
+    const res = await axiosClient.post(`/admin/support/tickets/${ticketId}/claim`);
+    return unwrap(res);
+  },
+
+  /**
+   * Answer a ticket and close it, or close it as rejected.
+   *
+   * Refused with SUPPORT_APPEAL_REQUIRES_ADMIN when a moderator attempts either
+   * on an appeal, because reversing the decision is administrator-only.
+   */
+  async respondSupportTicket(ticketId, { staffResponse, internalNote, reject }) {
+    const res = await axiosClient.post(
+      `/admin/support/tickets/${ticketId}/respond`,
+      buildBody({ staffResponse, internalNote }),
+      { params: pickParams({ reject }, ['reject']) }
+    );
+    return unwrap(res);
+  },
+
+  /** Hand a ticket up to an administrator. Permitted to both staff roles. */
+  async escalateSupportTicket(ticketId, reason) {
+    const res = await axiosClient.patch(
+      `/admin/support/tickets/${ticketId}/escalate`,
+      buildBody({ reason })
+    );
+    return unwrap(res);
+  },
+
+  /** The read-only campaign samples. */
+  async listMailTemplates() {
+    const res = await axiosClient.get('/admin/mail/templates');
+    return unwrap(res);
+  },
+
+  /**
+   * Render a Markdown body through the same pipeline the send path uses.
+   *
+   * Server-side deliberately: one implementation means the preview cannot
+   * diverge from the mail that is actually sent, and there is no second
+   * sanitization surface in the browser.
+   */
+  async previewCampaign(body) {
+    const res = await axiosClient.post('/admin/mail/campaigns/preview', buildBody({ body }));
+    return unwrap(res);
+  },
+
+  /** Campaign history, newest first. */
+  async listCampaigns(filters) {
+    const res = await axiosClient.get('/admin/mail/campaigns', {
+      params: pickParams(filters, ['limit']),
+    });
+    return unwrap(res);
+  },
+
+  /** One campaign with every recipient and their outcome, including opt-out skips. */
+  async getCampaign(campaignId) {
+    const res = await axiosClient.get(`/admin/mail/campaigns/${campaignId}`);
+    return unwrap(res);
+  },
+
+  /** Create a draft campaign. */
+  async createCampaign({ templateKey, subject, body, recipientUserIds, scheduledAt }) {
+    const res = await axiosClient.post(
+      '/admin/mail/campaigns',
+      buildBody({ templateKey, subject, body, recipientUserIds, scheduledAt })
+    );
+    return unwrap(res);
+  },
+
+  /** Update a draft campaign; refused once it has left draft. */
+  async updateCampaign(campaignId, { templateKey, subject, body, recipientUserIds, scheduledAt }) {
+    const res = await axiosClient.put(
+      `/admin/mail/campaigns/${campaignId}`,
+      buildBody({ templateKey, subject, body, recipientUserIds, scheduledAt })
+    );
+    return unwrap(res);
+  },
+
+  /** Move a draft to scheduled, after which the sender job claims and sends it. */
+  async scheduleCampaign(campaignId) {
+    const res = await axiosClient.patch(`/admin/mail/campaigns/${campaignId}/schedule`);
+    return unwrap(res);
+  },
+
   /** Remove a post. Returns an AdminActionResponse directly. */
   async removePost(postId, reason, reportId) {
     const res = await axiosClient.patch(

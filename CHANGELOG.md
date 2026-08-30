@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- A staff support queue in the panel, where a request can be claimed, answered, closed or escalated, and where a moderator is shown plainly that only an administrator can decide an appeal.
+
+### Added
 - A help centre where an account can raise a support request and read the reply, with the one-open-request state shown as a first-class screen rather than as a rejected submit.
 - An appeal page reached from the link in a moderation email, which works while signed out and banned and never asks for a session.
 - A public support form for anyone who cannot sign in, gated by a verification challenge and an email confirmation step, so nothing reaches staff until the address is proved.

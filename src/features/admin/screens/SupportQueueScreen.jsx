@@ -1,229 +1,308 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { v } from '@/config/tokens';
+import { isAdminRole } from '@/config/roles';
+import { useAuthStore } from '@/store/useAuthStore';
+
+import { FilterBar } from '../components/FilterBar';
+import { PageHeader } from '../components/PanelPage';
+import { RecordTable } from '../components/RecordTable';
+import { SplitView } from '../components/SplitView';
+import { getSplitSelection, withSelection } from '../lib/splitSelection';
+import {
+  useSupportTicket,
+  useSupportTicketActions,
+  useSupportTickets,
+} from '../hooks/useSupportTickets';
+
+const STATUSES = ['open', 'in_progress', 'escalated', 'answered', 'rejected'];
+
+const isAppeal = (category) => typeof category === 'string' && category.startsWith('appeal_');
+
+const COLUMNS = [
+  { key: 'subject', header: 'subject', render: (row) => row.subject },
+  { key: 'category', header: 'category', render: (row) => row.category },
+  { key: 'status', header: 'status', render: (row) => row.status },
+  { key: 'source', header: 'source', render: (row) => row.source },
+  { key: 'assignedTo', header: 'claimed', render: (row) => (row.assignedTo ? 'yes' : 'no') },
+];
 
 /**
  * The staff support queue.
  *
- * Wireframe stage: stubbed rows, real layout. Phase two replaces the fixtures
- * with the panel's declared-key request contract and swaps this markup for
- * RecordTable, LoadMore and SplitView, matching ReportQueueScreen.
- *
- * The role difference shown here is the one that matters and is not cosmetic. A
- * moderator on an appeal_* ticket sees the ticket and the escalate control, and
+ * The role gate mirrors a real backend rule rather than merely hiding a control,
+ * following the precedent `canResolveDismiss` sets in ReportDetailScreen. A
+ * moderator on an appeal_* ticket sees the ticket and the escalate control and
  * does not see respond or close, because unban, unsuspend, revoke-warning and
- * revoke-strike are all administrator-only actions: a moderator closing an
- * appeal would be recording a verdict they cannot carry out. The backend refuses
- * it with SUPPORT_APPEAL_REQUIRES_ADMIN, and this mirrors that rule rather than
- * merely hiding a button.
+ * revoke-strike are all administrator-only: closing an appeal would record a
+ * verdict the moderator cannot carry out. The backend refuses it with
+ * SUPPORT_APPEAL_REQUIRES_ADMIN, so hiding the control only spares a round trip.
+ *
+ * Filter and selection state live in the URL, matching ReportQueueScreen, so a
+ * queue view is shareable.
  */
-
-const WIRE_TICKETS = [
-  {
-    id: 'a1',
-    subject: 'I was banned for something I did not post',
-    category: 'appeal_ban',
-    status: 'open',
-    source: 'signed_link',
-    assignedTo: null,
-    createdAt: '2026-08-28T08:40:00Z',
-  },
-  {
-    id: 'a2',
-    subject: 'Cannot upload a second image',
-    category: 'bug_report',
-    status: 'in_progress',
-    source: 'authenticated',
-    assignedTo: 'you',
-    createdAt: '2026-08-27T16:05:00Z',
-  },
-  {
-    id: 'a3',
-    subject: 'My story was removed by mistake',
-    category: 'appeal_content_removal',
-    status: 'escalated',
-    source: 'signed_link',
-    assignedTo: 'mira',
-    createdAt: '2026-08-26T11:22:00Z',
-  },
-];
-
-const isAppeal = (category) => category.startsWith('appeal_');
-
 export function SupportQueueScreen() {
-  const [role, setRole] = useState('moderator');
-  const [selected, setSelected] = useState(WIRE_TICKETS[0]);
-  const [refusal, setRefusal] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const role = useAuthStore((state) => state.role);
+  const status = searchParams.get('status') ?? '';
+  const { selectedId, hasSelection } = getSplitSelection(searchParams);
 
-  // Mirrors the backend rule rather than restating a permission list, the way
-  // ReportDetailScreen derives canResolveDismiss from a real backend rule.
-  const canDecide = !isAppeal(selected.category) || role === 'admin';
-  const claimedByOther = selected.assignedTo && selected.assignedTo !== 'you';
+  const queue = useSupportTickets({ status: status || undefined, limit: 50 });
+
+  const setFilter = (key, value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) {
+      next.set(key, value);
+    } else {
+      next.delete(key);
+    }
+    setSearchParams(next, { replace: true });
+  };
+
+  const openRecord = (id) => setSearchParams(withSelection(searchParams, id), { replace: false });
+  const closeRecord = () => setSearchParams(withSelection(searchParams, null), { replace: true });
+
+  const groups = [
+    {
+      key: 'status',
+      label: 'status',
+      value: status,
+      options: STATUSES.map((value) => ({ value, label: value.replace('_', ' ') })),
+    },
+  ];
+
+  const list = (
+    <>
+      <PageHeader title="support" />
+      <div className="lx-admin-panel-card">
+        <FilterBar
+          groups={groups}
+          onChange={setFilter}
+          onClear={() => setFilter('status', '')}
+          isDirty={Boolean(status)}
+        />
+        <RecordTable
+          columns={COLUMNS}
+          rows={queue.data ?? []}
+          keyField="id"
+          onRowClick={(row) => openRecord(row.id)}
+          selectedKey={selectedId}
+          isLoading={queue.isLoading}
+          isError={queue.isError}
+          errorMessage={queue.error?.message}
+          onRetry={queue.refetch}
+          emptyIcon="check"
+          emptyTitle="no requests"
+          emptyHint="nothing is waiting on staff right now."
+        />
+      </div>
+    </>
+  );
 
   return (
-    <div className="lx-admin-screen">
-      <header className="lx-admin-screen__head">
-        <h1 className="lx-admin-screen__title">support</h1>
-        <p className="lx-admin-screen__subtitle">
-          One request, one response. Appeals can only be decided by an administrator.
-        </p>
-      </header>
+    <SplitView
+      list={list}
+      hasSelection={hasSelection}
+      onClose={closeRecord}
+      backLabel="back to the queue"
+      emptyIcon="chat"
+      emptyTitle="no request open"
+      emptyHint="pick a request from the queue to read it and reply."
+      detail={
+        selectedId ? <TicketDetail key={selectedId} ticketId={selectedId} role={role} /> : null
+      }
+    />
+  );
+}
 
-      <div className="lx-support__wire" style={{ marginBottom: '16px' }}>
-        <strong>Wireframe.</strong> Rows are stubbed and the role switch stands in for the signed-in
-        account, so the moderator and administrator differences can be reviewed side by side.{' '}
+function TicketDetail({ ticketId, role }) {
+  const ticket = useSupportTicket(ticketId);
+  const actions = useSupportTicketActions(ticketId);
+  const viewerId = useAuthStore((state) => state.user?.id);
+  const [staffResponse, setStaffResponse] = useState('');
+  const [internalNote, setInternalNote] = useState('');
+  const [escalationReason, setEscalationReason] = useState('');
+
+  if (ticket.isLoading) {
+    return <p style={{ color: v.ink2 }}>loading.</p>;
+  }
+  if (ticket.isError || !ticket.data) {
+    return <p style={{ color: v.ink2 }}>{ticket.error?.message ?? 'not found.'}</p>;
+  }
+
+  const row = ticket.data;
+  const canDecide = !isAppeal(row.category) || isAdminRole(role);
+  const holdsClaim = Boolean(row.assignedTo) && row.assignedTo === viewerId;
+  const failure = actions.claim.error ?? actions.respond.error ?? actions.escalate.error;
+  const message = describeFailure(failure, row);
+
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      <div>
+        <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{row.subject}</h2>
+        <p style={{ color: v.ink2, fontSize: 12, margin: '4px 0 0' }}>
+          {row.category} · {row.status} · {row.source}
+        </p>
+      </div>
+
+      {message ? <Callout tone="error">{message}</Callout> : null}
+
+      {isAppeal(row.category) && !isAdminRole(role) ? (
+        <Callout>
+          this is an appeal. only an administrator can answer or close it, because reversing the
+          decision is an administrator-only action. you can still escalate it.
+        </Callout>
+      ) : null}
+
+      <p style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.6 }}>{row.body}</p>
+
+      {row.internalNote ? <Callout>internal note: {row.internalNote}</Callout> : null}
+
+      {!row.assignedTo ? (
         <button
           type="button"
-          className="lx-support__button"
-          onClick={() => setRole((r) => (r === 'moderator' ? 'admin' : 'moderator'))}
+          className="lx-admin-control"
+          disabled={actions.claim.isPending}
+          onClick={() => actions.claim.mutate()}
         >
-          Viewing as {role} - switch
+          {actions.claim.isPending ? 'claiming' : 'claim'}
         </button>
-      </div>
+      ) : null}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 22rem', gap: '16px' }}>
-        <div className="lx-support__card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-            <thead>
-              <tr style={{ textAlign: 'left', color: 'var(--lx-ink-2)' }}>
-                <th scope="col" style={{ padding: '10px 12px' }}>
-                  subject
-                </th>
-                <th scope="col" style={{ padding: '10px 12px' }}>
-                  category
-                </th>
-                <th scope="col" style={{ padding: '10px 12px' }}>
-                  status
-                </th>
-                <th scope="col" style={{ padding: '10px 12px' }}>
-                  claimed
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {WIRE_TICKETS.map((ticket) => (
-                <tr
-                  key={ticket.id}
-                  onClick={() => {
-                    setSelected(ticket);
-                    setRefusal(null);
-                  }}
-                  style={{
-                    borderTop: '1px solid var(--lx-border)',
-                    cursor: 'pointer',
-                    background:
-                      selected.id === ticket.id ? 'var(--lx-surface-sunken)' : 'transparent',
-                  }}
-                >
-                  <td style={{ padding: '10px 12px' }}>{ticket.subject}</td>
-                  <td style={{ padding: '10px 12px', color: 'var(--lx-ink-2)' }}>
-                    {ticket.category}
-                  </td>
-                  <td style={{ padding: '10px 12px', color: 'var(--lx-ink-2)' }}>
-                    {ticket.status}
-                  </td>
-                  <td style={{ padding: '10px 12px', color: 'var(--lx-ink-2)' }}>
-                    {ticket.assignedTo ?? 'unclaimed'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <aside className="lx-support__card">
-          <p className="lx-support__label">{selected.subject}</p>
-          <div className="lx-support__meta" style={{ marginTop: '8px' }}>
-            <span className="lx-support__status">{selected.status}</span>
-            <span>{selected.category}</span>
-          </div>
-
-          {isAppeal(selected.category) && role === 'moderator' ? (
-            <div className="lx-support__notice" style={{ marginBottom: '12px' }}>
-              This is an appeal. Only an administrator can answer or close it, because reversing the
-              decision is an administrator-only action. You can still escalate it.
-            </div>
-          ) : null}
-
-          {refusal ? (
-            <div
-              className="lx-support__notice lx-support__notice--error"
-              style={{ marginBottom: '12px' }}
-            >
-              {refusal}
-            </div>
-          ) : null}
-
-          <div className="lx-support__field">
-            <label className="lx-support__label" htmlFor="staff-response">
-              Reply to the user
-            </label>
+      {canDecide && holdsClaim ? (
+        <>
+          <Field id="ticket-response" label="reply to the user">
             <textarea
-              id="staff-response"
-              className="lx-support__control lx-support__textarea"
-              disabled={!canDecide}
-              style={{ minHeight: '6rem' }}
+              id="ticket-response"
+              className="lx-admin-control"
+              rows={5}
+              value={staffResponse}
+              onChange={(event) => setStaffResponse(event.target.value)}
             />
-          </div>
-          <div className="lx-support__field">
-            <label className="lx-support__label" htmlFor="internal-note">
-              Internal note
-            </label>
+          </Field>
+          <Field id="ticket-note" label="internal note" hint="staff only. never sent to the user.">
             <textarea
-              id="internal-note"
-              className="lx-support__control lx-support__textarea"
-              style={{ minHeight: '4rem' }}
+              id="ticket-note"
+              className="lx-admin-control"
+              rows={3}
+              value={internalNote}
+              onChange={(event) => setInternalNote(event.target.value)}
             />
-            <p className="lx-support__hint">Staff only. Never sent to the user.</p>
-          </div>
-
-          <div className="lx-support__actions" style={{ flexWrap: 'wrap' }}>
+          </Field>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button
               type="button"
-              className="lx-support__button"
-              onClick={() =>
-                setRefusal(
-                  claimedByOther
-                    ? `${selected.assignedTo} already claimed this ticket. Refreshing the queue.`
-                    : null
-                )
-              }
+              className="lx-admin-control"
+              disabled={actions.respond.isPending || !staffResponse.trim()}
+              onClick={() => actions.respond.mutate({ staffResponse, internalNote, reject: false })}
             >
-              Claim
+              answer and close
             </button>
-            {canDecide ? (
-              <>
-                <button type="button" className="lx-support__button lx-support__button--primary">
-                  Answer and close
-                </button>
-                <button type="button" className="lx-support__button">
-                  Close as rejected
-                </button>
-              </>
-            ) : null}
-            <button type="button" className="lx-support__button">
-              Escalate
-            </button>
-          </div>
-
-          <div className="lx-support__wire" style={{ marginTop: '16px' }}>
-            <strong>Conflict of interest.</strong> When the ticket appeals an action the viewer
-            took, every control above is refused with SUPPORT_CONFLICT_OF_INTEREST and this panel
-            explains that specifically rather than showing a generic permission error.{' '}
             <button
               type="button"
-              className="lx-support__button"
-              onClick={() =>
-                setRefusal(
-                  'You cannot act on this ticket. It appeals a decision you made, so another staff member has to review it.'
-                )
-              }
+              className="lx-admin-control"
+              disabled={actions.respond.isPending || !staffResponse.trim()}
+              onClick={() => actions.respond.mutate({ staffResponse, internalNote, reject: true })}
             >
-              Show that refusal
+              close as rejected
             </button>
           </div>
-        </aside>
-      </div>
+        </>
+      ) : null}
+
+      {holdsClaim &&
+      row.status !== 'escalated' &&
+      row.status !== 'answered' &&
+      row.status !== 'rejected' ? (
+        <Field id="ticket-escalate" label="escalate to an administrator">
+          <textarea
+            id="ticket-escalate"
+            className="lx-admin-control"
+            rows={2}
+            value={escalationReason}
+            onChange={(event) => setEscalationReason(event.target.value)}
+          />
+          <button
+            type="button"
+            className="lx-admin-control"
+            style={{ marginTop: 8 }}
+            disabled={actions.escalate.isPending || !escalationReason.trim()}
+            onClick={() => actions.escalate.mutate(escalationReason)}
+          >
+            escalate
+          </button>
+        </Field>
+      ) : null}
     </div>
   );
+}
+
+function Field({ id, label, hint, children }) {
+  return (
+    <div style={{ display: 'grid', gap: 6 }}>
+      <label
+        htmlFor={id}
+        style={{
+          fontFamily: v.fontMono,
+          fontSize: 11,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: v.ink2,
+        }}
+      >
+        {label}
+      </label>
+      {children}
+      {hint ? <span style={{ fontSize: 11, color: v.ink2 }}>{hint}</span> : null}
+    </div>
+  );
+}
+
+function Callout({ children, tone }) {
+  return (
+    <div
+      style={{
+        border: `1px solid ${v.border}`,
+        borderLeft: `3px solid ${tone === 'error' ? v.error : v.ink2}`,
+        borderRadius: 8,
+        background: v.surfaceSunken,
+        padding: 12,
+        fontSize: 12,
+        lineHeight: 1.6,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Turns a refusal into the sentence that explains it.
+ *
+ * Two of these are not generic permission errors and must not read as one. A
+ * conflict of interest is a fact about this ticket, not about the viewer's role.
+ * A claim collision means somebody else got there first and the queue behind it
+ * is already stale, which is why the hook invalidates on failure as well.
+ */
+function describeFailure(error, ticket) {
+  if (!error) {
+    return null;
+  }
+  switch (error.code) {
+    case 'SUPPORT_CONFLICT_OF_INTEREST':
+      return 'you cannot act on this request. it appeals a decision you made, so another staff member has to review it.';
+    case 'SUPPORT_TICKET_ALREADY_CLAIMED':
+      return 'another staff member claimed this first. the queue has been refreshed.';
+    case 'SUPPORT_APPEAL_REQUIRES_ADMIN':
+      return 'only an administrator can decide an appeal. escalate it instead.';
+    case 'SUPPORT_TICKET_NOT_CLAIMED':
+      return 'claim this request before acting on it.';
+    case 'SUPPORT_TICKET_INVALID_TRANSITION':
+      return `this request is already ${ticket.status} and cannot change again.`;
+    default:
+      return error.message ?? 'that did not work. try again.';
+  }
 }
 
 export default SupportQueueScreen;
