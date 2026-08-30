@@ -139,7 +139,7 @@ export function SupportPublicScreen() {
   const containerRef = useRef(null);
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY ?? '';
   const { token: turnstileToken, reset: resetTurnstile } = useTurnstile(containerRef, { siteKey });
-  const categories = useSupportCategories();
+  const categories = useSupportCategories({ anonymous: true });
   const createPublic = useCreatePublicTicket();
   const [draft, setDraft] = useState({ contactEmail: '', category: '', subject: '', body: '' });
   const [fieldErrors, setFieldErrors] = useState({});

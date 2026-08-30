@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- The anonymous help centre routes no longer attempt a session restore that is certain to fail, which had left a signed-out or banned user on a loading state at the moment they were trying to contest a decision.
+
 ### Tests
 - Added coverage for the help centre schemas, the declared-key request contract, the support queue role gating, and the campaign recipient cap and variable validation.
 
