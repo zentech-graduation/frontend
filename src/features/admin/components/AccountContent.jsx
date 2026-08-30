@@ -233,7 +233,14 @@ function ContentList({ userId, kind }) {
         description={
           active
             ? active.mode === 'remove'
-              ? `take down this ${singular}. the reason is recorded.`
+              ? // The account view has no report to link. The content list carries no
+                // report id - the backend's content summary does not return one - so this
+                // path sends no reportId and findLinkedReport resolves to null, which means
+                // no report is closed by this removal. Saying so is the fix: the previous
+                // behaviour was identical but silent, so a moderator believed they had
+                // cleared the queue when they had not.
+                `take down this ${singular}. the reason is recorded. this does not close any ` +
+                `report about it - resolve those from the report queue.`
               : `put this ${singular} back. the reason is recorded.`
             : ''
         }

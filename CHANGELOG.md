@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Removing content from the account view now says plainly that it closes no report about that content, which was already true but silent, so a moderator no longer believes the queue has been cleared when it has not.
+
 ### Added
 - Posts on Home, Explore, and Search's pre-query grid are now reported as read once they have been at least half visible for a second, so the recommendation feed stops repeating what a viewer has already seen.
 - Home now offers a for-you tab backed by the personalized recommendation feed, alongside the existing following tab, defaulting to for-you so a new account with no follows still sees content.
