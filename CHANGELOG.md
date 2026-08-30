@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- An administrator-only mail campaign composer with read-only samples, a Markdown editor, and a preview rendered by the backend so it cannot drift from the mail that is actually sent.
+
+### Added
 - A staff support queue in the panel, where a request can be claimed, answered, closed or escalated, and where a moderator is shown plainly that only an administrator can decide an appeal.
 
 ### Added

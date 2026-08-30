@@ -1,222 +1,389 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { v } from '@/config/tokens';
+
+import { AccountSearchPicker } from '../components/AccountSearchPicker';
+import { LocalTime } from '../components/LocalTime';
+import { PageHeader } from '../components/PanelPage';
+import { RecordTable } from '../components/RecordTable';
+import {
+  useCampaignActions,
+  useCampaignPreview,
+  useCampaigns,
+  useMailTemplates,
+} from '../hooks/useMailCampaigns';
+
+/** The backend's cap. Stated here so the count reads against it before a submit is refused. */
+const MAX_RECIPIENTS = 10;
+
+/** The only two tokens the backend accepts. Anything else is refused at save time. */
+const VARIABLES = ['{{username}}', '{{fullName}}'];
+
+const PREVIEW_DEBOUNCE_MS = 500;
+
+const HISTORY_COLUMNS = [
+  { key: 'subject', header: 'subject' },
+  { key: 'status', header: 'status' },
+  { key: 'recipientCount', header: 'recipients' },
+  {
+    key: 'scheduledAt',
+    header: 'scheduled',
+    render: (row) => (row.scheduledAt ? <LocalTime value={row.scheduledAt} /> : '-'),
+  },
+  {
+    key: 'sentAt',
+    header: 'sent',
+    render: (row) => (row.sentAt ? <LocalTime value={row.sentAt} /> : '-'),
+  },
+];
 
 /**
  * The mail campaign composer. Administrator only.
  *
- * Wireframe stage: stubbed templates and a stubbed preview. Phase two replaces
- * the preview with a debounced call to the backend preview endpoint and renders
- * the HTML it returns.
- *
- * The preview is deliberately not rendered in the browser. There is exactly one
- * Markdown-to-HTML implementation and it lives on the server, which is what
- * makes the preview incapable of diverging from the mail that is actually sent,
- * and it means there is no second sanitization surface here to get wrong.
- *
  * A template is a sample. Selecting one copies its Markdown into the editor and
  * the edit is saved to the campaign, never back to the template, so the next
- * administrator to open it gets the original.
+ * administrator to open the same sample gets the original.
+ *
+ * The preview is rendered by the backend, not here. There is exactly one
+ * Markdown-to-HTML implementation and it lives on the server, which is what
+ * makes the preview incapable of diverging from the mail that is actually sent
+ * and what keeps a second sanitization surface out of the browser. The HTML this
+ * screen injects has already passed the server's allowlist.
  */
-
-const WIRE_TEMPLATES = [
-  {
-    templateKey: 'announcement',
-    displayName: 'Product announcement',
-    description: 'A general announcement to selected accounts.',
-    body: '# Something new on Luvax\n\nHi {{username}},\n\nWe have been working on something we think you will like.\n',
-  },
-  {
-    templateKey: 'policy_update',
-    displayName: 'Policy update',
-    description: 'Tell selected accounts that a policy has changed.',
-    body: '# An update to our policies\n\nHi {{fullName}},\n\nWe are changing how we handle a few things.\n',
-  },
-];
-
-const WIRE_RECIPIENTS = [
-  { userId: 'u1', username: 'ada', optedOut: false },
-  { userId: 'u2', username: 'grace', optedOut: true },
-  { userId: 'u3', username: 'linus', optedOut: false },
-];
-
-const MAX_RECIPIENTS = 10;
-
 export function MailCampaignScreen() {
-  const [templateKey, setTemplateKey] = useState('announcement');
-  const [body, setBody] = useState(WIRE_TEMPLATES[0].body);
+  const templates = useMailTemplates();
+  const campaigns = useCampaigns();
+  const [campaignId, setCampaignId] = useState(null);
+  const actions = useCampaignActions(campaignId);
+
+  const [templateKey, setTemplateKey] = useState('');
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
   const [dirty, setDirty] = useState(false);
-  const [recipients, setRecipients] = useState(WIRE_RECIPIENTS.slice(0, 2));
-  const [error, setError] = useState(null);
+  const [recipients, setRecipients] = useState([]);
+  const [scheduledAt, setScheduledAt] = useState('');
+  const [localError, setLocalError] = useState('');
+
+  // The preview is debounced rather than fired per keystroke, and the endpoint
+  // carries its own rate limit, so a fast typist cannot turn an editor into a
+  // request storm.
+  const [debouncedBody, setDebouncedBody] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedBody(body), PREVIEW_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [body]);
+  const preview = useCampaignPreview(debouncedBody, { enabled: true });
 
   const selectTemplate = (key) => {
-    if (dirty && !window.confirm('Discard your edits and load this template?')) {
+    if (dirty && !window.confirm('discard your edits and load this sample?')) {
       return;
     }
-    const template = WIRE_TEMPLATES.find((t) => t.templateKey === key);
+    const template = (templates.data ?? []).find((item) => item.templateKey === key);
+    if (!template) {
+      return;
+    }
     setTemplateKey(key);
     setBody(template.body);
     setDirty(false);
   };
 
-  const optedOutCount = recipients.filter((r) => r.optedOut).length;
+  const addRecipient = (account) => {
+    setLocalError('');
+    if (recipients.some((item) => item.id === account.id)) {
+      return;
+    }
+    if (recipients.length >= MAX_RECIPIENTS) {
+      // Refused here as well as by the backend, so the cap is visible before a
+      // round trip rather than only afterwards.
+      setLocalError(`a campaign may not exceed ${MAX_RECIPIENTS} recipients.`);
+      return;
+    }
+    setRecipients((prev) => [...prev, account]);
+  };
+
+  const save = () => {
+    setLocalError('');
+    if (recipients.length === 0) {
+      setLocalError('add at least one recipient.');
+      return;
+    }
+    const payload = {
+      templateKey: templateKey || undefined,
+      subject,
+      body,
+      recipientUserIds: recipients.map((item) => item.id),
+      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+    };
+    const mutation = campaignId ? actions.update : actions.create;
+    mutation.mutate(payload, {
+      onSuccess: (saved) => {
+        setCampaignId(saved.id);
+        setDirty(false);
+      },
+    });
+  };
+
+  const failure = actions.create.error ?? actions.update.error ?? actions.schedule.error;
+  const message = describeFailure(failure) ?? localError;
+
+  const optedOutCount = useMemo(
+    () => (campaignId ? 0 : recipients.filter((item) => item.emailOptOut).length),
+    [campaignId, recipients]
+  );
 
   return (
-    <div className="lx-admin-screen">
-      <header className="lx-admin-screen__head">
-        <h1 className="lx-admin-screen__title">mail campaigns</h1>
-        <p className="lx-admin-screen__subtitle">
-          Start from a sample, edit it, and schedule it. Templates are never changed by an edit.
-        </p>
-      </header>
+    <div>
+      <PageHeader title="mail campaigns" />
 
-      <div className="lx-support__wire" style={{ marginBottom: '16px' }}>
-        <strong>Wireframe.</strong> Templates, recipients and the preview are stubbed. Phase two
-        calls the backend for all three, and the preview specifically runs the same pipeline the
-        send path uses.
-      </div>
+      {message ? (
+        <div className="lx-admin-panel-card" style={{ borderLeft: `3px solid ${v.error}` }}>
+          {message}
+        </div>
+      ) : null}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '16rem minmax(0, 1fr)', gap: '16px' }}>
-        <aside className="lx-support__card">
-          <p className="lx-support__label" style={{ marginBottom: '12px' }}>
-            Samples
-          </p>
-          {WIRE_TEMPLATES.map((template) => (
+      <div style={{ display: 'grid', gridTemplateColumns: '15rem minmax(0, 1fr)', gap: 16 }}>
+        <aside className="lx-admin-panel-card">
+          <Label>samples</Label>
+          {templates.isLoading ? <p style={{ color: v.ink2, fontSize: 12 }}>loading.</p> : null}
+          {(templates.data ?? []).map((template) => (
             <button
               key={template.templateKey}
               type="button"
-              onClick={() => selectTemplate(template.templateKey)}
-              className="lx-support__button"
+              className="lx-admin-control"
               style={{
                 display: 'block',
                 width: '100%',
                 textAlign: 'left',
-                marginBottom: '8px',
-                borderRadius: 'var(--radius-md)',
+                marginBottom: 8,
+                borderRadius: 8,
                 background:
-                  templateKey === template.templateKey
-                    ? 'var(--lx-surface-sunken)'
-                    : 'var(--lx-surface-raised)',
+                  templateKey === template.templateKey ? v.surfaceSunken : v.surfaceRaised,
               }}
+              onClick={() => selectTemplate(template.templateKey)}
             >
               <span style={{ display: 'block', fontWeight: 600 }}>{template.displayName}</span>
-              <span style={{ display: 'block', color: 'var(--lx-ink-2)', marginTop: '2px' }}>
+              <span style={{ display: 'block', color: v.ink2, marginTop: 2 }}>
                 {template.description}
               </span>
             </button>
           ))}
-          <p className="lx-support__hint" style={{ marginTop: '12px' }}>
-            Editing a sample changes only this campaign.
+          <p style={{ fontSize: 11, color: v.ink2, marginTop: 12 }}>
+            editing a sample changes only this campaign. the sample itself is never rewritten.
           </p>
         </aside>
 
-        <div style={{ display: 'grid', gap: '16px' }}>
-          <div className="lx-support__card">
-            <div className="lx-support__field">
-              <label className="lx-support__label" htmlFor="campaign-subject">
-                Subject
-              </label>
-              <input id="campaign-subject" className="lx-support__control" defaultValue="" />
-            </div>
-            <div className="lx-support__field">
-              <label className="lx-support__label" htmlFor="campaign-body">
-                Body (Markdown)
-              </label>
+        <div style={{ display: 'grid', gap: 16 }}>
+          <div className="lx-admin-panel-card" style={{ display: 'grid', gap: 12 }}>
+            <Field id="campaign-subject" label="subject">
+              <input
+                id="campaign-subject"
+                className="lx-admin-control"
+                value={subject}
+                maxLength={200}
+                onChange={(event) => {
+                  setSubject(event.target.value);
+                  setDirty(true);
+                }}
+              />
+            </Field>
+            <Field
+              id="campaign-body"
+              label="body (markdown)"
+              hint={`personalisation: ${VARIABLES.join(' and ')}. anything else is refused when you save.`}
+            >
               <textarea
                 id="campaign-body"
-                className="lx-support__control lx-support__textarea"
+                className="lx-admin-control"
+                rows={12}
                 value={body}
                 onChange={(event) => {
                   setBody(event.target.value);
                   setDirty(true);
                 }}
-                style={{ minHeight: '14rem', fontFamily: 'var(--font-mono, monospace)' }}
+                style={{ fontFamily: v.fontMono }}
               />
-              <p className="lx-support__hint">
-                Two personalisation tokens are available: <code>{'{{username}}'}</code> and{' '}
-                <code>{'{{fullName}}'}</code>. Anything else is refused when you save.
+            </Field>
+          </div>
+
+          <div className="lx-admin-panel-card">
+            <Label>preview</Label>
+            {preview.isFetching ? (
+              <p style={{ color: v.ink2, fontSize: 12 }}>rendering.</p>
+            ) : preview.isError ? (
+              <p style={{ color: v.ink2, fontSize: 12 }}>
+                {preview.error?.message ?? 'preview unavailable.'}
               </p>
-            </div>
-            {error ? (
-              <div className="lx-support__notice lx-support__notice--error">{error}</div>
-            ) : null}
-            <div className="lx-support__actions">
-              <button
-                type="button"
-                className="lx-support__button"
-                onClick={() =>
-                  setError('Unknown variable {{email}}. Permitted: {{username}}, {{fullName}}')
-                }
-              >
-                Show a rejected variable
-              </button>
-            </div>
-          </div>
-
-          <div className="lx-support__card">
-            <p className="lx-support__label" style={{ marginBottom: '8px' }}>
-              Preview
-            </p>
-            <div className="lx-support__wire">
-              Rendered by the backend and returned as HTML. Debounced, and it respects its own rate
-              limit. Tokens stay as tokens here rather than being resolved against one arbitrary
-              recipient.
-            </div>
-          </div>
-
-          <div className="lx-support__card">
-            <p className="lx-support__label" style={{ marginBottom: '8px' }}>
-              Recipients {recipients.length} of {MAX_RECIPIENTS}
-            </p>
-            {recipients.map((recipient) => (
+            ) : preview.data?.html ? (
+              // Already sanitized by the server's allowlist, and this is the same
+              // HTML the send path produces. Rendering it here is what makes the
+              // preview trustworthy; rendering Markdown in the browser instead
+              // would create a second implementation to keep in step and a second
+              // place to get escaping wrong.
               <div
-                key={recipient.userId}
-                className="lx-support__row"
-                style={{ marginBottom: '6px' }}
-              >
-                <span>{recipient.username}</span>
-                {recipient.optedOut ? (
-                  <span className="lx-support__status">will be skipped, opted out</span>
-                ) : null}
-              </div>
-            ))}
+                style={{ fontSize: 13, lineHeight: 1.6 }}
+                dangerouslySetInnerHTML={{ __html: preview.data.html }}
+              />
+            ) : (
+              <p style={{ color: v.ink2, fontSize: 12 }}>write a body to see it here.</p>
+            )}
+          </div>
+
+          <div className="lx-admin-panel-card">
+            <Label>
+              recipients {recipients.length} of {MAX_RECIPIENTS}
+            </Label>
+            <AccountSearchPicker
+              id="campaign-recipients"
+              value={null}
+              onSelect={addRecipient}
+              placeholder="search accounts to add…"
+            />
+            <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0' }}>
+              {recipients.map((account) => (
+                <li
+                  key={account.id}
+                  style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}
+                >
+                  <span>{account.username}</span>
+                  <button
+                    type="button"
+                    className="lx-admin-control"
+                    onClick={() =>
+                      setRecipients((prev) => prev.filter((item) => item.id !== account.id))
+                    }
+                  >
+                    remove
+                  </button>
+                </li>
+              ))}
+            </ul>
             {optedOutCount > 0 ? (
-              <p className="lx-support__hint" style={{ marginTop: '8px' }}>
-                {optedOutCount} of these has opted out of campaign email and will not receive this.
-                They still receive account and moderation email.
+              <p style={{ fontSize: 11, color: v.ink2, marginTop: 8 }}>
+                {optedOutCount} of these has opted out of campaign email and will be skipped. they
+                still receive account and moderation email.
               </p>
             ) : null}
-            <div className="lx-support__actions">
+          </div>
+
+          <div className="lx-admin-panel-card" style={{ display: 'grid', gap: 12 }}>
+            <Field
+              id="campaign-when"
+              label="send at"
+              hint="entered and shown in your local timezone, and sent once: the sender claims each campaign, so a second instance cannot send it again."
+            >
+              <input
+                id="campaign-when"
+                type="datetime-local"
+                className="lx-admin-control"
+                value={scheduledAt}
+                onChange={(event) => setScheduledAt(event.target.value)}
+              />
+            </Field>
+            <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
-                className="lx-support__button"
-                disabled={recipients.length >= MAX_RECIPIENTS}
-                onClick={() => setRecipients(WIRE_RECIPIENTS)}
+                className="lx-admin-control"
+                disabled={actions.create.isPending || actions.update.isPending}
+                onClick={save}
               >
-                Add recipient
+                {campaignId ? 'save draft' : 'create draft'}
+              </button>
+              <button
+                type="button"
+                className="lx-admin-control"
+                disabled={!campaignId || actions.schedule.isPending}
+                onClick={() => actions.schedule.mutate(campaignId)}
+              >
+                schedule
               </button>
             </div>
           </div>
 
-          <div className="lx-support__card">
-            <div className="lx-support__field">
-              <label className="lx-support__label" htmlFor="campaign-when">
-                Send at
-              </label>
-              <input id="campaign-when" type="datetime-local" className="lx-support__control" />
-              <p className="lx-support__hint">
-                Times are shown in your local timezone. The campaign is claimed by a single sender,
-                so it goes out once even if more than one instance is running.
-              </p>
-            </div>
-            <div className="lx-support__actions">
-              <button type="button" className="lx-support__button lx-support__button--primary">
-                Schedule
-              </button>
-            </div>
+          <div className="lx-admin-panel-card">
+            <Label>history</Label>
+            <RecordTable
+              columns={HISTORY_COLUMNS}
+              rows={campaigns.data ?? []}
+              keyField="id"
+              isLoading={campaigns.isLoading}
+              isError={campaigns.isError}
+              errorMessage={campaigns.error?.message}
+              onRetry={campaigns.refetch}
+              emptyIcon="clock"
+              emptyTitle="no campaigns yet"
+              emptyHint="a campaign appears here once it is drafted."
+            />
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function Label({ children }) {
+  return (
+    <span
+      style={{
+        display: 'block',
+        fontFamily: v.fontMono,
+        fontSize: 11,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: v.ink2,
+        marginBottom: 8,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Field({ id, label, hint, children }) {
+  return (
+    <div style={{ display: 'grid', gap: 6 }}>
+      <label
+        htmlFor={id}
+        style={{
+          fontFamily: v.fontMono,
+          fontSize: 11,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: v.ink2,
+        }}
+      >
+        {label}
+      </label>
+      {children}
+      {hint ? <span style={{ fontSize: 11, color: v.ink2, lineHeight: 1.5 }}>{hint}</span> : null}
+    </div>
+  );
+}
+
+/**
+ * Turns a refusal into the sentence that explains it.
+ *
+ * The unknown-variable case names the offending token, because the backend
+ * raises it at save time precisely so the author can fix it before anything is
+ * scheduled.
+ */
+function describeFailure(error) {
+  if (!error) {
+    return null;
+  }
+  switch (error.code) {
+    case 'CAMPAIGN_UNKNOWN_VARIABLE':
+      return error.message ?? 'the body uses a variable that is not permitted.';
+    case 'CAMPAIGN_TOO_MANY_RECIPIENTS':
+      return `a campaign may not exceed ${MAX_RECIPIENTS} recipients.`;
+    case 'CAMPAIGN_NO_RECIPIENTS':
+      return 'add at least one recipient.';
+    case 'CAMPAIGN_NOT_EDITABLE':
+      return 'this campaign has left draft and its body is now the record of what was sent.';
+    case 'CAMPAIGN_INVALID_TRANSITION':
+      return 'this campaign cannot move to that state.';
+    default:
+      return error.message ?? 'that did not work. try again.';
+  }
 }
 
 export default MailCampaignScreen;
