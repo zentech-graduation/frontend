@@ -10,6 +10,16 @@ const GUEST_PATHS = new Set([
   '/reset-password',
   '/verify-email',
   '/oauth2/callback',
+  // The anonymous help centre routes. These are not merely "reachable while
+  // signed out" - they exist specifically for accounts that cannot sign in at
+  // all, because the backend admits only active accounts to any authenticated
+  // endpoint. Attempting a session restore here costs a request that is certain
+  // to fail and gates the render on it, which strands a banned user on a loading
+  // state at the exact moment they are trying to contest their ban.
+  '/support/appeal',
+  '/support/public',
+  '/support/confirm',
+  '/support/unsubscribe',
 ]);
 
 export default function AuthSessionBootstrap() {

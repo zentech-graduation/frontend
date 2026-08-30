@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { SELECTION_PARAM, getSplitSelection, withSelection } from '@/features/admin/lib/splitSelection';
+import {
+  SELECTION_PARAM,
+  getSplitSelection,
+  withSelection,
+} from '@/features/admin/lib/splitSelection';
 
 const params = (init) => new URLSearchParams(init);
 const rows = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];

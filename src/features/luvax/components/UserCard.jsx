@@ -28,7 +28,7 @@ export function UserCard({
     // Syncs optimistic button state back to the latest relationship state returned by the server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsFollowing(initiallyFollowing);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setRequested(initiallyRequested);
   }, [initiallyFollowing, initiallyRequested, user?.id]);
 

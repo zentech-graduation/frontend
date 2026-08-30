@@ -46,6 +46,12 @@ const HashtagRegistryScreen = lazy(() =>
 const StatisticsScreen = lazy(() =>
   import('./screens/StatisticsScreen').then((m) => ({ default: m.StatisticsScreen }))
 );
+const SupportQueueScreen = lazy(() =>
+  import('./screens/SupportQueueScreen').then((m) => ({ default: m.SupportQueueScreen }))
+);
+const MailCampaignScreen = lazy(() =>
+  import('./screens/MailCampaignScreen').then((m) => ({ default: m.MailCampaignScreen }))
+);
 const ActivityLogScreen = lazy(() =>
   import('./screens/ActivityLogScreen').then((m) => ({ default: m.ActivityLogScreen }))
 );
@@ -67,6 +73,11 @@ export const adminRoute = {
         // violations, content, and issue a warning, so neither sits behind the
         // administrator-only guard.
         { path: rel(ROUTES.ADMIN_ACTIONS), element: <AuditLogScreen /> },
+        // Both roles. A moderator may read every ticket and decide any that is
+        // not an appeal; the appeal narrowing depends on the ticket's category,
+        // which a route guard cannot see, so it lives in the screen and in the
+        // backend service rather than here.
+        { path: rel(ROUTES.ADMIN_SUPPORT), element: <SupportQueueScreen /> },
         // Both roles: the endpoint scopes by caller, not by role, so an
         // administrator reaches its own escalations here too.
         { path: rel(ROUTES.ADMIN_MY_ESCALATIONS), element: <MyEscalationsScreen /> },
@@ -83,6 +94,9 @@ export const adminRoute = {
             { path: rel(ROUTES.ADMIN_HASHTAGS), element: <HashtagRegistryScreen /> },
             { path: rel(ROUTES.ADMIN_STATISTICS), element: <StatisticsScreen /> },
             { path: rel(ROUTES.ADMIN_ACTIVITY), element: <ActivityLogScreen /> },
+            // Administrator only, behind this guard so the screen never mounts
+            // for a moderator and never fires a request that would 403.
+            { path: rel(ROUTES.ADMIN_CAMPAIGNS), element: <MailCampaignScreen /> },
           ],
         },
         {

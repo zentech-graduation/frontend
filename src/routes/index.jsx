@@ -67,6 +67,40 @@ const toOverlayRouteObject = ({ screen, path, element }) => ({
   handle: { screen, chrome: 'overlay' },
 });
 
+// The help centre. Lazily loaded so the user-facing application does not carry
+// its weight, and split from the panel entirely because three of these screens
+// are anonymous.
+const SupportHomeScreen = lazy(() =>
+  import('@/features/support/screens/SupportHomeScreen').then((m) => ({
+    default: m.SupportHomeScreen,
+  }))
+);
+const SupportTicketScreen = lazy(() =>
+  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+    default: m.SupportTicketScreen,
+  }))
+);
+const SupportAppealScreen = lazy(() =>
+  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+    default: m.SupportAppealScreen,
+  }))
+);
+const SupportPublicScreen = lazy(() =>
+  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+    default: m.SupportPublicScreen,
+  }))
+);
+const SupportConfirmScreen = lazy(() =>
+  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+    default: m.SupportConfirmScreen,
+  }))
+);
+const SupportUnsubscribeScreen = lazy(() =>
+  import('@/features/support/screens/SupportWireframeScreens').then((m) => ({
+    default: m.SupportUnsubscribeScreen,
+  }))
+);
+
 const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -109,6 +143,27 @@ const router = createBrowserRouter([
         path: ROUTES.OAUTH_CALLBACK,
         element: <OAuthCallbackPage />,
       },
+      // The four anonymous help centre routes, deliberately outside
+      // ProtectedRoute. The accounts these exist for are banned or suspended and
+      // cannot authenticate at all, so a guard here would lock out exactly the
+      // people the surface is for. The backend permits these paths anonymously
+      // for the same reason.
+      {
+        path: ROUTES.SUPPORT_APPEAL,
+        element: <SupportAppealScreen />,
+      },
+      {
+        path: ROUTES.SUPPORT_PUBLIC,
+        element: <SupportPublicScreen />,
+      },
+      {
+        path: ROUTES.SUPPORT_CONFIRM,
+        element: <SupportConfirmScreen />,
+      },
+      {
+        path: ROUTES.SUPPORT_UNSUBSCRIBE,
+        element: <SupportUnsubscribeScreen />,
+      },
       {
         // One guard for the whole authenticated area, and one shell rendered
         // around every screen in it.
@@ -133,6 +188,15 @@ const router = createBrowserRouter([
           {
             path: ROUTES.DASHBOARD,
             element: <DashboardPage />,
+          },
+          // The authenticated half of the help centre.
+          {
+            path: ROUTES.SUPPORT,
+            element: <SupportHomeScreen />,
+          },
+          {
+            path: ROUTES.SUPPORT_TICKET,
+            element: <SupportTicketScreen />,
           },
           // The administrative and moderation panel. A separate route tree under
           // /admin, gated on role inside the shared authentication guard.

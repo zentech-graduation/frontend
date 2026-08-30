@@ -108,6 +108,28 @@ export const ROUTES = {
   // mandatory and must be a deliberate commit rather than something a link can
   // fire on arrival.
   ADMIN_ACTIVITY: '/admin/activity',
+  // The staff support queue. Both panel roles: a moderator may read and escalate
+  // every ticket, and may decide any ticket that is not an appeal. The narrowing
+  // for appeals depends on the ticket's category, so it lives in the screen and
+  // in the service rather than in a route guard.
+  ADMIN_SUPPORT: '/admin/support',
+  ADMIN_SUPPORT_TICKET: '/admin/support/:ticketId',
+  // Mail campaigns. Administrator only, behind AdminOnlyRoute, so the screen
+  // never mounts for a moderator and never fires a request that would 403.
+  ADMIN_CAMPAIGNS: '/admin/mail/campaigns',
+  ADMIN_CAMPAIGN_DETAIL: '/admin/mail/campaigns/:campaignId',
+
+  // The help centre. SUPPORT and SUPPORT_TICKET are authenticated; the three
+  // below them are anonymous by necessity, because the accounts most likely to
+  // need them are banned or suspended and cannot authenticate at all.
+  SUPPORT: '/support',
+  SUPPORT_TICKET: '/support/tickets/:ticketId',
+  // Reached from the single-use link in a moderation notice. The backend builds
+  // this exact path into that mail, so it cannot be renamed on this side alone.
+  SUPPORT_APPEAL: '/support/appeal',
+  SUPPORT_PUBLIC: '/support/public',
+  SUPPORT_CONFIRM: '/support/confirm',
+  SUPPORT_UNSUBSCRIBE: '/support/unsubscribe',
 
   NOT_FOUND: '*',
 };
@@ -127,6 +149,9 @@ export const routeTo = {
   storyView: (storyId) => withParams(ROUTES.STORY_VIEW, { storyId }),
   adminReportDetail: (reportId) => withParams(ROUTES.ADMIN_REPORT_DETAIL, { reportId }),
   adminUser: (userId) => withParams(ROUTES.ADMIN_USER, { userId }),
+  adminSupportTicket: (ticketId) => withParams(ROUTES.ADMIN_SUPPORT_TICKET, { ticketId }),
+  adminCampaign: (campaignId) => withParams(ROUTES.ADMIN_CAMPAIGN_DETAIL, { campaignId }),
+  supportTicket: (ticketId) => withParams(ROUTES.SUPPORT_TICKET, { ticketId }),
   // The action log with a specific action open in its drawer; the open state is
   // a query parameter so the link is shareable and the list stays mounted.
   adminAction: (actionId) => `${ROUTES.ADMIN_ACTIONS}?action=${encodeURIComponent(actionId ?? '')}`,

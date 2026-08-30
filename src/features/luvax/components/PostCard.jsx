@@ -1,12 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import {
-  copyPostLink,
-  extractPageContent,
-  getDisplayName,
-  getUserSummary,
-} from '@/utils/helpers';
+import { copyPostLink, extractPageContent, getDisplayName, getUserSummary } from '@/utils/helpers';
 import {
   LxAvatar,
   LxBottomSheet,

@@ -56,6 +56,13 @@ const NAV_SECTIONS = [
         to: ROUTES.ADMIN_ACTIONS,
         roles: [ROLES.MODERATOR, ROLES.ADMIN],
       },
+      {
+        key: 'support',
+        label: 'support',
+        icon: 'flag',
+        to: ROUTES.ADMIN_SUPPORT,
+        roles: [ROLES.MODERATOR, ROLES.ADMIN],
+      },
     ],
   },
   {
@@ -95,6 +102,13 @@ const NAV_SECTIONS = [
         label: 'activity',
         icon: 'explore',
         to: ROUTES.ADMIN_ACTIVITY,
+        roles: [ROLES.ADMIN],
+      },
+      {
+        key: 'campaigns',
+        label: 'mail campaigns',
+        icon: 'clock',
+        to: ROUTES.ADMIN_CAMPAIGNS,
         roles: [ROLES.ADMIN],
       },
     ],

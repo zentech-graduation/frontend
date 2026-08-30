@@ -152,7 +152,10 @@ function MediaViewerOverlay({ urls, index, onIndex, onClose, label }) {
       ) : null}
 
       {/* Stops a click on the media itself from closing the overlay. */}
-      <div onClick={(event) => event.stopPropagation()} style={{ maxWidth: '100%', maxHeight: '100%' }}>
+      <div
+        onClick={(event) => event.stopPropagation()}
+        style={{ maxWidth: '100%', maxHeight: '100%' }}
+      >
         {isVideo(url) ? (
           <video
             src={url}
