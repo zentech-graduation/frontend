@@ -4,6 +4,7 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { RouterProvider } from 'react-router-dom';
 
 import GlobalErrorBoundary from '@/components/common/ErrorBoundary';
+import { initImpressionQueue } from '@/services/impressionQueue';
 import router from './routes/index.jsx';
 import './index.css';
 
@@ -33,6 +34,8 @@ function applyTheme() {
 
 applyTheme();
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+initImpressionQueue();
 
 /**
  * normalizeQueryError
