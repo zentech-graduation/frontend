@@ -152,7 +152,7 @@ export function PostShareDialog({ open, postId, onClose }) {
           onClose?.();
         }}
         onPointerDown={(event) => event.stopPropagation()}
-        style={{ position: 'fixed', inset: 0, background: v.scrim, zIndex: 1000 }}
+        style={{ position: 'fixed', inset: 0, background: v.scrim, zIndex: 1900 }}
       />
       <div
         role="dialog"
@@ -172,7 +172,7 @@ export function PostShareDialog({ open, postId, onClose }) {
           borderRadius: 14,
           boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`,
           overflow: 'hidden',
-          zIndex: 1001,
+          zIndex: 1901,
           display: 'flex',
           flexDirection: 'column',
         }}

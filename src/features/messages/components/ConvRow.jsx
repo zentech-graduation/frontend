@@ -33,6 +33,7 @@ export function ConvRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const dragStartRef = useRef(null);
+  const swipedRef = useRef(false);
   const isMobile = viewport === 'mobile';
   const showOptions = (isMobile && revealedOptions) || hovered || menuOpen;
 
@@ -132,18 +133,23 @@ export function ConvRow({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onPointerDown={(event) => {
-        if (isMobile) dragStartRef.current = { x: event.clientX, y: event.clientY };
+        if (isMobile) {
+          dragStartRef.current = { x: event.clientX, y: event.clientY };
+          swipedRef.current = false;
+        }
       }}
       onPointerMove={(event) => {
         if (!isMobile || !dragStartRef.current) return;
         const dx = event.clientX - dragStartRef.current.x;
         const dy = Math.abs(event.clientY - dragStartRef.current.y);
-        if (dx > 24 && dy < 18) {
+        if (Math.abs(dx) > 18 && dy < 22) {
+          swipedRef.current = true;
           onRevealOptions?.();
           dragStartRef.current = null;
         }
       }}
       onPointerUp={() => {
+        if (isMobile && !swipedRef.current && !revealedOptions) onRevealOptions?.();
         dragStartRef.current = null;
       }}
       style={{
@@ -153,6 +159,7 @@ export function ConvRow({
         borderBottom: `1px solid ${v.borderSubtle}`,
         padding: '9px 14px 9px 14px',
         cursor: 'pointer',
+        touchAction: 'pan-y',
         display: 'grid',
         gridTemplateColumns: '34px minmax(0, 1fr) auto',
         gap: 10,

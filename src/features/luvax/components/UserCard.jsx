@@ -4,6 +4,7 @@ import { formatCount } from '@/utils/helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LxAvatar, LxBtn, LxIcon } from './primitives';
 import { useFollow, useUnfollow } from '../hooks/useSocial';
+import { useUserProfile } from '../hooks/useUsers';
 
 export function UserCard({
   user,
@@ -63,13 +64,25 @@ export function UserCard({
     user?.profile?.followersCount ??
     user?.user?.followerCount ??
     user?.user?.followersCount;
+  const hasFollowerCount =
+    rawFollowerCount !== null && rawFollowerCount !== undefined && rawFollowerCount !== '';
+  const { data: profileCountSource } = useUserProfile(
+    user?.id,
+    showFollowButton === false && !hasFollowerCount
+  );
+  const profileFollowerCount =
+    profileCountSource?.data?.followerCount ??
+    profileCountSource?.data?.followersCount ??
+    profileCountSource?.followerCount ??
+    profileCountSource?.followersCount;
+  const resolvedFollowerCount = hasFollowerCount ? rawFollowerCount : profileFollowerCount;
   const followerCount =
-    typeof rawFollowerCount === 'number'
-      ? rawFollowerCount
-      : typeof rawFollowerCount === 'string' && rawFollowerCount.trim() !== ''
-        ? Number(rawFollowerCount)
-        : Array.isArray(rawFollowerCount)
-          ? rawFollowerCount.length
+    typeof resolvedFollowerCount === 'number'
+      ? resolvedFollowerCount
+      : typeof resolvedFollowerCount === 'string' && resolvedFollowerCount.trim() !== ''
+        ? Number(resolvedFollowerCount)
+        : Array.isArray(resolvedFollowerCount)
+          ? resolvedFollowerCount.length
           : 0;
   const visibleFollowerCount = Number.isFinite(followerCount) ? followerCount : 0;
 

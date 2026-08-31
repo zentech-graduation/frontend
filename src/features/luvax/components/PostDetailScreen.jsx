@@ -1301,6 +1301,38 @@ export function PostDetailScreen({ overlay = false }) {
               {likeCount}
             </span>
           </button>
+          <button
+            type="button"
+            onClick={() => commentInputRef.current?.focus()}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <LxIcon name="chat" size={21} color={v.ink3} />
+            <span style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+              {post.commentCount ?? comments.length ?? 0}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <LxIcon name="share" size={20} color={v.ink3} />
+          </button>
         </div>
 
         {replyingTo ? (
