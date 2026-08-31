@@ -25,11 +25,17 @@ export function ConvRow({
   onMute,
   onUnmute,
   onRename,
+  viewport,
+  revealedOptions = false,
+  onRevealOptions,
 }) {
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef(null);
-  const showOptions = hovered || menuOpen;
+  const dragStartRef = useRef(null);
+  const swipedRef = useRef(false);
+  const isMobile = viewport === 'mobile';
+  const showOptions = (isMobile && revealedOptions) || hovered || menuOpen;
 
   // Combines the counted unread total with the caller's independent manual flag: clearing the
   // read marker alone has no effect when the viewer sent the conversation's own newest messages,
@@ -93,6 +99,28 @@ export function ConvRow({
       onBlock,
     ]
   );
+  const mobileQuickActions = useMemo(
+    () =>
+      [
+        onBlock
+          ? { id: 'block', icon: 'ban', label: 'block', tone: 'danger', onClick: () => onBlock?.() }
+          : null,
+        onReport
+          ? {
+              id: 'report',
+              icon: 'flag',
+              label: 'report',
+              tone: 'danger',
+              onClick: () => onReport?.(),
+            }
+          : null,
+      ].filter(Boolean),
+    [onBlock, onReport]
+  );
+  const dropdownItems =
+    isMobile && revealedOptions
+      ? menuItems.filter((item) => item.id !== 'block' && item.id !== 'report')
+      : menuItems;
 
   return (
     <div
@@ -104,6 +132,26 @@ export function ConvRow({
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onPointerDown={(event) => {
+        if (isMobile) {
+          dragStartRef.current = { x: event.clientX, y: event.clientY };
+          swipedRef.current = false;
+        }
+      }}
+      onPointerMove={(event) => {
+        if (!isMobile || !dragStartRef.current) return;
+        const dx = event.clientX - dragStartRef.current.x;
+        const dy = Math.abs(event.clientY - dragStartRef.current.y);
+        if (Math.abs(dx) > 18 && dy < 22) {
+          swipedRef.current = true;
+          onRevealOptions?.();
+          dragStartRef.current = null;
+        }
+      }}
+      onPointerUp={() => {
+        if (isMobile && !swipedRef.current && !revealedOptions) onRevealOptions?.();
+        dragStartRef.current = null;
+      }}
       style={{
         width: '100%',
         background: isActive ? v.accentDim : 'transparent',
@@ -111,6 +159,7 @@ export function ConvRow({
         borderBottom: `1px solid ${v.borderSubtle}`,
         padding: '9px 14px 9px 14px',
         cursor: 'pointer',
+        touchAction: 'pan-y',
         display: 'grid',
         gridTemplateColumns: '34px minmax(0, 1fr) auto',
         gap: 10,
@@ -179,12 +228,45 @@ export function ConvRow({
             style={{ width: 8, height: 8, borderRadius: '50%', background: v.accent }}
           />
         ) : null}
+        {showOptions && isMobile && revealedOptions
+          ? mobileQuickActions.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  action.onClick();
+                }}
+                aria-label={`${action.label} ${thread.name}`}
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: action.tone === 'danger' ? v.errorDim : v.surfaceRaised,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+              >
+                <LxIcon
+                  name={action.icon}
+                  size={13}
+                  color={action.tone === 'danger' ? v.error : v.ink3}
+                />
+              </button>
+            ))
+          : null}
         {showOptions ? (
           <button
             type="button"
             ref={menuButtonRef}
             onClick={(event) => {
               event.stopPropagation();
+              onRevealOptions?.();
               setMenuOpen((open) => !open);
             }}
             aria-label={`options for ${thread.name}`}
@@ -214,7 +296,7 @@ export function ConvRow({
           anchorRef={menuButtonRef}
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          items={menuItems}
+          items={dropdownItems}
           align="right"
         />
       </div>

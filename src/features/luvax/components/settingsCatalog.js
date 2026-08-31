@@ -42,6 +42,13 @@ export const SETTINGS_GROUPS = [
         description: 'choose what luvax tells you about. each one saves on its own.',
       },
       {
+        id: 'appearance',
+        path: ROUTES.SETTINGS_APPEARANCE,
+        label: 'appearance',
+        icon: 'sun',
+        description: 'switch between dark and light mode on this device.',
+      },
+      {
         id: 'saved',
         path: ROUTES.SAVED,
         label: 'saved posts',

@@ -159,6 +159,7 @@ export const useCreatePost = () => {
     onSuccess: () => {
       // Invalidate feed and userPosts so the new post appears everywhere
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['recommendedFeed'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
     },
   });
@@ -172,6 +173,7 @@ export const useUpdatePostStatus = () => {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['post', variables.postId] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['recommendedFeed'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
     },
   });
@@ -194,6 +196,7 @@ export const useUpdatePost = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['post', variables.postId] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['recommendedFeed'] });
       queryClient.invalidateQueries({ queryKey: ['explore'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
       queryClient.invalidateQueries({ queryKey: savedPostsKey });
@@ -337,6 +340,7 @@ export const useSavePost = () => {
     // saved screen, and unsaving from the saved screen drop the row without a
     // reload.
     onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['recommendedFeed'] });
       queryClient.invalidateQueries({ queryKey: savedPostsKey });
     },
   });

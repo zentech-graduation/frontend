@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { v } from '@/config/tokens';
 import { LxBtn } from './primitives';
 
@@ -22,12 +23,18 @@ import { LxBtn } from './primitives';
 export function BlockConfirmDialog({ open, handle, pending, onCancel, onConfirm }) {
   if (!open) return null;
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  const dialog = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`block @${handle}`}
-      onClick={onCancel}
+      onClick={(event) => {
+        event.stopPropagation();
+        onCancel?.();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
       style={{
         position: 'fixed',
         inset: 0,
@@ -41,6 +48,7 @@ export function BlockConfirmDialog({ open, handle, pending, onCancel, onConfirm 
     >
       <div
         onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
         style={{
           background: v.base,
           borderRadius: 16,
@@ -119,4 +127,6 @@ export function BlockConfirmDialog({ open, handle, pending, onCancel, onConfirm 
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }

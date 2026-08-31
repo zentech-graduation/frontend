@@ -1,5 +1,7 @@
 import { v } from '@/config/tokens';
 import { AvatarVisual } from './AvatarVisual';
+import { routeTo } from '@/config/constants';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * The notice shown in a conversation nobody has written in yet.
@@ -14,55 +16,60 @@ import { AvatarVisual } from './AvatarVisual';
  * at all. "You're now friends" would be false there - the two may not even follow each other -
  * so this shows who the message will go to instead of asserting a relationship.
  */
-export function ConversationGreeting({ messageCount, pending, name, avatarUrl }) {
-  if (messageCount > 0) return null;
+export function ConversationGreeting({ messageCount, pending, name, username, avatarUrl, userId }) {
+  const navigate = useNavigate();
 
-  if (pending) {
-    return (
-      <div
-        style={{
-          alignSelf: 'center',
-          margin: 'auto 0',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
-        <AvatarVisual thread={{ avatarUrl, name }} size={56} />
-        <div style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 700, color: v.ink }}>
-          {name}
-        </div>
-        <div
-          style={{
-            padding: '6px 14px',
-            borderRadius: 999,
-            background: v.surface,
-            color: v.ink3,
-            fontFamily: v.fontBody,
-            fontSize: 12,
-          }}
-        >
-          say hi to start the conversation
-        </div>
-      </div>
-    );
-  }
+  const subtitle = username ? `${username} · luvax` : 'luvax';
 
   return (
     <div
       style={{
         alignSelf: 'center',
-        margin: 'auto 0',
-        padding: '6px 14px',
-        borderRadius: 999,
-        background: v.surface,
-        color: v.ink3,
-        fontFamily: v.fontBody,
-        fontSize: 12,
+        margin: messageCount > 0 ? '18px 0 24px' : 'auto 0',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 10,
+        minWidth: 0,
       }}
     >
-      You&apos;re now friends. Say hi!
+      <AvatarVisual thread={{ avatarUrl, name }} size={76} />
+      <div style={{ textAlign: 'center', minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: v.fontBody,
+            fontSize: 18,
+            fontWeight: 800,
+            color: v.ink,
+            lineHeight: 1.2,
+            overflowWrap: 'anywhere',
+          }}
+        >
+          {name}
+        </div>
+        <div style={{ marginTop: 5, fontFamily: v.fontBody, fontSize: 12.5, color: v.ink2 }}>
+          {pending ? subtitle : "you're now connected on luvax"}
+        </div>
+      </div>
+      {userId ? (
+        <button
+          type="button"
+          onClick={() => navigate(routeTo.userProfile(userId))}
+          style={{
+            border: 'none',
+            borderRadius: 8,
+            background: v.surfaceRaised,
+            color: v.ink,
+            fontFamily: v.fontBody,
+            fontSize: 12,
+            fontWeight: 700,
+            padding: '8px 16px',
+            cursor: 'pointer',
+          }}
+        >
+          view profile
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { v } from '@/config/tokens';
+import { formatCount } from '@/utils/helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LxAvatar, LxBtn, LxIcon } from './primitives';
 import { useFollow, useUnfollow } from '../hooks/useSocial';
+import { useUserProfile } from '../hooks/useUsers';
 
 export function UserCard({
   user,
@@ -12,6 +14,7 @@ export function UserCard({
   initiallyRequested = false,
   rightElement,
   compact = false,
+  showFollowButton = true,
 }) {
   const currentUserId = useAuthStore((state) => state.user?.id);
   const [isFollowing, setIsFollowing] = useState(initiallyFollowing);
@@ -28,7 +31,6 @@ export function UserCard({
     // Syncs optimistic button state back to the latest relationship state returned by the server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsFollowing(initiallyFollowing);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRequested(initiallyRequested);
   }, [initiallyFollowing, initiallyRequested, user?.id]);
 
@@ -52,6 +54,37 @@ export function UserCard({
   const avatarSize = compact ? 36 : 44;
   const buttonVariant = compact ? 'ghost' : isFollowing || requested ? 'secondary' : 'primary';
   const isSelf = Boolean(currentUserId && user?.id === currentUserId);
+  const rawFollowerCount =
+    user?.followerCount ??
+    user?.followersCount ??
+    user?.followers ??
+    user?.stats?.followerCount ??
+    user?.stats?.followersCount ??
+    user?.profile?.followerCount ??
+    user?.profile?.followersCount ??
+    user?.user?.followerCount ??
+    user?.user?.followersCount;
+  const hasFollowerCount =
+    rawFollowerCount !== null && rawFollowerCount !== undefined && rawFollowerCount !== '';
+  const { data: profileCountSource } = useUserProfile(
+    user?.id,
+    showFollowButton === false && !hasFollowerCount
+  );
+  const profileFollowerCount =
+    profileCountSource?.data?.followerCount ??
+    profileCountSource?.data?.followersCount ??
+    profileCountSource?.followerCount ??
+    profileCountSource?.followersCount;
+  const resolvedFollowerCount = hasFollowerCount ? rawFollowerCount : profileFollowerCount;
+  const followerCount =
+    typeof resolvedFollowerCount === 'number'
+      ? resolvedFollowerCount
+      : typeof resolvedFollowerCount === 'string' && resolvedFollowerCount.trim() !== ''
+        ? Number(resolvedFollowerCount)
+        : Array.isArray(resolvedFollowerCount)
+          ? resolvedFollowerCount.length
+          : 0;
+  const visibleFollowerCount = Number.isFinite(followerCount) ? followerCount : 0;
 
   return (
     <div
@@ -118,11 +151,22 @@ export function UserCard({
         >
           {user.bio || `@${user.username || 'unknown'}`}
         </div>
+        <div
+          style={{
+            fontFamily: v.fontMono,
+            fontSize: compact ? 9 : 10,
+            color: v.ink3,
+            marginTop: 3,
+          }}
+        >
+          {formatCount(visibleFollowerCount)} followers
+        </div>
       </div>
 
       {rightElement
         ? rightElement
-        : !isSelf && (
+        : showFollowButton &&
+          !isSelf && (
             <LxBtn
               variant={buttonVariant}
               size="sm"

@@ -2,13 +2,14 @@ import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES, CHAR_LIMITS } from '@/config/constants';
 import { v } from '@/config/tokens';
-import { LxAvatar, LxDivider, LxIcon, LxTag } from './primitives';
+import { LxDivider, LxIcon, LxTag } from './primitives';
 import { ComposerAttachments } from './ComposerAttachments';
 import { useCreatePost } from '../hooks/usePosts';
-import { useAuthStore } from '@/store/useAuthStore';
 import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useMediaConstraints } from '../hooks/useMediaConstraints';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
+import { useHashtagSearch } from '@/features/search/hooks/useSearch';
+import { extractPageContent } from '@/utils/helpers';
 import {
   MAX_CAROUSEL_ITEMS,
   buildAcceptAttribute,
@@ -33,7 +34,6 @@ const SUBMIT_LABEL = {
 export function ComposerScreen() {
   const navigate = useNavigate();
   const { viewport } = useLuvaxTweaks();
-  const currentUser = useAuthStore((state) => state.user);
   const [caption, setCaption] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [items, setItems] = useState([]);
@@ -49,6 +49,25 @@ export function ComposerScreen() {
   }, [caption]);
 
   const allTags = Array.from(new Set([...captionTags, ...selectedTags]));
+  const hashtagQuery = useMemo(() => {
+    const active = caption.match(/#([A-Za-z0-9_]{1,40})$/);
+    return (
+      active?.[1] ||
+      caption
+        .trim()
+        .split(/\s+/)
+        .find((word) => word.length >= 2) ||
+      ''
+    );
+  }, [caption]);
+  const hashtagResult = useHashtagSearch(hashtagQuery);
+  const hashtagSuggestions = useMemo(
+    () =>
+      (hashtagResult.data?.pages?.flatMap((page) => extractPageContent(page)) || [])
+        .filter((tag) => tag?.name && !allTags.includes(String(tag.name).toLowerCase()))
+        .slice(0, 5),
+    [allTags, hashtagResult.data]
+  );
 
   const handleCaptionChange = (value) => {
     setCaption(clampCaption(value));
@@ -343,27 +362,14 @@ export function ComposerScreen() {
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 24 }}>
         <div
           style={{
-            display: 'flex',
-            gap: 12,
             padding: isTablet
               ? `20px ${tabletBodyPadRight}px 0 ${tabletBodyPadLeft}px`
-              : '20px 16px 0',
+              : viewport === 'mobile'
+                ? '16px 14px 0'
+                : '20px 16px 0',
           }}
         >
-          <LxAvatar size={38} src={currentUser?.avatarUrl} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontFamily: v.fontBody,
-                fontSize: 13,
-                fontWeight: 600,
-                color: v.ink,
-                marginBottom: 10,
-              }}
-            >
-              {currentUser?.displayName || currentUser?.username || 'you'}
-            </div>
-
+          <div style={{ minWidth: 0 }}>
             <input
               type="file"
               multiple
@@ -476,9 +482,7 @@ export function ComposerScreen() {
               value={caption}
               onChange={(event) => handleCaptionChange(event.target.value)}
               maxLength={CHAR_LIMITS.caption}
-              placeholder={
-                items.length === 0 ? 'say something real...' : 'add a caption (optional)'
-              }
+              placeholder={items.length === 0 ? 'title' : 'title or caption'}
               style={{
                 width: '100%',
                 fontFamily: v.fontBody,
@@ -499,8 +503,6 @@ export function ComposerScreen() {
 
         <LxDivider mx={isTablet ? tabletLeftLineInset : 0} />
 
-        {/* Tags typed into the caption count automatically; there is no
-            separate tag-selection step, so one row reports the whole state. */}
         <div
           style={{
             display: 'flex',
@@ -555,6 +557,24 @@ export function ComposerScreen() {
             </span>
           </div>
         </div>
+        {hashtagSuggestions.length > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              flexWrap: 'wrap',
+              padding: isTablet
+                ? `0 ${tabletBodyPadRight}px 18px ${tabletBodyPadLeft}px`
+                : '0 16px 18px',
+            }}
+          >
+            {hashtagSuggestions.map((tag) => (
+              <LxTag key={tag.id || tag.name} size="sm" onClick={() => insertTag(tag.name)}>
+                #{tag.name}
+              </LxTag>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

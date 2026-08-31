@@ -15,7 +15,6 @@ import {
   useDeletePost,
   useLikePost,
   usePostDetail,
-  useSavePost,
   useTopLevelComments,
   useUpdatePost,
 } from '../hooks/usePosts';
@@ -41,6 +40,102 @@ import { PostShareDialog } from './PostShareDialog';
 
 const HEART_COLOR = 'var(--lx-error)';
 const COMMENT_MAX_LENGTH = CHAR_LIMITS.comment;
+const COMMENT_EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+const COMMENT_EMOJI_GROUPS = [
+  {
+    label: 'recently used',
+    categoryIcon: '🕘',
+    icons: [
+      ['😀', 'grinning happy smile'],
+      ['😂', 'laugh tears joy'],
+      ['😍', 'heart eyes love'],
+      ['😭', 'cry tears'],
+      ['😘', 'kiss love'],
+    ],
+  },
+  {
+    label: 'smileys & people',
+    categoryIcon: '😀',
+    icons: [
+      ['😃', 'smile happy'],
+      ['😄', 'laugh happy'],
+      ['😁', 'grin teeth'],
+      ['😆', 'laugh squint'],
+      ['😅', 'sweat smile'],
+      ['🤣', 'rolling laugh'],
+      ['😊', 'blush happy'],
+      ['😇', 'halo angel'],
+      ['🙄', 'rolling eyes'],
+      ['🥺', 'pleading'],
+      ['😉', 'wink'],
+      ['😌', 'relieved calm'],
+      ['😟', 'worried'],
+      ['😮', 'surprise wow'],
+      ['😴', 'sleep tired'],
+      ['🤯', 'mind blown'],
+      ['😬', 'grimace'],
+      ['😡', 'angry'],
+      ['👋', 'wave hello'],
+      ['🙌', 'hands celebrate'],
+    ],
+  },
+  {
+    label: 'animals & nature',
+    categoryIcon: '🌿',
+    icons: [
+      ['🌿', 'leaf nature'],
+      ['🌸', 'flower'],
+      ['🌙', 'moon night'],
+      ['☀️', 'sun bright'],
+      ['⭐', 'star'],
+      ['🔥', 'fire'],
+      ['✨', 'sparkles'],
+      ['🌧️', 'rain'],
+    ],
+  },
+  {
+    label: 'food',
+    categoryIcon: '🍴',
+    icons: [
+      ['🍕', 'pizza'],
+      ['🍔', 'burger'],
+      ['🍟', 'fries'],
+      ['🍜', 'noodles'],
+      ['☕', 'coffee'],
+      ['🍰', 'cake'],
+      ['🍓', 'strawberry'],
+      ['🍻', 'cheers'],
+    ],
+  },
+  {
+    label: 'activities',
+    categoryIcon: '⚽',
+    icons: [
+      ['⚽', 'soccer'],
+      ['🏀', 'basketball'],
+      ['🎮', 'game'],
+      ['🎧', 'music'],
+      ['🚗', 'car'],
+      ['✈️', 'plane'],
+      ['💡', 'idea'],
+      ['📌', 'pin'],
+    ],
+  },
+  {
+    label: 'symbols',
+    categoryIcon: '💯',
+    icons: [
+      ['❤️', 'heart love'],
+      ['💯', 'hundred'],
+      ['✅', 'check done'],
+      ['❌', 'cross no'],
+      ['⚠️', 'warning'],
+      ['🙏', 'pray thanks'],
+      ['👍', 'thumbs up like'],
+      ['👏', 'clap'],
+    ],
+  },
+];
 
 // Threads are two levels, like Instagram. A top-level comment sits at depth 0;
 // every reply, including a reply to a reply, sits at depth 1 under the same
@@ -63,7 +158,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
   // CommentResponse embeds the author as a UserSummaryResponse, so no
   // per-row profile fetch is needed. There is no `comment.userId`.
   const author = getUserSummary(comment);
-  const authorName = getDisplayName(author);
+  const authorName = getDisplayName(author, location.state?.fallbackAuthorUsername || 'unknown');
   const currentUser = useAuthStore((state) => state.user);
   // Ownership comes from the response rather than from anything the client
   // remembers about who wrote what.
@@ -564,13 +659,17 @@ export function PostDetailScreen({ overlay = false }) {
   const [heartBurst, setHeartBurst] = useState(false);
   const [blockModalOpen, setBlockModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [unfollowConfirmOpen, setUnfollowConfirmOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
+  const [commentEmojiOpen, setCommentEmojiOpen] = useState(false);
+  const [commentEmojiSearch, setCommentEmojiSearch] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [postReportTarget, setPostReportTarget] = useState(null);
   const menuButtonRef = useRef(null);
   const commentsPaneRef = useRef(null);
   const commentInputRef = useRef(null);
+  const commentEmojiGroupRefs = useRef({});
   const viewport = useViewport();
   // A notification about a comment opens the post and asks, through history state,
   // that the comment be focused. Kept in a ref so the flash fires once per target.
@@ -588,6 +687,22 @@ export function PostDetailScreen({ overlay = false }) {
     el.style.height = `${Math.min(el.scrollHeight, 70)}px`;
   }, [commentDraft]);
 
+  const appendCommentEmoji = (emoji) => {
+    setCommentDraft((current) => `${current}${emoji}`);
+    window.requestAnimationFrame(() => commentInputRef.current?.focus());
+  };
+
+  const visibleCommentEmojiGroups = useMemo(() => {
+    const needle = commentEmojiSearch.trim().toLowerCase();
+    if (!needle) return COMMENT_EMOJI_GROUPS;
+    return COMMENT_EMOJI_GROUPS.map((group) => ({
+      ...group,
+      icons: group.icons.filter(
+        ([icon, keywords]) => icon.includes(needle) || keywords.includes(needle)
+      ),
+    })).filter((group) => group.icons.length > 0);
+  }, [commentEmojiSearch]);
+
   const { postId } = useParams();
   const { data: postResponse, isLoading, isError } = usePostDetail(postId);
 
@@ -599,7 +714,6 @@ export function PostDetailScreen({ overlay = false }) {
   const updatePost = useUpdatePost();
   const deletePost = useDeletePost();
   const likeMutation = useLikePost();
-  const saveMutation = useSavePost();
   const createComment = useCreateComment(postId);
   const {
     data: commentsResponse,
@@ -617,13 +731,22 @@ export function PostDetailScreen({ overlay = false }) {
 
   const post = postResponse?.data || postResponse || {};
   const author = getUserSummary(post);
-  const targetUserId = author.id;
+  const targetUserId = author.id || location.state?.fallbackAuthorId || null;
   const authorName = getDisplayName(author);
-  const authorHandle = author.username || 'unknown';
+  const authorHandle = author.username || location.state?.fallbackAuthorUsername || 'unknown';
   const authorAvatarUrl = author.avatarUrl;
   const isSelf = currentUser?.id === targetUserId;
   const following = (() => {
-    if (!myFollowingData || !targetUserId || isSelf) return false;
+    if (!targetUserId || isSelf) return false;
+    if (
+      post.viewerState?.isFollowing ||
+      post.viewerState?.isFollowedByViewer ||
+      author.viewerState?.isFollowing ||
+      author.viewerState?.isFollowedByViewer
+    ) {
+      return true;
+    }
+    if (!myFollowingData) return false;
     const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
     // Follower lists return UserListItemResponse, which nests the user.
     return list.some((item) => getUserSummary(item, 'user').id === targetUserId);
@@ -663,7 +786,6 @@ export function PostDetailScreen({ overlay = false }) {
   const mediaWidth = `calc(${mediaHeight} * ${A})`;
   const popupHeight = `max(${mediaHeight}, ${POPUP_MIN_HEIGHT})`;
   const twoPaneContainerWidth = `calc(${mediaWidth} + ${COMMENT_PANE_WIDTH}px)`;
-  const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const comments = commentsResponse?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
   // Once the comments are loaded, scroll the notification's target comment into
@@ -688,9 +810,8 @@ export function PostDetailScreen({ overlay = false }) {
   // like state a few hundred lines above. The previous local copies started at
   // false and only the count was ever synced, so a post the viewer had already
   // liked opened showing an empty heart.
-  const liked = Boolean(post.isLiked);
+  const liked = Boolean(post.isLiked ?? post.viewerState?.isLiked);
   const likeCount = post.likeCount ?? 0;
-  const saved = Boolean(post.isSaved);
 
   useEffect(() => {
     // Clears user-entered draft and reply state when navigating to a different post.
@@ -725,18 +846,19 @@ export function PostDetailScreen({ overlay = false }) {
     likeMutation.mutate({ postId, liked });
   }, [likeMutation, liked, postId]);
 
-  const handleSaveToggle = () => {
-    saveMutation.mutate({ postId, saved });
-  };
-
-  const handleFollowToggle = () => {
+  const handleFollowToggle = useCallback(() => {
     if (!targetUserId) return;
     if (following) {
-      unfollow.mutate(targetUserId);
+      setUnfollowConfirmOpen(true);
       return;
     }
     follow.mutate(targetUserId);
-  };
+  }, [follow, following, targetUserId]);
+
+  const handleUnfollowConfirm = useCallback(() => {
+    if (!targetUserId) return;
+    unfollow.mutate(targetUserId, { onSuccess: () => setUnfollowConfirmOpen(false) });
+  }, [targetUserId, unfollow]);
 
   const handleEditOpen = useCallback(() => {
     setEditCaption(post?.caption || post?.text || '');
@@ -798,6 +920,7 @@ export function PostDetailScreen({ overlay = false }) {
       {
         onSuccess: () => {
           setCommentDraft('');
+          setCommentEmojiOpen(false);
           setReplyingTo(null);
           window.requestAnimationFrame(() => {
             if (commentsPaneRef.current) {
@@ -865,6 +988,28 @@ export function PostDetailScreen({ overlay = false }) {
       ...(isSelf
         ? []
         : [
+            {
+              id: 'view-profile',
+              icon: 'profile',
+              label: "View author's profile",
+              onClick: () => targetUserId && navigate(routeTo.userProfile(targetUserId)),
+            },
+            {
+              id: 'follow-toggle',
+              icon: following ? 'userMinus' : 'profile',
+              label: `${following ? 'Unfollow' : 'Follow'} @${authorHandle}`,
+              tone: 'danger',
+              separator: true,
+              onClick: handleFollowToggle,
+              disabled: follow.isPending || unfollow.isPending,
+            },
+            {
+              id: 'block',
+              icon: 'ban',
+              label: `Block @${authorHandle}`,
+              tone: 'danger',
+              onClick: () => setBlockModalOpen(true),
+            },
             // hasReported is true exactly when a new report would be refused as
             // a duplicate, and a report never reverses, so the row states what
             // happened instead of offering an action that cannot succeed.
@@ -889,15 +1034,22 @@ export function PostDetailScreen({ overlay = false }) {
     ],
     [
       authorAvatarUrl,
+      authorHandle,
       authorName,
+      follow.isPending,
+      following,
       handleDeleteRequest,
       handleEditOpen,
+      handleFollowToggle,
       handleLikeToggle,
       isSelf,
       liked,
+      navigate,
       post.caption,
       post.hasReported,
       postId,
+      targetUserId,
+      unfollow.isPending,
     ]
   );
 
@@ -970,21 +1122,6 @@ export function PostDetailScreen({ overlay = false }) {
             }}
           >
             {authorName}
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              marginTop: 2,
-              fontFamily: v.fontMono,
-              fontSize: 9.5,
-              color: v.ink3,
-              lineHeight: 1,
-            }}
-          >
-            <span>{timeStr}</span>
-            <span>ago</span>
           </div>
         </div>
         <button
@@ -1166,6 +1303,24 @@ export function PostDetailScreen({ overlay = false }) {
           </button>
           <button
             type="button"
+            onClick={() => commentInputRef.current?.focus()}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <LxIcon name="chat" size={21} color={v.ink3} />
+            <span style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+              {post.commentCount ?? comments.length ?? 0}
+            </span>
+          </button>
+          <button
+            type="button"
             onClick={() => setShareOpen(true)}
             style={{
               background: 'none',
@@ -1265,17 +1420,200 @@ export function PostDetailScreen({ overlay = false }) {
 
         <div
           style={{
+            position: 'relative',
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: 'center',
             gap: 10,
             padding: '10px 12px 12px',
             minWidth: 0,
             maxWidth: '100%',
-            overflow: 'hidden',
+            overflow: 'visible',
             boxSizing: 'border-box',
           }}
         >
-          <div style={{ flexShrink: 0 }}>
+          {commentEmojiOpen ? (
+            <div
+              style={{
+                position: 'absolute',
+                left: viewport === 'mobile' ? 12 : 54,
+                bottom: 'calc(100% + 8px)',
+                width: 300,
+                maxWidth: 'calc(100vw - 32px)',
+                borderRadius: 12,
+                border: `1px solid ${v.borderSubtle}`,
+                background: v.surface,
+                boxShadow: v.shadowSoft,
+                zIndex: 4,
+                overflow: 'visible',
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: viewport === 'mobile' ? 22 : 66,
+                  bottom: -7,
+                  width: 14,
+                  height: 14,
+                  background: v.surface,
+                  borderRight: `1px solid ${v.borderSubtle}`,
+                  borderBottom: `1px solid ${v.borderSubtle}`,
+                  transform: 'rotate(45deg)',
+                }}
+              />
+              <div
+                style={{
+                  padding: 8,
+                  borderBottom: `1px solid ${v.borderSubtle}`,
+                }}
+              >
+                <div
+                  style={{
+                    height: 32,
+                    borderRadius: 8,
+                    background: v.surfaceSunken,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '0 10px',
+                  }}
+                >
+                  <LxIcon name="explore" size={14} color={v.ink3} />
+                  <input
+                    type="search"
+                    value={commentEmojiSearch}
+                    onChange={(event) => setCommentEmojiSearch(event.target.value)}
+                    placeholder="search emoji"
+                    aria-label="search emoji"
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      color: v.ink,
+                      fontFamily: v.fontBody,
+                      fontSize: 13,
+                    }}
+                  />
+                </div>
+              </div>
+              <div
+                style={{
+                  maxHeight: 214,
+                  overflowY: 'auto',
+                  padding: '8px 10px 10px',
+                }}
+              >
+                {visibleCommentEmojiGroups.length ? (
+                  visibleCommentEmojiGroups.map((group) => (
+                    <section
+                      key={group.label}
+                      ref={(node) => {
+                        commentEmojiGroupRefs.current[group.label] = node;
+                      }}
+                      style={{ marginBottom: 14 }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: v.fontBody,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: v.ink3,
+                          marginBottom: 6,
+                        }}
+                      >
+                        {group.label}
+                      </div>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(8, 1fr)',
+                          gap: 3,
+                        }}
+                      >
+                        {group.icons.map(([emoji]) => (
+                          <button
+                            key={`${group.label}-${emoji}`}
+                            type="button"
+                            onClick={() => appendCommentEmoji(emoji)}
+                            aria-label={`add ${emoji}`}
+                            style={{
+                              width: 28,
+                              height: 28,
+                              border: 'none',
+                              borderRadius: 6,
+                              background: 'transparent',
+                              cursor: 'pointer',
+                              fontFamily: COMMENT_EMOJI_FONT,
+                              fontSize: 19,
+                              lineHeight: 1,
+                              padding: 0,
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  ))
+                ) : (
+                  <div
+                    style={{
+                      padding: '24px 8px',
+                      textAlign: 'center',
+                      fontFamily: v.fontBody,
+                      fontSize: 13,
+                      color: v.ink3,
+                    }}
+                  >
+                    no emoji found
+                  </div>
+                )}
+              </div>
+              <div
+                style={{
+                  borderTop: `1px solid ${v.borderSubtle}`,
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${COMMENT_EMOJI_GROUPS.length}, 1fr)`,
+                  background: v.surface,
+                  borderRadius: '0 0 12px 12px',
+                  overflow: 'hidden',
+                }}
+              >
+                {COMMENT_EMOJI_GROUPS.map((group) => (
+                  <button
+                    key={group.label}
+                    type="button"
+                    onClick={() => {
+                      setCommentEmojiSearch('');
+                      window.requestAnimationFrame(() => {
+                        commentEmojiGroupRefs.current[group.label]?.scrollIntoView({
+                          block: 'nearest',
+                        });
+                      });
+                    }}
+                    aria-label={group.label}
+                    style={{
+                      height: 32,
+                      border: 'none',
+                      borderRight: `1px solid ${v.borderSubtle}`,
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      fontFamily: COMMENT_EMOJI_FONT,
+                      fontSize: 15,
+                      lineHeight: 1,
+                      padding: 0,
+                    }}
+                  >
+                    {group.categoryIcon}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
             <LxAvatar size={30} src={currentUser?.avatarUrl} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1283,17 +1621,42 @@ export function PostDetailScreen({ overlay = false }) {
               style={{
                 width: '100%',
                 minWidth: 0,
-                minHeight: 40,
-                borderRadius: 20,
-                border: `1px solid ${v.border}`,
-                background: 'transparent',
-                display: 'flex',
-                alignItems: 'flex-start',
-                padding: '4px 14px',
+                minHeight: 42,
+                borderRadius: 22,
+                border: `1px solid ${v.borderSubtle}`,
+                background: v.surfaceSunken,
+                display: 'grid',
+                gridTemplateColumns: '32px minmax(0, 1fr) 32px',
+                alignItems: 'end',
+                gap: 6,
+                padding: '4px 7px',
                 overflow: 'hidden',
                 boxSizing: 'border-box',
               }}
             >
+              <button
+                type="button"
+                onClick={() => {
+                  setCommentEmojiOpen((open) => !open);
+                  window.requestAnimationFrame(() => commentInputRef.current?.focus());
+                }}
+                aria-label="choose emoji"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'text',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <LxIcon name="smile" size={15} color={v.ink3} />
+              </button>
               <textarea
                 ref={commentInputRef}
                 value={commentDraft}
@@ -1323,7 +1686,7 @@ export function PostDetailScreen({ overlay = false }) {
                   overflowWrap: 'anywhere',
                   wordBreak: 'break-all',
                   whiteSpace: 'pre-wrap',
-                  padding: '5px 0',
+                  padding: '6px 0',
                   display: 'block',
                 }}
                 onKeyDown={(event) => {
@@ -1334,24 +1697,28 @@ export function PostDetailScreen({ overlay = false }) {
                   }
                 }}
               />
+              <button
+                type="button"
+                onClick={handleCommentSubmit}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  opacity: commentDraft.trim() ? 1 : 0.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <LxIcon name="send" size={17} color={v.accent} />
+              </button>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleCommentSubmit}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              cursor: 'pointer',
-              opacity: commentDraft.trim() ? 1 : 0.5,
-              display: 'flex',
-              alignItems: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <LxIcon name="send" size={18} color={v.accent} />
-          </button>
         </div>
       </div>
     </div>
@@ -1482,6 +1849,26 @@ export function PostDetailScreen({ overlay = false }) {
             : null
         }
         onClose={() => setBlockModalOpen(false)}
+      />
+
+      <ConfirmModal
+        config={
+          unfollowConfirmOpen
+            ? {
+                title: 'unfollow',
+                message: (
+                  <>
+                    Stop following <strong>@{authorHandle}</strong>? You will need to follow again
+                    to see their posts in following.
+                  </>
+                ),
+                confirmLabel: 'unfollow',
+                confirmDisabled: unfollow.isPending,
+                onConfirm: handleUnfollowConfirm,
+              }
+            : null
+        }
+        onClose={() => setUnfollowConfirmOpen(false)}
       />
 
       <ConfirmModal

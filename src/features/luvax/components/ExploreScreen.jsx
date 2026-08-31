@@ -2,130 +2,75 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
-import { extractPageContent, getDisplayName, getMediaList, getUserSummary } from '@/utils/helpers';
-import { LxIcon, LxAvatar, LxTag } from './primitives';
-import { MediaThumb } from './MediaThumb';
+import {
+  canViewerSeePost,
+  extractPageContent,
+  getDisplayName,
+  getUserSummary,
+} from '@/utils/helpers';
+import { LxIcon } from './primitives';
+import { UserCard } from './UserCard';
 import { useExploreSearch } from '../hooks/usePosts';
-import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { useLuvaxTweaks } from '../LuvaxTweaksContext';
 import { routeTo } from '@/config/constants';
-import { getUserSearchTerms, useUserSearch } from '@/features/search/hooks/useSearch';
+import {
+  getUserSearchTerms,
+  useHashtagSearch,
+  useUserSearch,
+} from '@/features/search/hooks/useSearch';
 import { RecommendedPostsGrid, SearchResultPost } from './RecommendedPostsGrid';
 
-function MiniCard({ p }) {
-  const navigate = useNavigate();
-  const openOverlay = useOverlayNavigate();
-  const author = getUserSummary(p);
-  const authorName = getDisplayName(author, 'Unknown');
-  const avatarUrl = author.avatarUrl;
+function SuggestedHashtags({ tags, query, onSelect }) {
+  if (!query) return null;
+
   return (
-    <div
-      onClick={() => openOverlay(routeTo.postDetail(p.id))}
+    <section
       style={{
-        background: v.surface,
-        borderRadius: 10,
-        overflow: 'hidden',
-        cursor: 'pointer',
-        breakInside: 'avoid',
-        marginBottom: 8,
-        display: 'inline-block',
-        width: '100%',
+        marginTop: 22,
+        padding: '16px 0 0',
+        borderTop: `1px solid ${v.borderSubtle}`,
       }}
     >
-      {/* The card clips its own corners, so the tile needs no radius of its own. */}
-      {getMediaList(p).length > 0 ? <MediaThumb post={p} radius={0} /> : null}
-      <div style={{ padding: '10px 12px 12px' }}>
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (author.id) navigate(routeTo.userProfile(author.id));
-          }}
-        >
-          <LxAvatar size={18} src={avatarUrl} />
-          <span
+      <div
+        style={{
+          fontFamily: v.fontMono,
+          fontSize: 10,
+          color: v.ink3,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          marginBottom: 12,
+        }}
+      >
+        suggested hashtags
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {tags.slice(0, 10).map((tag) => (
+          <button
+            key={tag.id || tag.name}
+            type="button"
+            onClick={() => onSelect(tag.name)}
             style={{
-              fontFamily: v.fontBody,
-              fontSize: 11,
-              fontWeight: 500,
+              border: `1px solid ${v.border}`,
+              background: v.surface,
               color: v.ink2,
+              borderRadius: 999,
+              padding: '8px 12px',
+              fontFamily: v.fontBody,
+              fontSize: 12,
+              fontWeight: 600,
               cursor: 'pointer',
             }}
           >
-            {authorName}
+            #{tag.name}
+          </button>
+        ))}
+        {tags.length === 0 ? (
+          <span style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+            no hashtag suggestions
           </span>
-        </div>
-        <p
-          style={{
-            fontFamily: v.fontBody,
-            fontSize: 12,
-            color: v.ink,
-            lineHeight: 1.5,
-            margin: 0,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {p.caption}
-        </p>
+        ) : null}
       </div>
-    </div>
-  );
-}
-
-function SearchResultPerson({ user }) {
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      onClick={() => user?.id && navigate(routeTo.userProfile(user.id))}
-      style={{
-        width: '100%',
-        background: 'none',
-        border: 'none',
-        padding: '0 2px 0 4px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        textAlign: 'left',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-        <LxAvatar size={40} src={user.avatarUrl} />
-        <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontFamily: v.fontBody,
-              fontSize: 14,
-              fontWeight: 700,
-              color: v.ink,
-              lineHeight: 1.2,
-            }}
-          >
-            {user.displayName || user.username}
-          </div>
-          <div
-            style={{
-              marginTop: 3,
-              fontFamily: v.fontBody,
-              fontSize: 13,
-              color: v.ink3,
-              lineHeight: 1.35,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {user.bio || ''}
-          </div>
-        </div>
-      </div>
-      <span style={{ color: v.ink3, display: 'inline-flex', alignItems: 'center' }}>
-        <LxIcon name="chevronRight" size={14} color={v.ink3} />
-      </span>
-    </button>
+    </section>
   );
 }
 
@@ -133,6 +78,7 @@ export function ExploreScreen() {
   // The search terms live in the address, so an explore search can be shared
   // and survives a reload.
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const activeQuery = searchParams.get('q') || '';
   const shouldFocusSearch = searchParams.get('focusSearch') === '1';
   const { viewport } = useLuvaxTweaks();
@@ -145,6 +91,7 @@ export function ExploreScreen() {
   const primaryUserResult = useUserSearch(userSearchTerms[0] || '');
   const secondaryUserResult = useUserSearch(userSearchTerms[1] || '');
   const tertiaryUserResult = useUserSearch(userSearchTerms[2] || '');
+  const hashtagResult = useHashtagSearch(query.trim());
 
   // Adjusted during render, not in an effect: the field is user-editable so it cannot be derived,
   // but resetting it from an effect rendered the screen twice on every address change.
@@ -167,7 +114,9 @@ export function ExploreScreen() {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const posts = data?.pages?.flatMap((page) => extractPageContent(page)) || [];
+  const posts = (data?.pages?.flatMap((page) => extractPageContent(page)) || []).filter(
+    canViewerSeePost
+  );
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
   const userResults = [primaryUserResult, secondaryUserResult, tertiaryUserResult].filter(
@@ -185,6 +134,15 @@ export function ExploreScreen() {
       displayName: getDisplayName(user),
       avatarUrl: user.avatarUrl,
       bio: user.bio,
+      followerCount:
+        user.followerCount ??
+        user.followersCount ??
+        item.followerCount ??
+        item.followersCount ??
+        item.user?.followerCount ??
+        item.user?.followersCount,
+      viewerState: item.viewerState ?? user.viewerState,
+      isPrivate: user.isPrivate ?? item.user?.isPrivate,
     });
     return acc;
   }, []);
@@ -199,11 +157,18 @@ export function ExploreScreen() {
       username: author.username,
       displayName: getDisplayName(author),
       avatarUrl: author.avatarUrl,
+      followerCount: author.followerCount ?? author.followersCount,
+      viewerState: post.viewerState ?? author.viewerState,
+      isPrivate: author.isPrivate,
     });
     return acc;
   }, searchedPeople);
   const foundCount = people.length + posts.length;
   const isFindingPeople = isSearching && userResults.some((result) => result.isLoading);
+  const hashtagSuggestions =
+    hashtagResult.data?.pages?.flatMap((page) => extractPageContent(page)) || [];
+  const sidePosts = posts.slice(0, 4);
+  const lowerPosts = posts.slice(4);
 
   // Enter commits the query to the address so a search can be shared and
   // survives a reload, which a bare input could not do.
@@ -213,8 +178,6 @@ export function ExploreScreen() {
     setSearchParams(next ? { q: next } : {});
     searchInputRef.current?.blur();
   };
-
-  const cols = viewport === 'desktop' ? 3 : 2;
 
   return (
     <>
@@ -358,31 +321,127 @@ export function ExploreScreen() {
               </div>
             ) : (
               <>
-                {people.length > 0 ? (
-                  <>
-                    <div
-                      style={{
-                        fontFamily: v.fontMono,
-                        fontSize: 10,
-                        color: v.ink3,
-                        letterSpacing: '0.12em',
-                        textTransform: 'uppercase',
-                        marginTop: 14,
-                        marginBottom: 14,
-                      }}
-                    >
-                      people
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      {people.map((person) => (
-                        <SearchResultPerson key={person.id} user={person} />
-                      ))}
-                    </div>
-                  </>
-                ) : null}
+                <div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns:
+                        viewport === 'mobile' ? '1fr' : 'minmax(300px, 0.92fr) minmax(0, 1.58fr)',
+                      gap: viewport === 'mobile' ? 22 : 28,
+                      alignItems: 'start',
+                    }}
+                  >
+                    <section style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontFamily: v.fontMono,
+                          fontSize: 10,
+                          color: v.ink3,
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase',
+                          marginTop: 14,
+                          marginBottom: 14,
+                        }}
+                      >
+                        people
+                      </div>
+                      {people.length > 0 ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 16,
+                            maxHeight: 520,
+                            overflowY: people.length > 10 ? 'auto' : 'visible',
+                            paddingRight: people.length > 10 ? 6 : 0,
+                          }}
+                        >
+                          {people.map((person) => (
+                            <UserCard
+                              key={person.id}
+                              user={person}
+                              compact
+                              initiallyFollowing={
+                                person.viewerState?.isFollowing ??
+                                person.viewerState?.isFollowedByViewer ??
+                                false
+                              }
+                              initiallyRequested={person.viewerState?.isFollowRequested ?? false}
+                              onAvatarClick={(u) => navigate(routeTo.userProfile(u.id))}
+                              showFollowButton={false}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+                          no people found
+                        </div>
+                      )}
+                      <SuggestedHashtags
+                        tags={hashtagSuggestions}
+                        query={trimmedQuery}
+                        onSelect={(tag) => {
+                          setQuery(tag);
+                          setSearchParams({ q: tag });
+                        }}
+                      />
+                    </section>
 
-                {posts.length > 0 ? (
-                  <>
+                    <section style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontFamily: v.fontMono,
+                          fontSize: 10,
+                          color: v.ink3,
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase',
+                          marginTop: 14,
+                          marginBottom: 14,
+                        }}
+                      >
+                        posts
+                      </div>
+                      {posts.length > 0 ? (
+                        <div
+                          style={{
+                            display: 'grid',
+                            position: 'relative',
+                            gridTemplateColumns:
+                              viewport === 'mobile' ? '1fr 1fr' : 'repeat(2, minmax(0, 1fr))',
+                            gap: 12,
+                            height: viewport === 'mobile' ? 410 : 390,
+                            gridAutoRows: 'minmax(0, 1fr)',
+                            alignItems: 'stretch',
+                            overflowY: posts.length > 4 ? 'auto' : 'hidden',
+                            paddingRight: posts.length > 4 ? 6 : 0,
+                          }}
+                        >
+                          {sidePosts.map((p, i) => (
+                            <SearchResultPost key={p.id || i} post={p} fluid />
+                          ))}
+                          <div
+                            ref={ref}
+                            style={{
+                              position: 'absolute',
+                              right: 0,
+                              bottom: 0,
+                              width: 1,
+                              height: 1,
+                              opacity: 0,
+                              pointerEvents: 'none',
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>
+                          no posts found
+                        </div>
+                      )}
+                    </section>
+                  </div>
+                </div>
+                {lowerPosts.length > 0 ? (
+                  <section style={{ marginTop: 24 }}>
                     <div
                       style={{
                         fontFamily: v.fontMono,
@@ -390,18 +449,27 @@ export function ExploreScreen() {
                         color: v.ink3,
                         letterSpacing: '0.12em',
                         textTransform: 'uppercase',
-                        marginTop: 26,
-                        marginBottom: 14,
+                        marginBottom: 12,
                       }}
                     >
-                      posts
+                      more posts
                     </div>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      {posts.map((p, i) => (
-                        <SearchResultPost key={p.id || i} post={p} />
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns:
+                          viewport === 'mobile' ? '1fr 1fr' : 'repeat(4, minmax(0, 1fr))',
+                        gap: 12,
+                        maxHeight: viewport === 'mobile' ? 820 : 780,
+                        overflowY: lowerPosts.length > 16 ? 'auto' : 'visible',
+                        paddingRight: lowerPosts.length > 16 ? 6 : 0,
+                      }}
+                    >
+                      {lowerPosts.map((p, i) => (
+                        <SearchResultPost key={p.id || `more-${i}`} post={p} fluid />
                       ))}
                     </div>
-                  </>
+                  </section>
                 ) : null}
               </>
             )}

@@ -273,8 +273,9 @@ export function LxBottomNav({ active, navigate }) {
               <span
                 style={{
                   position: 'absolute',
-                  top: 6,
-                  right: '25%',
+                  top: 13,
+                  left: '50%',
+                  transform: 'translateX(5px)',
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
@@ -385,6 +386,8 @@ function LxFloatingMessagePreview({ navigate, currentUserId, hidden = false }) {
 
   if (hidden) return null;
 
+  const compact = recentMessageThreads.length === 0;
+
   return (
     <button
       type="button"
@@ -395,7 +398,7 @@ function LxFloatingMessagePreview({ navigate, currentUserId, hidden = false }) {
         right: 32,
         bottom: 30,
         zIndex: 90,
-        minWidth: 142,
+        minWidth: compact ? 106 : 142,
         height: 38,
         borderRadius: 999,
         border: `1px solid ${v.border}`,
@@ -403,8 +406,8 @@ function LxFloatingMessagePreview({ navigate, currentUserId, hidden = false }) {
         color: v.ink,
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 9,
-        padding: '0 12px',
+        gap: compact ? 7 : 9,
+        padding: compact ? '0 11px' : '0 12px',
         cursor: 'pointer',
         boxShadow: `0 10px 28px ${v.shadow12}`,
         fontFamily: v.fontBody,
@@ -708,6 +711,9 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
 
   if (vp === 'desktop') {
     const LEFT_W = 280;
+    const isWideScreen = screen === 'search' || screen === 'explore';
+    const mainWidth = isWideScreen ? 960 : 680;
+    const shellMaxWidth = isWideScreen ? 1540 : 1260;
     return (
       // No min-height: 100vh here - it would carry the same zoom-vs-vh mismatch <main> below
       // has to correct for, and nothing in this row needs it: the rail is fixed-positioned and
@@ -726,7 +732,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             justifyContent: 'center',
             alignItems: 'flex-start',
             width: '100%',
-            maxWidth: 1260,
+            maxWidth: shellMaxWidth,
             margin: '0 auto',
           }}
         >
@@ -736,7 +742,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             key={screen}
             className="lx-fade-in"
             style={{
-              width: 680,
+              width: mainWidth,
               flexShrink: 0,
               minWidth: 0,
               // No column rules. The feed is one continuous surface on the page
@@ -759,8 +765,10 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
   if (vp === 'tablet') {
     const LEFT_W = 82;
     // Settings never reaches here: it is handled above, against the rail.
-    const tabletMainWidth = screen === 'compose' ? 784 : 604;
-    const tabletShellWidth = screen === 'compose' ? 1090 : 910;
+    const tabletMainWidth =
+      screen === 'compose' ? 784 : screen === 'search' || screen === 'explore' ? 760 : 604;
+    const tabletShellWidth =
+      screen === 'compose' ? 1090 : screen === 'search' || screen === 'explore' ? 1060 : 910;
     const tabletRightSpacer = 206;
     return (
       // No min-height: 100vh here - see the desktop branch above for why.
