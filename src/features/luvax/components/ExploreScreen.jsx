@@ -134,7 +134,13 @@ export function ExploreScreen() {
       displayName: getDisplayName(user),
       avatarUrl: user.avatarUrl,
       bio: user.bio,
-      followerCount: user.followerCount ?? item.followerCount ?? item.user?.followerCount,
+      followerCount:
+        user.followerCount ??
+        user.followersCount ??
+        item.followerCount ??
+        item.followersCount ??
+        item.user?.followerCount ??
+        item.user?.followersCount,
       viewerState: item.viewerState ?? user.viewerState,
       isPrivate: user.isPrivate ?? item.user?.isPrivate,
     });
@@ -151,7 +157,7 @@ export function ExploreScreen() {
       username: author.username,
       displayName: getDisplayName(author),
       avatarUrl: author.avatarUrl,
-      followerCount: author.followerCount,
+      followerCount: author.followerCount ?? author.followersCount,
       viewerState: post.viewerState ?? author.viewerState,
       isPrivate: author.isPrivate,
     });
@@ -161,8 +167,8 @@ export function ExploreScreen() {
   const isFindingPeople = isSearching && userResults.some((result) => result.isLoading);
   const hashtagSuggestions =
     hashtagResult.data?.pages?.flatMap((page) => extractPageContent(page)) || [];
-  const sidePosts = posts.slice(0, 8);
-  const lowerPosts = posts.slice(8);
+  const sidePosts = posts.slice(0, 4);
+  const lowerPosts = posts.slice(4);
 
   // Enter commits the query to the address so a search can be shared and
   // survives a reload, which a bare input could not do.
@@ -320,8 +326,8 @@ export function ExploreScreen() {
                     style={{
                       display: 'grid',
                       gridTemplateColumns:
-                        viewport === 'mobile' ? '1fr' : 'minmax(220px, 0.72fr) minmax(0, 1.28fr)',
-                      gap: viewport === 'mobile' ? 22 : 24,
+                        viewport === 'mobile' ? '1fr' : 'minmax(300px, 0.92fr) minmax(0, 1.58fr)',
+                      gap: viewport === 'mobile' ? 22 : 28,
                       alignItems: 'start',
                     }}
                   >
@@ -401,13 +407,13 @@ export function ExploreScreen() {
                             display: 'grid',
                             position: 'relative',
                             gridTemplateColumns:
-                              viewport === 'mobile' ? '1fr 1fr' : 'repeat(4, minmax(0, 1fr))',
+                              viewport === 'mobile' ? '1fr 1fr' : 'repeat(2, minmax(0, 1fr))',
                             gap: 12,
                             height: viewport === 'mobile' ? 410 : 390,
                             gridAutoRows: 'minmax(0, 1fr)',
                             alignItems: 'stretch',
-                            overflowY: posts.length > 8 ? 'auto' : 'hidden',
-                            paddingRight: posts.length > 8 ? 6 : 0,
+                            overflowY: posts.length > 4 ? 'auto' : 'hidden',
+                            paddingRight: posts.length > 4 ? 6 : 0,
                           }}
                         >
                           {sidePosts.map((p, i) => (

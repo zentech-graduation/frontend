@@ -223,8 +223,8 @@ export function SearchScreen() {
     );
   });
   const hashtagRows = hashtagResult.data?.pages?.flatMap((page) => extractPageContent(page)) || [];
-  const sidePostRows = postRows.slice(0, 8);
-  const lowerPostRows = postRows.slice(8);
+  const sidePostRows = postRows.slice(0, 4);
+  const lowerPostRows = postRows.slice(4);
   const allLoading =
     query && (postResult.isLoading || userResult.isLoading || hashtagResult.isLoading);
   const allError = postResult.isError && userResult.isError && hashtagResult.isError;
@@ -313,7 +313,7 @@ export function SearchScreen() {
                 style={{
                   padding: stackedSearchLayout ? 12 : 16,
                   width: '100%',
-                  maxWidth: stackedSearchLayout ? '100%' : 980,
+                  maxWidth: stackedSearchLayout ? '100%' : 1120,
                   margin: '0 auto',
                   boxSizing: 'border-box',
                 }}
@@ -323,8 +323,8 @@ export function SearchScreen() {
                     display: 'grid',
                     gridTemplateColumns: stackedSearchLayout
                       ? '1fr'
-                      : 'minmax(220px, 0.72fr) minmax(0, 1.28fr)',
-                    gap: stackedSearchLayout ? 18 : 20,
+                      : 'minmax(300px, 0.92fr) minmax(0, 1.58fr)',
+                    gap: stackedSearchLayout ? 18 : 28,
                     alignItems: 'start',
                   }}
                 >
@@ -358,7 +358,13 @@ export function SearchScreen() {
                             key={rowUser.id}
                             user={{
                               ...rowUser,
-                              followerCount: item.followerCount ?? item.user?.followerCount,
+                              followerCount:
+                                item.followerCount ??
+                                item.followersCount ??
+                                item.user?.followerCount ??
+                                item.user?.followersCount ??
+                                rowUser.followerCount ??
+                                rowUser.followersCount,
                               viewerState: item.viewerState ?? rowUser.viewerState,
                               isPrivate: rowUser.isPrivate ?? item.user?.isPrivate,
                             }}
@@ -396,13 +402,13 @@ export function SearchScreen() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: `repeat(${stackedSearchLayout ? cols : 4}, 1fr)`,
-                        gap: 2,
+                        gridTemplateColumns: `repeat(${stackedSearchLayout ? cols : 2}, 1fr)`,
+                        gap: 12,
                         height: stackedSearchLayout ? 410 : 390,
                         gridAutoRows: 'minmax(0, 1fr)',
                         alignItems: 'stretch',
-                        overflowY: postRows.length > 8 ? 'auto' : 'hidden',
-                        paddingRight: postRows.length > 8 ? 6 : 0,
+                        overflowY: postRows.length > 4 ? 'auto' : 'hidden',
+                        paddingRight: postRows.length > 4 ? 6 : 0,
                       }}
                     >
                       {sidePostRows.map((post) => {
@@ -416,6 +422,8 @@ export function SearchScreen() {
                               background: mediaUrl
                                 ? `url(${mediaUrl}) center/cover no-repeat`
                                 : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
+                              borderRadius: 12,
+                              border: `1px solid ${v.borderSubtle}`,
                               minHeight: 0,
                               cursor: 'pointer',
                               display: 'flex',
@@ -466,7 +474,7 @@ export function SearchScreen() {
                       style={{
                         display: 'grid',
                         gridTemplateColumns: `repeat(${stackedSearchLayout ? cols : 4}, 1fr)`,
-                        gap: 2,
+                        gap: 12,
                         maxHeight: stackedSearchLayout ? 820 : 780,
                         overflowY: lowerPostRows.length > 16 ? 'auto' : 'visible',
                         paddingRight: lowerPostRows.length > 16 ? 6 : 0,
@@ -483,6 +491,8 @@ export function SearchScreen() {
                               background: mediaUrl
                                 ? `url(${mediaUrl}) center/cover no-repeat`
                                 : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
+                              borderRadius: 12,
+                              border: `1px solid ${v.borderSubtle}`,
                               aspectRatio: '1/1',
                               cursor: 'pointer',
                               display: 'flex',
