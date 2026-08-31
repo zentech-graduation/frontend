@@ -6,7 +6,89 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Posts on Home, Explore, and Search's pre-query grid are now reported as read once they have been at least half visible for a second, so the recommendation feed stops repeating what a viewer has already seen.
+- Home now offers a for-you tab backed by the personalized recommendation feed, alongside the existing following tab, defaulting to for-you so a new account with no follows still sees content.
+- Settings is now a list of groups beside the setting you are changing: choosing one swaps only the region next to it, so settings can be browsed instead of opened one at a time and backed out of.
+- Every settings category has its own address, so one can be linked and reloaded, and the back button moves between categories rather than out of settings.
+- Settings now shows the account's own standing: whether it is verified, whether it is private, when it was created, and any warning a moderator has issued against it, with the reason and the moderator's own note.
+- Settings now lists the people waiting to follow you, with approve and decline, on the same screen as the rest of your audience settings.
+- The profile link field can now be edited; it is accepted by the server and was previously not offered anywhere.
+- Changing a password is now offered where it belongs, as a reset link sent to the account's own address, which is the only way the server supports it.
+- Moderators and administrators can now reach the panel at phone width, from a control beside the settings control on their own profile, where previously the only entry point was the desktop navigation rail.
+- Each distinct way a Google sign-in can fail now has its own page saying what happened in ordinary language and offering a way onward, instead of one page printing the raw reason with nothing to press.
+
 ### Changed
+- Explore now shows real personalized, follow-excluded recommendations instead of a placeholder message.
+- Search shows the same recommended content as Explore before a query is typed, instead of a generic prompt.
+- Each setting in the list now carries an icon, and the list can be searched by name.
+- The setting you have open is centred in the space beside the list instead of sitting against its left edge, so a wide screen no longer leaves all the empty space on one side.
+- The settings list sits directly beside the navigation rail, so hovering the rail opens it over the list rather than over empty space.
+- The open setting is marked by a lighter row and a heavier name instead of a coloured rule down its edge, and hovering lifts a row slightly.
+- What a setting is for is now written at the top of that setting rather than under its name in the list, so the list reads as a list of names.
+- Cancelling a Google sign-in reads as a choice rather than an error, with no warning treatment and no error code.
+- Sign-in, sign-up, email verification and password reset now say what went wrong in the application's own words instead of repeating the server's message; a suspended account and a wrong password are each named specifically.
+- An expired email verification link now says that links expire and can only be used once, with the resend button beneath it, instead of stating an error under a heading still telling you to check your inbox.
+- Profile fields are edited where they are shown, and a save that the server refuses keeps what was typed and says why against the field that caused it.
+- The navigation rail opens on keyboard focus as well as on hover, so the labels naming its destinations are no longer reachable only with a mouse.
+- Switches now report themselves as switches, with their state and a name, and carry a visible outline so they can be seen against the page in the dark theme.
+
+### Removed
+- The settings screen no longer offers account deletion, story-view notifications, a help centre, terms, or an about page: none of them did anything, and the server has nothing behind any of them.
+- The verified mark beside the email address is gone; it appeared whether or not anything was verified. The account's verified state is now stated plainly.
+- The theme control has moved off the settings screen, which is otherwise entirely backed by stored settings; the theme remains a per-device preference and still works where it already did.
+
+### Fixed
+- Home's inactive tab no longer fetches on page load; it now fetches only once selected, and keeps its result cached after that.
+- Switches are centred in their track again; the knob sat a pixel out of true on whichever side it had travelled to.
+- The rule between the settings list and the setting itself now runs the full height of the screen instead of stopping where the shorter column's content ended.
+- Opening the profile editor no longer shows an empty biography to someone who has one.
+- A settings screen at a narrow width no longer shows its title twice.
+- Moderators and administrators reach the panel from a navigation entry in the application, directly above settings, and return to the application from the panel header; ordinary accounts never see it.
+- The panel has a theme control of its own, so dark and light can be chosen without leaving it.
+- Media in the panel opens into a full viewer with forward and back navigation across the media attached to that record, closed with Escape and moved through with the arrow keys.
+- A reported story or message can now be taken down and put back, with the same recorded-reason confirmation used for posts and comments, available to moderators as well as administrators.
+- Moderators and administrators get a "my escalations" screen listing the reports they escalated together with what became of each one, including reports an administrator has since closed.
+- An account's sessions can now be ended one at a time, leaving every other session signed in, and the row for the session the reader is currently using is marked.
+- The violations list can now include revoked warnings and strikes, off by default, each marked as revoked with who revoked it and when.
+- The moderation action log can now be filtered by the account that was acted on and by a time window, both of which narrow what the caller can already see rather than widening it.
+- An account can now be suspended indefinitely, with no end date, as an explicit choice alongside a dated suspension.
+- Post rows now show the media attached to them.
+- The warning form now shows how many warnings an account already carries and, when the warning being issued is the third, states that it issues a strike and what that strike does to the account.
+- Administrators get a statistics screen showing the platform's stored snapshot, labelled as of the time it was collected rather than as live, and a chart of any of the fourteen metrics over a date range they choose.
+- The statistics screen tells apart three things a chart usually blurs: a period in which nothing was ever collected, a period that was measured and counted zero, and a missing measurement inside an otherwise complete series, which is drawn as a marked break rather than a line through it.
+- Administrators get an activity log showing what one account, or every account, has been doing, over a required date window of up to thirty days, filterable to the three kinds of activity the application records.
+- An account now lists the sessions it is signed in on, showing the device description and network address exactly as they were recorded, with the account-wide sign-out beside them because sessions cannot be ended individually.
+- An account now lists the reports filed against it, each opening the report it names, where previously only a count was shown.
+- Administrators can find any account from a new accounts screen, filtering by status and role and searching by name, and open an account to see its state and act on it.
+- From an account, administrators can ban, unban, suspend for a set number of days, lift a suspension, change role, and force every session to sign out, with each control shown only when the server permits it for that account and a mandatory recorded reason; suspending shows the resulting end time in local time before confirming.
+- Promoting an account to administrator is marked as a one-way action that cannot be undone, with its own confirmation wording, and an administrator can never act on their own account except to sign their own sessions out.
+- Administrators can manage the hashtag vocabulary from a new registry screen: list and search hashtags, create one, ban or unban it, and delete it, with the ban and delete confirmations stating what happens to posts that carry the tag.
+- The moderation action log can now be filtered by which administrator or moderator took the action, chosen through account search.
+- The panel now shows an account's discipline history — its warnings, and strikes for an administrator — reached from an account view and shown on the report detail, so a reviewer can see whether an account has been actioned before.
+- Moderators and administrators can issue a formal warning against an account, choosing a reason from the report-reason list and recording a note; administrators can also revoke a warning or strike.
+- The panel now lists everything an account has posted or commented, as posts and comments tabs on one screen, with removed items visibly marked and the same remove/restore controls used elsewhere.
+- A moderation action log reads back what was done, by whom, and why: a moderator sees its own actions and an administrator sees all, and opening an action shows its full detail, including a link back to the report it came from where one exists.
+- An administrative and moderation panel at /admin where moderators and administrators review reported content, with a filterable report queue, a report detail that shows the reported post, comment, or account, and actions to mark a report reviewing, escalate, resolve, dismiss, or remove and restore content, each behind a confirmation that records a reason.
+- Administrators get an escalated-report queue with a live count that moderators cannot reach.
+
+### Changed
+- The reports and accounts screens show the list and the selected record side by side, so moving between records no longer means navigating back to the list; the record keeps its own address, every address that worked before still works, and at a narrow width the two collapse to one screen at a time.
+- Panel screens use the full width of the window instead of stopping short of it.
+- Every select and date control in the panel now matches the buttons beside it in height, shape, border, focus and disabled treatment.
+- Filter conditions are each shown in their own labelled group with real separation, wrapping onto the next line rather than compressing, with a clear control set apart from them.
+- Muted text throughout the panel moved to the readable secondary ink and small labels moved up one step on the type scale, bringing every text role above the accessible contrast threshold in both themes.
+- Status badges carry their colour in the fill and border with the label in ordinary ink, which makes every status readable in the light theme.
+- Account names throughout the panel are now resolved in a single request per page instead of one request per person, cutting a page of twenty action-log rows from five identifier requests to one.
+- The message shown after restoring a post now describes the post's present state — the banned hashtags its caption still carries — so restoring the same post twice reads as correct rather than as a repeated action.
+- Restoring a story or a message now states what the action does and does not do before it is confirmed: a story past its expiry stays out of every feed, and a message the sender also deleted stays hidden from both participants.
+- The activity log's event-type filter now offers what the current environment actually records: seven kinds in development, three in production, because four of them depend on a service no production deployment runs.
+- The date-range control now states that the start of a window is included and the end is not.
+- Issuing a warning that triggers an automatic strike now names what happened to the account, not just that a strike was applied.
+- Revoking a warning or strike from a suspended or banned account now states in the confirmation that the account's status is unchanged, so a reviewer cannot mistake it for a restoration.
+- Banning a hashtag now says first that no existing post is taken down, so a reviewer does not ban a tag believing the content it appears on has gone.
+- The report queue's status filter now offers moderators only "pending" and "reviewing", since a moderator's queue never contains a report in any other status.
+- After signing in, moderators and administrators now land on the panel while everyone else lands on the application.
 - Extracted the username and display-name validation rules shared by registration and profile editing into a common module, so both stay in sync with the backend by construction instead of by convention.
 
 ### Added
@@ -15,7 +97,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The message lightbox now crossfades between photos and videos when stepping through a multi-item album instead of cutting to the next one instantly.
 - Settings now shows a dividing line between your normal preferences and the sign-out/delete-account actions below them.
 
+### Removed
+- The descriptive subtitle line under a panel screen's title is gone; where it named which record was open (an account, a report), that identity now sits in the title itself instead of a separate line.
+
 ### Fixed
+- The reports and accounts split screens no longer carry a doubled gap along their outer top and left edges. The list and detail panes already inset themselves; the surrounding content wrapper was adding its own padding on top of that instead of stepping aside for them.
+- The audit log's date-range controls (from, to, apply, window length) are inset from the card edge to match the filter rows above them and the same control on the statistics screen, instead of sitting nearly flush against the border.
+- A chosen dark or light theme is applied correctly on load. The stored choice was read as though the flag recording that a choice existed were the choice itself, so every manual selection resolved to light: the application briefly showed the wrong theme before correcting itself, and the panel, which has nothing to correct it, stayed light permanently.
+- Primary buttons no longer render a near-white label on the light accent fill, which was unreadable in the light theme.
+- Selecting an option in the panel's action-type filter shows a focus outline again when reached from the keyboard.
+- Filter options are no longer clipped out of reach at narrow widths.
+- The empty right region on a split screen with nothing selected is now framed like every other panel surface instead of floating as bare, unbordered space beside the list.
+- A loaded marker message in an open conversation no longer disappears when the other participant
+  sends enough new messages to push it out of the newest history page during a live refresh.
+- Message threads now clear the blocked-user composer hint after an unblock from another surface,
+  so mutual block/unblock flows no longer leave one side seeing a stale chat block state.
+- Message threads now re-check a stored "messaging unavailable" hint when the conversation becomes
+  active again, clearing stale blocked-by hints after the other person unblocks the viewer.
+- Follow request actions now use the request's requester id, so private-account owners can accept
+  or decline pending requests even when the embedded follower summary is incomplete.
+- Follow-request notifications now only show accept and decline actions while the request is still
+  pending, preventing old notifications from submitting stale request ids.
+- Live follow-request notifications now refresh the pending request cache too, so accept and
+  decline actions appear without reloading the notifications screen.
+- User follow buttons now sync back to refreshed relationship state, so a pending private-account
+  request changes to following after the request owner approves it.
+- Story captions, post comments, message replies, bios, and long direct-message text now wrap inside their containers instead of overflowing the UI.
+- Direct-message reply and draft state now stays scoped to the active conversation, so switching threads clears the old reply target while preserving each thread's unsent text.
+- Direct messages now support pasted image attachments and expose the same hover actions for media messages as text messages, including delete and copy-image actions where available.
+- Blocked users now show the correct blocked/unblock state and hint from profiles and messages, even after navigating away and returning.
+- Search now returns matching people as well as posts from the shared search bar.
+- Moderation notifications now explain removed, restored, and dismissed report outcomes with distinct text instead of showing the same removal wording for every decision.
+- A date-range preset no longer leaves behind a message asking for a start and an end while a range is applied and results are showing.
+- An account suspended without an end date now reads as "suspended indefinitely" in the panel, where the suspension previously showed nothing at all and the account appeared not to be suspended.
+- The panel no longer offers a warning against an account that cannot receive one, such as a moderator or an administrator, explaining instead why the action is unavailable.
+- Date ranges in the panel are now held to the limit of the screen they belong to rather than a single shared limit, and a range that has to be shortened to fit says so instead of changing silently.
 - The bio field on the edit-profile screen now allows the full 500 characters the server accepts, instead of cutting off at 160.
 - The message nickname prompt and a post's comment length limit now read from the same shared constant the rest of the app uses, instead of separate hardcoded numbers that happened to match it.
 - A conversation row's content no longer sits shifted toward the top of the row with empty space below it.
@@ -51,6 +167,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Corrected the session store's documentation, which stated that reloading the page ends the session. It does not: the session is restored from the refresh cookie on load.
 
 ### Removed
+- The copy telling reviewers that a reported story or message could not be taken down from the panel, which is no longer true.
+- The static "three active warnings issue a strike" statement, replaced by the account's real count wherever it can be read.
 - Group conversations. Messaging is one to one.
 - The floating "message" button on desktop and tablet, now redundant with the always-visible side rail's own message icon.
 - The separate "compose" flow (the messages list's pencil button and its person-search picker) and the top bar's mobile "new message" button. Starting a conversation now happens from a person's profile only; nothing is created until you actually send something.
@@ -70,6 +188,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Application screens and the signed-in shell are now downloaded on demand. A visitor on the sign-in page no longer downloads the composer, story viewer, and message pane before the form is usable; the initial download is roughly a third smaller.
 
 ### Tests
+- The panel's record selection is covered by unit tests, including a link naming a record the list no longer contains.
 - Continuous integration now runs lint and unit tests in addition to the build.
 
 ### Added

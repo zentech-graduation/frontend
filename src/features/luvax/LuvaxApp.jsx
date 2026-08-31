@@ -8,6 +8,7 @@ import { APP_SCREENS, DEFAULT_BASE_SCREEN } from '@/routes/appScreens';
 import { LuvaxTweaksProvider } from './LuvaxTweaksContext';
 import { ToastHost } from './components/Toast';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useLiveNotifications } from './hooks/useNotifications';
 import { useUserProfile } from './hooks/useUsers';
 
 /**
@@ -44,6 +45,8 @@ function resolveBaseScreen(backgroundPath) {
 const APP_SCALE_BASE = 1.14;
 const APP_SCALE_REFERENCE_WIDTH = 1920;
 const APP_SCALE_MAX = 1.6;
+const DARK_MANUAL_KEY = 'lxDarkManual';
+const DARK_VALUE_KEY = 'lxDark';
 
 function computeAppScale(width) {
   if (!width) return APP_SCALE_BASE;
@@ -51,20 +54,27 @@ function computeAppScale(width) {
   return Math.min(APP_SCALE_MAX, Math.max(APP_SCALE_BASE, scaled));
 }
 
+function readInitialDarkMode() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return TWEAK_DEFAULTS.dark;
+  }
+
+  if (localStorage.getItem(DARK_MANUAL_KEY) !== null) {
+    const stored = localStorage.getItem(DARK_VALUE_KEY);
+    if (stored === 'true') return true;
+    if (stored === 'false') return false;
+    return false;
+  }
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
 // ─── Luvax App Layout ──────────────────────────────────────────────────────
 export function LuvaxApp() {
   const [tweaks, setTweakState] = useState(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return TWEAK_DEFAULTS;
-    }
-
-    if (localStorage.getItem('lxDarkManual') !== null) {
-      return TWEAK_DEFAULTS;
-    }
-
     return {
       ...TWEAK_DEFAULTS,
-      dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+      dark: readInitialDarkMode(),
     };
   });
   const [messagesThreadOpen, setMessagesThreadOpen] = useState(false);
@@ -72,6 +82,7 @@ export function LuvaxApp() {
   const location = useLocation();
   const navigate = useNavigate();
   const matches = useMatches();
+  useLiveNotifications();
 
   // The login/refresh session carries a lean user without avatarUrl, so the
   // shell and comment composer would show a blank avatar while profile pages
@@ -109,14 +120,14 @@ export function LuvaxApp() {
     }
 
     const media = window.matchMedia('(prefers-color-scheme: dark)');
-    if (localStorage.getItem('lxDarkManual') === null) {
+    if (localStorage.getItem(DARK_MANUAL_KEY) === null) {
       // Synchronises with the OS colour-scheme media query and the stored manual override.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTweak('dark', media.matches);
     }
 
     const handleChange = (event) => {
-      if (localStorage.getItem('lxDarkManual') === null) {
+      if (localStorage.getItem(DARK_MANUAL_KEY) === null) {
         setTweak('dark', event.matches);
       }
     };
@@ -253,6 +264,54 @@ export function LuvaxApp() {
 
   if (isOverlay) {
     const base = resolveBaseScreen(location.state?.background);
+    if (base.chrome === 'messages') {
+      const msgBottom = viewport === 'mobile' ? 56 : 0;
+      const msgLeft = viewport === 'mobile' ? 0 : RAIL_COLLAPSED_W;
+
+      return (
+        <LuvaxTweaksProvider value={tweakContext}>
+          <div style={{ background: v.base }}>
+            {viewport === 'mobile' ? (
+              !messagesThreadOpen ? (
+                <LxAppBar screen={base.screen} navigate={navigate} />
+              ) : null
+            ) : (
+              <LxSideRail active={base.screen} navigate={navigate} />
+            )}
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                bottom: msgBottom,
+                left: msgLeft,
+                right: 0,
+                background: v.base,
+                zIndex: 10,
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: '100%',
+                  height: '100%',
+                  margin: '0 auto',
+                  background: v.base,
+                  overflow: 'hidden',
+                }}
+              >
+                {base.element}
+              </div>
+            </div>
+            {viewport === 'mobile' ? (
+              <LxBottomNav active={base.screen} navigate={navigate} />
+            ) : null}
+          </div>
+          <Outlet />
+          <ToastHost />
+        </LuvaxTweaksProvider>
+      );
+    }
+
     const baseShowRail =
       Boolean(base.rightRail) && (viewport === 'desktop' || viewport === 'tablet');
 

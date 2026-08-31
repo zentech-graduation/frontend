@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { v } from '@/config/tokens';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 
@@ -45,6 +46,7 @@ export function ConfirmModal({ config, onClose }) {
   useEscapeKey(Boolean(config), onClose);
 
   if (!config) return null;
+  if (typeof document === 'undefined') return null;
 
   const confirm = () => {
     if (delayed) return;
@@ -52,11 +54,13 @@ export function ConfirmModal({ config, onClose }) {
     onClose();
   };
 
-  return (
+  const dialog = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={typeof title === 'string' ? title : 'confirm'}
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
       style={{
         position: 'fixed',
         inset: 0,
@@ -67,8 +71,17 @@ export function ConfirmModal({ config, onClose }) {
         padding: 16,
       }}
     >
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: v.scrim }} />
       <div
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
+        onPointerDown={(event) => event.stopPropagation()}
+        style={{ position: 'absolute', inset: 0, background: v.scrim }}
+      />
+      <div
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
         style={{
           position: 'relative',
           width: 340,
@@ -102,7 +115,10 @@ export function ConfirmModal({ config, onClose }) {
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             type="button"
-            onClick={onClose}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose();
+            }}
             style={{
               flex: 1,
               padding: '11px 0',
@@ -121,7 +137,10 @@ export function ConfirmModal({ config, onClose }) {
           <button
             type="button"
             disabled={delayed || config.confirmDisabled}
-            onClick={confirm}
+            onClick={(event) => {
+              event.stopPropagation();
+              confirm();
+            }}
             style={{
               flex: 1,
               padding: '11px 0',
@@ -143,4 +162,6 @@ export function ConfirmModal({ config, onClose }) {
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }

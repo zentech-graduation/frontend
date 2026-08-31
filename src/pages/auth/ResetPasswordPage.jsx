@@ -59,7 +59,7 @@ export default function ResetPasswordPage() {
     setServerState({ error: '', success: '' });
 
     if (!token) {
-      setServerState({ error: 'This reset link is invalid or expired.', success: '' });
+      setServerState({ error: 'this link has expired. request a new one to continue.', success: '' });
       return;
     }
 
@@ -71,11 +71,18 @@ export default function ResetPasswordPage() {
 
       setServerState({
         error: '',
-        success: 'Your password has been updated. Redirecting to sign in...',
+        success: 'your password is changed. taking you to sign in.',
       });
     } catch (error) {
+      // A reset token that is expired, already used or malformed all answer
+      // AUTH_RESET_TOKEN_INVALID, and that is the one case worth telling apart
+      // here because the way out differs: a new link rather than another go.
+      const code = error?.response?.data?.code;
       setServerState({
-        error: authApi.normalizeMessage(error, 'Unable to reset your password right now.'),
+        error:
+          code === 'AUTH_RESET_TOKEN_INVALID'
+            ? 'this link has expired or has already been used. request a new one and it will work.'
+            : "we couldn't change your password just now. try again in a moment.",
         success: '',
       });
     }
@@ -88,7 +95,10 @@ export default function ResetPasswordPage() {
           <div className="lx-card">
             <div className="lx-head">
               <h1 className="lx-h2">link expired.</h1>
-              <p className="lx-sub">this reset link is invalid or has expired.</p>
+              <p className="lx-sub">
+                reset links stop working after fifteen minutes, and each one can only be used
+                once. requesting a new one takes a moment.
+              </p>
             </div>
             <div className="lx-foot-block">
               <Link to={ROUTES.FORGOT_PASSWORD}>request a new reset link</Link>

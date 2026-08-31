@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import * as socialService from '../../../services/social.service';
 import { getNextCursor } from '@/utils/helpers';
+import { notifKeys } from './useNotifications';
+import { patchCachedAuthorRelationship } from './usePostLikeState';
 
 export const socialKeys = {
   all: ['social'],
@@ -56,15 +58,27 @@ export const useFollow = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (targetUserId) => socialService.followUser(targetUserId),
-    onSuccess: (data, variables) => {
+    onMutate: (targetUserId) => {
+      const restore = patchCachedAuthorRelationship(queryClient, targetUserId, {
+        isFollowing: true,
+        isFollowedByViewer: true,
+        isFollowRequested: false,
+      });
+      return { restore };
+    },
+    onSuccess: () => {
       // Refresh profile data, user posts, following lists
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: socialKeys.following() });
       queryClient.invalidateQueries({ queryKey: socialKeys.followers() });
       queryClient.invalidateQueries({ queryKey: ['post'] });
       queryClient.resetQueries({ queryKey: ['feed'] });
+      queryClient.resetQueries({ queryKey: ['recommendedFeed'] });
       queryClient.resetQueries({ queryKey: ['explore'] });
       queryClient.resetQueries({ queryKey: ['userPosts'] });
+    },
+    onError: (_error, _variables, context) => {
+      context?.restore?.();
     },
   });
 };
@@ -73,16 +87,26 @@ export const useUnfollow = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (targetUserId) => socialService.unfollowUser(targetUserId),
-    onSuccess: (data, variables) => {
+    onMutate: (targetUserId) => {
+      const restore = patchCachedAuthorRelationship(queryClient, targetUserId, {
+        isFollowing: false,
+        isFollowedByViewer: false,
+        isFollowRequested: false,
+      });
+      return { restore };
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: socialKeys.following() });
       queryClient.invalidateQueries({ queryKey: socialKeys.followers() });
       queryClient.invalidateQueries({ queryKey: ['post'] });
       queryClient.resetQueries({ queryKey: ['feed'] });
+      queryClient.resetQueries({ queryKey: ['recommendedFeed'] });
       queryClient.resetQueries({ queryKey: ['explore'] });
       queryClient.resetQueries({ queryKey: ['userPosts'] });
     },
-    onError: (err) => {
+    onError: (err, _variables, context) => {
+      context?.restore?.();
       if (import.meta.env.DEV) {
         console.error('[useUnfollow]', err);
       }
@@ -104,6 +128,7 @@ export const useBlock = () => {
       queryClient.invalidateQueries({ queryKey: socialKeys.followers() });
       queryClient.invalidateQueries({ queryKey: ['post'] });
       queryClient.resetQueries({ queryKey: ['feed'] });
+      queryClient.resetQueries({ queryKey: ['recommendedFeed'] });
       queryClient.resetQueries({ queryKey: ['explore'] });
       queryClient.resetQueries({ queryKey: ['userPosts'] });
     },
@@ -128,6 +153,7 @@ export const useApproveFollowRequest = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: socialKeys.requests() });
       queryClient.invalidateQueries({ queryKey: socialKeys.followers() });
+      queryClient.invalidateQueries({ queryKey: notifKeys.all });
     },
   });
 };
@@ -138,6 +164,7 @@ export const useRejectFollowRequest = () => {
     mutationFn: (requesterId) => socialService.rejectFollowRequest(requesterId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: socialKeys.requests() });
+      queryClient.invalidateQueries({ queryKey: notifKeys.all });
     },
   });
 };

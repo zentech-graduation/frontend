@@ -117,10 +117,25 @@ const ICONS = {
     </>
   ),
   chevronRight: <polyline points="9 18 15 12 9 6" />,
+  sun: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </>
+  ),
+  moon: <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" />,
   send: (
     <>
       <line x1="22" y1="2" x2="11" y2="13" />
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </>
+  ),
+  smile: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 14s1.4 2 4 2 4-2 4-2" />
+      <circle cx="9" cy="10" r="0.7" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10" r="0.7" fill="currentColor" stroke="none" />
     </>
   ),
   more: (
@@ -179,6 +194,14 @@ const ICONS = {
       <line x1="22" y1="11" x2="16" y2="11" />
     </>
   ),
+  userPlus: (
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="22" y1="11" x2="16" y2="11" />
+    </>
+  ),
   ban: (
     <>
       <circle cx="12" cy="12" r="10" />
@@ -198,6 +221,35 @@ const ICONS = {
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       <line x1="3" y1="3" x2="21" y2="21" />
+    </>
+  ),
+  // Added for the admin panel: a shield for the panel identity, a funnel for the
+  // filter bar, a door-and-arrow for sign out, and a downward chevron for the
+  // select control. Same outline style as the rest of the set.
+  shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
+  filter: <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />,
+  logout: (
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </>
+  ),
+  chevronDown: <polyline points="6 9 12 15 18 9" />,
+  // A clock for the moderation action log, and an outward arrow for a link that
+  // leaves the current screen (the audit row's route back to its report). Same
+  // outline style as the rest of the set.
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 7 12 12 15 14" />
+    </>
+  ),
+  external: (
+    <>
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+      <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
     </>
   ),
 };

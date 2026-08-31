@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { LxDropdownMenu } from '@/components/ui/lx-dropdown-menu';
 import { LxIcon } from '@/components/ui/lx-icon';
-import { copyToClipboard } from '@/utils/helpers';
+import { ROUTES, routeTo } from '@/config/constants';
+import { copyToClipboard, getDisplayName, getUserSummary } from '@/utils/helpers';
+import { usePostDetail } from '@/features/luvax/hooks/usePosts';
 import { bubbleCornerRadius } from '../utils/bubbleShape';
 import { AvatarVisual } from './AvatarVisual';
 import { MediaPlaceholder } from './MediaPlaceholder';
@@ -13,19 +16,28 @@ const AVATAR_SIZE = 21;
 // exact pixels. The padding is cancelled by an equal negative margin, so neighbouring rows and the
 // list's own gap do not move.
 const HIT_PADDING = 7;
+const EMOJI_ONLY_PATTERN = /^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D\s]+$/u;
 
 export function MessageBubble({
   message,
   activeThread,
   onPreviewMedia,
+  onOpenStory,
   onDeleteToggle,
   onReplyMessage,
-  canDelete,
   viewport,
+  forceShowActions = false,
 }) {
+  const navigate = useNavigate();
   const isMine = message.from === 'me';
   const isMobile = viewport === 'mobile';
   const isTouchLayout = viewport === 'mobile' || viewport === 'tablet';
+  const { data: sharedPostResponse } = usePostDetail(message.sharedPostId);
+  const sharedPost = sharedPostResponse?.data || sharedPostResponse || null;
+  const sharedPostAuthor = sharedPost ? getUserSummary(sharedPost) : null;
+  const sharedPostCaption = sharedPost?.caption || message.title || message.text || 'shared post';
+  const sharedPostMedia = Array.isArray(sharedPost?.media) ? sharedPost.media[0] : null;
+  const sharedPostHandle = sharedPostAuthor?.username ? `@${sharedPostAuthor.username}` : null;
   const [menuOpen, setMenuOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [touchRevealed, setTouchRevealed] = useState(false);
@@ -35,22 +47,19 @@ export function MessageBubble({
     message.kind === 'reply'
       ? `${message.replyText}\n${message.text}`
       : message.kind === 'post'
-        ? [message.handle, message.title, message.meta].filter(Boolean).join('\n')
+        ? [sharedPostHandle, sharedPostCaption, message.meta].filter(Boolean).join('\n')
         : message.kind === 'file'
           ? message.text
           : message.text;
   const canCopyText = Boolean(textForCopy);
+  const isEmojiOnly =
+    message.kind !== 'reply' &&
+    Boolean(message.text?.trim()) &&
+    EMOJI_ONLY_PATTERN.test(message.text.trim()) &&
+    !/[A-Za-z0-9]/.test(message.text);
   const menuItems = useMemo(
     () =>
       [
-        message.kind !== 'deleted'
-          ? {
-              id: 'reply',
-              icon: 'reply',
-              label: 'Reply',
-              onClick: () => onReplyMessage?.(message),
-            }
-          : null,
         canCopyText
           ? {
               id: 'copy',
@@ -69,13 +78,24 @@ export function MessageBubble({
             }
           : null,
       ].filter(Boolean),
-    [canDelete, message, onDeleteToggle, onReplyMessage, textForCopy]
+    [canCopyText, isMine, message, onDeleteToggle, textForCopy]
   );
   const supportsHover =
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const showActions = menuOpen || (!isTouchLayout && hovered) || (isTouchLayout && touchRevealed);
+  const showActions =
+    forceShowActions || menuOpen || (!isTouchLayout && hovered) || (isTouchLayout && touchRevealed);
+
+  const openSharedPost = () => {
+    if (message.sharedPostId) {
+      navigate(routeTo.postDetail(message.sharedPostId), {
+        state: { background: ROUTES.MESSAGES },
+      });
+      return;
+    }
+    onPreviewMedia({ label: sharedPostCaption });
+  };
 
   const handleHoverStart = () => {
     setHovered(true);
@@ -182,6 +202,11 @@ export function MessageBubble({
     flexShrink: 0,
   };
 
+  const replyButtonStyle = {
+    ...menuButtonStyle,
+    background: 'rgba(255,255,255,0.06)',
+  };
+
   // The padding/negative-margin pair widens the hover and tap target past the bubble's own edges
   // without shifting this row's siblings apart - hovering "near" a message reveals its actions, not
   // only a precise hover on the bubble pixels themselves.
@@ -194,12 +219,13 @@ export function MessageBubble({
     return (
       <div
         style={{
-          alignSelf: 'flex-end',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'flex-end',
+          gap: 6,
+          flexDirection: isMine ? 'row-reverse' : 'row',
         }}
       >
+        {avatarSlot}
         <div
           style={{
             ...bubbleBase,
@@ -215,8 +241,10 @@ export function MessageBubble({
     );
   }
 
-  if (message.kind === 'file' || message.kind === 'post') {
+  if (message.kind === 'file' || message.kind === 'post' || message.kind === 'story') {
     const isFile = message.kind === 'file';
+    const isStory = message.kind === 'story';
+    const storyMedia = message.sharedStoryMedia || { label: message.meta || 'shared story' };
     return (
       <div
         style={{
@@ -243,16 +271,116 @@ export function MessageBubble({
           onPointerDown={handleBubbleInteraction}
           onClick={handleTouchMenuToggle}
         >
-          {isFile ? (
+          {isStory ? (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: isMine ? 'flex-end' : 'flex-start',
+                gap: 8,
+                maxWidth: isMobile ? 300 : 460,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  color: v.ink3,
+                  fontFamily: v.fontBody,
+                  fontSize: 13,
+                  alignSelf: isMine ? 'flex-end' : 'flex-start',
+                }}
+              >
+                <LxIcon name="reply" size={12} color={v.ink3} />
+                <span>
+                  {isMine
+                    ? `you replied to ${activeThread.name}'s story`
+                    : `${message.senderName} replied to your story`}
+                </span>
+              </div>
+              <div
+                style={{
+                  width: isMobile ? 116 : 180,
+                  height: isMobile ? 154 : 240,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  alignSelf: isMine ? 'flex-end' : 'flex-start',
+                  background: v.surface,
+                }}
+              >
+                <MediaPlaceholder
+                  item={storyMedia}
+                  onClick={() =>
+                    message.sharedStoryId
+                      ? onOpenStory?.(message.sharedStoryId)
+                      : onPreviewMedia(storyMedia)
+                  }
+                />
+              </div>
+              {message.text ? (
+                <div
+                  style={{
+                    maxWidth: '100%',
+                    padding: '8px 12px',
+                    borderRadius: 16,
+                    background: isMine ? activeThread.accent || v.accentDim : v.surface,
+                    color: v.ink,
+                    fontFamily: v.fontBody,
+                    fontSize: 14.5,
+                    lineHeight: 1.42,
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {message.text}
+                </div>
+              ) : null}
+            </div>
+          ) : isFile ? (
             // A real photo or video is the bubble - no surrounding card, border, or padding
             // framing it. Chrome around a thumbnail read as over-designed next to a plain photo.
-            <MediaPlaceholder
-              item={
-                message.media ? { ...message.media, label: message.text } : { label: message.text }
-              }
-              large
-              onClick={() => onPreviewMedia(message.media || { label: message.text })}
-            />
+            <div
+              style={{
+                maxWidth: isMobile ? 196 : 248,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: isMine ? 'flex-end' : 'flex-start',
+                gap: message.text ? 2 : 0,
+              }}
+            >
+              <MediaPlaceholder
+                item={
+                  message.media
+                    ? { ...message.media, label: message.text }
+                    : { label: message.text }
+                }
+                large
+                onClick={() => onPreviewMedia(message.media || { label: message.text })}
+              />
+              {message.text ? (
+                <div
+                  style={{
+                    maxWidth: '100%',
+                    padding: '8px 11px',
+                    borderRadius: bubbleCornerRadius({
+                      isMine,
+                      isFirstInRun: false,
+                      isLastInRun: message.isLastInRun,
+                    }),
+                    background: isMine ? activeThread.accent || v.accentDim : v.surface,
+                    color: v.ink,
+                    fontFamily: v.fontBody,
+                    fontSize: 13.5,
+                    lineHeight: 1.42,
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {message.text}
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div
               style={{
@@ -264,14 +392,36 @@ export function MessageBubble({
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                 <MediaPlaceholder
-                  item={{ label: message.handle }}
-                  onClick={() => onPreviewMedia({ label: message.title })}
+                  item={sharedPostMedia || { label: message.meta || 'shared post' }}
+                  onClick={openSharedPost}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                   <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.accent }}>
-                    {message.handle}
+                    {sharedPostHandle || message.meta || 'shared post'}
                   </div>
-                  <div style={{ color: v.ink, fontSize: 12.5 }}>{message.title}</div>
+                  <div
+                    style={{
+                      color: v.ink,
+                      fontSize: 12.5,
+                      overflowWrap: 'anywhere',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {sharedPostCaption}
+                  </div>
+                  {sharedPostAuthor ? (
+                    <div
+                      style={{
+                        fontFamily: v.fontBody,
+                        fontSize: 11,
+                        color: v.ink3,
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      by {getDisplayName(sharedPostAuthor)}
+                    </div>
+                  ) : null}
                   <div
                     style={{
                       display: 'flex',
@@ -284,7 +434,7 @@ export function MessageBubble({
                     <span>{message.meta}</span>
                     <button
                       type="button"
-                      onClick={() => onPreviewMedia({ label: message.title })}
+                      onClick={openSharedPost}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -300,7 +450,21 @@ export function MessageBubble({
               </div>
             </div>
           )}
-          {showActions ? (
+          {showActions && message.kind !== 'deleted' ? (
+            <button
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onReplyMessage?.(message);
+              }}
+              aria-label="reply to message"
+              style={replyButtonStyle}
+            >
+              <LxIcon name="reply" size={12} color={v.ink3} />
+            </button>
+          ) : null}
+          {showActions && menuItems.length > 0 ? (
             <button
               ref={menuButtonRef}
               type="button"
@@ -346,6 +510,7 @@ export function MessageBubble({
           alignItems: 'center',
           gap: 6,
           flexDirection: isMine ? 'row-reverse' : 'row',
+          minWidth: 0,
         }}
         onPointerDown={handleBubbleInteraction}
         onClick={handleTouchMenuToggle}
@@ -353,35 +518,92 @@ export function MessageBubble({
         <div
           style={{
             ...bubbleBase,
-            background: isMine ? activeThread.accent || v.accentDim : v.surface,
+            background: isEmojiOnly
+              ? 'transparent'
+              : isMine
+                ? activeThread.accent || v.accentDim
+                : v.surface,
             color: v.ink,
-            border: isMine ? 'none' : `1px solid ${v.border}`,
-            minWidth: isMobile ? 0 : 76,
+            border: isEmojiOnly || isMine ? 'none' : `1px solid ${v.border}`,
+            minWidth: isEmojiOnly || isMobile ? 0 : 76,
             width: isMobile ? '100%' : 'auto',
+            overflow: 'hidden',
+            padding: isEmojiOnly ? '0 2px' : bubbleBase.padding,
+            fontFamily: isEmojiOnly
+              ? '"Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", sans-serif'
+              : v.fontBody,
+            fontSize: isEmojiOnly ? 34 : bubbleBase.fontSize,
+            lineHeight: isEmojiOnly ? 1.15 : bubbleBase.lineHeight,
           }}
         >
           {message.kind === 'reply' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, color: v.ink2 }}>
-                <span style={{ fontFamily: v.fontMono, fontSize: 10 }}>↳ {message.replyTo}</span>
-                <span style={{ fontSize: 11.5 }}>{message.replyText}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  color: v.ink2,
+                  minWidth: 0,
+                }}
+              >
+                <span style={{ fontFamily: v.fontMono, fontSize: 10, minWidth: 0 }}>
+                  ↳ {message.replyTo}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    minWidth: 0,
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {message.replyText}
+                </span>
               </div>
-              <strong style={{ fontWeight: 600 }}>{message.text}</strong>
+              <strong
+                style={{
+                  fontWeight: 600,
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {message.text}
+              </strong>
             </div>
           ) : (
             message.text
           )}
         </div>
         {showActions ? (
-          <button
-            ref={menuButtonRef}
-            type="button"
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-label="message actions"
-            style={menuButtonStyle}
-          >
-            <LxIcon name="more" size={10} color={isMine ? v.ink2 : v.ink3} />
-          </button>
+          <>
+            {message.kind !== 'deleted' ? (
+              <button
+                type="button"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onReplyMessage?.(message);
+                }}
+                aria-label="reply to message"
+                style={replyButtonStyle}
+              >
+                <LxIcon name="reply" size={12} color={isMine ? v.ink2 : v.ink3} />
+              </button>
+            ) : null}
+            {menuItems.length > 0 ? (
+              <button
+                ref={menuButtonRef}
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                aria-label="message actions"
+                style={menuButtonStyle}
+              >
+                <LxIcon name="more" size={10} color={isMine ? v.ink2 : v.ink3} />
+              </button>
+            ) : null}
+          </>
         ) : null}
       </div>
       <LxDropdownMenu

@@ -89,6 +89,7 @@ export function ConversationInfoPanel({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <LxToggle
+              label="mute notification"
               on={Boolean(activeThread.muted)}
               onChange={(next) => (next ? onMute?.() : onUnmute?.())}
             />

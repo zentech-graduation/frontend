@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { v } from '@/config/tokens';
-import { CHAR_LIMITS } from '@/config/constants';
+import { CHAR_LIMITS, ROUTES, routeTo } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
@@ -25,6 +25,7 @@ import {
 } from './hooks/useConversations';
 import { useMessages, useDeleteMessage, useSendMessage } from './hooks/useMessages';
 import { useLiveMessages } from './hooks/useLiveMessages';
+import { isVideoMessageMedia } from './utils/messageMedia';
 import { ConversationListPanel } from './components/ConversationListPanel';
 import { ChatCenterPanel } from './components/ChatCenterPanel';
 import { ConversationInfoPanel } from './components/ConversationInfoPanel';
@@ -37,10 +38,11 @@ import { toast } from '@/features/luvax/components/Toast';
 import { useMediaUpload } from '@/features/luvax/hooks/useMediaUpload';
 import { useMediaConstraints } from '@/features/luvax/hooks/useMediaConstraints';
 import { useUserProfile } from '@/features/luvax/hooks/useUsers';
-import { useBlock } from '@/features/luvax/hooks/useSocial';
+import { useBlock, useBlockedUsers } from '@/features/luvax/hooks/useSocial';
 import { ReportModal } from '@/features/luvax/components/ReportModal';
 import { BlockConfirmDialog } from '@/features/luvax/components/BlockConfirmDialog';
 import { validateDuration, validateFile } from '@/features/luvax/utils/composerMedia';
+import { extractPageContent } from '@/utils/helpers';
 
 // A message send holds fewer items than a post carousel by design: a burst of ten photos already
 // reads as a lot in a chat thread, and the album viewer (see MessageAlbum) is tuned for that count.
@@ -74,11 +76,39 @@ const lightboxArrowStyle = (side) => ({
   zIndex: 2,
 });
 
+const messagingUnavailableStorageKey = (userId) =>
+  `luvax:messages:unavailable:${userId || 'anonymous'}`;
+
+const readMessagingUnavailableKeys = (storageKey) => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(storageKey) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((key) => typeof key === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeMessagingUnavailableKeys = (storageKey, keys) => {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(storageKey, JSON.stringify(Array.from(new Set(keys))));
+};
+
+const removeMessagingUnavailableKey = (storageKey, keyToRemove) => {
+  const next = readMessagingUnavailableKeys(storageKey).filter((key) => key !== keyToRemove);
+  writeMessagingUnavailableKeys(storageKey, next);
+  return next;
+};
+
 export function MessagesScreen() {
   const { viewport } = useLuvaxTweaks();
   const location = useLocation();
   const navigate = useNavigate();
   const currentUserId = useAuthStore((state) => state.user?.id);
+  const unavailableStorageKey = useMemo(
+    () => messagingUnavailableStorageKey(currentUserId),
+    [currentUserId]
+  );
   const { conversations, isLoading: conversationsLoading } = useConversations();
   // The adapter owns every mapping from the API shape onto what these panels render.
   const threads = useMemo(
@@ -100,6 +130,11 @@ export function MessagesScreen() {
   const [deleteThreadTarget, setDeleteThreadTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
+  const [locallyBlockedUserIds, setLocallyBlockedUserIds] = useState([]);
+  const [unavailableProbeTick, setUnavailableProbeTick] = useState(0);
+  const [messagingUnavailableByStorageKey, setMessagingUnavailableByStorageKey] = useState(() => ({
+    [unavailableStorageKey]: readMessagingUnavailableKeys(unavailableStorageKey),
+  }));
   const [nicknameTarget, setNicknameTarget] = useState(null);
   const [nicknameValue, setNicknameValue] = useState('');
   // Set only by a profile's "message" button, before any conversation exists between the two
@@ -109,6 +144,11 @@ export function MessagesScreen() {
   const queryClient = useQueryClient();
   const listOnlyMobile = viewport === 'mobile' && !threadOpen;
   const scrollerRef = useRef(null);
+  const activeComposerKeyRef = useRef(null);
+  const draftRef = useRef('');
+  const pendingAttachmentsRef = useRef([]);
+  const composerDraftsRef = useRef({});
+  const composerAttachmentsRef = useRef({});
 
   const filteredThreads = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -143,8 +183,83 @@ export function MessagesScreen() {
     : pendingProfileResponse?.data
       ? toPendingThread(pendingProfileResponse.data)
       : null;
+  const activeComposerKey =
+    activeConversation?.id || (pendingTargetUserId ? `pending:${pendingTargetUserId}` : null);
+  const activeReplyingTo =
+    replyingTo?.conversationId === activeConversation?.id ? replyingTo : null;
+  const { data: blockedResponse } = useBlockedUsers();
+  const blockedRows = useMemo(() => extractPageContent(blockedResponse), [blockedResponse]);
+  const serverBlockedUserIdSet = useMemo(() => {
+    const ids = new Set();
+    blockedRows.forEach((row) => {
+      const id = row?.user?.id ?? row?.id;
+      if (id) ids.add(id);
+    });
+    return ids;
+  }, [blockedRows]);
+  const blockedUserIdSet = useMemo(() => {
+    const ids = new Set(locallyBlockedUserIds);
+    serverBlockedUserIdSet.forEach((id) => ids.add(id));
+    return ids;
+  }, [locallyBlockedUserIds, serverBlockedUserIdSet]);
+  const isThreadBlocked = useCallback(
+    (thread) => Boolean(thread?.counterpartId && blockedUserIdSet.has(thread.counterpartId)),
+    [blockedUserIdSet]
+  );
+  const activeCounterpartId = activeThread?.counterpartId || null;
+  const isActiveThreadBlocked = isThreadBlocked(activeThread);
+  const messagingUnavailableKeys =
+    messagingUnavailableByStorageKey[unavailableStorageKey] ||
+    readMessagingUnavailableKeys(unavailableStorageKey);
+  const isMessagingUnavailable = Boolean(
+    activeComposerKey && messagingUnavailableKeys.includes(activeComposerKey)
+  );
+  const messageBlockHint = isActiveThreadBlocked
+    ? `you blocked ${activeThread?.username ? `@${activeThread.username}` : activeThread?.name}. messaging is paused until you unblock them.`
+    : 'messaging is unavailable for this conversation.';
 
   useLiveMessages(activeConversation?.id);
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+
+  useEffect(() => {
+    pendingAttachmentsRef.current = pendingAttachments;
+  }, [pendingAttachments]);
+
+  useEffect(() => {
+    const previousKey = activeComposerKeyRef.current;
+    if (previousKey === activeComposerKey) return;
+
+    if (previousKey) {
+      composerDraftsRef.current[previousKey] = draftRef.current;
+      composerAttachmentsRef.current[previousKey] = pendingAttachmentsRef.current;
+    }
+
+    activeComposerKeyRef.current = activeComposerKey;
+    setReplyingTo(null);
+    setDraft(activeComposerKey ? composerDraftsRef.current[activeComposerKey] || '' : '');
+    setPendingAttachments(
+      activeComposerKey ? composerAttachmentsRef.current[activeComposerKey] || [] : []
+    );
+  }, [activeComposerKey]);
+
+  useEffect(
+    () => () => {
+      const previewUrls = new Set();
+      pendingAttachmentsRef.current.forEach((item) => {
+        if (item.previewUrl) previewUrls.add(item.previewUrl);
+      });
+      Object.values(composerAttachmentsRef.current).forEach((items) => {
+        items.forEach((item) => {
+          if (item.previewUrl) previewUrls.add(item.previewUrl);
+        });
+      });
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    },
+    []
+  );
 
   // Promotes a pending target to a real, selected conversation the moment one resolves above -
   // whether that took a round trip through handleSend or was already sitting in the list.
@@ -169,6 +284,63 @@ export function MessagesScreen() {
   const deleteMessage = useDeleteMessage(activeConversation?.id);
   const { uploadMedia, getMediaMetadata } = useMediaUpload();
   const { constraints: mediaConstraints } = useMediaConstraints();
+
+  useEffect(() => {
+    if (block.isPending) return;
+    // Reconcile optimistic message-panel blocks with unblocks performed from profile/settings.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocallyBlockedUserIds((ids) => ids.filter((id) => serverBlockedUserIdSet.has(id)));
+  }, [block.isPending, serverBlockedUserIdSet]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const retryUnavailableProbe = () => setUnavailableProbeTick((tick) => tick + 1);
+    window.addEventListener('focus', retryUnavailableProbe);
+    document.addEventListener('visibilitychange', retryUnavailableProbe);
+    return () => {
+      window.removeEventListener('focus', retryUnavailableProbe);
+      document.removeEventListener('visibilitychange', retryUnavailableProbe);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      !isMessagingUnavailable ||
+      !activeConversation?.id ||
+      !activeComposerKey ||
+      !activeCounterpartId ||
+      isActiveThreadBlocked
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    messageService
+      .createDirect(activeCounterpartId)
+      .then(() => {
+        if (cancelled) return;
+        setMessagingUnavailableByStorageKey((byKey) => ({
+          ...byKey,
+          [unavailableStorageKey]: removeMessagingUnavailableKey(
+            unavailableStorageKey,
+            activeComposerKey
+          ),
+        }));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeComposerKey,
+    activeConversation?.id,
+    activeCounterpartId,
+    isActiveThreadBlocked,
+    isMessagingUnavailable,
+    unavailableProbeTick,
+    unavailableStorageKey,
+  ]);
 
   useEffect(() => {
     if (activeConversation?.id) {
@@ -268,6 +440,10 @@ export function MessagesScreen() {
 
   const openPreview = (items, index = 0) => setPreviewGallery({ items, index });
 
+  const openStory = (storyId) => {
+    if (storyId) navigate(routeTo.storyView(storyId), { state: { background: ROUTES.MESSAGES } });
+  };
+
   const selectThread = (threadId) => {
     setActiveThreadId(threadId);
     setPendingTargetUserId(null);
@@ -290,7 +466,7 @@ export function MessagesScreen() {
       body: {
         messageType: 'text',
         content: value,
-        replyToId: replyingTo?.id || null,
+        replyToId: activeReplyingTo?.id || null,
       },
       // Shaped like a MessageResponse so the adapter renders it with no special case, and so a
       // rollback simply removes it again.
@@ -304,7 +480,7 @@ export function MessagesScreen() {
         media: null,
         sharedPostId: null,
         sharedStoryId: null,
-        replyToId: replyingTo?.id || null,
+        replyToId: activeReplyingTo?.id || null,
         isDeleted: false,
         deletedAt: null,
         createdAt: new Date().toISOString(),
@@ -321,24 +497,26 @@ export function MessagesScreen() {
    * immediately, so a caller looping over several attachments with only the upload awaited was
    * racing every send request over the network instead of sending them in order.
    */
-  const sendAttachmentMessage = async (conversationId, item) => {
+  const sendAttachmentMessage = async (conversationId, item, caption = null) => {
     const asset = await uploadMedia(item.file);
     const idempotencyKey = nextIdempotencyKey();
+    const content = caption?.trim() || null;
 
     return sendMessage.mutateAsync({
       conversationId,
       idempotencyKey,
       body: {
         messageType: item.isVideo ? 'video' : 'image',
+        content,
         mediaAssetId: asset.id,
-        replyToId: replyingTo?.id || null,
+        replyToId: activeReplyingTo?.id || null,
       },
       optimisticMessage: {
         id: `pending-${idempotencyKey}`,
         conversationId,
         senderId: currentUserId,
         messageType: item.isVideo ? 'video' : 'image',
-        content: null,
+        content,
         mediaAssetId: asset.id,
         media: {
           mediaAssetId: asset.id,
@@ -347,7 +525,7 @@ export function MessagesScreen() {
         },
         sharedPostId: null,
         sharedStoryId: null,
-        replyToId: replyingTo?.id || null,
+        replyToId: activeReplyingTo?.id || null,
         isDeleted: false,
         deletedAt: null,
         createdAt: new Date().toISOString(),
@@ -422,6 +600,7 @@ export function MessagesScreen() {
       return;
     }
 
+    const sendingComposerKey = activeComposerKey;
     setIsSending(true);
     try {
       let conversationId = activeConversation?.id;
@@ -434,20 +613,40 @@ export function MessagesScreen() {
         await queryClient.invalidateQueries({ queryKey: conversationsKey });
       }
 
-      for (const item of pendingAttachments) {
+      for (const [index, item] of pendingAttachments.entries()) {
         // Sequential, not parallel: message order in the thread must match send order.
-        await sendAttachmentMessage(conversationId, item);
+        await sendAttachmentMessage(
+          conversationId,
+          item,
+          index === 0 && pendingAttachments.length > 0 ? value : null
+        );
       }
       pendingAttachments.forEach((item) => URL.revokeObjectURL(item.previewUrl));
       setPendingAttachments([]);
 
-      if (value) await sendTextMessage(conversationId, value);
+      if (value && pendingAttachments.length === 0) await sendTextMessage(conversationId, value);
 
+      [sendingComposerKey, conversationId].filter(Boolean).forEach((key) => {
+        delete composerDraftsRef.current[key];
+        delete composerAttachmentsRef.current[key];
+      });
+      draftRef.current = '';
+      pendingAttachmentsRef.current = [];
       setDraft('');
       setReplyingTo(null);
       setActiveThreadId(conversationId);
       setPendingTargetUserId(null);
     } catch (error) {
+      const code = error?.response?.data?.code;
+      if (sendingComposerKey && (code === 'CONVERSATION_NOT_FOUND' || code === 'NOT_FOUND')) {
+        setMessagingUnavailableByStorageKey((byKey) => {
+          const keys =
+            byKey[unavailableStorageKey] || readMessagingUnavailableKeys(unavailableStorageKey);
+          const next = keys.includes(sendingComposerKey) ? keys : [...keys, sendingComposerKey];
+          writeMessagingUnavailableKeys(unavailableStorageKey, next);
+          return { ...byKey, [unavailableStorageKey]: next };
+        });
+      }
       toast(error?.uploadMessage || error?.message || "couldn't send that. try again.");
     } finally {
       setIsSending(false);
@@ -483,8 +682,19 @@ export function MessagesScreen() {
 
   const handleBlockConfirm = () => {
     if (!blockTarget) return;
-    block.mutate(blockTarget.counterpartId, {
-      onError: (error) => toast(error?.message || "couldn't block that account. try again."),
+    const target = blockTarget;
+    if (isThreadBlocked(target)) {
+      setBlockTarget(null);
+      return;
+    }
+    setLocallyBlockedUserIds((ids) =>
+      ids.includes(target.counterpartId) ? ids : [...ids, target.counterpartId]
+    );
+    block.mutate(target.counterpartId, {
+      onError: (error) => {
+        setLocallyBlockedUserIds((ids) => ids.filter((id) => id !== target.counterpartId));
+        toast(error?.message || "couldn't block that account. try again.");
+      },
     });
     setBlockTarget(null);
   };
@@ -553,6 +763,7 @@ export function MessagesScreen() {
           onDeleteThread={setDeleteThreadTarget}
           onReportThread={handleReportThread}
           onBlockThread={setBlockTarget}
+          isThreadBlocked={isThreadBlocked}
           onPinThread={(threadId) => pinConversation.mutate(threadId)}
           onUnpinThread={(threadId) => unpinConversation.mutate(threadId)}
           onMuteThread={(threadId) => muteConversation.mutate(threadId)}
@@ -572,8 +783,9 @@ export function MessagesScreen() {
           isTablet={isTablet}
           scrollerRef={scrollerRef}
           openPreview={openPreview}
+          openStory={openStory}
           handleDeleteToggle={handleDeleteToggle}
-          replyingTo={replyingTo}
+          replyingTo={activeReplyingTo}
           setReplyingTo={setReplyingTo}
           draft={draft}
           setDraft={setDraft}
@@ -582,6 +794,8 @@ export function MessagesScreen() {
           onStageAttachments={handleStageAttachments}
           onRemovePendingAttachment={handleRemovePendingAttachment}
           isSending={isSending}
+          isBlocked={isActiveThreadBlocked || isMessagingUnavailable}
+          blockedHint={messageBlockHint}
         />
       ) : null}
 
@@ -620,7 +834,11 @@ export function MessagesScreen() {
               onUnmute={() => unmuteConversation.mutate(activeThreadId)}
               onRename={activeThread.counterpartId ? () => handleRenameThread(activeThread) : null}
               onReport={activeThread.counterpartId ? () => handleReportThread(activeThread) : null}
-              onBlock={activeThread.counterpartId ? () => setBlockTarget(activeThread) : null}
+              onBlock={
+                activeThread.counterpartId && !isActiveThreadBlocked
+                  ? () => setBlockTarget(activeThread)
+                  : null
+              }
               onDelete={() => setDeleteThreadTarget(activeThread)}
             />
           </div>
@@ -668,7 +886,7 @@ export function MessagesScreen() {
                   </button>
                 ) : null}
                 {current.cdnUrl ? (
-                  (current.mediaType || '').toUpperCase() === 'VIDEO' ? (
+                  isVideoMessageMedia(current) ? (
                     <video
                       key={current.mediaAssetId || current.cdnUrl}
                       src={current.cdnUrl}

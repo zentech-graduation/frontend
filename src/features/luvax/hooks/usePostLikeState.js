@@ -10,7 +10,15 @@
 
 // Prefix keys. Every post query is keyed with parameters after the prefix, so
 // matching on the prefix reaches each parameter variant that is currently held.
-const POST_LIST_PREFIXES = [['feed'], ['explore'], ['userPosts']];
+const POST_LIST_PREFIXES = [
+  ['feed'],
+  ['explore'],
+  ['exploreSearch'],
+  ['recommendedFeed'],
+  ['userPosts'],
+  ['savedPosts'],
+  ['likedPosts'],
+];
 
 const applyToPost = (postId, patch) => (cached) => {
   if (!cached) return cached;
@@ -21,10 +29,17 @@ const applyToPost = (postId, patch) => (cached) => {
     return { ...post, ...applied };
   };
 
+  const mapRow = (row) => {
+    if (row?.post?.id === postId) {
+      return { ...row, post: mapPost(row.post) };
+    }
+    return mapPost(row);
+  };
+
   const mapPayload = (payload) => {
     const rows = payload?.data?.content;
     if (Array.isArray(rows)) {
-      return { ...payload, data: { ...payload.data, content: rows.map(mapPost) } };
+      return { ...payload, data: { ...payload.data, content: rows.map(mapRow) } };
     }
     // The single-post entry carries one row under the same envelope.
     if (payload?.data?.id === postId) {
@@ -64,4 +79,103 @@ export const patchCachedPost = (queryClient, postId, patch) => {
       queryClient.setQueryData(queryKey, previous);
     });
   };
+};
+
+const applyToAuthor = (targetUserId, patch) => (cached) => {
+  if (!cached) return cached;
+
+  const mapAuthor = (author) => {
+    if (author?.id !== targetUserId) return author;
+    const viewerState = { ...(author.viewerState || {}), ...patch };
+    return { ...author, viewerState };
+  };
+
+  const mapPost = (post) => {
+    if (!post) return post;
+    const author = mapAuthor(post.author);
+    if (author === post.author) return post;
+    const viewerState = { ...(post.viewerState || {}), ...patch };
+    return { ...post, author, viewerState };
+  };
+
+  const mapRow = (row) => {
+    if (row?.post) return { ...row, post: mapPost(row.post) };
+    if (row?.user?.id === targetUserId) {
+      return {
+        ...row,
+        user: mapAuthor(row.user),
+        viewerState: { ...(row.viewerState || {}), ...patch },
+      };
+    }
+    return mapPost(row);
+  };
+
+  const mapPayload = (payload) => {
+    const rows = payload?.data?.content;
+    if (Array.isArray(rows)) {
+      return { ...payload, data: { ...payload.data, content: rows.map(mapRow) } };
+    }
+    if (payload?.data?.author?.id === targetUserId) {
+      return { ...payload, data: mapPost(payload.data) };
+    }
+    if (payload?.data?.id === targetUserId) {
+      return { ...payload, data: mapAuthor(payload.data) };
+    }
+    return payload;
+  };
+
+  if (Array.isArray(cached.pages)) {
+    return { ...cached, pages: cached.pages.map(mapPayload) };
+  }
+
+  return mapPayload(cached);
+};
+
+export const patchCachedAuthorRelationship = (queryClient, targetUserId, patch) => {
+  const entries = POST_LIST_PREFIXES.flatMap((queryKey) =>
+    queryClient.getQueriesData({ queryKey })
+  ).concat(queryClient.getQueriesData({ queryKey: ['users'] }));
+
+  entries.forEach(([queryKey]) => {
+    queryClient.setQueryData(queryKey, applyToAuthor(targetUserId, patch));
+  });
+
+  return () => {
+    entries.forEach(([queryKey, previous]) => {
+      queryClient.setQueryData(queryKey, previous);
+    });
+  };
+};
+
+const removeFromPostList = (postId) => (cached) => {
+  if (!cached) return cached;
+
+  const keepRow = (row) => row?.id !== postId && row?.post?.id !== postId;
+
+  const mapPayload = (payload) => {
+    const rows = payload?.data?.content;
+    if (!Array.isArray(rows)) return payload;
+    return { ...payload, data: { ...payload.data, content: rows.filter(keepRow) } };
+  };
+
+  if (Array.isArray(cached.pages)) {
+    return { ...cached, pages: cached.pages.map(mapPayload) };
+  }
+
+  return mapPayload(cached);
+};
+
+/**
+ * Removes a post from every list cache and clears its detail entry after a
+ * successful delete, so closed overlays and profile grids cannot keep showing a
+ * post the server has already removed.
+ */
+export const removeCachedPost = (queryClient, postId) => {
+  POST_LIST_PREFIXES.flatMap((queryKey) => queryClient.getQueriesData({ queryKey })).forEach(
+    ([queryKey]) => {
+      queryClient.setQueryData(queryKey, removeFromPostList(postId));
+    }
+  );
+
+  queryClient.removeQueries({ queryKey: ['post', postId] });
 };

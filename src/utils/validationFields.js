@@ -30,3 +30,14 @@ export const bioField = z
   .max(500, 'bio must be 500 characters or fewer.')
   .optional()
   .or(z.literal(''));
+
+// Backend UpdateProfileRequest.websiteUrl: @Size(max = 2048), optional. The server applies no
+// format check - it stored "not a url" verbatim when probed - so length is the only constraint
+// mirrored here. Rejecting a shape the server accepts would make this validator stricter than
+// the contract it exists to mirror.
+export const websiteUrlField = z
+  .string()
+  .trim()
+  .max(2048, 'link must be 2048 characters or fewer.')
+  .optional()
+  .or(z.literal(''));

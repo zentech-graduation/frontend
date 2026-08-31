@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { extractPageContent, getDisplayName, getUserSummary } from '@/utils/helpers';
@@ -12,6 +12,7 @@ import { useNotifications, useMarkAllAsRead } from '../hooks/useNotifications';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { routeTo } from '@/config/constants';
+import { toast } from './Toast';
 
 // Keyed on the notification_type enum values the backend actually sends.
 // The previous mapping tested for 'like' and 'comment', which are not members
@@ -27,6 +28,10 @@ const NOTIFICATION_TEXT = {
   mention_comment: 'mentioned you in a comment',
   story_view: 'viewed your story',
   message: 'sent you a message',
+  post_removed: 'removed your post',
+  report_post_removed: 'removed content you reported',
+  post_restored: 'restored your post',
+  report_dismissed: 'reviewed your report and took no action',
 };
 
 const TYPE_ICON = {
@@ -36,6 +41,7 @@ const TYPE_ICON = {
   comment: 'reply',
   mention: 'hash',
   story: 'eye',
+  moderation: 'flag',
 };
 
 const TYPE_COLOR = {
@@ -45,6 +51,7 @@ const TYPE_COLOR = {
   comment: v.accent,
   mention: v.avatar2,
   story: v.avatar3,
+  moderation: v.warningText,
 };
 
 // The maps above are keyed by category, but the backend sends full enum values
@@ -58,6 +65,15 @@ function notifCategory(type) {
   if (type.startsWith('comment') || type.startsWith('reply')) return 'comment';
   if (type.startsWith('mention')) return 'mention';
   if (type.startsWith('story')) return 'story';
+  if (
+    type === 'post_removed' ||
+    type === 'report_post_removed' ||
+    type === 'post_restored' ||
+    type === 'report_dismissed' ||
+    type === 'warning'
+  ) {
+    return 'moderation';
+  }
   return 'comment';
 }
 
@@ -71,6 +87,16 @@ function notifBucket(createdAt) {
   if (t >= startOfToday) return 'today';
   if (t >= startOfToday - 6 * 24 * 60 * 60 * 1000) return 'this week';
   return 'earlier';
+}
+
+function notificationMessageLabel(type) {
+  if (type === 'report_dismissed') return 'decision';
+  if (type === 'report_post_removed') return 'outcome';
+  return 'reason';
+}
+
+function requestRowRequesterId(row, follower) {
+  return row?.id || row?.requesterId || row?.followerId || follower?.id || null;
 }
 
 const BUCKET_ORDER = ['today', 'this week', 'earlier'];
@@ -92,7 +118,7 @@ function GroupHeading({ label }) {
   );
 }
 
-function NotifRow({ n, onAccept, onDecline }) {
+function NotifRow({ n, onAccept, onDecline, pendingRequestIds }) {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
   // NotificationResponse embeds the actor as a UserSummaryResponse. There is
@@ -111,7 +137,16 @@ function NotifRow({ n, onAccept, onDecline }) {
   const filledBadge = category === 'like';
 
   const actorName = getDisplayName(actor, 'Someone');
+  const pendingRequesterId =
+    n.type === 'follow_request' && actor?.id && pendingRequestIds?.has(actor.id) ? actor.id : null;
+  const isSystemModeration =
+    n.type === 'post_removed' ||
+    n.type === 'report_post_removed' ||
+    n.type === 'post_restored' ||
+    n.type === 'report_dismissed';
+  const displayName = isSystemModeration ? 'Luvax' : actorName;
   const avatarSrc = actor.avatarUrl;
+  const canOpenTarget = !isSystemModeration;
 
   // Route by what the notification points at. A content notification now carries
   // postId, the post it concerns, so it opens that post directly. When the
@@ -121,6 +156,9 @@ function NotifRow({ n, onAccept, onDecline }) {
   // that path is kept. A follow or a content notification predating postId carries
   // no post to open and falls back to the actor's profile.
   const openTarget = () => {
+    if (!canOpenTarget) {
+      return;
+    }
     if (n.postId) {
       const highlightComment = n.entityType === 'comment' ? n.entityId : null;
       openOverlay(
@@ -138,7 +176,8 @@ function NotifRow({ n, onAccept, onDecline }) {
     }
   };
   const isClickable =
-    Boolean(n.postId) || (n.entityType === 'post' && Boolean(n.entityId)) || Boolean(actor?.id);
+    canOpenTarget &&
+    (Boolean(n.postId) || (n.entityType === 'post' && Boolean(n.entityId)) || Boolean(actor?.id));
 
   return (
     <div
@@ -184,39 +223,52 @@ function NotifRow({ n, onAccept, onDecline }) {
               if (actor?.id) navigate(routeTo.userProfile(actor.id));
             }}
           >
-            {actorName}
+            {displayName}
           </strong>{' '}
           <span style={{ color: v.ink2 }}>{text}</span>
         </div>
+        {n.message ? (
+          <div style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2, marginTop: 4 }}>
+            {notificationMessageLabel(n.type)}: {n.message}
+          </div>
+        ) : null}
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>
           {timeStr}
         </div>
       </div>
 
-      {n.type === 'follow_request' && (
+      {n.type === 'follow_request' && pendingRequesterId ? (
         <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
           <LxBtn
+            type="button"
             variant="primary"
             size="sm"
             onClick={(event) => {
               event.stopPropagation();
-              onAccept?.(actor.id);
+              onAccept?.(pendingRequesterId, {
+                onError: (error) =>
+                  toast(error?.message || "couldn't accept that follow request. try again."),
+              });
             }}
           >
             accept
           </LxBtn>
           <LxBtn
+            type="button"
             variant="ghost"
             size="sm"
             onClick={(event) => {
               event.stopPropagation();
-              onDecline?.(actor.id);
+              onDecline?.(pendingRequesterId, {
+                onError: (error) =>
+                  toast(error?.message || "couldn't decline that follow request. try again."),
+              });
             }}
           >
             decline
           </LxBtn>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -225,6 +277,7 @@ function RequestRow({ req, onAccept, onDecline }) {
   const navigate = useNavigate();
   // FollowRequestResponse names the requesting user `follower`.
   const user = getUserSummary(req, 'follower');
+  const requesterId = requestRowRequesterId(req, user);
   const timeStr = useRelativeTime(req.createdAt);
   return (
     <div
@@ -273,10 +326,38 @@ function RequestRow({ req, onAccept, onDecline }) {
       </div>
 
       <div style={{ display: 'flex', gap: 6, alignSelf: 'center', flexShrink: 0 }}>
-        <LxBtn variant="primary" size="sm" onClick={() => onAccept(user.id)}>
+        <LxBtn
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={() => {
+            if (!requesterId) {
+              toast("couldn't find that follow request. refresh and try again.");
+              return;
+            }
+            onAccept(requesterId, {
+              onError: (error) =>
+                toast(error?.message || "couldn't accept that follow request. try again."),
+            });
+          }}
+        >
           accept
         </LxBtn>
-        <LxBtn variant="ghost" size="sm" onClick={() => onDecline(user.id)}>
+        <LxBtn
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            if (!requesterId) {
+              toast("couldn't find that follow request. refresh and try again.");
+              return;
+            }
+            onDecline(requesterId, {
+              onError: (error) =>
+                toast(error?.message || "couldn't decline that follow request. try again."),
+            });
+          }}
+        >
           decline
         </LxBtn>
       </div>
@@ -295,6 +376,15 @@ export function NotificationsScreen() {
   const markAllAsRead = useMarkAllAsRead();
 
   const requests = extractPageContent(requestsResponse);
+  const pendingRequestIds = useMemo(() => {
+    const ids = new Set();
+    requests.forEach((request) => {
+      const follower = getUserSummary(request, 'follower');
+      const requesterId = requestRowRequesterId(request, follower);
+      if (requesterId) ids.add(requesterId);
+    });
+    return ids;
+  }, [requests]);
 
   const notifs = notifsData?.pages?.flatMap((page) => extractPageContent(page)) || [];
 
@@ -372,8 +462,8 @@ export function NotificationsScreen() {
               <RequestRow
                 key={i}
                 req={r}
-                onAccept={(id) => approveReq.mutate(id)}
-                onDecline={(id) => rejectReq.mutate(id)}
+                onAccept={(id, options) => approveReq.mutate(id, options)}
+                onDecline={(id, options) => rejectReq.mutate(id, options)}
               />
             ))
           ) : (
@@ -412,8 +502,9 @@ export function NotificationsScreen() {
                   <NotifRow
                     key={n.id || `${bucket}-${i}`}
                     n={n}
-                    onAccept={(id) => approveReq.mutate(id)}
-                    onDecline={(id) => rejectReq.mutate(id)}
+                    pendingRequestIds={pendingRequestIds}
+                    onAccept={(id, options) => approveReq.mutate(id, options)}
+                    onDecline={(id, options) => rejectReq.mutate(id, options)}
                   />
                 ))}
               </div>

@@ -20,6 +20,7 @@ import VerifyEmailNoticePage from '@/pages/auth/VerifyEmailNoticePage';
 import AuthPage from '@/features/auth/components/AuthPage';
 import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
+import { adminRoute } from '@/features/admin';
 import { APP_NOT_FOUND_SCREEN, APP_OVERLAY_SCREENS, APP_SCREENS } from './appScreens';
 
 // The authenticated shell and everything under it load on demand. An anonymous visitor on the
@@ -133,6 +134,9 @@ const router = createBrowserRouter([
             path: ROUTES.DASHBOARD,
             element: <DashboardPage />,
           },
+          // The administrative and moderation panel. A separate route tree under
+          // /admin, gated on role inside the shared authentication guard.
+          adminRoute,
         ],
       },
     ],

@@ -21,6 +21,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 // See docs/realtime/realtime-contract.md section 1.
 export const COMMENT_ENDPOINT = '/ws/comments';
 export const MESSAGE_ENDPOINT = '/ws/messages';
+export const NOTIFICATION_ENDPOINT = '/ws/notifications';
 
 // Browsers cannot set an Authorization header on a WebSocket upgrade, so a credential has to ride
 // in the URL. It is a single-use ticket rather than the access token: query strings are logged by

@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { authApi } from '@/api/authApi';
 import { ROUTES } from '@/config/constants';
+import { landingPathForRole } from '@/config/roles';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authPageRegisterSchema, emailSchema, loginSchema } from '../utils/authSchemas';
 import Field from './AuthField';
@@ -199,7 +200,7 @@ export default function AuthPage() {
     try {
       window.location.href = authApi.getGoogleLoginUrl();
     } catch (error) {
-      const message = authApi.normalizeMessage(error, 'Unable to start Google sign in right now.');
+      const message = 'we could not open google sign-in just now. try again, or use your email and password.';
       if (view === 'register') {
         setRegServerError(message);
       } else {
@@ -223,7 +224,10 @@ export default function AuthPage() {
 
       setAuth({ accessToken, refreshToken, user });
 
-      const nextPath = location.state?.from?.pathname || ROUTES.APP;
+      // Where the user lands is decided by role: a moderator or administrator
+      // lands in the panel, an ordinary user in the application. A remembered
+      // origin from a redirected navigation still wins over the role default.
+      const nextPath = location.state?.from?.pathname || landingPathForRole(user?.role);
       navigate(nextPath, { replace: true });
     } catch (error) {
       // The backend returns 403 with code AUTH_EMAIL_NOT_VERIFIED on the
@@ -240,7 +244,20 @@ export default function AuthPage() {
         return;
       }
       logout();
-      setServerError(authApi.normalizeMessage(error, 'Unable to sign you in right now.'));
+      // A refused account is the one sign-in failure worth naming, because the
+      // person cannot fix it by trying again and nothing else in the product
+      // will ever tell them: a suspended account is answered 401 on every
+      // authenticated endpoint, so it can never load a screen to be told there.
+      // The server returns no end date with this refusal, so none is claimed.
+      // Recorded as a backend request item.
+      const code = error?.response?.data?.code;
+      setServerError(
+        code === 'AUTH_ACCOUNT_INACTIVE'
+          ? 'this account is suspended, so you cannot sign in to it at the moment. if you think that is wrong, get in touch and we will look into it.'
+          : code === 'AUTH_INVALID_CREDENTIALS'
+            ? 'that email or password is not right. check them and try again.'
+            : 'we could not sign you in just now. try again in a moment.'
+      );
     }
   };
 
@@ -265,9 +282,7 @@ export default function AuthPage() {
       const applied = applyServerFieldErrors(registerForm, fieldErrors);
 
       if (!applied) {
-        setRegServerError(
-          authApi.normalizeMessage(error, 'Unable to create your account right now.')
-        );
+        setRegServerError("we couldn't create your account just now. try again in a moment.");
       }
     }
   };
@@ -279,9 +294,7 @@ export default function AuthPage() {
       await authApi.forgotPassword(values);
       setFpSent(true);
     } catch (error) {
-      setFpServerError(
-        authApi.normalizeMessage(error, 'Unable to request a password reset right now.')
-      );
+      setFpServerError("we couldn't send that email just now. try again in a moment.");
     }
   };
 

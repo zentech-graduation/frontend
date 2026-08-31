@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { v } from '@/config/tokens';
+import { formatCount } from '@/utils/helpers';
+import { useAuthStore } from '@/store/useAuthStore';
 import { LxAvatar, LxBtn, LxIcon } from './primitives';
 import { useFollow, useUnfollow } from '../hooks/useSocial';
 
@@ -11,7 +13,9 @@ export function UserCard({
   initiallyRequested = false,
   rightElement,
   compact = false,
+  showFollowButton = true,
 }) {
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const [isFollowing, setIsFollowing] = useState(initiallyFollowing);
   // A pending request to a private account is its own state. Reading only
   // isFollowing showed "follow" for an account the viewer had already asked to
@@ -21,6 +25,13 @@ export function UserCard({
 
   const follow = useFollow();
   const unfollow = useUnfollow();
+
+  useEffect(() => {
+    // Syncs optimistic button state back to the latest relationship state returned by the server.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsFollowing(initiallyFollowing);
+    setRequested(initiallyRequested);
+  }, [initiallyFollowing, initiallyRequested, user?.id]);
 
   const handleFollowClick = () => {
     if (isFollowing || requested) {
@@ -41,6 +52,8 @@ export function UserCard({
   const followLabel = isFollowing ? 'following' : requested ? 'requested' : 'follow';
   const avatarSize = compact ? 36 : 44;
   const buttonVariant = compact ? 'ghost' : isFollowing || requested ? 'secondary' : 'primary';
+  const isSelf = Boolean(currentUserId && user?.id === currentUserId);
+  const followerCount = user?.followerCount ?? user?.followersCount;
 
   return (
     <div
@@ -101,38 +114,51 @@ export function UserCard({
             whiteSpace: compact ? 'nowrap' : 'normal',
             overflow: compact ? 'hidden' : 'visible',
             textOverflow: compact ? 'ellipsis' : 'clip',
+            overflowWrap: 'anywhere',
+            wordBreak: 'break-word',
           }}
         >
           {user.bio || `@${user.username || 'unknown'}`}
         </div>
+        <div
+          style={{
+            fontFamily: v.fontMono,
+            fontSize: compact ? 9 : 10,
+            color: v.ink3,
+            marginTop: 3,
+          }}
+        >
+          {formatCount(followerCount)} followers
+        </div>
       </div>
 
-      {rightElement ? (
-        rightElement
-      ) : (
-        <LxBtn
-          variant={buttonVariant}
-          size="sm"
-          onClick={handleFollowClick}
-          disabled={follow.isPending || unfollow.isPending}
-          style={
-            compact
-              ? {
-                  minWidth: 56,
-                  padding: '5px 11px',
-                  fontSize: 11,
-                  lineHeight: 1,
-                  color: v.ink,
-                  borderColor: v.borderStrong,
-                  flexShrink: 0,
-                  whiteSpace: 'nowrap',
-                }
-              : {}
-          }
-        >
-          {followLabel}
-        </LxBtn>
-      )}
+      {rightElement
+        ? rightElement
+        : showFollowButton &&
+          !isSelf && (
+            <LxBtn
+              variant={buttonVariant}
+              size="sm"
+              onClick={handleFollowClick}
+              disabled={follow.isPending || unfollow.isPending}
+              style={
+                compact
+                  ? {
+                      minWidth: 56,
+                      padding: '5px 11px',
+                      fontSize: 11,
+                      lineHeight: 1,
+                      color: v.ink,
+                      borderColor: v.borderStrong,
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap',
+                    }
+                  : {}
+              }
+            >
+              {followLabel}
+            </LxBtn>
+          )}
     </div>
   );
 }

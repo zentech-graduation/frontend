@@ -44,6 +44,12 @@ export function LxBtn({
   onClick,
   disabled = false,
   style = {},
+  // Forwarded rather than defaulted, so existing call sites keep the browser's
+  // own default and nothing changes for them. Without this a caller inside a
+  // <form> cannot opt out of submitting: a button with no type submits, so a
+  // `type="button"` that never reaches the DOM silently does nothing.
+  type,
+  ...rest
 }) {
   const sizes = {
     sm: { fontSize: 12, padding: '5px 14px' },
@@ -51,7 +57,11 @@ export function LxBtn({
     lg: { fontSize: 16, padding: '12px 28px' },
   };
   const variants = {
-    primary: { background: v.accent, color: v.inkInverse, border: 'none' },
+    // The accent fill is the same colour in both themes, so the label cannot
+    // use a token that flips with it. --lx-ink-inverse is near-white in the
+    // light theme and measured 2.08:1 on the accent; --lx-black is
+    // theme-invariant and clears 9:1 on the accent in both.
+    primary: { background: v.accent, color: v.black, border: 'none' },
     secondary: { background: v.surface, color: v.ink, border: `1px solid ${v.border}` },
     ghost: { background: 'transparent', color: v.ink, border: `1px solid ${v.border}` },
     danger: { background: 'transparent', color: v.error, border: `1px solid ${v.error}` },
@@ -61,8 +71,10 @@ export function LxBtn({
   }
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
+      {...rest}
       style={{
         fontFamily: v.fontBody,
         fontWeight: 500,
@@ -142,7 +154,7 @@ export function LxBottomSheet({ open, onClose, children, height = '70vh' }) {
   );
 }
 
-export function LxModal({ open, onClose, title, children, actions }) {
+export function LxModal({ open, onClose, title, children, actions, zIndex = 1000 }) {
   useEscapeKey(open, onClose);
 
   if (!open) return null;
@@ -155,7 +167,7 @@ export function LxModal({ open, onClose, title, children, actions }) {
           position: 'fixed',
           inset: 0,
           background: v.scrim,
-          zIndex: 1000,
+          zIndex,
         }}
       />
       <div
@@ -171,7 +183,7 @@ export function LxModal({ open, onClose, title, children, actions }) {
           maxWidth: 320,
           boxShadow: `0 20px 60px ${v.shadow25}, 0 4px 16px ${v.shadow12}`,
           overflow: 'hidden',
-          zIndex: 1001,
+          zIndex: zIndex + 1,
           display: 'flex',
           flexDirection: 'column',
         }}

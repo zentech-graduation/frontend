@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { useViewport } from '../hooks/useViewport';
-import { LxIcon, LxAvatar } from './primitives';
+import { LxIcon, LxAvatar, LxBtn, LxModal } from './primitives';
 import {
   useStoryFeed,
   useCreateStory,
+  useDeleteStory,
   useRecordStoryView,
   useLikeStory,
 } from '../hooks/useStories';
@@ -13,6 +14,7 @@ import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useMediaConstraints } from '../hooks/useMediaConstraints';
 import { useAuthStore } from '@/store/useAuthStore';
 import { messageService } from '@/services/message.service';
+import { rememberSharedStoryMedia } from '@/features/messages/utils/messageViewModel';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { buildAcceptAttribute, validateFile, validateDuration } from '../utils/composerMedia';
 import { formatRelativeTime } from '../hooks/useRelativeTime';
@@ -20,6 +22,8 @@ import { toast } from './Toast';
 
 const STORY_CARD_RADIUS = 18;
 const STORY_RATIO = 9 / 16;
+const TEXT_STORY_WIDTH = 1080;
+const TEXT_STORY_HEIGHT = 1920;
 const IMAGE_STORY_DURATION_MS = 5000;
 const HEART_COLOR = 'var(--lx-error)';
 
@@ -28,6 +32,65 @@ const HEART_COLOR = 'var(--lx-error)';
 const CONTROL_BG = 'rgba(255,255,255,0.9)';
 const CONTROL_FG = '#1c1a17';
 const CONTROL_SHADOW = '0 1px 5px rgba(0,0,0,0.3)';
+
+const wrapCanvasText = (context, text, maxWidth) => {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+
+  words.forEach((word) => {
+    const nextLine = line ? `${line} ${word}` : word;
+    if (context.measureText(nextLine).width <= maxWidth) {
+      line = nextLine;
+      return;
+    }
+
+    if (line) lines.push(line);
+    line = word;
+  });
+
+  if (line) lines.push(line);
+  return lines;
+};
+
+const createTextStoryFile = (text) =>
+  new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = TEXT_STORY_WIDTH;
+    canvas.height = TEXT_STORY_HEIGHT;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      reject(new Error('could not create text story.'));
+      return;
+    }
+
+    context.fillStyle = '#171514';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#d5b882';
+    context.fillRect(0, 0, canvas.width, 12);
+    context.fillRect(0, canvas.height - 12, canvas.width, 12);
+
+    context.fillStyle = '#fffaf1';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = '700 72px sans-serif';
+
+    const lines = wrapCanvasText(context, text, canvas.width - 160).slice(0, 12);
+    const lineHeight = 92;
+    const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2;
+    lines.forEach((line, index) => {
+      context.fillText(line, canvas.width / 2, startY + index * lineHeight);
+    });
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('could not create text story.'));
+        return;
+      }
+      resolve(new File([blob], `text-story-${Date.now()}.png`, { type: 'image/png' }));
+    }, 'image/png');
+  });
 
 // A peek shows the immediate neighbour in the sequence - the previous or next
 // story that a chevron click, or clicking the peek itself, would jump to. A
@@ -134,7 +197,7 @@ function NavButton({ side, onClick }) {
 // with a chevron in the gap between each and the main card, matching the
 // desktop reference: a contained card with its neighbours visible at a
 // glance, rather than a near-fullscreen card with nothing around it.
-function StoryStage({ children, onClose, footer, viewport, peeks }) {
+function StoryStage({ children, onClose, footer, viewport, peeks, height }) {
   const isMobile = viewport === 'mobile';
 
   if (isMobile) {
@@ -180,7 +243,7 @@ function StoryStage({ children, onClose, footer, viewport, peeks }) {
 
   // Contained, not near-fullscreen, so the peeks and chevrons around it have
   // room to read as their own elements rather than crowding the card's edge.
-  const cardHeight = 'min(80vh, 760px)';
+  const cardHeight = height || 'min(80vh, 760px)';
   const cardWidth = `calc(${cardHeight} * ${STORY_RATIO})`;
   const peekHeight = `calc(${cardHeight} * 0.78)`;
 
@@ -320,10 +383,12 @@ export function StoryViewScreen({ viewport: vpProp }) {
   const sequence = useFlatStorySequence();
   const recordView = useRecordStoryView();
   const likeStory = useLikeStory();
+  const deleteStory = useDeleteStory();
   const [progress, setProgress] = useState(0);
   const [replyDraft, setReplyDraft] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [showBigHeart, setShowBigHeart] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const videoRef = useRef(null);
   const recordedRef = useRef(null);
   const lastTapRef = useRef(0);
@@ -335,6 +400,7 @@ export function StoryViewScreen({ viewport: vpProp }) {
   const isVideo = story?.media?.mediaType?.toUpperCase() === 'VIDEO';
   const segmentIndex = entry ? entry.stories.findIndex((s) => s.id === storyId) : 0;
   const segmentCount = entry?.stories.length || 1;
+  const isOwnStory = Boolean(entry?.userId && entry.userId === currentUser?.id);
 
   const close = () => navigate(-1);
 
@@ -414,6 +480,24 @@ export function StoryViewScreen({ viewport: vpProp }) {
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
     likeStory.mutate({ storyId: story.id, liked: story.liked });
+  };
+
+  const handleDelete = () => {
+    const fallback = sequence[currentIndex + 1] || sequence[currentIndex - 1] || null;
+    deleteStory.mutate(story.id, {
+      onSuccess: () => {
+        setConfirmDelete(false);
+        toast('story deleted');
+        if (fallback) {
+          navigate(routeTo.storyView(fallback.story.id), { replace: true });
+          return;
+        }
+        close();
+      },
+      onError: (error) => {
+        toast(error?.message || "couldn't delete that story");
+      },
+    });
   };
 
   // Double-tap to like, in the manner of Instagram and matching the same
@@ -538,6 +622,30 @@ export function StoryViewScreen({ viewport: vpProp }) {
         >
           {formatRelativeTime(story.createdAt)}
         </span>
+        {isOwnStory ? (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleteStory.isPending}
+            aria-label="delete story"
+            style={{
+              marginLeft: 'auto',
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: 'none',
+              background: v.black35,
+              cursor: deleteStory.isPending ? 'default' : 'pointer',
+              opacity: deleteStory.isPending ? 0.6 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            <LxIcon name="trash" size={16} color={v.white} />
+          </button>
+        ) : null}
       </div>
 
       {/* Caption */}
@@ -553,6 +661,11 @@ export function StoryViewScreen({ viewport: vpProp }) {
             fontWeight: 500,
             color: v.white,
             textShadow: `0 1px 8px ${v.black55}`,
+            lineHeight: 1.35,
+            maxHeight: 82,
+            overflow: 'hidden',
+            overflowWrap: 'anywhere',
+            wordBreak: 'break-word',
           }}
         >
           {story.caption}
@@ -682,10 +795,11 @@ export function StoryViewScreen({ viewport: vpProp }) {
 
   const handleReplySend = async () => {
     const text = replyDraft.trim();
-    if (!text || !entry?.userId) return;
+    if (!text || !entry?.userId || isOwnStory) return;
     setReplyDraft('');
 
     try {
+      rememberSharedStoryMedia(story);
       // Resolve-or-create: a direct-conversation pair key means replying to the same author twice
       // reuses the existing thread rather than forking it.
       const conversation = await messageService.createDirect(entry.userId);
@@ -702,7 +816,7 @@ export function StoryViewScreen({ viewport: vpProp }) {
     }
   };
 
-  const replyBar = (
+  const replyBar = isOwnStory ? null : (
     <div
       style={{
         display: 'flex',
@@ -794,16 +908,35 @@ export function StoryViewScreen({ viewport: vpProp }) {
   const nextItem = currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
 
   return (
-    <StoryStage
-      viewport={vp}
-      onClose={close}
-      footer={replyBar}
-      peeks={
-        vp === 'mobile' ? null : { prev: prevItem, next: nextItem, onPrev: prev, onNext: next }
-      }
-    >
-      {card}
-    </StoryStage>
+    <>
+      <StoryStage
+        viewport={vp}
+        onClose={close}
+        footer={replyBar}
+        peeks={
+          vp === 'mobile' ? null : { prev: prevItem, next: nextItem, onPrev: prev, onNext: next }
+        }
+      >
+        {card}
+      </StoryStage>
+      <LxModal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="delete story"
+        actions={
+          <>
+            <LxBtn variant="ghost" onClick={() => setConfirmDelete(false)}>
+              cancel
+            </LxBtn>
+            <LxBtn variant="danger" onClick={handleDelete} disabled={deleteStory.isPending}>
+              {deleteStory.isPending ? 'deleting...' : 'delete'}
+            </LxBtn>
+          </>
+        }
+      >
+        This story will be removed from your profile and story tray.
+      </LxModal>
+    </>
   );
 }
 
@@ -814,13 +947,16 @@ export function StoryComposerScreen({ viewport: vpProp }) {
   const measuredViewport = useViewport();
   const vp = vpProp || measuredViewport;
   const fileInputRef = useRef(null);
+  const [composeMode, setComposeMode] = useState('media');
   const [item, setItem] = useState(null);
+  const [textStory, setTextStory] = useState('');
   const [caption, setCaption] = useState('');
   const [formError, setFormError] = useState('');
 
   const { uploadMedia, getMediaMetadata, isUploading } = useMediaUpload();
   const { constraints } = useMediaConstraints();
   const createStory = useCreateStory();
+  const chooserWidth = 'min(380px, calc(100% - 48px))';
 
   const handleFileSelected = async (event) => {
     const file = event.target.files?.[0];
@@ -848,18 +984,27 @@ export function StoryComposerScreen({ viewport: vpProp }) {
     });
   };
 
-  const canShare = Boolean(item) && !isUploading && !createStory.isPending;
+  const canShare =
+    (composeMode === 'media' ? Boolean(item) : Boolean(textStory.trim())) &&
+    !isUploading &&
+    !createStory.isPending;
 
   const handleShare = async () => {
-    if (!item) return;
+    if (!canShare) return;
     setFormError('');
     try {
-      const asset = await uploadMedia(item.file);
+      const file =
+        composeMode === 'media' ? item.file : await createTextStoryFile(textStory.trim());
+      const asset = await uploadMedia(file);
       createStory.mutate(
-        { mediaId: asset.id, caption: caption.trim() || null },
+        {
+          mediaId: asset.id,
+          caption:
+            composeMode === 'media' ? caption.trim() || null : textStory.trim().slice(0, 140),
+        },
         {
           onSuccess: () => {
-            URL.revokeObjectURL(item.previewUrl);
+            if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
             navigate(-1);
           },
           onError: (error) => {
@@ -942,21 +1087,108 @@ export function StoryComposerScreen({ viewport: vpProp }) {
           />
         </>
       ) : (
-        <button
-          onClick={() => fileInputRef.current?.click()}
+        <div
           style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
             color: v.white65,
             fontFamily: v.fontBody,
-            fontSize: 14,
             textAlign: 'center',
+            width: chooserWidth,
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            gap: 14,
           }}
         >
-          <LxIcon name="image" size={48} color={v.white45} />
-          <div style={{ marginTop: 12 }}>tap to add a photo or video</div>
-        </button>
+          <div
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 8,
+              padding: 4,
+              borderRadius: 999,
+              background: v.black35,
+            }}
+          >
+            {[
+              ['media', 'media'],
+              ['text', 'text'],
+            ].map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => {
+                  setComposeMode(mode);
+                  setFormError('');
+                }}
+                style={{
+                  border: 'none',
+                  borderRadius: 999,
+                  padding: '9px 12px',
+                  background: composeMode === mode ? v.accent : 'transparent',
+                  color: composeMode === mode ? v.ink : v.white65,
+                  fontFamily: v.fontBody,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {composeMode === 'media' ? (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'none',
+                border: `1px dashed ${v.white35}`,
+                borderRadius: 16,
+                cursor: 'pointer',
+                color: v.white65,
+                fontFamily: v.fontBody,
+                fontSize: 14,
+                minHeight: 170,
+                padding: '34px 18px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <LxIcon name="image" size={48} color={v.white45} />
+              <div style={{ marginTop: 12 }}>tap to add a photo or video</div>
+            </button>
+          ) : (
+            <textarea
+              value={textStory}
+              onChange={(event) => setTextStory(event.target.value.slice(0, 280))}
+              placeholder="type your story..."
+              autoFocus
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                minHeight: 170,
+                height: 170,
+                resize: 'none',
+                border: `1px solid ${v.white20}`,
+                borderRadius: 16,
+                background: v.black35,
+                color: v.white,
+                fontFamily: v.fontBody,
+                fontSize: 22,
+                lineHeight: 1.35,
+                padding: '58px 18px 18px',
+                outline: 'none',
+                textAlign: 'center',
+              }}
+            />
+          )}
+        </div>
       )}
       <input
         ref={fileInputRef}
@@ -974,7 +1206,7 @@ export function StoryComposerScreen({ viewport: vpProp }) {
         display: 'flex',
         flexDirection: 'column',
         gap: 10,
-        padding: vp === 'mobile' ? '14px 16px 20px' : '4px 0',
+        padding: vp === 'mobile' ? '14px 16px 20px' : '8px 0 0',
         background: vp === 'mobile' ? v.black : 'transparent',
       }}
     >
@@ -1008,7 +1240,12 @@ export function StoryComposerScreen({ viewport: vpProp }) {
   );
 
   return (
-    <StoryStage viewport={vp} onClose={() => navigate(-1)} footer={controls}>
+    <StoryStage
+      viewport={vp}
+      onClose={() => navigate(-1)}
+      footer={controls}
+      height="min(72vh, 680px)"
+    >
       {card}
     </StoryStage>
   );

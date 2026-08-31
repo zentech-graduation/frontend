@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { ConvRow } from './ConvRow';
@@ -14,12 +15,15 @@ export function ConversationListPanel({
   onDeleteThread,
   onReportThread,
   onBlockThread,
+  isThreadBlocked,
   onPinThread,
   onUnpinThread,
   onMuteThread,
   onUnmuteThread,
   onRenameThread,
 }) {
+  const [revealedThreadId, setRevealedThreadId] = useState(null);
+
   return (
     <aside
       style={{
@@ -71,17 +75,24 @@ export function ConversationListPanel({
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {filteredThreads.map((thread) => {
           const isActive = thread.id === activeThreadId;
+          const isBlocked = Boolean(isThreadBlocked?.(thread));
           return (
             <ConvRow
               key={thread.id}
               thread={thread}
+              viewport={viewport}
+              revealedOptions={revealedThreadId === thread.id}
+              onRevealOptions={() => setRevealedThreadId(thread.id)}
               isActive={isActive}
-              onSelect={() => selectThread(thread.id)}
+              onSelect={() => {
+                setRevealedThreadId(thread.id);
+                selectThread(thread.id);
+              }}
               onMarkRead={() => onMarkRead?.(thread.id)}
               onMarkUnread={() => onMarkUnread?.(thread.id)}
               onDelete={() => onDeleteThread?.(thread)}
               onReport={thread.counterpartId ? () => onReportThread?.(thread) : null}
-              onBlock={thread.counterpartId ? () => onBlockThread?.(thread) : null}
+              onBlock={thread.counterpartId && !isBlocked ? () => onBlockThread?.(thread) : null}
               onPin={() => onPinThread?.(thread.id)}
               onUnpin={() => onUnpinThread?.(thread.id)}
               onMute={() => onMuteThread?.(thread.id)}

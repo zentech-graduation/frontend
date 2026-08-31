@@ -120,6 +120,49 @@ export function getNextCursor(page) {
   return pageInfo.hasNextPage ? pageInfo.endCursor : undefined;
 }
 
+export function canViewerSeePost(post) {
+  const author = post?.author || post?.user || {};
+  const viewerState = author.viewerState || post?.viewerState || {};
+  return !author.isPrivate || viewerState.isFollowing || viewerState.isSelf || viewerState.isOwner;
+}
+
+/**
+ * Removes a post id from every page after the one it first appeared on.
+ *
+ * Compensates for a documented backend limitation: Gorse's own paginated
+ * output cannot be filtered by an exclusion list, so a later page can
+ * resurface an id an earlier page already served. See
+ * backend/.workspace/reports/rec_onboarding/prompt2_verification.md,
+ * "Residual known limitation" - do not remove this as redundant, the
+ * duplication it guards against is real and unclosed on the backend side.
+ *
+ * Used as an infinite query's `select`, which TanStack Query applies only to
+ * the data handed to the component; `getNextPageParam` still runs against
+ * the untouched raw pages, so pagination bookkeeping is unaffected.
+ * @param {{pages: Array, pageParams: Array}} data raw infinite query data
+ * @returns {{pages: Array, pageParams: Array}}
+ */
+export function dedupeInfinitePagesById(data) {
+  const seen = new Set();
+
+  const pages = data.pages.map((page) => {
+    const rows = extractPageContent(page);
+    const deduped = rows.filter((row) => {
+      if (seen.has(row.id)) return false;
+      seen.add(row.id);
+      return true;
+    });
+
+    if (deduped.length === rows.length) return page;
+    if (page?.data?.content) {
+      return { ...page, data: { ...page.data, content: deduped } };
+    }
+    return { ...page, content: deduped };
+  });
+
+  return { ...data, pages };
+}
+
 /**
  * Reports a response that does not carry the field an accessor expected.
  *
@@ -218,11 +261,34 @@ export function formatCount(count) {
  */
 export async function copyToClipboard(text, promptMessage = 'copy text') {
   if (!text) return;
-  if (navigator?.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall through to the selection-based copy for browsers that expose the API
+      // but deny it outside a secure/user-gesture path.
+    }
   }
-  window.prompt(promptMessage, text);
+  if (typeof document !== 'undefined') {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+    try {
+      if (document.execCommand('copy')) return;
+    } catch {
+      // Fall through to the manual prompt.
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  }
+  if (typeof window !== 'undefined') window.prompt(promptMessage, text);
 }
 
 /**
@@ -247,19 +313,22 @@ export async function copyPostLink(postId) {
 }
 
 /**
- * Shares a post via the native Web Share API, falling back to copying
- * the post's link to the clipboard when sharing is unavailable.
+ * Shares a post through the operating system share sheet when available, with
+ * clipboard copy as the universal fallback.
  * @param {string} postId
- * @param {string} [title]
  * @returns {Promise<void>}
  */
-export async function sharePost(postId, title) {
+export async function sharePost(postId) {
   const link = buildPostLink(postId);
-  if (navigator?.share) {
-    await navigator.share({ title: title || 'luvax post', url: link });
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    await navigator.share({
+      title: 'Luvax post',
+      text: 'Check out this post on Luvax',
+      url: link,
+    });
     return;
   }
-  await copyPostLink(postId);
+  await copyToClipboard(link, 'copy link');
 }
 
 /**

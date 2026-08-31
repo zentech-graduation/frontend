@@ -58,6 +58,12 @@ export const getRefreshTokenFromResponse = (payload) =>
   payload?.refresh_token ??
   null;
 
+// The refresh response carries the same `user` object as login, including the
+// role. Pulling it out here lets the interceptor-driven refresh repopulate the
+// role, not only the tokens; without it a background refresh would leave the
+// role stale because setTokens does not touch the user.
+export const getUserFromResponse = (payload) => payload?.data?.user ?? payload?.user ?? null;
+
 const isSkippableRequest = (config = {}) => {
   const url = config.url || '';
   return (
@@ -133,6 +139,7 @@ const refreshAccessToken = async () => {
   const payload = response?.data;
   const nextAccessToken = getTokenFromResponse(payload);
   const nextRefreshToken = getRefreshTokenFromResponse(payload) || refreshToken;
+  const nextUser = getUserFromResponse(payload);
 
   if (!nextAccessToken) {
     throw new Error('Refresh response did not include an access token.');
@@ -141,6 +148,9 @@ const refreshAccessToken = async () => {
   persistAuthSession({
     accessToken: nextAccessToken,
     refreshToken: nextRefreshToken,
+    // Only pass `user` when the response carried one, so persistAuthSession
+    // routes to setAuth (which restores the role) rather than setTokens.
+    ...(nextUser ? { user: nextUser } : {}),
   });
 
   return {
@@ -256,6 +266,19 @@ const normalizeAxiosError = (error) => {
 
   if (error.response.data && typeof error.response.data === 'object') {
     error.response.data.message = safeMessage;
+  }
+
+  // A VALIDATION_ERROR carries its detail as a field-name to message map in the
+  // envelope's `data`. Lifting it onto the error here is what lets a form put a
+  // refusal against the field that caused it, without every call site reaching
+  // into `error.response.data` for itself. Only string values are copied, so a
+  // nested or unexpected payload cannot end up rendered as a field message.
+  if (data.code === 'VALIDATION_ERROR' && data.data && typeof data.data === 'object') {
+    const fieldErrors = {};
+    for (const [field, message] of Object.entries(data.data)) {
+      if (typeof message === 'string') fieldErrors[field] = message;
+    }
+    if (Object.keys(fieldErrors).length > 0) error.fieldErrors = fieldErrors;
   }
 
   return error;

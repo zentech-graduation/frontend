@@ -1,13 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import {
-  copyPostLink,
-  extractPageContent,
-  getDisplayName,
-  getUserSummary,
-  sharePost,
-} from '@/utils/helpers';
+import { copyPostLink, extractPageContent, getDisplayName, getUserSummary } from '@/utils/helpers';
 import {
   LxAvatar,
   LxBottomSheet,
@@ -22,37 +16,49 @@ import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useRelativeTime } from '../hooks/useRelativeTime';
+import { useImpressionTracking } from '@/hooks/useImpressionTracking';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { ReportModal } from './ReportModal';
 import { toast } from './Toast';
 import { REPORT_TYPES } from '@/services/report.service';
 import { ROUTES, routeTo, CHAR_LIMITS } from '@/config/constants';
+import { PostShareDialog } from './PostShareDialog';
 
 const HEART_COLOR = 'var(--lx-error)';
 
-export function PostCard({ post, density = 'cozy', showTags = true, viewport = 'desktop' }) {
+export function PostCard({
+  post,
+  density = 'cozy',
+  showTags = true,
+  viewport = 'desktop',
+  surface,
+  assumeFollowing = false,
+}) {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
   // Read straight from the post the query cache supplies. Holding these in
   // component state is what let two renderings of one post disagree, since the
   // instance that fired the mutation was the only one that moved.
-  const liked = post.isLiked ?? false;
+  const liked = post.isLiked ?? post.viewerState?.isLiked ?? false;
   const likeCount = post.likeCount ?? 0;
-  const saved = post.isSaved ?? false;
+  const saved = post.isSaved ?? post.viewerState?.isSaved ?? false;
   const [menuOpen, setMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [editCaption, setEditCaption] = useState('');
+  const [editError, setEditError] = useState('');
   const [heartBurst, setHeartBurst] = useState(false);
   const [saveBurst, setSaveBurst] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [unfollowConfirmOpen, setUnfollowConfirmOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const lastTapRef = useRef(0);
 
   const currentUser = useAuthStore((state) => state.user);
   const isOwner = currentUser?.id === post.author?.id;
+  const { ref: impressionRef } = useImpressionTracking(post.id, surface);
 
   const updatePost = useUpdatePost();
   const deletePost = useDeletePost();
@@ -65,11 +71,11 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
 
   // The burst is presentation rather than server state, so it stays local. The
   // like itself, and its rollback, now belong to the mutation.
-  const handleLikeToggle = () => {
+  const handleLikeToggle = useCallback(() => {
     setHeartBurst(false);
     window.requestAnimationFrame(() => setHeartBurst(true));
     likeMutation.mutate({ postId: post.id, liked });
-  };
+  }, [likeMutation, liked, post.id]);
 
   const handleSaveToggle = () => {
     setSaveBurst(false);
@@ -107,16 +113,27 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   // A hashtag opens the tag search and searches for it immediately.
   const openHashtag = (tag) => navigate(`${ROUTES.SEARCH}?q=${encodeURIComponent(tag)}&type=tags`);
 
-  const handleEditOpen = () => {
+  const handleEditOpen = useCallback(() => {
     setEditCaption(post.caption ?? '');
+    setEditError('');
     setEditSheetOpen(true);
-  };
+  }, [post.caption]);
 
   const handleEditSubmit = () => {
-    if (editCaption.trim() !== '') {
-      updatePost.mutate({ postId: post.id, data: { caption: editCaption } });
-      setEditSheetOpen(false);
-    }
+    if (updatePost.isPending) return;
+    setEditError('');
+    updatePost.mutate(
+      { postId: post.id, data: { caption: editCaption } },
+      {
+        onSuccess: () => {
+          setEditSheetOpen(false);
+          toast('post updated');
+        },
+        onError: (error) => {
+          setEditError(error?.message || "we couldn't update this post. try again.");
+        },
+      }
+    );
   };
 
   const handleDeleteRequest = () => {
@@ -138,26 +155,45 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
   const authorHandle = author.username || 'unknown';
   const targetUserId = author.id;
   const avatarUrl = author.avatarUrl;
-  const timeStr = useRelativeTime(post.createdAt, { seedKey: author.username || '' });
   const tags =
     post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const isMobile = viewport === 'mobile';
   const isTextPost = String(post.postType || post.type || '').toLowerCase() === 'text';
   const following = (() => {
-    if (!myFollowingData || !targetUserId || isOwner) return false;
+    if (!targetUserId || isOwner) return false;
+    if (assumeFollowing) return true;
+    if (
+      post.viewerState?.isFollowing ||
+      post.viewerState?.isFollowedByViewer ||
+      author.viewerState?.isFollowing ||
+      author.viewerState?.isFollowedByViewer
+    ) {
+      return true;
+    }
+    if (!myFollowingData) return false;
     const list = myFollowingData.pages?.flatMap((page) => extractPageContent(page)) || [];
     // Follower lists return UserListItemResponse, which nests the user.
     return list.some((item) => getUserSummary(item, 'user').id === targetUserId);
   })();
 
-  const handleFollowToggle = () => {
+  const handleFollowConfirm = useCallback(() => {
+    if (!targetUserId) return;
+    follow.mutate(targetUserId);
+  }, [follow, targetUserId]);
+
+  const handleUnfollowConfirm = useCallback(() => {
+    if (!targetUserId) return;
+    unfollow.mutate(targetUserId, { onSuccess: () => setUnfollowConfirmOpen(false) });
+  }, [targetUserId, unfollow]);
+
+  const handleFollowToggle = useCallback(() => {
     if (!targetUserId) return;
     if (following) {
-      unfollow.mutate(targetUserId);
+      setUnfollowConfirmOpen(true);
       return;
     }
-    follow.mutate(targetUserId);
-  };
+    handleFollowConfirm();
+  }, [following, handleFollowConfirm, targetUserId]);
 
   const menuItems = useMemo(
     () => [
@@ -171,7 +207,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         id: 'share',
         icon: 'share',
         label: 'Share',
-        onClick: () => sharePost(post.id, post.caption),
+        onClick: () => setShareOpen(true),
       },
       {
         id: 'copy',
@@ -260,12 +296,13 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
       authorHandle,
       authorName,
       avatarUrl,
-      block,
       follow.isPending,
       following,
+      handleEditOpen,
+      handleFollowToggle,
+      handleLikeToggle,
       isOwner,
       liked,
-      myFollowingData,
       navigate,
       post.caption,
       post.hasReported,
@@ -277,6 +314,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
 
   return (
     <article
+      ref={impressionRef}
       onClick={handleCardClick}
       style={{
         // No card chrome. The feed is one continuous surface on the page
@@ -316,9 +354,6 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
               {authorName}
             </span>
           </div>
-          <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>·</span>
-          <span style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>{timeStr}</span>
-
           <button
             ref={menuButtonRef}
             type="button"
@@ -426,7 +461,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
               gap: 5,
             }}
           >
-            <LxIcon name="reply" size={17} color={v.ink3} />
+            <LxIcon name="chat" size={17} color={v.ink3} />
             <span style={{ fontFamily: v.fontMono, fontSize: 11, color: v.ink3 }}>
               {post.commentCount ?? 0}
             </span>
@@ -434,7 +469,7 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
           <button
             type="button"
             data-lxtap="1"
-            onClick={() => sharePost(post.id, post.caption)}
+            onClick={() => setShareOpen(true)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             <LxIcon name="share" size={17} color={v.ink3} />
@@ -471,8 +506,15 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
         />
 
         <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
+        <PostShareDialog open={shareOpen} postId={post.id} onClose={() => setShareOpen(false)} />
 
-        <LxBottomSheet open={editSheetOpen} onClose={() => setEditSheetOpen(false)} height="40vh">
+        <LxBottomSheet
+          open={editSheetOpen}
+          onClose={() => {
+            if (!updatePost.isPending) setEditSheetOpen(false);
+          }}
+          height="40vh"
+        >
           <div
             style={{
               padding: '4px 16px 8px',
@@ -503,10 +545,19 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
                 padding: 12,
                 resize: 'none',
                 outline: 'none',
+                background: v.base,
               }}
             />
-            <LxBtn variant="primary" onClick={handleEditSubmit}>
-              save changes
+            {editError ? (
+              <div
+                role="alert"
+                style={{ fontFamily: v.fontMono, fontSize: 11, color: v.errorText }}
+              >
+                {editError}
+              </div>
+            ) : null}
+            <LxBtn variant="primary" onClick={handleEditSubmit} disabled={updatePost.isPending}>
+              {updatePost.isPending ? 'saving...' : 'save changes'}
             </LxBtn>
           </div>
         </LxBottomSheet>
@@ -552,6 +603,26 @@ export function PostCard({ post, density = 'cozy', showTags = true, viewport = '
               : null
           }
           onClose={() => setBlockConfirmOpen(false)}
+        />
+
+        <ConfirmModal
+          config={
+            unfollowConfirmOpen
+              ? {
+                  title: 'unfollow',
+                  message: (
+                    <>
+                      Stop following <strong>@{authorHandle}</strong>? You will need to follow again
+                      to see their posts in following.
+                    </>
+                  ),
+                  confirmLabel: 'unfollow',
+                  confirmDisabled: unfollow.isPending,
+                  onConfirm: handleUnfollowConfirm,
+                }
+              : null
+          }
+          onClose={() => setUnfollowConfirmOpen(false)}
         />
       </div>
     </article>

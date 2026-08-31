@@ -29,6 +29,28 @@ export const useCreateStory = () => {
   });
 };
 
+export const useDeleteStory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (storyId) => storyService.deleteStory(storyId),
+    onSuccess: (_data, storyId) => {
+      queryClient.setQueryData(storyFeedKey, (envelope) => {
+        if (!envelope?.data) return envelope;
+        return {
+          ...envelope,
+          data: envelope.data
+            .map((entry) => ({
+              ...entry,
+              stories: entry.stories.filter((story) => story.id !== storyId),
+            }))
+            .filter((entry) => entry.stories.length > 0),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: storyFeedKey });
+    },
+  });
+};
+
 /**
  * Fire-and-forget: a failed view record should never block or error the
  * viewer, so callers do not need to await or handle this mutation's outcome.

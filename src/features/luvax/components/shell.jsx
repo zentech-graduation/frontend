@@ -7,6 +7,9 @@ import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
 import { useAuthStore } from '@/store/useAuthStore';
+import { isPanelRole } from '@/config/roles';
+import { useConversations } from '@/features/messages/hooks/useConversations';
+import { toThreadSummary } from '@/features/messages/utils/messageViewModel';
 
 // `id` still identifies the active tab for the shell's own styling; `path` is
 // where the tab actually goes.
@@ -25,6 +28,8 @@ const BOTTOM_TABS = [
   { id: 'profile', path: ROUTES.PROFILE, icon: 'profile', label: 'profile' },
 ];
 
+const MESSAGE_PREVIEW_LIMIT = 3;
+
 // ─── Persistent App Bar (mobile only) ──────────────────────────────────────
 // Desktop and tablet render no top bar at all: the side rail already carries every
 // destination this bar used to duplicate (nav tabs, search, profile), so a second copy of
@@ -32,12 +37,12 @@ const BOTTOM_TABS = [
 // because it has no side rail - it is the only place carrying the back button for a
 // subpage, the current page's title, and the notification bell.
 export function LxAppBar({ screen, navigate }) {
+  // Every settings category is the same screen with a category in the path, so
+  // one entry covers what used to be four separate screen ids. The category's
+  // own name is carried by the region's heading rather than by this bar.
   const subpages = {
     post: 'post',
     settings: 'settings',
-    'edit-profile': 'edit profile',
-    'change-password': 'change password',
-    blocked: 'blocked users',
   };
   const isSubpage = Boolean(subpages[screen]);
   const subpageLabel = subpages[screen];
@@ -192,7 +197,7 @@ export function LxAppBar({ screen, navigate }) {
                     width: 7,
                     height: 7,
                     borderRadius: '50%',
-                    background: v.accent,
+                    background: v.error,
                   }}
                 />
               )}
@@ -268,12 +273,13 @@ export function LxBottomNav({ active, navigate }) {
               <span
                 style={{
                   position: 'absolute',
-                  top: 6,
-                  right: '25%',
+                  top: 13,
+                  left: '50%',
+                  transform: 'translateX(5px)',
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  background: v.accent,
+                  background: v.error,
                 }}
               />
             )}
@@ -286,13 +292,15 @@ export function LxBottomNav({ active, navigate }) {
 
 // ─── Suggested accounts (composition only) ─────────────────────────────────
 // The design's rail carries a suggested block of three user rows. Its version is hardcoded to
-// three invented people, and there is no suggestions endpoint to drive a real one: the
-// recommendation module has no read surface yet.
+// three invented people, and there is no suggested-accounts endpoint to drive a real one: the
+// recommendation module now serves a post feed (GET /recommendations/feed), but nothing
+// recommends accounts to follow.
 //
 // This is the composition, driven entirely by the caller's data. It is deliberately not mounted in
 // the rail. Rendering it with placeholder accounts would put invented people back into the
 // interface, which this project has already removed once. It renders nothing when handed nothing,
-// so the day a suggestions endpoint exists this needs a data hook and a single line in the rail.
+// so the day a suggested-accounts endpoint exists this needs a data hook and a single line in the
+// rail.
 export function LxSuggestedList({ users = [] }) {
   if (users.length === 0) return null;
 
@@ -370,6 +378,66 @@ export function LxRightRail({ compact = false }) {
   );
 }
 
+function LxFloatingMessagePreview({ navigate, currentUserId, hidden = false }) {
+  const { conversations } = useConversations();
+  const recentMessageThreads = conversations
+    .slice(0, MESSAGE_PREVIEW_LIMIT)
+    .map((conversation) => toThreadSummary(conversation, currentUserId));
+
+  if (hidden) return null;
+
+  const compact = recentMessageThreads.length === 0;
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(ROUTES.MESSAGES)}
+      aria-label="open messages"
+      style={{
+        position: 'fixed',
+        right: 32,
+        bottom: 30,
+        zIndex: 90,
+        minWidth: compact ? 106 : 142,
+        height: 38,
+        borderRadius: 999,
+        border: `1px solid ${v.border}`,
+        background: v.surface,
+        color: v.ink,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: compact ? 7 : 9,
+        padding: compact ? '0 11px' : '0 12px',
+        cursor: 'pointer',
+        boxShadow: `0 10px 28px ${v.shadow12}`,
+        fontFamily: v.fontBody,
+        fontSize: 13,
+        fontWeight: 700,
+      }}
+    >
+      <LxIcon name="message" size={14} color={v.ink2} />
+      <span>Message</span>
+      {recentMessageThreads.length ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', marginLeft: 2 }}>
+          {recentMessageThreads.map((thread, index) => (
+            <span
+              key={thread.id}
+              style={{
+                marginLeft: index === 0 ? 0 : -6,
+                border: `1px solid ${v.surface}`,
+                borderRadius: '50%',
+                display: 'inline-flex',
+              }}
+            >
+              <LxAvatar size={18} src={thread.avatarUrl} />
+            </span>
+          ))}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
 // ─── Mark (icon-only) ───────────────────────────────────────────────────────
 // The favicon PNG is the only icon-only Luvax mark in the project - the app
 // otherwise only ever renders the "luvax" wordmark - so the rail reuses that
@@ -423,7 +491,13 @@ const RAIL_ICON_SIZE = 20;
 // Instagram's own collapsed sidebar uses.
 export function LxSideRail({ active, navigate, visible = true }) {
   const currentUser = useAuthStore((state) => state.user);
+  const role = useAuthStore((state) => state.role);
   const [expanded, setExpanded] = useState(false);
+  // The role is held in memory only and is absent until the session is
+  // established, so this reads false first and turns true once the role
+  // arrives. The entry appears late for a privileged account rather than
+  // appearing for an ordinary one and then vanishing.
+  const canReachPanel = isPanelRole(role);
   const { data: requestsResponse } = usePendingFollowRequests();
   const requests = extractPageContent(requestsResponse);
   const { data: unreadResponse } = useUnreadCount();
@@ -453,7 +527,10 @@ export function LxSideRail({ active, navigate, visible = true }) {
     fontFamily: v.fontBody,
     fontSize: 13,
     fontWeight: 600,
-    color: isActive ? v.accent : v.ink3,
+    // --lx-ink-3 measures below 4.5:1 on this surface in both themes, and these
+    // labels are the rail's only readable naming of its destinations rather
+    // than a decorative mark. --lx-ink-2 is the same role above the threshold.
+    color: isActive ? v.accent : v.ink2,
     textTransform: 'capitalize',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -474,6 +551,15 @@ export function LxSideRail({ active, navigate, visible = true }) {
       aria-hidden={!visible}
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
+      // The labels are the rail's only way of naming its destinations, so
+      // revealing them cannot be a mouse-only affordance. Focus entering the
+      // rail opens it exactly as hover does and focus leaving closes it, which
+      // makes tabbing through the nav show the same labels a pointer does.
+      // React's focus events bubble, so this covers every button inside.
+      onFocus={() => setExpanded(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setExpanded(false);
+      }}
       style={{
         position: 'fixed',
         top: 0,
@@ -481,7 +567,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
         bottom: 0,
         width: expanded ? RAIL_EXPANDED_W : RAIL_COLLAPSED_W,
         zIndex: 100,
-        overflow: 'hidden',
+        overflow: 'visible',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
@@ -548,7 +634,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    background: v.accent,
+                    background: v.error,
                   }}
                 />
               )}
@@ -556,6 +642,20 @@ export function LxSideRail({ active, navigate, visible = true }) {
           );
         })}
       </div>
+
+      {canReachPanel ? (
+        <button
+          onClick={() => navigate(ROUTES.ADMIN)}
+          aria-label="panel"
+          className="lx-tab-btn"
+          style={rowStyle(false)}
+        >
+          <span style={iconWrapStyle}>
+            <LxIcon name="shield" size={RAIL_ICON_SIZE} color={v.ink3} stroke={1.5} />
+          </span>
+          <span style={labelStyle(false)}>panel</span>
+        </button>
+      ) : null}
 
       <button
         onClick={() => navigate(ROUTES.SETTINGS)}
@@ -575,15 +675,56 @@ export function LxSideRail({ active, navigate, visible = true }) {
 // ─── App Shell ─────────────────────────────────────────────────────────────
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
   const vp = useViewport();
+  const currentUserId = useAuthStore((state) => state.user?.id);
+
+  // Settings is the one screen that is not a reading column. It is a list of
+  // groups beside the category that is open, and the list belongs immediately
+  // against the navigation rail: that is what lets the rail expand over it
+  // rather than over the content the person came to read. So it takes the full
+  // width from the rail's collapsed edge instead of sitting in the centred
+  // column the rest of the application uses.
+  if (vp !== 'mobile' && screen === 'settings') {
+    return (
+      <div style={{ background: v.base }}>
+        <LxSideRail active={screen} navigate={navigate} />
+        <LxFloatingMessagePreview
+          navigate={navigate}
+          currentUserId={currentUserId}
+          hidden={screen === 'messages'}
+        />
+        <main
+          key={screen}
+          className="lx-fade-in"
+          style={{
+            marginLeft: RAIL_COLLAPSED_W,
+            minHeight: 'calc(100vh / var(--lx-scale))',
+            display: 'flex',
+            flexDirection: 'column',
+            background: v.base,
+          }}
+        >
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   if (vp === 'desktop') {
     const LEFT_W = 280;
+    const isWideScreen = screen === 'search' || screen === 'explore';
+    const mainWidth = isWideScreen ? 960 : 680;
+    const shellMaxWidth = isWideScreen ? 1540 : 1260;
     return (
       // No min-height: 100vh here - it would carry the same zoom-vs-vh mismatch <main> below
       // has to correct for, and nothing in this row needs it: the rail is fixed-positioned and
       // <main> establishes the page's real height on its own.
       <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxSideRail active={screen} navigate={navigate} />
+        <LxFloatingMessagePreview
+          navigate={navigate}
+          currentUserId={currentUserId}
+          hidden={screen === 'messages'}
+        />
         <div
           style={{
             display: 'flex',
@@ -591,7 +732,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             justifyContent: 'center',
             alignItems: 'flex-start',
             width: '100%',
-            maxWidth: 1260,
+            maxWidth: shellMaxWidth,
             margin: '0 auto',
           }}
         >
@@ -601,7 +742,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             key={screen}
             className="lx-fade-in"
             style={{
-              width: 680,
+              width: mainWidth,
               flexShrink: 0,
               minWidth: 0,
               // No column rules. The feed is one continuous surface on the page
@@ -623,16 +764,21 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
 
   if (vp === 'tablet') {
     const LEFT_W = 82;
-    const isWideSettingsPane = ['settings', 'edit-profile', 'change-password', 'blocked'].includes(
-      screen
-    );
-    const tabletMainWidth = screen === 'compose' ? 784 : isWideSettingsPane ? 704 : 604;
-    const tabletShellWidth = screen === 'compose' ? 1090 : isWideSettingsPane ? 1010 : 910;
-    const tabletRightSpacer = isWideSettingsPane ? LEFT_W : 206;
+    // Settings never reaches here: it is handled above, against the rail.
+    const tabletMainWidth =
+      screen === 'compose' ? 784 : screen === 'search' || screen === 'explore' ? 760 : 604;
+    const tabletShellWidth =
+      screen === 'compose' ? 1090 : screen === 'search' || screen === 'explore' ? 1060 : 910;
+    const tabletRightSpacer = 206;
     return (
       // No min-height: 100vh here - see the desktop branch above for why.
       <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
         <LxSideRail active={screen} navigate={navigate} />
+        <LxFloatingMessagePreview
+          navigate={navigate}
+          currentUserId={currentUserId}
+          hidden={screen === 'messages'}
+        />
         <div
           style={{
             display: 'flex',

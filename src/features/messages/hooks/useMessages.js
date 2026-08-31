@@ -7,6 +7,54 @@ import { conversationsKey, unreadCountKey } from './useConversations';
 
 export const messagesKey = (conversationId) => ['conversations', conversationId, 'messages'];
 
+const messageTime = (message) => {
+  const value = message?.createdAt ? new Date(message.createdAt).getTime() : 0;
+  return Number.isNaN(value) ? 0 : value;
+};
+
+const isPendingMessage = (message) =>
+  typeof message?.id === 'string' && message.id.startsWith('pending-');
+
+/**
+ * Keeps already-loaded history visible when the newest page is re-read.
+ *
+ * A busy conversation can push a visible "marker" message out of the first page between live
+ * refreshes. The server is still correct, but replacing the cache with only the newest page makes
+ * that loaded message disappear from the open thread. New rows win by id so edits/deletes reflected
+ * by the fresh response still update, while older rows that were already in the cache remain
+ * visible until the user closes or reloads the conversation.
+ */
+export const mergeMessagePages = (oldData, newData) => {
+  if (!oldData?.pages?.length || !newData?.pages?.length) return newData;
+
+  const byId = new Map();
+  newData.pages.forEach((page) => {
+    (page?.data?.content || []).forEach((message) => byId.set(message.id, message));
+  });
+  oldData.pages.forEach((page) => {
+    (page?.data?.content || []).forEach((message) => {
+      if (isPendingMessage(message)) return;
+      if (!byId.has(message.id)) byId.set(message.id, message);
+    });
+  });
+
+  const merged = Array.from(byId.values()).sort((a, b) => messageTime(b) - messageTime(a));
+  const firstPage = newData.pages[0];
+  return {
+    ...newData,
+    pages: [
+      {
+        ...firstPage,
+        data: {
+          ...firstPage.data,
+          content: merged,
+        },
+      },
+    ],
+    pageParams: [newData.pageParams?.[0] ?? null],
+  };
+};
+
 /**
  * Cursor-paginated history for one conversation.
  *
@@ -22,6 +70,7 @@ export const useMessages = (conversationId) => {
     staleTime: 0,
     getNextPageParam: getNextCursor,
     initialPageParam: null,
+    structuralSharing: mergeMessagePages,
   });
 
   const messages = (query.data?.pages || []).flatMap((page) => page?.data?.content || []);
@@ -70,6 +119,17 @@ export const useSendMessage = () => {
       if (context?.previous !== undefined) {
         queryClient.setQueryData(context.key, context.previous);
       }
+    },
+    onSuccess: (response, variables, context) => {
+      const createdMessage = response?.data;
+      const optimisticId = variables.optimisticMessage?.id;
+      if (!createdMessage?.id || !optimisticId || !context?.key) return;
+
+      queryClient.setQueryData(context.key, (old) =>
+        withFirstPageContent(old, (content) =>
+          content.map((message) => (message.id === optimisticId ? createdMessage : message))
+        )
+      );
     },
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: messagesKey(variables.conversationId) });
