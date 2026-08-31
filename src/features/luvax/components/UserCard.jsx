@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { v } from '@/config/tokens';
+import { formatCount } from '@/utils/helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LxAvatar, LxBtn, LxIcon } from './primitives';
 import { useFollow, useUnfollow } from '../hooks/useSocial';
@@ -12,6 +13,7 @@ export function UserCard({
   initiallyRequested = false,
   rightElement,
   compact = false,
+  showFollowButton = true,
 }) {
   const currentUserId = useAuthStore((state) => state.user?.id);
   const [isFollowing, setIsFollowing] = useState(initiallyFollowing);
@@ -28,7 +30,6 @@ export function UserCard({
     // Syncs optimistic button state back to the latest relationship state returned by the server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsFollowing(initiallyFollowing);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRequested(initiallyRequested);
   }, [initiallyFollowing, initiallyRequested, user?.id]);
 
@@ -52,6 +53,7 @@ export function UserCard({
   const avatarSize = compact ? 36 : 44;
   const buttonVariant = compact ? 'ghost' : isFollowing || requested ? 'secondary' : 'primary';
   const isSelf = Boolean(currentUserId && user?.id === currentUserId);
+  const followerCount = user?.followerCount ?? user?.followersCount;
 
   return (
     <div
@@ -118,11 +120,22 @@ export function UserCard({
         >
           {user.bio || `@${user.username || 'unknown'}`}
         </div>
+        <div
+          style={{
+            fontFamily: v.fontMono,
+            fontSize: compact ? 9 : 10,
+            color: v.ink3,
+            marginTop: 3,
+          }}
+        >
+          {formatCount(followerCount)} followers
+        </div>
       </div>
 
       {rightElement
         ? rightElement
-        : !isSelf && (
+        : showFollowButton &&
+          !isSelf && (
             <LxBtn
               variant={buttonVariant}
               size="sm"

@@ -3,8 +3,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 
 import { v } from '@/config/tokens';
-import { routeTo, CHAR_LIMITS } from '@/config/constants';
-import { extractPageContent, getUserSummary, isPageDegraded } from '@/utils/helpers';
+import { ROUTES, routeTo, CHAR_LIMITS } from '@/config/constants';
+import {
+  canViewerSeePost,
+  extractPageContent,
+  getUserSummary,
+  isPageDegraded,
+} from '@/utils/helpers';
 import { LxIcon } from '@/features/luvax/components/primitives';
 import { UserCard } from '@/features/luvax/components/UserCard';
 import { useOverlayNavigate } from '@/features/luvax/hooks/useOverlayNavigate';
@@ -26,6 +31,7 @@ import {
 } from './SearchResultsEmpty';
 
 const TABS = [
+  { id: 'all', label: 'all' },
   { id: 'posts', label: 'posts' },
   { id: 'people', label: 'people' },
   { id: 'tags', label: 'tags' },
@@ -91,15 +97,62 @@ function ResultsSection({ query, label, result, renderRows }) {
   );
 }
 
+function SuggestedHashtags({ hashtags, navigate }) {
+  return (
+    <section style={{ margin: '18px 16px 24px' }}>
+      <div
+        style={{
+          fontFamily: v.fontMono,
+          fontSize: 10,
+          color: v.ink3,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          marginBottom: 8,
+        }}
+      >
+        suggested hashtags
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {hashtags.slice(0, 8).map((tag) => (
+          <button
+            key={tag.id || tag.name}
+            type="button"
+            onClick={() => navigate(`${ROUTES.SEARCH}?q=${encodeURIComponent(tag.name)}&type=tags`)}
+            style={{
+              border: `1px solid ${v.border}`,
+              background: v.surface,
+              color: v.ink2,
+              borderRadius: 999,
+              padding: '7px 11px',
+              fontFamily: v.fontBody,
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
+          >
+            #{tag.name}
+          </button>
+        ))}
+        {hashtags.length === 0 ? (
+          <span style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink3 }}>
+            no hashtags found
+          </span>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export function SearchScreen() {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
   const viewport = useViewport();
   const cols = viewport === 'desktop' ? 3 : 2;
+  const stackedSearchLayout = viewport === 'mobile';
 
   const [searchParams, setSearchParams] = useSearchParams();
   const query = (searchParams.get('q') || '').trim();
-  const tab = searchParams.get('type') || 'posts';
+  const rawTab = searchParams.get('type') || 'all';
+  const tab = TABS.some((item) => item.id === rawTab) ? rawTab : 'all';
 
   const [input, setInput] = useState(searchParams.get('q') || '');
 
@@ -156,7 +209,25 @@ export function SearchScreen() {
     hasNextPage: userResults.some((result) => result.hasNextPage),
     isFetchingNextPage: userResults.some((result) => result.isFetchingNextPage),
   };
-  const hashtagResult = useHashtagSearch(query);
+  const hashtagQuery = query || 'a';
+  const hashtagResult = useHashtagSearch(hashtagQuery);
+  const postRows = (
+    postResult.data?.pages?.flatMap((page) => extractPageContent(page)) || []
+  ).filter(canViewerSeePost);
+  const userRows = userResult.data?.pages?.flatMap((page) => extractPageContent(page)) || [];
+  const dedupedUserRows = userRows.filter((item, index, allRows) => {
+    const rowUser = getUserSummary(item, 'user');
+    return (
+      rowUser.id &&
+      allRows.findIndex((row) => getUserSummary(row, 'user').id === rowUser.id) === index
+    );
+  });
+  const hashtagRows = hashtagResult.data?.pages?.flatMap((page) => extractPageContent(page)) || [];
+  const sidePostRows = postRows.slice(0, 8);
+  const lowerPostRows = postRows.slice(8);
+  const allLoading =
+    query && (postResult.isLoading || userResult.isLoading || hashtagResult.isLoading);
+  const allError = postResult.isError && userResult.isError && hashtagResult.isError;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: v.base }}>
@@ -231,6 +302,227 @@ export function SearchScreen() {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
+        {tab === 'all' &&
+          (query ? (
+            allLoading ? (
+              <SearchLoading label="results" />
+            ) : allError ? (
+              <SearchFailed label="results" />
+            ) : (
+              <div
+                style={{
+                  padding: stackedSearchLayout ? 12 : 16,
+                  width: '100%',
+                  maxWidth: stackedSearchLayout ? '100%' : 980,
+                  margin: '0 auto',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: stackedSearchLayout
+                      ? '1fr'
+                      : 'minmax(220px, 0.72fr) minmax(0, 1.28fr)',
+                    gap: stackedSearchLayout ? 18 : 20,
+                    alignItems: 'start',
+                  }}
+                >
+                  <section style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontFamily: v.fontMono,
+                        fontSize: 10,
+                        color: v.ink3,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        marginBottom: 8,
+                      }}
+                    >
+                      people
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10,
+                        maxHeight: 520,
+                        overflowY: dedupedUserRows.length > 10 ? 'auto' : 'visible',
+                        paddingRight: dedupedUserRows.length > 10 ? 6 : 0,
+                      }}
+                    >
+                      {dedupedUserRows.map((item) => {
+                        const rowUser = getUserSummary(item, 'user');
+                        return (
+                          <UserCard
+                            key={rowUser.id}
+                            user={{
+                              ...rowUser,
+                              followerCount: item.followerCount ?? item.user?.followerCount,
+                              viewerState: item.viewerState ?? rowUser.viewerState,
+                              isPrivate: rowUser.isPrivate ?? item.user?.isPrivate,
+                            }}
+                            initiallyFollowing={
+                              item.viewerState?.isFollowing ??
+                              item.viewerState?.isFollowedByViewer ??
+                              false
+                            }
+                            initiallyRequested={item.viewerState?.isFollowRequested ?? false}
+                            onAvatarClick={(u) => navigate(routeTo.userProfile(u.id))}
+                            showFollowButton={false}
+                          />
+                        );
+                      })}
+                    </div>
+                    {dedupedUserRows.length === 0 ? (
+                      <SearchEmpty label="people" query={query} />
+                    ) : null}
+                    <SuggestedHashtags hashtags={hashtagRows} navigate={navigate} />
+                  </section>
+
+                  <section style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontFamily: v.fontMono,
+                        fontSize: 10,
+                        color: v.ink3,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        marginBottom: 8,
+                      }}
+                    >
+                      posts
+                    </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${stackedSearchLayout ? cols : 4}, 1fr)`,
+                        gap: 2,
+                        height: stackedSearchLayout ? 410 : 390,
+                        gridAutoRows: 'minmax(0, 1fr)',
+                        alignItems: 'stretch',
+                        overflowY: postRows.length > 8 ? 'auto' : 'hidden',
+                        paddingRight: postRows.length > 8 ? 6 : 0,
+                      }}
+                    >
+                      {sidePostRows.map((post) => {
+                        const mediaUrl =
+                          post.media && post.media.length > 0 ? post.media[0].cdnUrl : null;
+                        return (
+                          <div
+                            key={post.id}
+                            onClick={() => openOverlay(routeTo.postDetail(post.id))}
+                            style={{
+                              background: mediaUrl
+                                ? `url(${mediaUrl}) center/cover no-repeat`
+                                : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
+                              minHeight: 0,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: 10,
+                              boxSizing: 'border-box',
+                            }}
+                          >
+                            {!mediaUrl && post.caption ? (
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontFamily: v.fontBody,
+                                  color: v.ink3,
+                                  textAlign: 'center',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 3,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                {post.caption}
+                              </span>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {postRows.length === 0 ? <SearchEmpty label="posts" query={query} /> : null}
+                  </section>
+                </div>
+                {lowerPostRows.length > 0 ? (
+                  <section style={{ marginTop: 20 }}>
+                    <div
+                      style={{
+                        fontFamily: v.fontMono,
+                        fontSize: 10,
+                        color: v.ink3,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        marginBottom: 8,
+                      }}
+                    >
+                      more posts
+                    </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${stackedSearchLayout ? cols : 4}, 1fr)`,
+                        gap: 2,
+                        maxHeight: stackedSearchLayout ? 820 : 780,
+                        overflowY: lowerPostRows.length > 16 ? 'auto' : 'visible',
+                        paddingRight: lowerPostRows.length > 16 ? 6 : 0,
+                      }}
+                    >
+                      {lowerPostRows.map((post) => {
+                        const mediaUrl =
+                          post.media && post.media.length > 0 ? post.media[0].cdnUrl : null;
+                        return (
+                          <div
+                            key={post.id}
+                            onClick={() => openOverlay(routeTo.postDetail(post.id))}
+                            style={{
+                              background: mediaUrl
+                                ? `url(${mediaUrl}) center/cover no-repeat`
+                                : 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
+                              aspectRatio: '1/1',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: 10,
+                              boxSizing: 'border-box',
+                            }}
+                          >
+                            {!mediaUrl && post.caption ? (
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontFamily: v.fontBody,
+                                  color: v.ink3,
+                                  textAlign: 'center',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 3,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                {post.caption}
+                              </span>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ) : null}
+              </div>
+            )
+          ) : (
+            <div>
+              <RecommendedPostsGrid surface="search" />
+              <SuggestedHashtags hashtags={hashtagRows} navigate={navigate} />
+            </div>
+          ))}
+
         {tab === 'posts' &&
           (query ? (
             <ResultsSection

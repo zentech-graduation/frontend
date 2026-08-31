@@ -101,7 +101,6 @@ function MediaItem({ media, active, registerVideo }) {
 export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) {
   const items = getMediaList(post);
   const [index, setIndex] = useState(0);
-  const [focused, setFocused] = useState(false);
   const videoRefs = useRef([]);
   const touchStartX = useRef(null);
 
@@ -227,8 +226,6 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
       aria-label={isCarousel ? `post media, ${count} items` : undefined}
       tabIndex={isCarousel ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onClick={handleClick}
@@ -240,9 +237,7 @@ export function PostMedia({ post, radius = 0, onOpen = null, minAspect = 0.8 }) 
         background: v.surfaceSunken,
         borderRadius: radius,
         cursor: onOpen ? 'pointer' : 'default',
-        // v.ink is the design's own tab underline colour, reused as the focus ring.
-        outline: focused && isCarousel ? `2px solid ${v.ink}` : 'none',
-        outlineOffset: 2,
+        outline: 'none',
       }}
     >
       {/* Items sit side by side on a track that slides horizontally to the active

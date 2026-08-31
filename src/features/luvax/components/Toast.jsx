@@ -10,6 +10,7 @@ import { v } from '@/config/tokens';
 
 const listeners = new Set();
 let nextId = 0;
+let lastToast = { message: '', at: 0 };
 
 // Visible dwell before the toast leaves, from the design's 1700ms.
 const DWELL_MS = 1700;
@@ -18,6 +19,9 @@ const EXIT_MS = 200;
 
 export function toast(message) {
   if (!message) return;
+  const now = Date.now();
+  if (lastToast.message === message && now - lastToast.at < DWELL_MS) return;
+  lastToast = { message, at: now };
   const id = ++nextId;
   listeners.forEach((listener) => listener({ id, message }));
 }

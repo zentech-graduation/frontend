@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { ConvRow } from './ConvRow';
@@ -21,6 +22,8 @@ export function ConversationListPanel({
   onUnmuteThread,
   onRenameThread,
 }) {
+  const [revealedThreadId, setRevealedThreadId] = useState(null);
+
   return (
     <aside
       style={{
@@ -77,8 +80,14 @@ export function ConversationListPanel({
             <ConvRow
               key={thread.id}
               thread={thread}
+              viewport={viewport}
+              revealedOptions={revealedThreadId === thread.id}
+              onRevealOptions={() => setRevealedThreadId(thread.id)}
               isActive={isActive}
-              onSelect={() => selectThread(thread.id)}
+              onSelect={() => {
+                setRevealedThreadId(thread.id);
+                selectThread(thread.id);
+              }}
               onMarkRead={() => onMarkRead?.(thread.id)}
               onMarkUnread={() => onMarkUnread?.(thread.id)}
               onDelete={() => onDeleteThread?.(thread)}
