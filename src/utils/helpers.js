@@ -120,6 +120,12 @@ export function getNextCursor(page) {
   return pageInfo.hasNextPage ? pageInfo.endCursor : undefined;
 }
 
+export function canViewerSeePost(post) {
+  const author = post?.author || post?.user || {};
+  const viewerState = author.viewerState || post?.viewerState || {};
+  return !author.isPrivate || viewerState.isFollowing || viewerState.isSelf || viewerState.isOwner;
+}
+
 /**
  * Removes a post id from every page after the one it first appeared on.
  *

@@ -8,6 +8,7 @@ import { v } from '@/config/tokens';
 import { isUnknownCategory, resolveCategory, SETTINGS_GROUPS } from './settingsCatalog';
 import {
   AccountCategory,
+  AppearanceCategory,
   BlockedCategory,
   NotificationsCategory,
   PrivacyCategory,
@@ -20,6 +21,7 @@ import { SETTINGS_CSS } from './settingsStyles';
 const CATEGORY_VIEWS = {
   profile: ProfileCategory,
   notifications: NotificationsCategory,
+  appearance: AppearanceCategory,
   saved: SavedCategory,
   privacy: PrivacyCategory,
   requests: RequestsCategory,

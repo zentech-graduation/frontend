@@ -1,7 +1,13 @@
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
-import { extractPageContent, getDisplayName, getMediaList, getUserSummary } from '@/utils/helpers';
+import {
+  canViewerSeePost,
+  extractPageContent,
+  getDisplayName,
+  getMediaList,
+  getUserSummary,
+} from '@/utils/helpers';
 import { LxAvatar } from './primitives';
 import { MediaThumb } from './MediaThumb';
 import { useExplore } from '../hooks/usePosts';
@@ -20,7 +26,7 @@ import { routeTo } from '@/config/constants';
  * results, which reuse this component but are out of the impression-tracked
  * surface list; useImpressionTracking is a no-op without it.
  */
-export function SearchResultPost({ post, surface }) {
+export function SearchResultPost({ post, surface, fluid = false }) {
   const openOverlay = useOverlayNavigate();
   const { ref: impressionRef } = useImpressionTracking(post.id, surface);
   const authorName = getDisplayName(getUserSummary(post), 'Unknown');
@@ -32,7 +38,7 @@ export function SearchResultPost({ post, surface }) {
       ref={impressionRef}
       onClick={() => openOverlay(routeTo.postDetail(post.id))}
       style={{
-        width: 210,
+        width: fluid ? '100%' : 210,
         background: v.surface,
         border: `1px solid ${v.borderSubtle}`,
         borderRadius: 12,
@@ -107,7 +113,9 @@ export function RecommendedPostsGrid({ surface }) {
     }
   }, [isError, error, start]);
 
-  const posts = data?.pages?.flatMap((page) => extractPageContent(page)) || [];
+  const posts = (data?.pages?.flatMap((page) => extractPageContent(page)) || []).filter(
+    canViewerSeePost
+  );
 
   if (isLoading) {
     return (

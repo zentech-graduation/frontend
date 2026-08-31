@@ -130,6 +130,14 @@ const ICONS = {
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
     </>
   ),
+  smile: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 14s1.4 2 4 2 4-2 4-2" />
+      <circle cx="9" cy="10" r="0.7" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10" r="0.7" fill="currentColor" stroke="none" />
+    </>
+  ),
   more: (
     <>
       <circle cx="12" cy="12" r="1.5" />

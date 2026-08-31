@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { v } from '@/config/tokens';
-import { extractPageContent } from '@/utils/helpers';
+import { canViewerSeePost, extractPageContent } from '@/utils/helpers';
 import { LxIcon, LxAvatar } from './primitives';
 import { useFeed, useForYouFeed } from '../hooks/usePosts';
 import { useRateLimitCooldown } from '@/hooks/useRateLimitCooldown';
@@ -215,6 +215,7 @@ function FeedTabPanel({
   tweaks,
   viewport,
   isRecommended,
+  assumeFollowing,
   emptyTitle,
   emptySubtitle,
   query,
@@ -237,10 +238,23 @@ function FeedTabPanel({
     }
   }, [isRecommended, isError, error, start]);
 
-  const posts = data?.pages?.flatMap((page) => extractPageContent(page)) || [];
+  const posts = (data?.pages?.flatMap((page) => extractPageContent(page)) || []).filter(
+    canViewerSeePost
+  );
 
   return (
-    <div style={{ display: active ? 'block' : 'none' }}>
+    <div
+      style={{
+        position: active ? 'relative' : 'absolute',
+        inset: active ? 'auto' : '0 0 auto 0',
+        opacity: active ? 1 : 0,
+        transform: active ? 'translateY(0)' : 'translateY(10px)',
+        pointerEvents: active ? 'auto' : 'none',
+        transition: 'opacity 260ms var(--ease-out), transform 260ms var(--ease-out)',
+        visibility: active ? 'visible' : 'hidden',
+        willChange: 'opacity, transform',
+      }}
+    >
       {isLoading ? (
         <div
           style={{
@@ -294,19 +308,6 @@ function FeedTabPanel({
       ) : (
         <div style={{ width: '100%', maxWidth: isMobile ? '100%' : FEED_COLUMN, margin: '0 auto' }}>
           <div
-            style={{
-              fontFamily: v.fontMono,
-              fontSize: 10,
-              color: v.ink3,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              padding: isMobile ? '0 14px 16px' : '0 4px 16px',
-            }}
-          >
-            today
-          </div>
-
-          <div
             className="lx-fade-in"
             style={{ display: 'flex', flexDirection: 'column', gap: betweenPosts }}
           >
@@ -318,6 +319,7 @@ function FeedTabPanel({
                 showTags={tweaks.showTags}
                 viewport={viewport}
                 surface="feed"
+                assumeFollowing={assumeFollowing}
               />
             ))}
           </div>
@@ -405,9 +407,11 @@ export function FeedScreen() {
       <div style={{ width: '100%', maxWidth: isMobile ? '100%' : FEED_COLUMN, margin: '0 auto' }}>
         <div
           style={{
+            position: 'relative',
             display: 'flex',
             marginBottom: isMobile ? 8 : 16,
             padding: isMobile ? '0 14px' : '0 4px',
+            borderBottom: `1px solid ${v.borderSubtle}`,
           }}
         >
           {[
@@ -427,37 +431,62 @@ export function FeedScreen() {
                 border: 'none',
                 cursor: 'pointer',
                 padding: '13px 0 14px',
-                borderBottom: tab === t.id ? '2px solid var(--lx-ink)' : '2px solid transparent',
                 letterSpacing: '0.01em',
+                transition: 'color 180ms var(--ease-out)',
               }}
             >
               {t.label}
             </button>
           ))}
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: isMobile ? 14 : 4,
+              right: isMobile ? 14 : 4,
+              bottom: -1,
+              height: 2,
+              pointerEvents: 'none',
+            }}
+          >
+            <span
+              style={{
+                display: 'block',
+                width: '50%',
+                height: '100%',
+                background: v.ink,
+                transform: tab === 'following' ? 'translateX(100%)' : 'translateX(0)',
+                transition: 'transform 260ms var(--ease-out)',
+              }}
+            />
+          </span>
         </div>
 
-        <FeedTabPanel
-          active={tab === 'foryou'}
-          isMobile={isMobile}
-          betweenPosts={betweenPosts}
-          tweaks={tweaks}
-          viewport={viewport}
-          isRecommended
-          query={forYouQuery}
-          emptyTitle="nothing to show yet"
-          emptySubtitle="check back soon"
-        />
-        <FeedTabPanel
-          active={tab === 'following'}
-          isMobile={isMobile}
-          betweenPosts={betweenPosts}
-          tweaks={tweaks}
-          viewport={viewport}
-          isRecommended={false}
-          query={followingQuery}
-          emptyTitle="your feed is quiet"
-          emptySubtitle="follow a few people and their posts will appear here"
-        />
+        <div style={{ position: 'relative', minHeight: 240 }}>
+          <FeedTabPanel
+            active={tab === 'foryou'}
+            isMobile={isMobile}
+            betweenPosts={betweenPosts}
+            tweaks={tweaks}
+            viewport={viewport}
+            isRecommended
+            query={forYouQuery}
+            emptyTitle="nothing to show yet"
+            emptySubtitle="check back soon"
+          />
+          <FeedTabPanel
+            active={tab === 'following'}
+            isMobile={isMobile}
+            betweenPosts={betweenPosts}
+            tweaks={tweaks}
+            viewport={viewport}
+            isRecommended={false}
+            assumeFollowing
+            query={followingQuery}
+            emptyTitle="your feed is quiet"
+            emptySubtitle="follow a few people and their posts will appear here"
+          />
+        </div>
       </div>
     </div>
   );

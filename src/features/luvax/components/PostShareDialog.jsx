@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { LxAvatar, LxBtn } from './primitives';
 import { LxIcon } from '@/components/ui/lx-icon';
@@ -16,6 +17,8 @@ import {
 import { messageService } from '@/services/message.service';
 import { toast } from './Toast';
 
+const MAX_SHARE_RECIPIENTS = 10;
+
 export function PostShareDialog({ open, postId, onClose }) {
   const currentUser = useAuthStore((state) => state.user);
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useFollowing(
@@ -24,6 +27,7 @@ export function PostShareDialog({ open, postId, onClose }) {
   );
   const [sendingTo, setSendingTo] = useState('');
   const [search, setSearch] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState(() => new Set());
   const searchTerms = getUserSearchTerms(search);
   const primarySearch = useUserSearch(open ? searchTerms[0] || '' : '');
   const secondarySearch = useUserSearch(open ? searchTerms[1] || '' : '');
@@ -56,6 +60,14 @@ export function PostShareDialog({ open, postId, onClose }) {
   }, [currentUser?.id, searchResults]);
 
   const shownUsers = isSearching ? searchedUsers : friends;
+  const selectedUsers = useMemo(() => {
+    const seen = new Set();
+    return [...friends, ...searchedUsers].filter((user) => {
+      if (!selectedUserIds.has(user.id) || seen.has(user.id)) return false;
+      seen.add(user.id);
+      return true;
+    });
+  }, [friends, searchedUsers, selectedUserIds]);
   const userListLoading = isSearching ? isSearchLoading : isLoading;
   const canLoadMore = isSearching ? hasSearchNextPage : hasNextPage;
   const isLoadingMore = isSearching ? isSearchFetchingNextPage : isFetchingNextPage;
@@ -68,6 +80,18 @@ export function PostShareDialog({ open, postId, onClose }) {
     }
     fetchNextPage();
   };
+
+  useEffect(() => {
+    if (!open) {
+      const resetId = window.setTimeout(() => {
+        setSelectedUserIds(new Set());
+        setSearch('');
+        setSendingTo('');
+      }, 0);
+      return () => window.clearTimeout(resetId);
+    }
+    return undefined;
+  }, [open]);
 
   if (!open) return null;
 
@@ -85,16 +109,30 @@ export function PostShareDialog({ open, postId, onClose }) {
       });
   };
 
-  const handleSend = async (user) => {
-    if (!user?.id || sendingTo) return;
-    setSendingTo(user.id);
+  const toggleUser = (userId) => {
+    setSelectedUserIds((current) => {
+      const next = new Set(current);
+      if (next.has(userId)) next.delete(userId);
+      else if (next.size < MAX_SHARE_RECIPIENTS) next.add(userId);
+      else toast(`you can share with up to ${MAX_SHARE_RECIPIENTS} people at once`);
+      return next;
+    });
+  };
+
+  const sendToUser = async (user) => {
+    const conversation = await messageService.createDirect(user.id);
+    await messageService.sendMessage(conversation.data.id, {
+      messageType: 'post_share',
+      sharedPostId: postId,
+    });
+  };
+
+  const handleSendSelected = async () => {
+    if (selectedUsers.length === 0 || sendingTo) return;
+    setSendingTo('selected');
     try {
-      const conversation = await messageService.createDirect(user.id);
-      await messageService.sendMessage(conversation.data.id, {
-        messageType: 'post_share',
-        sharedPostId: postId,
-      });
-      toast(`sent to ${getDisplayName(user)}`);
+      await Promise.all(selectedUsers.map((user) => sendToUser(user)));
+      toast(`sent to ${selectedUsers.length} ${selectedUsers.length === 1 ? 'person' : 'people'}`);
       onClose?.();
     } catch (error) {
       toast(error?.message || 'could not share this post');
@@ -103,23 +141,32 @@ export function PostShareDialog({ open, postId, onClose }) {
     }
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  const zoom = parseFloat(getComputedStyle(document.documentElement).zoom) || 1;
+  const dialog = (
     <>
       <div
-        onClick={onClose}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose?.();
+        }}
+        onPointerDown={(event) => event.stopPropagation()}
         style={{ position: 'fixed', inset: 0, background: v.scrim, zIndex: 1000 }}
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-label="share post"
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
         style={{
           position: 'fixed',
-          top: '50%',
-          left: '50%',
+          top: `calc(50vh / ${zoom})`,
+          left: `calc(50vw / ${zoom})`,
           transform: 'translate(-50%, -50%)',
-          width: 'min(calc(100vw - 32px), 460px)',
-          maxHeight: 'min(calc(100vh - 56px), 620px)',
+          width: `min(calc((100vw - 32px) / ${zoom}), 460px)`,
+          maxHeight: `min(calc((100vh - 56px) / ${zoom}), 620px)`,
           background: v.base,
           border: `1px solid ${v.border}`,
           borderRadius: 14,
@@ -231,6 +278,19 @@ export function PostShareDialog({ open, postId, onClose }) {
               }}
             />
           </form>
+          {selectedUsers.length >= MAX_SHARE_RECIPIENTS ? (
+            <div
+              style={{
+                marginTop: 8,
+                fontFamily: v.fontMono,
+                fontSize: 10,
+                color: v.ink3,
+                textAlign: 'center',
+              }}
+            >
+              up to {MAX_SHARE_RECIPIENTS} people at once
+            </div>
+          ) : null}
         </div>
 
         <div style={{ overflowY: 'auto', padding: '8px 0', minHeight: 180 }}>
@@ -239,72 +299,96 @@ export function PostShareDialog({ open, postId, onClose }) {
               {isSearching ? 'searching people...' : 'loading friends...'}
             </div>
           ) : shownUsers.length ? (
-            shownUsers.map((user) => (
-              <button
-                key={user.id}
-                type="button"
-                onClick={() => handleSend(user)}
-                disabled={Boolean(sendingTo)}
-                style={{
-                  width: '100%',
-                  border: 'none',
-                  background: 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '10px 18px',
-                  cursor: sendingTo ? 'default' : 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <LxAvatar size={38} src={user.avatarUrl} />
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span
-                    style={{
-                      display: 'block',
-                      fontFamily: v.fontBody,
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: v.ink,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {getDisplayName(user)}
-                  </span>
-                  <span
-                    style={{
-                      display: 'block',
-                      fontFamily: v.fontMono,
-                      fontSize: 11,
-                      color: v.ink3,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    @{user.username}
-                  </span>
-                </span>
-                <span
+            shownUsers.map((user) => {
+              const selected = selectedUserIds.has(user.id);
+              const capped = !selected && selectedUserIds.size >= MAX_SHARE_RECIPIENTS;
+
+              return (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => toggleUser(user.id)}
+                  disabled={Boolean(sendingTo)}
+                  aria-disabled={capped || undefined}
                   style={{
-                    fontFamily: v.fontBody,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: sendingTo === user.id ? v.ink3 : v.accent,
+                    width: '100%',
+                    border: 'none',
+                    background: 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '10px 18px',
+                    cursor: sendingTo ? 'default' : capped ? 'not-allowed' : 'pointer',
+                    textAlign: 'left',
+                    opacity: capped ? 0.55 : 1,
                   }}
                 >
-                  {sendingTo === user.id ? 'sending...' : 'send'}
-                </span>
-              </button>
-            ))
+                  <LxAvatar size={38} src={user.avatarUrl} />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontFamily: v.fontBody,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: v.ink,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {getDisplayName(user)}
+                    </span>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontFamily: v.fontMono,
+                        fontSize: 11,
+                        color: v.ink3,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      @{user.username}
+                    </span>
+                  </span>
+                  <span
+                    style={{
+                      minWidth: 25,
+                      height: 25,
+                      borderRadius: '50%',
+                      border: `1px solid ${selected ? v.accent : v.borderStrong}`,
+                      background: selected ? v.accent : 'transparent',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {selected ? <LxIcon name="check" size={13} color={v.black} /> : null}
+                  </span>
+                </button>
+              );
+            })
           ) : (
             <div style={{ padding: 20, textAlign: 'center', color: v.ink3 }}>
               {isSearching ? 'no people found' : 'no friends to share with yet'}
             </div>
           )}
         </div>
+
+        {selectedUsers.length > 0 ? (
+          <div style={{ padding: 12, borderTop: `1px solid ${v.border}` }}>
+            <LxBtn
+              variant="primary"
+              onClick={handleSendSelected}
+              disabled={Boolean(sendingTo)}
+              style={{ width: '100%' }}
+            >
+              {sendingTo ? 'sending...' : `send to ${selectedUsers.length}`}
+            </LxBtn>
+          </div>
+        ) : null}
 
         {canLoadMore ? (
           <div style={{ padding: 12, borderTop: `1px solid ${v.border}` }}>
@@ -321,4 +405,6 @@ export function PostShareDialog({ open, postId, onClose }) {
       </div>
     </>
   );
+
+  return createPortal(dialog, document.body);
 }

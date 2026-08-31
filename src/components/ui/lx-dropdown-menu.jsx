@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 
@@ -8,7 +9,7 @@ export function LxDropdownMenu({
   onClose,
   items,
   width = 196,
-  align = 'left',
+  align = 'right',
   zIndex = 1200,
 }) {
   const menuRef = useRef(null);
@@ -44,7 +45,7 @@ export function LxDropdownMenu({
       const topVisual = shouldOpenUp
         ? Math.max(gap, rect.top - menuHeight - 8)
         : Math.min(viewportHeight - menuHeight - gap, rect.bottom + 8);
-      const preferredLeft = align === 'right' ? rect.left : rect.right - menuWidth;
+      const preferredLeft = align === 'right' ? rect.right - menuWidth : rect.left;
       const leftVisual = Math.min(Math.max(gap, preferredLeft), viewportWidth - menuWidth - gap);
 
       setPosition({
@@ -95,10 +96,12 @@ export function LxDropdownMenu({
 
   if (!open) return null;
 
-  return (
+  const menu = (
     <div
       ref={menuRef}
       className={`lx-popover-menu ${position.placement === 'top' ? 'is-up' : 'is-down'}`}
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
       style={{
         position: 'fixed',
         top: position.top,
@@ -144,4 +147,6 @@ export function LxDropdownMenu({
       )}
     </div>
   );
+
+  return createPortal(menu, document.body);
 }

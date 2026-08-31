@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { v } from '@/config/tokens';
 import { CHAR_LIMITS } from '@/config/constants';
 import { LxIcon } from '@/components/ui/lx-icon';
@@ -21,6 +21,122 @@ const autoResizeDraft = (element) => {
 
 const ACCEPTED_ATTACHMENT_TYPES = 'image/*,video/*';
 const CLIPBOARD_IMAGE_FALLBACK_NAME = 'pasted-image.png';
+const MESSAGE_ICON_GROUPS = [
+  {
+    label: 'recently used',
+    categoryIcon: '🕘',
+    icons: [
+      ['😀', 'grinning happy smile face'],
+      ['😂', 'laugh tears joy'],
+      ['😍', 'love heart eyes'],
+      ['😭', 'cry sad tears'],
+      ['😘', 'kiss love'],
+      ['🥰', 'smiling hearts love'],
+      ['😎', 'cool sunglasses'],
+      ['🤔', 'thinking'],
+      ['👍', 'thumbs up like'],
+      ['❤️', 'heart love'],
+    ],
+  },
+  {
+    label: 'smileys & people',
+    categoryIcon: '😀',
+    icons: [
+      ['😃', 'smile happy'],
+      ['😄', 'laugh happy'],
+      ['😁', 'grin'],
+      ['😆', 'laugh squint'],
+      ['😅', 'sweat smile'],
+      ['🤣', 'rolling laugh'],
+      ['😊', 'blush happy'],
+      ['😇', 'halo angel'],
+      ['🙂', 'slight smile'],
+      ['🙃', 'upside down'],
+      ['😉', 'wink'],
+      ['😌', 'relieved calm'],
+      ['🥺', 'pleading'],
+      ['😮', 'surprised wow'],
+      ['😴', 'sleep tired'],
+      ['🤯', 'mind blown'],
+      ['😬', 'grimace'],
+      ['😡', 'angry'],
+      ['👋', 'wave hello'],
+      ['🙌', 'hands celebrate'],
+    ],
+  },
+  {
+    label: 'animals & nature',
+    categoryIcon: '🌿',
+    icons: [
+      ['🐶', 'dog'],
+      ['🐱', 'cat'],
+      ['🐭', 'mouse'],
+      ['🐰', 'rabbit'],
+      ['🦊', 'fox'],
+      ['🐻', 'bear'],
+      ['🐼', 'panda'],
+      ['🐨', 'koala'],
+      ['🌸', 'flower'],
+      ['🌹', 'rose'],
+      ['🌻', 'sunflower'],
+      ['🌿', 'leaf nature'],
+      ['✨', 'sparkles'],
+      ['🔥', 'fire'],
+      ['🌙', 'moon'],
+      ['⭐', 'star'],
+    ],
+  },
+  {
+    label: 'food & drink',
+    categoryIcon: '🍴',
+    icons: [
+      ['🍕', 'pizza'],
+      ['🍔', 'burger'],
+      ['🍟', 'fries'],
+      ['🍜', 'noodles'],
+      ['🍣', 'sushi'],
+      ['🍰', 'cake'],
+      ['🍪', 'cookie'],
+      ['☕', 'coffee'],
+      ['🧋', 'milk tea boba'],
+      ['🍻', 'beer cheers'],
+    ],
+  },
+  {
+    label: 'activities',
+    categoryIcon: '⚽',
+    icons: [
+      ['⚽', 'football soccer'],
+      ['🏀', 'basketball'],
+      ['🎮', 'game'],
+      ['🎧', 'music headphones'],
+      ['🎬', 'movie'],
+      ['🎨', 'art'],
+      ['✈️', 'travel plane'],
+      ['🚗', 'car'],
+      ['💡', 'idea'],
+      ['📌', 'pin'],
+    ],
+  },
+  {
+    label: 'symbols',
+    categoryIcon: '💯',
+    icons: [
+      ['💯', 'hundred perfect'],
+      ['✅', 'check done'],
+      ['❌', 'x no'],
+      ['❗', 'important'],
+      ['❓', 'question'],
+      ['💬', 'chat message'],
+      ['📎', 'attach'],
+      ['🔒', 'lock'],
+      ['🎉', 'party'],
+      ['🫶', 'heart hands love'],
+    ],
+  },
+];
+const MESSAGE_EMOJI_FONT = '"Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", sans-serif';
+const DEFAULT_RECENT_MESSAGE_ICONS = ['😀', '😂', '😍', '😭', '😘'];
 
 function MessageActionRow({ children, isMine, minHeight = 'auto', alignItems = 'stretch' }) {
   const [hovered, setHovered] = useState(false);
@@ -32,6 +148,7 @@ function MessageActionRow({ children, isMine, minHeight = 'auto', alignItems = '
       style={{
         display: 'flex',
         justifyContent: isMine ? 'flex-end' : 'flex-start',
+        width: '100%',
         minHeight,
         alignItems,
       }}
@@ -67,6 +184,10 @@ export function ChatCenterPanel({
 }) {
   const draftInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
+  const emojiGroupRefs = useRef({});
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const [emojiSearch, setEmojiSearch] = useState('');
+  const [recentIcons, setRecentIcons] = useState(DEFAULT_RECENT_MESSAGE_ICONS);
 
   const handleAttachmentChange = (event) => {
     if (isBlocked) {
@@ -102,7 +223,32 @@ export function ChatCenterPanel({
     onStageAttachments?.(imageFiles);
   };
 
-  const canSend = Boolean(draft.trim() || pendingAttachments?.length) && !isSending && !isBlocked;
+  const hasDraftContent = Boolean(draft.trim() || pendingAttachments?.length);
+  const canSend = hasDraftContent && !isSending && !isBlocked;
+  const normalizedEmojiSearch = emojiSearch.trim().toLowerCase();
+  const visibleEmojiGroups = useMemo(() => {
+    const recents = {
+      ...MESSAGE_ICON_GROUPS[0],
+      icons: recentIcons.map((icon) => [icon, 'recently used']),
+    };
+    const groups = [recents, ...MESSAGE_ICON_GROUPS.slice(1)];
+    if (!normalizedEmojiSearch) return groups;
+    return groups
+      .map((group) => ({
+        ...group,
+        icons: group.icons.filter(
+          ([icon, keywords]) =>
+            icon.includes(normalizedEmojiSearch) || keywords.includes(normalizedEmojiSearch)
+        ),
+      }))
+      .filter((group) => group.icons.length > 0);
+  }, [normalizedEmojiSearch, recentIcons]);
+
+  const appendMessageIcon = (icon) => {
+    const nextDraft = `${draft}${icon}`;
+    setDraft(nextDraft.slice(0, CHAR_LIMITS.message));
+    setRecentIcons((current) => [icon, ...current.filter((item) => item !== icon)].slice(0, 10));
+  };
 
   useEffect(() => {
     autoResizeDraft(draftInputRef.current);
@@ -173,8 +319,15 @@ export function ChatCenterPanel({
               {activeThread.name}
             </div>
             <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>
-              @{activeThread.username}
+              {activeThread.nickname && activeThread.profileName
+                ? activeThread.profileName
+                : `@${activeThread.username}`}
             </div>
+            {activeThread.nickname && activeThread.username ? (
+              <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3 }}>
+                @{activeThread.username}
+              </div>
+            ) : null}
           </div>
         </div>
         {/* The info panel is hidden by default on every viewport and opens from here, as an
@@ -209,9 +362,11 @@ export function ChatCenterPanel({
             messageCount={activeThread.messages.length}
             pending={!activeThread.id}
             name={activeThread.name}
+            username={activeThread.username}
             avatarUrl={activeThread.avatarUrl}
+            userId={activeThread.counterpartId}
           />
-          {activeThread.rows.map((row, index) => {
+          {activeThread.rows.map((row) => {
             if (row.rowType === 'separator') {
               return (
                 <div
@@ -285,14 +440,8 @@ export function ChatCenterPanel({
               <MessageActionRow
                 key={row.id}
                 isMine={row.from === 'me'}
-                minHeight={
-                  activeThread.messages.length <= 1 && index === 0 && isDesktop ? 360 : 'auto'
-                }
-                alignItems={
-                  activeThread.messages.length <= 1 && index === 0 && isDesktop
-                    ? 'flex-start'
-                    : 'stretch'
-                }
+                minHeight="auto"
+                alignItems="stretch"
               >
                 {(rowHovered) => (
                   <MessageBubble
@@ -320,6 +469,7 @@ export function ChatCenterPanel({
           flexDirection: 'column',
           gap: 8,
           minWidth: 0,
+          position: 'relative',
         }}
       >
         {isBlocked ? (
@@ -454,11 +604,21 @@ export function ChatCenterPanel({
           </div>
         ) : null}
 
-        {/* `flex-end` keeps the attach/send buttons pinned to the bottom of the pill as it grows
-            with the draft, next to the last line of text. Centering them against the row - the
-            previous approach - looked fine for one line and left them stranded in the middle of
-            empty space once the draft wrapped to several. */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '32px minmax(0, 1fr) 32px',
+            alignItems: 'end',
+            gap: 6,
+            minWidth: 0,
+            minHeight: 42,
+            borderRadius: 22,
+            border: `1px solid ${v.borderSubtle}`,
+            background: v.surfaceSunken,
+            padding: '4px 7px',
+            boxSizing: 'border-box',
+          }}
+        >
           <input
             ref={attachmentInputRef}
             type="file"
@@ -469,15 +629,15 @@ export function ChatCenterPanel({
           />
           <button
             type="button"
-            onClick={() => attachmentInputRef.current?.click()}
+            onClick={() => setIconPickerOpen((open) => !open)}
             disabled={isSending || isBlocked}
-            aria-label="attach a photo, video, or gif"
+            aria-label="choose message icon"
             style={{
               width: 32,
               height: 32,
               borderRadius: '50%',
-              border: `1px solid ${v.borderSubtle}`,
-              background: v.surface,
+              border: 'none',
+              background: 'transparent',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -486,19 +646,19 @@ export function ChatCenterPanel({
               flexShrink: 0,
             }}
           >
-            <LxIcon name="image" size={14} color={v.ink3} />
+            <LxIcon name="smile" size={15} color={v.ink3} />
           </button>
           <div
             style={{
               flex: 1,
               minWidth: 0,
               minHeight: 32,
-              borderRadius: 18,
-              background: v.surfaceSunken,
-              border: `1px solid ${v.borderSubtle}`,
+              borderRadius: 0,
+              background: 'transparent',
+              border: 'none',
               display: 'flex',
               alignItems: 'center',
-              padding: '7px 13px',
+              padding: '7px 4px',
               boxSizing: 'border-box',
               overflow: 'hidden',
             }}
@@ -543,26 +703,207 @@ export function ChatCenterPanel({
           </div>
           <button
             type="button"
-            onClick={handleSend}
-            disabled={!canSend}
-            aria-label="send message"
+            onClick={() => (hasDraftContent ? handleSend() : attachmentInputRef.current?.click())}
+            disabled={hasDraftContent ? !canSend : isSending || isBlocked}
+            aria-label={hasDraftContent ? 'send message' : 'attach a photo, video, or gif'}
             style={{
               width: 32,
               height: 32,
               borderRadius: '50%',
               border: 'none',
-              background: v.accent,
+              background: hasDraftContent ? v.accent : 'transparent',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: canSend ? 'pointer' : 'default',
-              opacity: canSend ? 1 : 0.5,
+              cursor: hasDraftContent ? (canSend ? 'pointer' : 'default') : 'pointer',
+              opacity: hasDraftContent ? (canSend ? 1 : 0.5) : isSending || isBlocked ? 0.6 : 1,
               flexShrink: 0,
             }}
           >
-            <LxIcon name="send" size={14} color={v.ink} />
+            <LxIcon
+              name={hasDraftContent ? 'send' : 'image'}
+              size={14}
+              color={hasDraftContent ? v.ink : v.ink3}
+            />
           </button>
         </div>
+        {iconPickerOpen && !isBlocked ? (
+          <div
+            style={{
+              position: 'absolute',
+              left: 58,
+              bottom: 'calc(100% + 8px)',
+              width: 'min(340px, calc(100% - 80px))',
+              border: `1px solid ${v.borderSubtle}`,
+              borderRadius: 8,
+              background: v.surface,
+              boxShadow: `0 18px 46px ${v.shadow25}`,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'visible',
+              zIndex: 20,
+            }}
+          >
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 154,
+                bottom: -7,
+                width: 14,
+                height: 14,
+                background: v.surface,
+                borderRight: `1px solid ${v.borderSubtle}`,
+                borderBottom: `1px solid ${v.borderSubtle}`,
+                transform: 'rotate(45deg)',
+              }}
+            />
+            <div style={{ padding: 10, borderBottom: `1px solid ${v.borderSubtle}` }}>
+              <div
+                style={{
+                  height: 34,
+                  borderRadius: 8,
+                  background: v.surfaceSunken,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '0 10px',
+                }}
+              >
+                <LxIcon name="explore" size={14} color={v.ink3} />
+                <input
+                  type="search"
+                  value={emojiSearch}
+                  onChange={(event) => setEmojiSearch(event.target.value)}
+                  placeholder="search emoji"
+                  aria-label="search emoji"
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    color: v.ink,
+                    fontFamily: v.fontBody,
+                    fontSize: 13,
+                  }}
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                maxHeight: 242,
+                overflowY: 'auto',
+                padding: '10px 12px 12px',
+              }}
+            >
+              {visibleEmojiGroups.length ? (
+                visibleEmojiGroups.map((group) => (
+                  <section
+                    key={group.label}
+                    ref={(node) => {
+                      emojiGroupRefs.current[group.label] = node;
+                    }}
+                    style={{ marginBottom: 14 }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: v.fontBody,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: v.ink3,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {group.label}
+                    </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(8, 1fr)',
+                        gap: 3,
+                      }}
+                    >
+                      {group.icons.map(([icon]) => (
+                        <button
+                          key={`${group.label}-${icon}`}
+                          type="button"
+                          onClick={() => appendMessageIcon(icon)}
+                          aria-label={`insert ${icon}`}
+                          style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 6,
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontFamily: MESSAGE_EMOJI_FONT,
+                            fontSize: 24,
+                            lineHeight: 1,
+                            padding: 0,
+                          }}
+                        >
+                          {icon}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))
+              ) : (
+                <div
+                  style={{
+                    padding: '22px 8px',
+                    textAlign: 'center',
+                    fontFamily: v.fontBody,
+                    fontSize: 13,
+                    color: v.ink3,
+                  }}
+                >
+                  no emoji found
+                </div>
+              )}
+            </div>
+            <div
+              style={{
+                borderTop: `1px solid ${v.borderSubtle}`,
+                display: 'grid',
+                gridTemplateColumns: `repeat(${MESSAGE_ICON_GROUPS.length}, 1fr)`,
+                background: v.surface,
+              }}
+            >
+              {MESSAGE_ICON_GROUPS.map((group) => (
+                <button
+                  key={group.label}
+                  type="button"
+                  onClick={() => {
+                    setEmojiSearch('');
+                    window.requestAnimationFrame(() => {
+                      emojiGroupRefs.current[group.label]?.scrollIntoView({
+                        block: 'nearest',
+                      });
+                    });
+                  }}
+                  aria-label={group.label}
+                  style={{
+                    height: 38,
+                    border: 'none',
+                    borderRight: `1px solid ${v.borderSubtle}`,
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontFamily: MESSAGE_EMOJI_FONT,
+                    fontSize: 17,
+                    padding: 0,
+                  }}
+                >
+                  {group.categoryIcon}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );

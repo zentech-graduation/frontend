@@ -16,6 +16,7 @@ const AVATAR_SIZE = 21;
 // exact pixels. The padding is cancelled by an equal negative margin, so neighbouring rows and the
 // list's own gap do not move.
 const HIT_PADDING = 7;
+const EMOJI_ONLY_PATTERN = /^[\p{Emoji_Presentation}\p{Emoji}\uFE0F\u200D\s]+$/u;
 
 export function MessageBubble({
   message,
@@ -51,6 +52,11 @@ export function MessageBubble({
           ? message.text
           : message.text;
   const canCopyText = Boolean(textForCopy);
+  const isEmojiOnly =
+    message.kind !== 'reply' &&
+    Boolean(message.text?.trim()) &&
+    EMOJI_ONLY_PATTERN.test(message.text.trim()) &&
+    !/[A-Za-z0-9]/.test(message.text);
   const menuItems = useMemo(
     () =>
       [
@@ -213,12 +219,13 @@ export function MessageBubble({
     return (
       <div
         style={{
-          alignSelf: 'flex-end',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'flex-end',
+          gap: 6,
+          flexDirection: isMine ? 'row-reverse' : 'row',
         }}
       >
+        {avatarSlot}
         <div
           style={{
             ...bubbleBase,
@@ -511,12 +518,22 @@ export function MessageBubble({
         <div
           style={{
             ...bubbleBase,
-            background: isMine ? activeThread.accent || v.accentDim : v.surface,
+            background: isEmojiOnly
+              ? 'transparent'
+              : isMine
+                ? activeThread.accent || v.accentDim
+                : v.surface,
             color: v.ink,
-            border: isMine ? 'none' : `1px solid ${v.border}`,
-            minWidth: isMobile ? 0 : 76,
+            border: isEmojiOnly || isMine ? 'none' : `1px solid ${v.border}`,
+            minWidth: isEmojiOnly || isMobile ? 0 : 76,
             width: isMobile ? '100%' : 'auto',
             overflow: 'hidden',
+            padding: isEmojiOnly ? '0 2px' : bubbleBase.padding,
+            fontFamily: isEmojiOnly
+              ? '"Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", sans-serif'
+              : v.fontBody,
+            fontSize: isEmojiOnly ? 34 : bubbleBase.fontSize,
+            lineHeight: isEmojiOnly ? 1.15 : bubbleBase.lineHeight,
           }}
         >
           {message.kind === 'reply' ? (

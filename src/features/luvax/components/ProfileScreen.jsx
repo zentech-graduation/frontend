@@ -41,6 +41,97 @@ import { isPanelRole } from '@/config/roles';
  */
 const PHOTO_TYPES = ['image', 'carousel'];
 
+function TextPostTile({ caption }) {
+  const text = caption?.trim();
+
+  return (
+    <div
+      style={{
+        aspectRatio: '1/1',
+        borderRadius: 4,
+        background: v.surface,
+        border: `1px solid ${v.borderSubtle}`,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: 14,
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 8,
+          border: `1px solid ${v.borderSubtle}`,
+          borderRadius: 3,
+          opacity: 0.55,
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          fontFamily: v.fontMono,
+          fontSize: 9,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+          color: v.accentText,
+        }}
+      >
+        <span>text</span>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 22,
+            height: 1,
+            background: v.accent,
+            opacity: 0.65,
+          }}
+        />
+      </div>
+      <div
+        style={{
+          position: 'relative',
+          fontFamily: v.fontDisplay,
+          fontSize: text && text.length > 88 ? 16 : 18,
+          fontWeight: 700,
+          lineHeight: 1.24,
+          color: v.ink,
+          letterSpacing: '-0.02em',
+          display: '-webkit-box',
+          WebkitLineClamp: 5,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          textAlign: 'left',
+        }}
+      >
+        {text || 'untitled post'}
+      </div>
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          color: v.ink3,
+          fontFamily: v.fontMono,
+          fontSize: 9,
+        }}
+      >
+        <LxIcon name="message" size={12} color={v.ink3} />
+        <span>post</span>
+      </div>
+    </div>
+  );
+}
+
 export function ProfileScreen() {
   const navigate = useNavigate();
   const openOverlay = useOverlayNavigate();
@@ -52,6 +143,7 @@ export function ProfileScreen() {
   const [followList, setFollowList] = useState(null);
   const [confirmingUnfollow, setConfirmingUnfollow] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
   const menuAnchor = useRef(null);
   const currentUser = useAuthStore((state) => state.user);
 
@@ -398,7 +490,13 @@ export function ProfileScreen() {
             return (
               <div
                 key={p.id}
-                onClick={() => openOverlay(routeTo.postDetail(p.id))}
+                onClick={() =>
+                  openOverlay(routeTo.postDetail(p.id), {
+                    fallbackAuthorId: user?.id,
+                    fallbackAuthorUsername: user?.username,
+                    ...(!isSelf && user?.id ? { background: routeTo.userProfile(user.id) } : {}),
+                  })
+                }
                 style={{ cursor: 'pointer' }}
               >
                 {hasMedia ? (
@@ -406,35 +504,7 @@ export function ProfileScreen() {
                 ) : (
                   // Only text posts reach this branch, and a caption tile is the
                   // correct treatment for a post that genuinely carries no media.
-                  <div
-                    style={{
-                      aspectRatio: '1/1',
-                      borderRadius: 4,
-                      background: 'color-mix(in srgb, var(--lx-surface-raised) 82%, #d8d1c4 18%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 10,
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    {p.caption ? (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontFamily: v.fontBody,
-                          color: v.ink3,
-                          textAlign: 'center',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {p.caption}
-                      </span>
-                    ) : null}
-                  </div>
+                  <TextPostTile caption={p.caption} />
                 )}
               </div>
             );
@@ -481,7 +551,10 @@ export function ProfileScreen() {
             marginTop: -40,
           }}
         >
-          <div
+          <button
+            type="button"
+            onClick={() => user?.avatarUrl && setAvatarPreviewOpen(true)}
+            aria-label="view avatar"
             style={{
               width: 80,
               height: 80,
@@ -491,6 +564,8 @@ export function ProfileScreen() {
                 : v.avatar0,
               border: `3px solid var(--lx-base)`,
               flexShrink: 0,
+              padding: 0,
+              cursor: user?.avatarUrl ? 'pointer' : 'default',
             }}
           />
           {!isSelf && (
@@ -741,6 +816,36 @@ export function ProfileScreen() {
       />
 
       <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />
+
+      {avatarPreviewOpen && user?.avatarUrl ? (
+        <div
+          onClick={() => setAvatarPreviewOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(10,9,8,0.92)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: 24,
+          }}
+        >
+          <img
+            src={user.avatarUrl}
+            alt=""
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: 'min(calc(78vw / var(--lx-scale)), 520px)',
+              height: 'min(calc(78vw / var(--lx-scale)), 520px)',
+              maxHeight: 'calc(82vh / var(--lx-scale))',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
+        </div>
+      ) : null}
 
       <FollowListModal
         open={Boolean(followList) && Boolean(user?.id)}

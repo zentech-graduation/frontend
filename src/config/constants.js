@@ -35,6 +35,7 @@ export const ROUTES = {
   SETTINGS_CATEGORY: '/app/settings/:category',
   EDIT_PROFILE: '/app/settings/profile',
   SETTINGS_NOTIFICATIONS: '/app/settings/notifications',
+  SETTINGS_APPEARANCE: '/app/settings/appearance',
   SETTINGS_PRIVACY: '/app/settings/privacy',
   SETTINGS_ACCOUNT: '/app/settings/account',
   SETTINGS_REQUESTS: '/app/settings/requests',

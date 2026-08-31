@@ -140,6 +140,7 @@ export const toThreadSummary = (conversation, currentUserId) => {
   return {
     id: conversation.id,
     name: nickname || nameOf(counterpart),
+    profileName: nameOf(counterpart),
     username: counterpart?.username || '',
     avatarUrl: counterpart?.avatarUrl || null,
     preview: previewTextOf(conversation.lastMessage),
@@ -349,6 +350,7 @@ export const toThread = (conversation, messages, currentUserId) => {
 export const toPendingThread = (targetUser) => ({
   id: null,
   name: targetUser.displayName || targetUser.username || UNKNOWN_PARTICIPANT,
+  profileName: targetUser.displayName || targetUser.username || UNKNOWN_PARTICIPANT,
   username: targetUser.username || '',
   avatarUrl: targetUser.avatarUrl || null,
   preview: '',

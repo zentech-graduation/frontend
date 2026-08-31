@@ -7,6 +7,7 @@ import { LxAvatar } from '@/components/ui/lx-avatar';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { LxToggle } from '@/components/ui/lx-toggle';
 import { v } from '@/config/tokens';
+import { useThemeChoice } from '@/hooks/useThemeChoice';
 import { useAuthStore } from '@/store/useAuthStore';
 import { extractPageContent } from '@/utils/helpers';
 import {
@@ -87,7 +88,31 @@ function SettingsRow({ label, sub, control }) {
  */
 function ReadonlyRow({ label, sub, value }) {
   return (
-    <SettingsRow label={label} sub={sub} control={<div className="lx-settings-readonly">{value}</div>} />
+    <SettingsRow
+      label={label}
+      sub={sub}
+      control={<div className="lx-settings-readonly">{value}</div>}
+    />
+  );
+}
+
+export function AppearanceCategory() {
+  const { dark, setTheme } = useThemeChoice();
+
+  return (
+    <div className="lx-settings-card">
+      <SettingsRow
+        label="dark mode"
+        sub={dark ? 'using the dark theme' : 'using the light theme'}
+        control={
+          <LxToggle
+            on={dark}
+            onChange={(next) => setTheme(next)}
+            label={dark ? 'switch to light mode' : 'switch to dark mode'}
+          />
+        }
+      />
+    </div>
   );
 }
 
@@ -226,7 +251,9 @@ export function ProfileCategory() {
     event.target.value = '';
     if (!file) return;
     if (!file.type?.startsWith('image/')) {
-      setFormError(`please choose an image for your ${field === 'bannerUrl' ? 'banner' : 'picture'}.`);
+      setFormError(
+        `please choose an image for your ${field === 'bannerUrl' ? 'banner' : 'picture'}.`
+      );
       return;
     }
     setFormError('');
@@ -360,7 +387,11 @@ export function ProfileCategory() {
           <label className="lx-settings-label" htmlFor="lx-display-name">
             display name
           </label>
-          <input id="lx-display-name" className="lx-settings-input" {...fieldProps('displayName')} />
+          <input
+            id="lx-display-name"
+            className="lx-settings-input"
+            {...fieldProps('displayName')}
+          />
           {fieldErrors.displayName ? (
             <div className="lx-settings-error">{fieldErrors.displayName}</div>
           ) : null}
@@ -401,7 +432,12 @@ export function ProfileCategory() {
       </div>
 
       <div className="lx-settings-actions">
-        <LxBtn variant="primary" type="button" onClick={handleSave} disabled={updateProfile.isPending}>
+        <LxBtn
+          variant="primary"
+          type="button"
+          onClick={handleSave}
+          disabled={updateProfile.isPending}
+        >
           {updateProfile.isPending ? 'saving' : 'save changes'}
         </LxBtn>
         {saved ? <span className="lx-settings-saved">saved</span> : null}
@@ -483,7 +519,11 @@ export function PrivacyCategory() {
   const { data: profileResponse, isLoading: profileLoading, error: profileError } = useMyProfile();
   const profile = profileResponse?.data ?? profileResponse;
   const updateProfile = useUpdateMyProfile();
-  const { data: settingsResponse, isLoading: settingsLoading, error: settingsError } = useMySettings();
+  const {
+    data: settingsResponse,
+    isLoading: settingsLoading,
+    error: settingsError,
+  } = useMySettings();
   const settings = settingsResponse?.data ?? settingsResponse;
   const [privateFailure, setPrivateFailure] = useState('');
 
@@ -574,8 +614,7 @@ export function RequestsCategory() {
   const act = (mutation, requesterId) => {
     setFailure('');
     mutation.mutate(requesterId, {
-      onError: () =>
-        setFailure("we couldn't do that just now. try again in a moment."),
+      onError: () => setFailure("we couldn't do that just now. try again in a moment."),
     });
   };
 
@@ -725,7 +764,11 @@ export function AccountCategory() {
   const sessionUser = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
 
-  const { data: warningsResponse, isLoading: warningsLoading, error: warningsError } = useMyWarnings();
+  const {
+    data: warningsResponse,
+    isLoading: warningsLoading,
+    error: warningsError,
+  } = useMyWarnings();
   const warnings = extractPageContent(warningsResponse);
   const { data: reasonNames } = useReportReasonNames();
 
@@ -802,9 +845,15 @@ export function AccountCategory() {
             {warnings.map((warning) => (
               <div key={warning.id} className="lx-settings-warning">
                 <div className="lx-settings-warning-reason">
-                  {(reasonNames?.[warning.reasonKey] ?? warning.reasonKey ?? 'warning').toLowerCase()}
+                  {(
+                    reasonNames?.[warning.reasonKey] ??
+                    warning.reasonKey ??
+                    'warning'
+                  ).toLowerCase()}
                 </div>
-                {warning.note ? <div className="lx-settings-warning-note">{warning.note}</div> : null}
+                {warning.note ? (
+                  <div className="lx-settings-warning-note">{warning.note}</div>
+                ) : null}
                 <div className="lx-settings-warning-when">{formatDate(warning.createdAt)}</div>
               </div>
             ))}
