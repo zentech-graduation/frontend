@@ -246,7 +246,7 @@ export function LxBottomNav({ active, navigate }) {
             disabled={t.disabled}
             aria-disabled={t.disabled || undefined}
             title={t.disabled ? `${t.label} are not part of this build` : undefined}
-            className="lx-tab-btn"
+            className={`lx-tab-btn lx-nav-tab ${isActive ? 'is-active' : ''}`}
             style={{
               flex: 1,
               display: 'flex',
@@ -608,7 +608,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
               onClick={() => !t.disabled && navigate(t.path)}
               disabled={t.disabled}
               aria-label={t.label}
-              className="lx-tab-btn"
+              className={`lx-tab-btn lx-rail-tab ${isActive ? 'is-active' : ''}`}
               style={rowStyle(t.disabled)}
             >
               <span style={iconWrapStyle}>
