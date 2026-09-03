@@ -148,7 +148,7 @@ describe('toMessageView', () => {
       message({ messageType: 'story_share', content: 'love this', sharedStoryId: 's1' }),
       ctx
     );
-    expect(view.kind).toBe('post');
+    expect(view.kind).toBe('story');
     expect(view.sharedStoryId).toBe('s1');
     expect(view.meta).toContain('story');
   });
@@ -326,7 +326,7 @@ describe('toThread', () => {
       ]);
     });
 
-    it('breaks the run and inserts a new separator once the gap passes ten minutes', () => {
+    it('breaks the run without a new separator before the one-hour timestamp gap', () => {
       const conversation = { id: 'c1', participants, unreadCount: 0 };
       const messages = [
         message({ id: 'm2', senderId: OTHER, createdAt: '2026-08-18T10:15:00Z' }),
@@ -334,18 +334,24 @@ describe('toThread', () => {
       ];
       const thread = toThread(conversation, messages, ME);
 
-      expect(thread.rows.map((row) => row.rowType)).toEqual([
-        'separator',
-        'message',
-        'separator',
-        'message',
-      ]);
+      expect(thread.rows.map((row) => row.rowType)).toEqual(['separator', 'message', 'message']);
     });
 
-    it('breaks the run on a sender change even within the ten-minute window', () => {
+    it('breaks the run on a sender change without adding a new timestamp separator', () => {
       const conversation = { id: 'c1', participants, unreadCount: 0 };
       const messages = [
         message({ id: 'm2', senderId: ME, createdAt: '2026-08-18T10:01:00Z' }),
+        message({ id: 'm1', senderId: OTHER, createdAt: '2026-08-18T10:00:00Z' }),
+      ];
+      const thread = toThread(conversation, messages, ME);
+
+      expect(thread.rows.map((row) => row.rowType)).toEqual(['separator', 'message', 'message']);
+    });
+
+    it('inserts a new separator once the gap reaches one hour', () => {
+      const conversation = { id: 'c1', participants, unreadCount: 0 };
+      const messages = [
+        message({ id: 'm2', senderId: OTHER, createdAt: '2026-08-18T11:00:00Z' }),
         message({ id: 'm1', senderId: OTHER, createdAt: '2026-08-18T10:00:00Z' }),
       ];
       const thread = toThread(conversation, messages, ME);
