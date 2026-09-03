@@ -83,9 +83,10 @@ export function ConversationListPanel({
               viewport={viewport}
               revealedOptions={revealedThreadId === thread.id}
               onRevealOptions={() => setRevealedThreadId(thread.id)}
+              onHideOptions={() => setRevealedThreadId(null)}
               isActive={isActive}
               onSelect={() => {
-                setRevealedThreadId(thread.id);
+                setRevealedThreadId(null);
                 selectThread(thread.id);
               }}
               onMarkRead={() => onMarkRead?.(thread.id)}

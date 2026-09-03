@@ -28,14 +28,28 @@ export function ConvRow({
   viewport,
   revealedOptions = false,
   onRevealOptions,
+  onHideOptions,
 }) {
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dragX, setDragX] = useState(0);
   const menuButtonRef = useRef(null);
   const dragStartRef = useRef(null);
   const swipedRef = useRef(false);
+  const thresholdNotifiedRef = useRef(false);
   const isMobile = viewport === 'mobile';
   const showOptions = (isMobile && revealedOptions) || hovered || menuOpen;
+  const openingProgress =
+    isMobile && dragX < 0 ? Math.min(Math.max(Math.abs(dragX) / 74, 0), 1) : 0;
+  const closingProgress =
+    isMobile && revealedOptions && dragX > 0 ? Math.min(Math.max(dragX / 62, 0), 1) : 0;
+  const revealProgress = showOptions ? 1 - closingProgress : openingProgress;
+  const mobileActionsVisible = isMobile && (revealedOptions || openingProgress > 0.05);
+  const desktopOptionsVisible = !isMobile && showOptions;
+  const contentOffset = isMobile
+    ? Math.round(dragX || (revealedOptions ? -10 * revealProgress : -revealProgress * 10))
+    : 0;
+  const rowLift = isMobile && revealProgress > 0 ? 1 : 0;
 
   // Combines the counted unread total with the caller's independent manual flag: clearing the
   // read marker alone has no effect when the viewer sent the conversation's own newest messages,
@@ -126,7 +140,15 @@ export function ConvRow({
     <div
       role="button"
       tabIndex={0}
-      onClick={onSelect}
+      onClick={(event) => {
+        if (swipedRef.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          swipedRef.current = false;
+          return;
+        }
+        onSelect?.();
+      }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') onSelect?.();
       }}
@@ -136,20 +158,55 @@ export function ConvRow({
         if (isMobile) {
           dragStartRef.current = { x: event.clientX, y: event.clientY };
           swipedRef.current = false;
+          thresholdNotifiedRef.current = false;
         }
       }}
       onPointerMove={(event) => {
         if (!isMobile || !dragStartRef.current) return;
         const dx = event.clientX - dragStartRef.current.x;
         const dy = Math.abs(event.clientY - dragStartRef.current.y);
-        if (Math.abs(dx) > 18 && dy < 22) {
-          swipedRef.current = true;
-          onRevealOptions?.();
+        if (dy > 24) {
+          setDragX(0);
           dragStartRef.current = null;
+          return;
+        }
+        if (revealedOptions && dx > 4) {
+          setDragX(Math.min(dx, 70));
+        } else if (dx < -4) {
+          setDragX(Math.max(dx, -82));
+        }
+        if (revealedOptions && dx > 28 && dy < 22) {
+          swipedRef.current = true;
+          if (!thresholdNotifiedRef.current) {
+            thresholdNotifiedRef.current = true;
+            navigator.vibrate?.(6);
+          }
+          onHideOptions?.();
+        }
+        if (dx < -24 && dy < 22) {
+          swipedRef.current = true;
+          if (!thresholdNotifiedRef.current) {
+            thresholdNotifiedRef.current = true;
+            navigator.vibrate?.(8);
+          }
+          onRevealOptions?.();
         }
       }}
       onPointerUp={() => {
-        if (isMobile && !swipedRef.current && !revealedOptions) onRevealOptions?.();
+        if (isMobile) {
+          if (revealedOptions && dragX > 28) {
+            swipedRef.current = true;
+            onHideOptions?.();
+          } else if (dragX < -24) {
+            swipedRef.current = true;
+            onRevealOptions?.();
+          }
+        }
+        setDragX(0);
+        dragStartRef.current = null;
+      }}
+      onPointerCancel={() => {
+        setDragX(0);
         dragStartRef.current = null;
       }}
       style={{
@@ -166,10 +223,81 @@ export function ConvRow({
         alignItems: 'center',
         textAlign: 'left',
         color: v.ink,
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'background 180ms ease, border-left-color 180ms ease, box-shadow 220ms ease',
+        boxShadow: isMobile
+          ? revealProgress > 0
+            ? `0 ${rowLift * 8}px ${rowLift * 22}px color-mix(in srgb, #000 18%, transparent), inset -56px 0 56px color-mix(in srgb, ${v.accent} 12%, transparent)`
+            : 'none'
+          : desktopOptionsVisible
+            ? `inset -82px 0 58px color-mix(in srgb, ${v.accent} 8%, transparent)`
+            : 'none',
       }}
     >
-      <AvatarVisual thread={thread} size={34} />
-      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {isMobile ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: '0 0 0 auto',
+            width: 116,
+            opacity: revealProgress,
+            transform: `translateX(${Math.round((1 - revealProgress) * 22)}px)`,
+            transition: dragX
+              ? 'none'
+              : 'opacity 260ms ease, transform 320ms cubic-bezier(0.16, 1, 0.3, 1)',
+            background:
+              'linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--lx-warning-dim) 62%, transparent) 42%, color-mix(in srgb, var(--lx-error-dim) 78%, transparent) 100%)',
+          }}
+        />
+      ) : null}
+      {desktopOptionsVisible ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: 7,
+            right: 8,
+            bottom: 7,
+            width: 64,
+            borderRadius: 999,
+            background:
+              'linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--lx-surface-raised) 84%, transparent) 58%, color-mix(in srgb, var(--lx-accent-dim) 72%, transparent) 100%)',
+            opacity: menuOpen ? 1 : 0.82,
+            transform: desktopOptionsVisible ? 'translateX(0)' : 'translateX(12px)',
+            transition: 'opacity 180ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        />
+      ) : null}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          transition: dragX
+            ? 'none'
+            : 'transform 360ms cubic-bezier(0.16, 1, 0.3, 1), filter 260ms ease',
+          transform: `translateX(${contentOffset}px)`,
+          filter: revealProgress > 0.4 ? 'brightness(1.05)' : 'none',
+        }}
+      >
+        <AvatarVisual thread={thread} size={34} />
+      </div>
+      <div
+        style={{
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+          position: 'relative',
+          zIndex: 1,
+          transition: dragX
+            ? 'none'
+            : 'transform 360ms cubic-bezier(0.16, 1, 0.3, 1), opacity 220ms ease',
+          transform: `translateX(${contentOffset}px)`,
+          opacity: isMobile ? 1 - revealProgress * 0.08 : 1,
+        }}
+      >
         <div
           style={{
             display: 'flex',
@@ -200,7 +328,17 @@ export function ConvRow({
           {[thread.preview, thread.time].filter(Boolean).join(' · ')}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          minWidth: isMobile ? 88 : 24,
+          justifyContent: 'flex-end',
+          position: 'relative',
+          zIndex: 2,
+        }}
+      >
         {!showOptions && thread.unread > 0 ? (
           <span
             style={{
@@ -228,8 +366,8 @@ export function ConvRow({
             style={{ width: 8, height: 8, borderRadius: '50%', background: v.accent }}
           />
         ) : null}
-        {showOptions && isMobile && revealedOptions
-          ? mobileQuickActions.map((action) => (
+        {mobileActionsVisible
+          ? mobileQuickActions.map((action, index) => (
               <button
                 key={action.id}
                 type="button"
@@ -250,6 +388,19 @@ export function ConvRow({
                   cursor: 'pointer',
                   padding: 0,
                   flexShrink: 0,
+                  opacity: revealProgress,
+                  transform: `translateX(${Math.round((1 - revealProgress) * 24)}px) translateY(${
+                    index === 0 ? -Math.round((1 - revealProgress) * 4) : 0
+                  }px) scale(${0.72 + revealProgress * 0.28}) rotate(${
+                    index === 0 ? Math.round((1 - revealProgress) * -10) : 0
+                  }deg)`,
+                  transition:
+                    'opacity 220ms ease, transform 340ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms ease, box-shadow 220ms ease',
+                  transitionDelay: `${index * 32}ms`,
+                  boxShadow:
+                    revealProgress > 0.8
+                      ? '0 10px 22px color-mix(in srgb, #000 24%, transparent)'
+                      : 'none',
                 }}
               >
                 <LxIcon
@@ -271,20 +422,54 @@ export function ConvRow({
             }}
             aria-label={`options for ${thread.name}`}
             style={{
-              width: 24,
-              height: 24,
+              width: isMobile ? 24 : 32,
+              height: isMobile ? 24 : 32,
               borderRadius: '50%',
-              border: 'none',
-              background: 'transparent',
+              border: isMobile ? 'none' : `1px solid ${menuOpen ? v.accent : v.borderSubtle}`,
+              background: isMobile
+                ? 'transparent'
+                : menuOpen
+                  ? v.accentDim
+                  : 'color-mix(in srgb, var(--lx-surface-raised) 88%, transparent)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               padding: 0,
               flexShrink: 0,
+              opacity: isMobile ? revealProgress : desktopOptionsVisible ? 1 : 0,
+              transform:
+                isMobile && mobileActionsVisible
+                  ? `translateX(${Math.round((1 - revealProgress) * 26)}px) scale(${
+                      0.76 + revealProgress * 0.24
+                    })`
+                  : desktopOptionsVisible
+                    ? `translateX(0) scale(${menuOpen ? 1.06 : 1})`
+                    : 'translateX(10px) scale(0.92)',
+              transition:
+                'opacity 220ms ease, transform 340ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms ease, border-color 180ms ease, box-shadow 220ms ease',
+              transitionDelay: isMobile && mobileActionsVisible ? '64ms' : '0ms',
+              boxShadow:
+                !isMobile && desktopOptionsVisible
+                  ? '0 10px 24px color-mix(in srgb, #000 18%, transparent)'
+                  : 'none',
+              backdropFilter: !isMobile ? 'blur(10px)' : 'none',
+              WebkitBackdropFilter: !isMobile ? 'blur(10px)' : 'none',
             }}
           >
-            <LxIcon name="more" size={13} color={v.ink3} />
+            <span
+              style={{
+                display: 'inline-flex',
+                transform: !isMobile && menuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
+              <LxIcon
+                name="more"
+                size={isMobile ? 13 : 15}
+                color={menuOpen ? v.accentText : v.ink3}
+              />
+            </span>
           </button>
         ) : null}
       </div>
@@ -298,6 +483,7 @@ export function ConvRow({
           onClose={() => setMenuOpen(false)}
           items={dropdownItems}
           align="right"
+          zIndex={2200}
         />
       </div>
     </div>

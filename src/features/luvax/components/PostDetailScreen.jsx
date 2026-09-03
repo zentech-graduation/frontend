@@ -520,28 +520,35 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
             >
               Reply
             </button>
-            {hovered || commentMenuOpen ? (
-              <button
-                ref={commentMenuButtonRef}
-                type="button"
-                onClick={() => setCommentMenuOpen((open) => !open)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  marginTop: -5,
-                  cursor: 'pointer',
-                  color: v.ink3,
-                  fontFamily: v.fontBody,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  lineHeight: 1,
-                  letterSpacing: '0.02em',
-                }}
-              >
-                ...
-              </button>
-            ) : null}
+            <button
+              ref={commentMenuButtonRef}
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setCommentMenuOpen((open) => !open);
+              }}
+              aria-label={`options for ${authorName}'s comment`}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                border: 'none',
+                background: commentMenuOpen ? v.surfaceRaised : 'transparent',
+                padding: 0,
+                marginTop: -5,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: hovered || commentMenuOpen ? 1 : 0.45,
+                transition: 'opacity 160ms ease, background 160ms ease, transform 160ms ease',
+                transform: commentMenuOpen ? 'scale(1.04)' : 'scale(1)',
+              }}
+            >
+              <LxIcon name="more" size={14} color={v.ink3} />
+            </button>
           </div>
           {hasReplies ? (
             <button
@@ -625,6 +632,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
         items={commentMenuItems}
         width={214}
         align="right"
+        zIndex={5200}
       />
 
       <ConfirmModal

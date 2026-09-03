@@ -250,6 +250,110 @@ button:disabled {
   background: none;
 }
 
+.lx-nav-tab,
+.lx-rail-tab {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.lx-nav-tab::before,
+.lx-rail-tab::before {
+  content: '';
+  position: absolute;
+  inset: 6px 10px;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--lx-accent) 28%, transparent), transparent 58%),
+    var(--lx-surface);
+  opacity: 0;
+  transform: translate3d(-14px, 0, 0) scaleX(0.72);
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 240ms var(--ease-out);
+}
+
+.lx-rail-tab::before {
+  inset: 3px 8px;
+  border-radius: 10px;
+}
+
+.lx-nav-tab::after,
+.lx-rail-tab::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--lx-accent);
+  opacity: 0;
+  transition:
+    opacity 170ms var(--ease-out),
+    transform 250ms var(--ease-out);
+}
+
+.lx-nav-tab::after {
+  left: 50%;
+  bottom: 5px;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  transform: translate3d(-50%, 8px, 0) scaleX(0.5);
+}
+
+.lx-rail-tab::after {
+  left: 7px;
+  top: 50%;
+  width: 3px;
+  height: 16px;
+  border-radius: 999px;
+  transform: translate3d(-7px, -50%, 0) scaleY(0.5);
+}
+
+.lx-nav-tab svg,
+.lx-rail-tab svg,
+.lx-rail-tab img {
+  transition:
+    transform 220ms var(--ease-out),
+    color 170ms var(--ease-out),
+    opacity 170ms var(--ease-out);
+}
+
+.lx-nav-tab:hover::before,
+.lx-rail-tab:hover::before,
+.lx-nav-tab.is-active::before,
+.lx-rail-tab.is-active::before {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scaleX(1);
+}
+
+.lx-nav-tab.is-active::after,
+.lx-rail-tab.is-active::after {
+  opacity: 1;
+}
+
+.lx-nav-tab.is-active::after {
+  transform: translate3d(-50%, 0, 0) scaleX(1);
+}
+
+.lx-rail-tab.is-active::after {
+  transform: translate3d(0, -50%, 0) scaleY(1);
+}
+
+.lx-nav-tab:hover svg {
+  transform: translate3d(0, -2px, 0);
+}
+
+.lx-rail-tab:hover svg,
+.lx-rail-tab:hover img {
+  transform: translate3d(4px, 0, 0);
+}
+
+.lx-nav-tab:active svg,
+.lx-rail-tab:active svg,
+.lx-rail-tab:active img {
+  transform: scale(0.94);
+}
+
 .lx-tab-btn,
 .lx-header-icon-btn,
 .lx-avatar-btn,
@@ -282,7 +386,7 @@ button:disabled {
 
 .lx-tab-btn:hover {
   color: var(--lx-ink-2);
-  background: var(--lx-surface);
+  background: transparent;
 }
 
 .lx-header-icon-btn:hover {
@@ -518,13 +622,15 @@ button:disabled {
   }
 }
 
-/* Content appearing rather than snapping in, used for loaded cards and panes. */
+/* Page content appearing rather than snapping in, used for loaded cards and panes. */
 @keyframes lx-fade-in {
-  from {
+  0% {
     opacity: 0;
+    transform: translate3d(0, 6px, 0);
   }
-  to {
+  100% {
     opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -586,7 +692,9 @@ button:disabled {
 }
 
 .lx-fade-in {
-  animation: lx-fade-in var(--duration-normal) var(--ease-out);
+  animation: lx-fade-in 180ms var(--ease-out) both;
+  transform-origin: 50% 24px;
+  will-change: opacity, transform;
 }
 
 /* Reduced motion. Everything that moves is turned off cleanly, leaving instant
@@ -756,4 +864,3 @@ select:focus-visible {
     grid-template-columns: 1fr;
   }
 }
-
