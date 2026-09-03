@@ -200,7 +200,8 @@ export default function AuthPage() {
     try {
       window.location.href = authApi.getGoogleLoginUrl();
     } catch (error) {
-      const message = 'we could not open google sign-in just now. try again, or use your email and password.';
+      const message =
+        'we could not open google sign-in just now. try again, or use your email and password.';
       if (view === 'register') {
         setRegServerError(message);
       } else {
