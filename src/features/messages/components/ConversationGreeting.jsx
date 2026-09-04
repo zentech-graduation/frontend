@@ -47,6 +47,19 @@ export function ConversationGreeting({ messageCount, pending, name, username, av
         >
           {name}
         </div>
+        {username ? (
+          <div
+            style={{
+              marginTop: 4,
+              fontFamily: v.fontMono,
+              fontSize: 12,
+              color: v.ink3,
+              overflowWrap: 'anywhere',
+            }}
+          >
+            @{username}
+          </div>
+        ) : null}
         <div style={{ marginTop: 5, fontFamily: v.fontBody, fontSize: 12.5, color: v.ink2 }}>
           {pending ? subtitle : "you're now connected on luvax"}
         </div>

@@ -252,24 +252,6 @@ export function ConvRow({
           }}
         />
       ) : null}
-      {desktopOptionsVisible ? (
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: 7,
-            right: 8,
-            bottom: 7,
-            width: 64,
-            borderRadius: 999,
-            background:
-              'linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--lx-surface-raised) 84%, transparent) 58%, color-mix(in srgb, var(--lx-accent-dim) 72%, transparent) 100%)',
-            opacity: menuOpen ? 1 : 0.82,
-            transform: desktopOptionsVisible ? 'translateX(0)' : 'translateX(12px)',
-            transition: 'opacity 180ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
-        />
-      ) : null}
       <div
         style={{
           position: 'relative',
@@ -422,53 +404,38 @@ export function ConvRow({
             }}
             aria-label={`options for ${thread.name}`}
             style={{
-              width: isMobile ? 24 : 32,
-              height: isMobile ? 24 : 32,
+              width: isMobile ? 24 : 28,
+              height: isMobile ? 24 : 28,
               borderRadius: '50%',
-              border: isMobile ? 'none' : `1px solid ${menuOpen ? v.accent : v.borderSubtle}`,
-              background: isMobile
-                ? 'transparent'
-                : menuOpen
-                  ? v.accentDim
-                  : 'color-mix(in srgb, var(--lx-surface-raised) 88%, transparent)',
+              border: 'none',
+              background: 'transparent',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               padding: 0,
               flexShrink: 0,
-              opacity: isMobile ? revealProgress : desktopOptionsVisible ? 1 : 0,
+              opacity: isMobile ? revealProgress : 1,
               transform:
                 isMobile && mobileActionsVisible
                   ? `translateX(${Math.round((1 - revealProgress) * 26)}px) scale(${
                       0.76 + revealProgress * 0.24
                     })`
-                  : desktopOptionsVisible
-                    ? `translateX(0) scale(${menuOpen ? 1.06 : 1})`
-                    : 'translateX(10px) scale(0.92)',
-              transition:
-                'opacity 220ms ease, transform 340ms cubic-bezier(0.16, 1, 0.3, 1), background 180ms ease, border-color 180ms ease, box-shadow 220ms ease',
-              transitionDelay: isMobile && mobileActionsVisible ? '64ms' : '0ms',
-              boxShadow:
-                !isMobile && desktopOptionsVisible
-                  ? '0 10px 24px color-mix(in srgb, #000 18%, transparent)'
                   : 'none',
-              backdropFilter: !isMobile ? 'blur(10px)' : 'none',
-              WebkitBackdropFilter: !isMobile ? 'blur(10px)' : 'none',
+              transition: isMobile
+                ? 'opacity 220ms ease, transform 340ms cubic-bezier(0.16, 1, 0.3, 1)'
+                : 'opacity 160ms ease',
+              transitionDelay: isMobile && mobileActionsVisible ? '64ms' : '0ms',
+              boxShadow: 'none',
             }}
           >
             <span
               style={{
                 display: 'inline-flex',
-                transform: !isMobile && menuOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1)',
+                transform: 'none',
               }}
             >
-              <LxIcon
-                name="more"
-                size={isMobile ? 13 : 15}
-                color={menuOpen ? v.accentText : v.ink3}
-              />
+              <LxIcon name="more" size={isMobile ? 13 : 15} color={v.ink3} />
             </span>
           </button>
         ) : null}
