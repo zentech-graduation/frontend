@@ -28,6 +28,7 @@ import {
 } from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
+import { useUserProfile } from '../hooks/useUsers';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useViewport } from '../hooks/useViewport';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
@@ -37,6 +38,7 @@ import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { PostShareDialog } from './PostShareDialog';
+import { viewerFollowsAuthor } from '../utils/relationship';
 
 const HEART_COLOR = 'var(--lx-error)';
 const COMMENT_MAX_LENGTH = CHAR_LIMITS.comment;
@@ -744,14 +746,14 @@ export function PostDetailScreen({ overlay = false }) {
   const authorHandle = author.username || location.state?.fallbackAuthorUsername || 'unknown';
   const authorAvatarUrl = author.avatarUrl;
   const isSelf = currentUser?.id === targetUserId;
+  const { data: authorProfileResponse } = useUserProfile(
+    targetUserId,
+    Boolean(targetUserId && !isSelf)
+  );
+  const authorProfile = authorProfileResponse?.data || authorProfileResponse;
   const following = (() => {
     if (!targetUserId || isSelf) return false;
-    if (
-      post.viewerState?.isFollowing ||
-      post.viewerState?.isFollowedByViewer ||
-      author.viewerState?.isFollowing ||
-      author.viewerState?.isFollowedByViewer
-    ) {
+    if (viewerFollowsAuthor(post, author) || viewerFollowsAuthor(authorProfile, authorProfile)) {
       return true;
     }
     if (!myFollowingData) return false;
@@ -1006,7 +1008,7 @@ export function PostDetailScreen({ overlay = false }) {
               id: 'follow-toggle',
               icon: following ? 'userMinus' : 'profile',
               label: `${following ? 'Unfollow' : 'Follow'} @${authorHandle}`,
-              tone: 'danger',
+              tone: following ? 'danger' : undefined,
               separator: true,
               onClick: handleFollowToggle,
               disabled: follow.isPending || unfollow.isPending,
