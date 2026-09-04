@@ -504,7 +504,15 @@ export function LxSideRail({ active, navigate, visible = true }) {
   const hasNotifications = requests.length > 0 || unreadCount > 0;
 
   const rowStyle = (disabled) => ({
-    width: '100%',
+    // Fixed at the collapsed width rather than 100%: on the settings screen the
+    // content column sits flush against the rail's collapsed edge (deliberately,
+    // so hovering the rail reveals its labels over the list rather than over the
+    // content itself). The row's own hit target must therefore never grow past
+    // the icon zone on hover, or the expanded label area would sit on top of and
+    // swallow clicks meant for whatever is now underneath it. The label still
+    // visually reveals past this width via overflow, it just cannot be clicked
+    // through — see labelStyle's pointerEvents.
+    width: RAIL_COLLAPSED_W,
     height: 34,
     borderRadius: 9,
     border: 'none',
@@ -516,6 +524,10 @@ export function LxSideRail({ active, navigate, visible = true }) {
     gap: 12,
     position: 'relative',
     flexShrink: 0,
+    // The rail itself turns non-interactive on the settings screen (see the
+    // nav style below); every row opts back in individually so it keeps
+    // working everywhere the rail already did.
+    pointerEvents: 'auto',
   });
 
   // maxWidth (not just opacity) has to collapse to 0 too: a nowrap label's
@@ -535,6 +547,12 @@ export function LxSideRail({ active, navigate, visible = true }) {
     overflow: 'hidden',
     maxWidth: expanded ? 120 : 0,
     opacity: expanded ? 1 : 0,
+    // The row's own hit box stops at the icon zone (see rowStyle), so this
+    // reveals purely as paint past that edge. Without this, a click landing on
+    // the label would still bubble from this span up through the row button
+    // and navigate the rail instead of reaching whatever the label is
+    // currently covering.
+    pointerEvents: 'none',
     transition: 'opacity 120ms ease-out, max-width 180ms var(--ease-out)',
   });
 
@@ -576,7 +594,18 @@ export function LxSideRail({ active, navigate, visible = true }) {
         WebkitBackdropFilter: 'blur(12px)',
         transform: visible ? 'translateX(0)' : 'translateX(-100%)',
         opacity: visible ? 1 : 0,
-        pointerEvents: visible ? 'auto' : 'none',
+        // On the settings screen the content column sits flush against the
+        // rail's collapsed edge (see the marginLeft comment in LxShell below),
+        // so the rail's own background box, which still widens to
+        // RAIL_EXPANDED_W on hover for the label backdrop, would otherwise sit
+        // on top of and swallow clicks meant for the settings list beneath it
+        // wherever a row isn't. Turning the rail itself non-interactive there
+        // and relying on each row's own pointerEvents: 'auto' (see rowStyle)
+        // keeps every rail control clickable while letting everything else
+        // pass through to the settings list. Every other screen reserves
+        // enough margin that this dead space never reaches real content, so
+        // it keeps the rail interactive as a whole, unchanged.
+        pointerEvents: !visible ? 'none' : active === 'settings' ? 'none' : 'auto',
         // width is deliberately not transitioned: it is also this element's own hover hit-test
         // box, and animating it let a real mouse's path cross a not-yet-grown edge mid-transition,
         // firing a spurious mouseleave that collapsed the rail out from under the cursor. Snapping
@@ -585,7 +614,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
           'transform var(--duration-normal) var(--ease-out), opacity var(--duration-normal) var(--ease-out)',
       }}
     >
-      <div style={{ paddingLeft: RAIL_ICON_INSET, flexShrink: 0 }}>
+      <div style={{ paddingLeft: RAIL_ICON_INSET, flexShrink: 0, pointerEvents: 'auto' }}>
         <LxMark onClick={() => navigate(ROUTES.FEED)} />
       </div>
 

@@ -39,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The theme control has moved off the settings screen, which is otherwise entirely backed by stored settings; the theme remains a per-device preference and still works where it already did.
 
 ### Fixed
+- Settings sub-navigation is clickable again at desktop widths; the navigation rail's hover-expanded label area was sitting on top of the settings list and swallowing the click before it reached the list item underneath.
 - Home's inactive tab no longer fetches on page load; it now fetches only once selected, and keeps its result cached after that.
 - Switches are centred in their track again; the knob sat a pixel out of true on whichever side it had travelled to.
 - The rule between the settings list and the setting itself now runs the full height of the screen instead of stopping where the shorter column's content ended.
