@@ -15,6 +15,7 @@ import { PostMedia } from './PostMedia';
 import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { useDeletePost, useLikePost, useSavePost, useUpdatePost } from '../hooks/usePosts';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
+import { useUserProfile } from '../hooks/useUsers';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useImpressionTracking } from '@/hooks/useImpressionTracking';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
@@ -23,6 +24,7 @@ import { toast } from './Toast';
 import { REPORT_TYPES } from '@/services/report.service';
 import { ROUTES, routeTo, CHAR_LIMITS } from '@/config/constants';
 import { PostShareDialog } from './PostShareDialog';
+import { viewerFollowsAuthor } from '../utils/relationship';
 
 const HEART_COLOR = 'var(--lx-error)';
 
@@ -155,6 +157,11 @@ export function PostCard({
   const authorHandle = author.username || 'unknown';
   const targetUserId = author.id;
   const avatarUrl = author.avatarUrl;
+  const { data: authorProfileResponse } = useUserProfile(
+    targetUserId,
+    Boolean(targetUserId && !isOwner)
+  );
+  const authorProfile = authorProfileResponse?.data || authorProfileResponse;
   const tags =
     post.tags || (post.caption ? (post.caption.match(/#(\w+)/g) || []).map((t) => t.slice(1)) : []);
   const isMobile = viewport === 'mobile';
@@ -162,12 +169,7 @@ export function PostCard({
   const following = (() => {
     if (!targetUserId || isOwner) return false;
     if (assumeFollowing) return true;
-    if (
-      post.viewerState?.isFollowing ||
-      post.viewerState?.isFollowedByViewer ||
-      author.viewerState?.isFollowing ||
-      author.viewerState?.isFollowedByViewer
-    ) {
+    if (viewerFollowsAuthor(post, author) || viewerFollowsAuthor(authorProfile, authorProfile)) {
       return true;
     }
     if (!myFollowingData) return false;
@@ -254,7 +256,7 @@ export function PostCard({
             // uses it, and has no userPlus counterpart, so the follow direction keeps profile.
             icon: following ? 'userMinus' : 'profile',
             label: `${following ? 'Unfollow' : 'Follow'} @${authorHandle}`,
-            tone: 'danger',
+            tone: following ? 'danger' : undefined,
             separator: true,
             onClick: handleFollowToggle,
             disabled: follow.isPending || unfollow.isPending,

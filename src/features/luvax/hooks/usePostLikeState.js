@@ -8,6 +8,8 @@
  * Patching every entry is what keeps two renderings of one post in agreement.
  */
 
+import { withRelationshipPatch } from '../utils/relationship';
+
 // Prefix keys. Every post query is keyed with parameters after the prefix, so
 // matching on the prefix reaches each parameter variant that is currently held.
 const POST_LIST_PREFIXES = [
@@ -86,15 +88,16 @@ const applyToAuthor = (targetUserId, patch) => (cached) => {
 
   const mapAuthor = (author) => {
     if (author?.id !== targetUserId) return author;
-    const viewerState = { ...(author.viewerState || {}), ...patch };
-    return { ...author, viewerState };
+    const viewerState = withRelationshipPatch(author.viewerState, patch);
+    const relationship = { ...(author.relationship || {}), ...patch };
+    return { ...author, ...patch, relationship, viewerState };
   };
 
   const mapPost = (post) => {
     if (!post) return post;
     const author = mapAuthor(post.author);
     if (author === post.author) return post;
-    const viewerState = { ...(post.viewerState || {}), ...patch };
+    const viewerState = withRelationshipPatch(post.viewerState, patch);
     return { ...post, author, viewerState };
   };
 
@@ -104,7 +107,7 @@ const applyToAuthor = (targetUserId, patch) => (cached) => {
       return {
         ...row,
         user: mapAuthor(row.user),
-        viewerState: { ...(row.viewerState || {}), ...patch },
+        viewerState: withRelationshipPatch(row.viewerState, patch),
       };
     }
     return mapPost(row);
