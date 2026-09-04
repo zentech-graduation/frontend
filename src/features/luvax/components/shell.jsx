@@ -547,6 +547,13 @@ export function LxSideRail({ active, navigate, visible = true }) {
     overflow: 'hidden',
     maxWidth: expanded ? 120 : 0,
     opacity: expanded ? 1 : 0,
+    // The row's own box is now fixed at the icon width (see rowStyle), not the
+    // rail's expanded width, so this label is the only thing in the row that
+    // still grows past it. Without flexShrink: 0, the flex algorithm sizes it
+    // against the row's own now-narrow width instead of its maxWidth, and it
+    // renders crushed down to a sliver instead of revealing at full size past
+    // the row's edge.
+    flexShrink: 0,
     // The row's own hit box stops at the icon zone (see rowStyle), so this
     // reveals purely as paint past that edge. Without this, a click landing on
     // the label would still bubble from this span up through the row button
