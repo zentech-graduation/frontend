@@ -6,6 +6,7 @@ import { getNextCursor, dedupeInfinitePagesById } from '@/utils/helpers';
 import { STALE_TIME } from '@/config/constants';
 import { patchCachedPost, removeCachedPost } from './usePostLikeState';
 import { beginSelfPostLike, endSelfPostLike, noteSelfCommentLike } from './useLivePostUpdates';
+import { userKeys } from './useUsers';
 
 export const useFeed = (params = {}, { enabled = true } = {}) => {
   return useInfiniteQuery({
@@ -161,6 +162,12 @@ export const useCreatePost = () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['recommendedFeed'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      // post_count is trigger-maintained and correct in Postgres the instant this
+      // request resolves, but the author's own cached profile (fetched earlier in
+      // the session, e.g. on first load) has no reason to know that without this:
+      // it would keep serving its stale count until something else happens to
+      // evict or refetch it.
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
     },
   });
 };
@@ -175,6 +182,8 @@ export const useUpdatePostStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['recommendedFeed'] });
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      // A status transition into or out of "published" changes post_count.
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
     },
   });
 };
@@ -217,6 +226,8 @@ export const useDeletePost = () => {
       queryClient.invalidateQueries({ queryKey: ['userPosts'] });
       queryClient.invalidateQueries({ queryKey: savedPostsKey });
       queryClient.invalidateQueries({ queryKey: likedPostsKey });
+      // A soft-deleted post drops out of post_count.
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
     },
   });
 };
