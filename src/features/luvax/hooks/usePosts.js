@@ -329,7 +329,11 @@ export const useSavePost = () => {
       saved ? postService.unsavePost(postId) : postService.savePost(postId),
     onMutate: async ({ postId, saved }) => {
       await queryClient.cancelQueries({ queryKey: ['post', postId] });
-      const restore = patchCachedPost(queryClient, postId, { isSaved: !saved });
+      const nextSaved = !saved;
+      const restore = patchCachedPost(queryClient, postId, (post) => ({
+        isSaved: nextSaved,
+        viewerState: { ...(post.viewerState || {}), isSaved: nextSaved },
+      }));
       return { restore };
     },
     onError: (_error, _variables, context) => {
@@ -340,7 +344,6 @@ export const useSavePost = () => {
     // saved screen, and unsaving from the saved screen drop the row without a
     // reload.
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['recommendedFeed'] });
       queryClient.invalidateQueries({ queryKey: savedPostsKey });
     },
   });
