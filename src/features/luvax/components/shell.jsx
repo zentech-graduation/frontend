@@ -273,9 +273,8 @@ export function LxBottomNav({ active, navigate }) {
               <span
                 style={{
                   position: 'absolute',
-                  top: 13,
-                  left: '50%',
-                  transform: 'translateX(5px)',
+                  top: 6,
+                  right: '25%',
                   width: 8,
                   height: 8,
                   borderRadius: '50%',

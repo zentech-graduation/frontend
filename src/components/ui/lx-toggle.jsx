@@ -57,7 +57,6 @@ export function LxToggle({ on, onChange, disabled = false, label, busy = false }
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         transition: 'background var(--duration-fast) var(--ease-out)',
-        flexShrink: 0,
       }}
     >
       {/* The track is 38x22 including its border, so the box this knob is

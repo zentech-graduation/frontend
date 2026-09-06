@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { v } from '@/config/tokens';
 import { LxIcon } from '@/components/ui/lx-icon';
 import { LxAvatar } from '@/components/ui/lx-avatar';
@@ -10,6 +11,7 @@ import {
   getReportErrorCode,
   REPORT_ERROR_CODES,
 } from '../hooks/useReports';
+import { toast } from './Toast';
 
 const STEP_REASON = 1;
 const STEP_DETAILS = 2;
@@ -90,16 +92,15 @@ export function ReportModal({ target, onClose }) {
       },
       {
         onSuccess: () => {
-          setOutcome('submitted');
-          setStep(STEP_DONE);
+          toast('report submitted');
+          onClose?.();
         },
         onError: (error) => {
           // A duplicate is not a failure the reader can act on: the report they wanted
-          // already exists. Moving to the terminal step tells them so and gives them a
-          // way out, rather than parking them on a step whose button will keep failing.
+          // already exists, so close the modal and confirm the state.
           if (getReportErrorCode(error) === REPORT_ERROR_CODES.DUPLICATE) {
-            setOutcome('duplicate');
-            setStep(STEP_DONE);
+            toast('you already reported this');
+            onClose?.();
           }
         },
       }
@@ -592,11 +593,13 @@ export function ReportModal({ target, onClose }) {
     );
   }
 
-  return (
+  const dialog = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`Report ${entityLabel}`}
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
       style={{
         position: 'fixed',
         inset: 0,
@@ -609,10 +612,11 @@ export function ReportModal({ target, onClose }) {
     >
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: v.scrim }} />
       <div
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
         style={{
           position: 'relative',
-          width: 480,
-          maxWidth: '100%',
+          width: 'min(480px, calc(100vw - 32px))',
           maxHeight: '90vh',
           overflowY: 'auto',
           display: 'flex',
@@ -634,4 +638,6 @@ export function ReportModal({ target, onClose }) {
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }

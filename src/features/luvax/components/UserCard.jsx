@@ -4,6 +4,7 @@ import { formatCount } from '@/utils/helpers';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LxAvatar, LxBtn, LxIcon } from './primitives';
 import { useFollow, useUnfollow } from '../hooks/useSocial';
+import { useUserProfile } from '../hooks/useUsers';
 
 export function UserCard({
   user,
@@ -53,7 +54,37 @@ export function UserCard({
   const avatarSize = compact ? 36 : 44;
   const buttonVariant = compact ? 'ghost' : isFollowing || requested ? 'secondary' : 'primary';
   const isSelf = Boolean(currentUserId && user?.id === currentUserId);
-  const followerCount = user?.followerCount ?? user?.followersCount;
+  const rawFollowerCount =
+    user?.followerCount ??
+    user?.followersCount ??
+    user?.followers ??
+    user?.stats?.followerCount ??
+    user?.stats?.followersCount ??
+    user?.profile?.followerCount ??
+    user?.profile?.followersCount ??
+    user?.user?.followerCount ??
+    user?.user?.followersCount;
+  const hasFollowerCount =
+    rawFollowerCount !== null && rawFollowerCount !== undefined && rawFollowerCount !== '';
+  const { data: profileCountSource } = useUserProfile(
+    user?.id,
+    showFollowButton === false && !hasFollowerCount
+  );
+  const profileFollowerCount =
+    profileCountSource?.data?.followerCount ??
+    profileCountSource?.data?.followersCount ??
+    profileCountSource?.followerCount ??
+    profileCountSource?.followersCount;
+  const resolvedFollowerCount = hasFollowerCount ? rawFollowerCount : profileFollowerCount;
+  const followerCount =
+    typeof resolvedFollowerCount === 'number'
+      ? resolvedFollowerCount
+      : typeof resolvedFollowerCount === 'string' && resolvedFollowerCount.trim() !== ''
+        ? Number(resolvedFollowerCount)
+        : Array.isArray(resolvedFollowerCount)
+          ? resolvedFollowerCount.length
+          : 0;
+  const visibleFollowerCount = Number.isFinite(followerCount) ? followerCount : 0;
 
   return (
     <div
@@ -128,7 +159,7 @@ export function UserCard({
             marginTop: 3,
           }}
         >
-          {formatCount(followerCount)} followers
+          {formatCount(visibleFollowerCount)} followers
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import {
   extractPageContent,
   getDisplayName,
   getUserSummary,
+  isPageDegraded,
 } from '@/utils/helpers';
 import { LxIcon } from './primitives';
 import { UserCard } from './UserCard';
@@ -18,6 +19,7 @@ import {
   useHashtagSearch,
   useUserSearch,
 } from '@/features/search/hooks/useSearch';
+import { SearchDegraded, SearchFailed } from '@/features/search/components/SearchResultsEmpty';
 import { RecommendedPostsGrid, SearchResultPost } from './RecommendedPostsGrid';
 
 function SuggestedHashtags({ tags, query, onSelect }) {
@@ -86,7 +88,13 @@ export function ExploreScreen() {
   const searchInputRef = useRef(null);
 
   const { ref, inView } = useInView();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useExploreSearch({ q: query });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isError: postsErrored,
+  } = useExploreSearch({ q: query });
   const userSearchTerms = getUserSearchTerms(query);
   const primaryUserResult = useUserSearch(userSearchTerms[0] || '');
   const secondaryUserResult = useUserSearch(userSearchTerms[1] || '');
@@ -134,7 +142,13 @@ export function ExploreScreen() {
       displayName: getDisplayName(user),
       avatarUrl: user.avatarUrl,
       bio: user.bio,
-      followerCount: user.followerCount ?? item.followerCount ?? item.user?.followerCount,
+      followerCount:
+        user.followerCount ??
+        user.followersCount ??
+        item.followerCount ??
+        item.followersCount ??
+        item.user?.followerCount ??
+        item.user?.followersCount,
       viewerState: item.viewerState ?? user.viewerState,
       isPrivate: user.isPrivate ?? item.user?.isPrivate,
     });
@@ -151,7 +165,7 @@ export function ExploreScreen() {
       username: author.username,
       displayName: getDisplayName(author),
       avatarUrl: author.avatarUrl,
-      followerCount: author.followerCount,
+      followerCount: author.followerCount ?? author.followersCount,
       viewerState: post.viewerState ?? author.viewerState,
       isPrivate: author.isPrivate,
     });
@@ -159,10 +173,20 @@ export function ExploreScreen() {
   }, searchedPeople);
   const foundCount = people.length + posts.length;
   const isFindingPeople = isSearching && userResults.some((result) => result.isLoading);
+  // The server distinguishes "nothing matched" from "the search backend is down
+  // and this page is not an answer" via the `degraded` flag on post pages, and a
+  // hard failure surfaces as isError from the query itself. Reading a channel's
+  // own reject/degrade state is what stops a real outage from rendering
+  // identically to an honest zero-result search.
+  const postsDegraded = (data?.pages || []).some((page) => isPageDegraded(page));
+  const hashtagsErrored = hashtagResult.isError;
+  const peopleErrored = userResults.length > 0 && userResults.every((result) => result.isError);
+  const searchFailed = postsErrored || hashtagsErrored || peopleErrored;
+  const searchDegraded = !searchFailed && postsDegraded;
   const hashtagSuggestions =
     hashtagResult.data?.pages?.flatMap((page) => extractPageContent(page)) || [];
-  const sidePosts = posts.slice(0, 8);
-  const lowerPosts = posts.slice(8);
+  const sidePosts = posts.slice(0, 4);
+  const lowerPosts = posts.slice(4);
 
   // Enter commits the query to the address so a search can be shared and
   // survives a reload, which a bare input could not do.
@@ -295,6 +319,10 @@ export function ExploreScreen() {
                   searching people...
                 </div>
               </div>
+            ) : foundCount === 0 && searchFailed ? (
+              <SearchFailed label="results" />
+            ) : foundCount === 0 && searchDegraded ? (
+              <SearchDegraded label="results" />
             ) : foundCount === 0 ? (
               // Search empty state, on the design's own empty-state geometry.
               <div style={{ padding: '48px 24px', textAlign: 'center' }}>
@@ -320,8 +348,8 @@ export function ExploreScreen() {
                     style={{
                       display: 'grid',
                       gridTemplateColumns:
-                        viewport === 'mobile' ? '1fr' : 'minmax(220px, 0.72fr) minmax(0, 1.28fr)',
-                      gap: viewport === 'mobile' ? 22 : 24,
+                        viewport === 'mobile' ? '1fr' : 'minmax(300px, 0.92fr) minmax(0, 1.58fr)',
+                      gap: viewport === 'mobile' ? 22 : 28,
                       alignItems: 'start',
                     }}
                   >
@@ -401,13 +429,13 @@ export function ExploreScreen() {
                             display: 'grid',
                             position: 'relative',
                             gridTemplateColumns:
-                              viewport === 'mobile' ? '1fr 1fr' : 'repeat(4, minmax(0, 1fr))',
+                              viewport === 'mobile' ? '1fr 1fr' : 'repeat(2, minmax(0, 1fr))',
                             gap: 12,
                             height: viewport === 'mobile' ? 410 : 390,
                             gridAutoRows: 'minmax(0, 1fr)',
                             alignItems: 'stretch',
-                            overflowY: posts.length > 8 ? 'auto' : 'hidden',
-                            paddingRight: posts.length > 8 ? 6 : 0,
+                            overflowY: posts.length > 4 ? 'auto' : 'hidden',
+                            paddingRight: posts.length > 4 ? 6 : 0,
                           }}
                         >
                           {sidePosts.map((p, i) => (
@@ -425,6 +453,14 @@ export function ExploreScreen() {
                               pointerEvents: 'none',
                             }}
                           />
+                        </div>
+                      ) : postsErrored ? (
+                        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.error }}>
+                          we couldn't search posts. check your connection and try again.
+                        </div>
+                      ) : postsDegraded ? (
+                        <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.error }}>
+                          post search is temporarily unavailable. this is not an empty result.
                         </div>
                       ) : (
                         <div style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink3 }}>

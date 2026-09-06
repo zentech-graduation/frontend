@@ -59,7 +59,10 @@ export default function ResetPasswordPage() {
     setServerState({ error: '', success: '' });
 
     if (!token) {
-      setServerState({ error: 'this link has expired. request a new one to continue.', success: '' });
+      setServerState({
+        error: 'this link has expired. request a new one to continue.',
+        success: '',
+      });
       return;
     }
 
@@ -96,8 +99,8 @@ export default function ResetPasswordPage() {
             <div className="lx-head">
               <h1 className="lx-h2">link expired.</h1>
               <p className="lx-sub">
-                reset links stop working after fifteen minutes, and each one can only be used
-                once. requesting a new one takes a moment.
+                reset links stop working after fifteen minutes, and each one can only be used once.
+                requesting a new one takes a moment.
               </p>
             </div>
             <div className="lx-foot-block">

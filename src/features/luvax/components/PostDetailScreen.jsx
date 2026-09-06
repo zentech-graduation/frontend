@@ -28,6 +28,7 @@ import {
 } from '../hooks/usePosts';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBlock, useFollow, useFollowing, useUnfollow } from '../hooks/useSocial';
+import { useUserProfile } from '../hooks/useUsers';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useViewport } from '../hooks/useViewport';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
@@ -37,6 +38,7 @@ import { ConfirmModal } from '@/components/common/ConfirmModal';
 import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { PostShareDialog } from './PostShareDialog';
+import { viewerFollowsAuthor } from '../utils/relationship';
 
 const HEART_COLOR = 'var(--lx-error)';
 const COMMENT_MAX_LENGTH = CHAR_LIMITS.comment;
@@ -520,28 +522,35 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
             >
               Reply
             </button>
-            {hovered || commentMenuOpen ? (
-              <button
-                ref={commentMenuButtonRef}
-                type="button"
-                onClick={() => setCommentMenuOpen((open) => !open)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  marginTop: -5,
-                  cursor: 'pointer',
-                  color: v.ink3,
-                  fontFamily: v.fontBody,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  lineHeight: 1,
-                  letterSpacing: '0.02em',
-                }}
-              >
-                ...
-              </button>
-            ) : null}
+            <button
+              ref={commentMenuButtonRef}
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setCommentMenuOpen((open) => !open);
+              }}
+              aria-label={`options for ${authorName}'s comment`}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                border: 'none',
+                background: commentMenuOpen ? v.surfaceRaised : 'transparent',
+                padding: 0,
+                marginTop: -5,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: hovered || commentMenuOpen ? 1 : 0.45,
+                transition: 'opacity 160ms ease, background 160ms ease, transform 160ms ease',
+                transform: commentMenuOpen ? 'scale(1.04)' : 'scale(1)',
+              }}
+            >
+              <LxIcon name="more" size={14} color={v.ink3} />
+            </button>
           </div>
           {hasReplies ? (
             <button
@@ -625,6 +634,7 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
         items={commentMenuItems}
         width={214}
         align="right"
+        zIndex={5200}
       />
 
       <ConfirmModal
@@ -736,14 +746,14 @@ export function PostDetailScreen({ overlay = false }) {
   const authorHandle = author.username || location.state?.fallbackAuthorUsername || 'unknown';
   const authorAvatarUrl = author.avatarUrl;
   const isSelf = currentUser?.id === targetUserId;
+  const { data: authorProfileResponse } = useUserProfile(
+    targetUserId,
+    Boolean(targetUserId && !isSelf)
+  );
+  const authorProfile = authorProfileResponse?.data || authorProfileResponse;
   const following = (() => {
     if (!targetUserId || isSelf) return false;
-    if (
-      post.viewerState?.isFollowing ||
-      post.viewerState?.isFollowedByViewer ||
-      author.viewerState?.isFollowing ||
-      author.viewerState?.isFollowedByViewer
-    ) {
+    if (viewerFollowsAuthor(post, author) || viewerFollowsAuthor(authorProfile, authorProfile)) {
       return true;
     }
     if (!myFollowingData) return false;
@@ -998,7 +1008,7 @@ export function PostDetailScreen({ overlay = false }) {
               id: 'follow-toggle',
               icon: following ? 'userMinus' : 'profile',
               label: `${following ? 'Unfollow' : 'Follow'} @${authorHandle}`,
-              tone: 'danger',
+              tone: following ? 'danger' : undefined,
               separator: true,
               onClick: handleFollowToggle,
               disabled: follow.isPending || unfollow.isPending,
@@ -1300,6 +1310,38 @@ export function PostDetailScreen({ overlay = false }) {
             >
               {likeCount}
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => commentInputRef.current?.focus()}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <LxIcon name="chat" size={21} color={v.ink3} />
+            <span style={{ fontFamily: v.fontMono, fontSize: 12, color: v.ink3 }}>
+              {post.commentCount ?? comments.length ?? 0}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <LxIcon name="share" size={20} color={v.ink3} />
           </button>
         </div>
 

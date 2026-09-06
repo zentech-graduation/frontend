@@ -219,14 +219,17 @@ export function ProfileCategory() {
   // form rather than tracking the query.
   useEffect(() => {
     if (!profile || form) return;
-    setForm({
-      username: profile.username ?? '',
-      displayName: profile.displayName ?? '',
-      bio: profile.bio ?? '',
-      websiteUrl: profile.websiteUrl ?? '',
-      avatarUrl: profile.avatarUrl ?? '',
-      bannerUrl: profile.bannerUrl ?? '',
-    });
+    const timer = window.setTimeout(() => {
+      setForm({
+        username: profile.username ?? '',
+        displayName: profile.displayName ?? '',
+        bio: profile.bio ?? '',
+        websiteUrl: profile.websiteUrl ?? '',
+        avatarUrl: profile.avatarUrl ?? '',
+        bannerUrl: profile.bannerUrl ?? '',
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [profile, form]);
 
   if (error) {

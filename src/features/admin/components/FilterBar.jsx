@@ -61,11 +61,7 @@ export function FilterBar({ groups, onChange, onClear, isDirty }) {
       ))}
 
       {isDirty ? (
-        <button
-          type="button"
-          onClick={onClear}
-          className="lx-admin-signout lx-admin-filter-clear"
-        >
+        <button type="button" onClick={onClear} className="lx-admin-signout lx-admin-filter-clear">
           <LxIcon name="close" size={12} color={v.ink2} />
           clear filters
         </button>
