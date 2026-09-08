@@ -57,6 +57,11 @@ const OnboardingScreen = lazy(() =>
     default: m.OnboardingScreen,
   }))
 );
+const HashtagScreen = lazy(() =>
+  import('@/features/luvax/components/HashtagScreen').then((m) => ({
+    default: m.HashtagScreen,
+  }))
+);
 const SearchScreen = lazy(() =>
   import('@/features/search/components/SearchScreen').then((m) => ({
     default: m.SearchScreen,
@@ -118,6 +123,15 @@ export const APP_SCREENS = [
     rightRail: true,
   },
   { screen: 'search', path: ROUTES.SEARCH, element: <SearchScreen />, chrome: 'shell' },
+  // Carries the right rail: a hashtag page is a discovery surface, and the trending list beside it
+  // is the obvious next thing to look at from one.
+  {
+    screen: 'hashtag',
+    path: ROUTES.HASHTAG,
+    element: <HashtagScreen />,
+    chrome: 'shell',
+    rightRail: true,
+  },
   { screen: 'compose', path: ROUTES.COMPOSE, element: <ComposerScreen />, chrome: 'shell' },
   {
     screen: 'notifications',

@@ -402,10 +402,7 @@ export function ExploreScreen() {
                       <SuggestedHashtags
                         tags={hashtagSuggestions}
                         query={trimmedQuery}
-                        onSelect={(tag) => {
-                          setQuery(tag);
-                          setSearchParams({ q: tag });
-                        }}
+                        onSelect={(tag) => navigate(routeTo.hashtag(tag))}
                       />
                     </section>
 

@@ -25,6 +25,12 @@ export const ROUTES = {
   // them can be linked, bookmarked, and reloaded.
   FEED: '/app',
   EXPLORE: '/app/explore',
+  // Hashtag detail lives inside /app like every other authenticated screen, because the shell,
+  // the navigation and the right rail only exist there. The bare /tags/:name address in
+  // HASHTAG_DEEP_LINK is kept as a shareable top-level link and redirects here, so a link pasted
+  // into a message still resolves.
+  HASHTAG: '/app/tags/:name',
+  HASHTAG_DEEP_LINK: '/tags/:name',
   COMPOSE: '/app/compose',
   NOTIFICATIONS: '/app/notifications',
   MESSAGES: '/app/messages',
@@ -125,6 +131,7 @@ export const routeTo = {
   userFollowers: (userId) => withParams(ROUTES.USER_FOLLOWERS, { userId }),
   userFollowing: (userId) => withParams(ROUTES.USER_FOLLOWING, { userId }),
   postDetail: (postId) => withParams(ROUTES.POST_DETAIL, { postId }),
+  hashtag: (name) => withParams(ROUTES.HASHTAG, { name }),
   storyView: (storyId) => withParams(ROUTES.STORY_VIEW, { storyId }),
   adminReportDetail: (reportId) => withParams(ROUTES.ADMIN_REPORT_DETAIL, { reportId }),
   adminUser: (userId) => withParams(ROUTES.ADMIN_USER, { userId }),

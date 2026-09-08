@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { v } from '@/config/tokens';
+import { LxTrendingRail } from './LxTrendingRail';
 import { ROUTES } from '@/config/constants';
 import { extractPageContent } from '@/utils/helpers';
 import { useViewport } from '../hooks/useViewport';
@@ -369,10 +370,7 @@ export function LxRightRail({ compact = false }) {
         overflowY: 'auto',
       }}
     >
-      {/* The trending rail was a hardcoded list of invented tags, numbered as
-          though it were a ranking and clickable as though it filtered. There is
-          a real trending endpoint, but wiring it is not part of this phase, and
-          a fabricated ranking is worse than an empty rail. */}
+      <LxTrendingRail compact={compact} />
     </aside>
   );
 }
