@@ -74,6 +74,15 @@ export function VerificationQueueScreen() {
     select: (payload) => payload?.data ?? [],
   });
 
+  const claim = useMutation({
+    mutationFn: (ticketId) => verificationService.claimVerificationTicket(ticketId),
+    onSuccess: () => {
+      setFailure('');
+      queryClient.invalidateQueries({ queryKey: queueKeys.all });
+    },
+    onError: (error) => setFailure(error?.message || 'that did not work. try again.'),
+  });
+
   const decide = useMutation({
     mutationFn: ({ ticketId, approve, reason, internalNote }) =>
       approve
@@ -139,7 +148,10 @@ export function VerificationQueueScreen() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {rows.map((row) => {
           const draft = draftFor(row.ticketId);
-          const canDecide = draft.reason.trim().length > 0 && !decide.isPending;
+          // Deciding requires holding the claim. Without a claim control the queue would offer two
+          // buttons that always refuse, so the row shows the claim first and the decision after it.
+          const claimed = Boolean(row.assignedTo);
+          const canDecide = claimed && draft.reason.trim().length > 0 && !decide.isPending;
           const terminal = row.status === 'answered' || row.status === 'rejected';
           return (
             <PanelCard
@@ -232,8 +244,31 @@ export function VerificationQueueScreen() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {claimed ? null : (
+                    <button
+                      type="button"
+                      aria-label={`Claim the request from ${row.claimedName}`}
+                      disabled={claim.isPending}
+                      onClick={() => claim.mutate(row.ticketId)}
+                      style={{
+                        alignSelf: 'flex-start',
+                        padding: '7px 14px',
+                        borderRadius: 8,
+                        border: `1px solid ${v.border}`,
+                        background: 'transparent',
+                        color: v.ink,
+                        cursor: 'pointer',
+                        fontFamily: v.fontBody,
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {claim.isPending ? 'claiming...' : 'claim to review'}
+                    </button>
+                  )}
                   <input
                     aria-label={`decision reason for ${row.claimedName}`}
+                    disabled={!claimed}
                     placeholder="reason (sent to the requester)"
                     value={draft.reason}
                     onChange={(event) => setDraft(row.ticketId, { reason: event.target.value })}
@@ -241,6 +276,7 @@ export function VerificationQueueScreen() {
                   />
                   <input
                     aria-label={`internal note for ${row.claimedName}`}
+                    disabled={!claimed}
                     placeholder="internal note (never sent)"
                     value={draft.internalNote}
                     onChange={(event) =>

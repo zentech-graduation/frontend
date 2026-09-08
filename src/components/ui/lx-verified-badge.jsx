@@ -26,9 +26,12 @@ const GLYPH_KEYS = new Set(Object.values(GLYPH_BY_CATEGORY));
 // a username reads as decoration, which is exactly what a verification mark must not do.
 const ACCENT = '#3B82F6';
 
-// How much of the badge the glyph occupies. Below about half it is unreadable at 14px; above about
-// 0.66 the wider shapes collide with the container edge.
-const GLYPH_RATIO = 0.62;
+// How much of the badge the glyph occupies. Measured at 14px in a browser against all eight glyphs:
+// below about half none of them reads, and above 0.66 the widest two, the gamepad and the
+// clapperboard, touch the container edge. 0.66 is the largest value that keeps every glyph clear of
+// it, and the extra pixel over a smaller ratio is what stops the flask's neck line and the
+// palette's dots closing up at that size.
+const GLYPH_RATIO = 0.66;
 
 /**
  * The verified badge: one container, one accent colour, the category glyph inside it.

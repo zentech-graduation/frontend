@@ -30,6 +30,14 @@ export const getVerificationQueue = async (status, limit = 20, signal) => {
   return response.data;
 };
 
+// Deciding requires holding the claim, exactly as it does for every other support ticket, so the
+// queue needs this as its own action. It reuses the support claim endpoint rather than adding a
+// verification-specific one: the claim is a property of the ticket, not of what the ticket is about.
+export const claimVerificationTicket = async (ticketId) => {
+  const response = await axiosInstance.post(`${ADMIN_API_PATH}/support/tickets/${ticketId}/claim`);
+  return response.data;
+};
+
 export const approveVerification = async (ticketId, payload) => {
   const response = await axiosInstance.post(
     `${ADMIN_API_PATH}/verification/requests/${ticketId}/approve`,
