@@ -13,6 +13,7 @@ import { useRelativeTime } from '../hooks/useRelativeTime';
 import { useOverlayNavigate } from '../hooks/useOverlayNavigate';
 import { routeTo } from '@/config/constants';
 import { toast } from './Toast';
+import { LxVerifiedBadge } from '@/components/ui/lx-verified-badge';
 
 // Keyed on the notification_type enum values the backend actually sends.
 // The previous mapping tested for 'like' and 'comment', which are not members
@@ -224,6 +225,13 @@ function NotifRow({ n, onAccept, onDecline, pendingRequestIds }) {
             }}
           >
             {displayName}
+            {isSystemModeration ? null : (
+              <LxVerifiedBadge
+                verified={actor.isVerified}
+                category={actor.verifiedCategory}
+                size={12}
+              />
+            )}
           </strong>{' '}
           <span style={{ color: v.ink2 }}>{text}</span>
         </div>
@@ -317,7 +325,12 @@ function RequestRow({ req, onAccept, onDecline }) {
             style={{ fontWeight: 600, cursor: 'pointer' }}
           >
             {getDisplayName(user)}
-          </strong>{' '}
+          </strong>
+          <LxVerifiedBadge
+            verified={user?.isVerified}
+            category={user?.verifiedCategory}
+            size={12}
+          />{' '}
           <span style={{ color: v.ink2 }}>requested to follow you</span>
         </div>
         <div style={{ fontFamily: v.fontMono, fontSize: 10, color: v.ink3, marginTop: 4 }}>

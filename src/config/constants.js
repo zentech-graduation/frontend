@@ -110,6 +110,9 @@ export const ROUTES = {
   ADMIN_USER: '/admin/users/:userId',
   // The administrative hashtag registry. Administrator only.
   ADMIN_HASHTAGS: '/admin/hashtags',
+  // Moderator-reachable, not administrator-only: verification is a discretionary grant rather than
+  // an enforcement action, so it sits with reports rather than with the account list.
+  ADMIN_VERIFICATION: '/admin/verification',
   // Platform statistics. Administrator only; both statistics endpoints answer a
   // moderator with 403.
   ADMIN_STATISTICS: '/admin/statistics',

@@ -31,6 +31,7 @@ import { useMySettings, useUpdateMySettings } from '../hooks/useSettings';
 import { useMyProfile, useUpdateMyProfile } from '../hooks/useUsers';
 import { LxBtn } from './primitives';
 import { SavedPostsScreen } from './SavedPostsScreen';
+import { VerificationRequestPanel } from './VerificationRequestPanel';
 
 // ─── Shared pieces ──────────────────────────────────────────────────────────
 
@@ -593,6 +594,13 @@ export function PrivacyCategory() {
           label="allow message requests"
           sub="people you do not follow can message you"
         />
+        <SettingToggle
+          settings={settings}
+          isLoading={settingsLoading}
+          field="suggestible"
+          label="suggest my account to others"
+          sub="turn this off and you will not appear in anyone's suggested accounts"
+        />
       </div>
     </div>
   );
@@ -826,6 +834,11 @@ export function AccountCategory() {
           sub="whether luvax has confirmed who you are"
           value={profile?.isVerified ? 'yes' : 'not verified'}
         />
+      </div>
+
+      <div className="lx-settings-section">
+        <h3 className="lx-settings-section-title">verification</h3>
+        <VerificationRequestPanel />
         <ReadonlyRow
           label="account"
           sub="who can see your posts"
