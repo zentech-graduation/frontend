@@ -37,5 +37,18 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    // The preview server serves the production bundle, and without this it had no proxy at all,
+    // so a production build could only be exercised against a separately hosted API. Anything
+    // that only reproduces in a production build - stacking contexts, CSS ordering, minified
+    // class names - was therefore untestable locally.
+    preview: {
+      proxy: {
+        '/api': {
+          target: proxyTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
   };
 });
