@@ -1332,6 +1332,9 @@ export function PostDetailScreen({ overlay = false }) {
           </button>
           <button
             type="button"
+            // The only control in this row with no text beside its glyph, so it
+            // is the only one with no accessible name to take from its content.
+            aria-label="share post"
             onClick={() => setShareOpen(true)}
             style={{
               background: 'none',
