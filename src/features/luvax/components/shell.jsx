@@ -700,7 +700,18 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
           key={screen}
           className="lx-fade-in"
           style={{
-            marginLeft: RAIL_COLLAPSED_W,
+            // The expanded width, not the collapsed one. The rail is fixed and
+            // overlays rather than shifting the layout, so whatever the layout
+            // fails to reserve, the rail covers. Reserving 60 left the rail's
+            // open state overlapping this column by 136px, which swallowed the
+            // left half of every sub-nav row including its label, and it was
+            // open precisely on arrival: reaching settings means clicking the
+            // rail's own settings button, which focuses it, and onFocus expands
+            // the rail. The pointer then sits inside the overlay while crossing
+            // to the sub-nav, so onMouseLeave never fires to collapse it. Every
+            // other branch of this shell already reserves more than the rail can
+            // grow to, which is why settings alone showed the defect.
+            marginLeft: RAIL_EXPANDED_W,
             minHeight: 'calc(100vh / var(--lx-scale))',
             display: 'flex',
             flexDirection: 'column',
