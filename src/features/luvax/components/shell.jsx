@@ -431,7 +431,11 @@ const suggestedHeadingStyle = {
 // Reads the endpoint and hands LxSuggestedList rows in the shape it already expects. Kept beside
 // the presentational component rather than inside it so the composition stays testable with
 // invented data and the mounted widget never is.
-function LxSuggestedRail() {
+//
+// Exported because the rail is not the only mount point any more: below TABLET_RAIL_MIN_WIDTH
+// there is no rail at all, and Explore hosts this and the trending list instead so the two
+// features are not simply absent on the form factor this application is mostly read on.
+export function LxSuggestedRail() {
   const { data: rows, isLoading } = useSuggestions(5);
   const followSuggestion = useFollowSuggestion();
   const dismissSuggestion = useDismissSuggestion();
@@ -771,7 +775,7 @@ export function LxSideRail({ active, navigate, visible = true }) {
  * Narrowest tablet viewport, in device pixels, that can host the compact right rail beside a
  * readable column. Below this the rail is dropped and the column takes the space instead.
  */
-const TABLET_RAIL_MIN_WIDTH = 910;
+export const TABLET_RAIL_MIN_WIDTH = 910;
 
 // ─── App Shell ─────────────────────────────────────────────────────────────
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
@@ -856,7 +860,12 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             className="lx-fade-in"
             style={{
               width: mainWidth,
-              flexShrink: 0,
+              // Shrinkable, not fixed. Explore and search widen the centre column to 960, which
+              // together with the 280 left spacer, the 280 rail and the rail's own padding needs
+              // more room than a 1440 viewport has once the root zoom is applied - the row
+              // overflowed by 149px and the page scrolled sideways. The rail and the spacer keep
+              // their widths; the centre column gives up the difference instead.
+              flexShrink: 1,
               minWidth: 0,
               // No column rules. The feed is one continuous surface on the page
               // background, so the borders that boxed the centre column are gone.
