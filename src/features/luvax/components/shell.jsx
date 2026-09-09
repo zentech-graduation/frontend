@@ -467,7 +467,14 @@ export function LxRightRail({ compact = false }) {
         // vh is computed against the true viewport, unadjusted for the root's zoom scale, so a
         // raw 100vh here rendered taller than the real viewport and could push part of the rail
         // out of view. Dividing by --lx-scale cancels the zoom multiplication back out.
-        maxHeight: 'calc(100vh / var(--lx-scale))',
+        //
+        // The launcher clearance is subtracted rather than added as padding: the messages pill is
+        // fixed to the bottom-right of the same viewport and reserves no space, and padding below
+        // the content does not move the content up. Ending the rail's scroll viewport above the
+        // pill is what keeps the last row reachable - at 1440x900 with five suggestions the fifth
+        // row's follow and dismiss buttons were otherwise painted under it and unclickable, with
+        // the launcher reported as the intercepting element.
+        maxHeight: `calc((100vh / var(--lx-scale)) - ${MESSAGE_LAUNCHER_CLEARANCE}px)`,
         overflowY: 'auto',
       }}
     >
@@ -776,6 +783,11 @@ export function LxSideRail({ active, navigate, visible = true }) {
  * readable column. Below this the rail is dropped and the column takes the space instead.
  */
 export const TABLET_RAIL_MIN_WIDTH = 910;
+
+// Height the fixed messages launcher occupies at the bottom-right, plus its offset and a little
+// clearance. The right rail subtracts this from its own scroll viewport so its last row can never
+// be painted underneath a control that reserves no space of its own.
+const MESSAGE_LAUNCHER_CLEARANCE = 72;
 
 // ─── App Shell ─────────────────────────────────────────────────────────────
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
