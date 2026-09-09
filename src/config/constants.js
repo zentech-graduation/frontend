@@ -2,11 +2,15 @@
 
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'MyApp';
 
-const ENV_API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
-
-export const API_URL = import.meta.env.DEV
-  ? '/api/v1'
-  : ENV_API_URL || 'http://localhost:8080/api/v1';
+/**
+ * The API base address is deliberately not re-declared here.
+ *
+ * It lived in this file as a second copy of the expression in `api/axiosClient`,
+ * had no importer, and carried the dev-versus-production fork that broke
+ * authentication under a production bundle. `API_BASE_URL` from
+ * `api/axiosClient` is the single definition; every request goes through that
+ * client, so nothing else needs the address.
+ */
 
 /** Route paths — single source of truth for navigation */
 export const ROUTES = {
@@ -106,6 +110,9 @@ export const ROUTES = {
   ADMIN_USER: '/admin/users/:userId',
   // The administrative hashtag registry. Administrator only.
   ADMIN_HASHTAGS: '/admin/hashtags',
+  // Moderator-reachable, not administrator-only: verification is a discretionary grant rather than
+  // an enforcement action, so it sits with reports rather than with the account list.
+  ADMIN_VERIFICATION: '/admin/verification',
   // Platform statistics. Administrator only; both statistics endpoints answer a
   // moderator with 403.
   ADMIN_STATISTICS: '/admin/statistics',

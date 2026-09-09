@@ -26,6 +26,7 @@ import { REPORT_TYPES } from '@/services/report.service';
 import { ROUTES, routeTo, CHAR_LIMITS } from '@/config/constants';
 import { PostShareDialog } from './PostShareDialog';
 import { viewerFollowsAuthor } from '../utils/relationship';
+import { LxVerifiedBadge } from '@/components/ui/lx-verified-badge';
 
 const HEART_COLOR = 'var(--lx-error)';
 
@@ -356,6 +357,11 @@ export function PostCard({
             <span style={{ fontFamily: v.fontBody, fontSize: 13, fontWeight: 600, color: v.ink }}>
               {authorName}
             </span>
+            <LxVerifiedBadge
+              verified={author.isVerified}
+              category={author.verifiedCategory}
+              size={13}
+            />
           </div>
           <button
             ref={menuButtonRef}

@@ -40,6 +40,7 @@ import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { PostShareDialog } from './PostShareDialog';
 import { viewerFollowsAuthor } from '../utils/relationship';
+import { LxVerifiedBadge } from '@/components/ui/lx-verified-badge';
 
 const HEART_COLOR = 'var(--lx-error)';
 const COMMENT_MAX_LENGTH = CHAR_LIMITS.comment;
@@ -416,6 +417,11 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
             >
               {authorName}
             </span>
+            <LxVerifiedBadge
+              verified={author.isVerified}
+              category={author.verifiedCategory}
+              size={12}
+            />
             {editing ? null : (
               <span
                 style={{
@@ -1134,6 +1140,11 @@ export function PostDetailScreen({ overlay = false }) {
           >
             {authorName}
           </div>
+          <LxVerifiedBadge
+            verified={author.isVerified}
+            category={author.verifiedCategory}
+            size={14}
+          />
         </div>
         <button
           ref={menuButtonRef}
@@ -1332,6 +1343,9 @@ export function PostDetailScreen({ overlay = false }) {
           </button>
           <button
             type="button"
+            // The only control in this row with no text beside its glyph, so it
+            // is the only one with no accessible name to take from its content.
+            aria-label="share post"
             onClick={() => setShareOpen(true)}
             style={{
               background: 'none',
