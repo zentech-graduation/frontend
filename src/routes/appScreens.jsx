@@ -32,6 +32,16 @@ const ComposerScreen = lazy(() =>
     default: m.ComposerScreen,
   }))
 );
+const HelpCenterScreen = lazy(() =>
+  import('@/features/support/components/HelpCenterScreen').then((m) => ({
+    default: m.HelpCenterScreen,
+  }))
+);
+const SupportTicketDetailScreen = lazy(() =>
+  import('@/features/support/components/TicketDetailScreen').then((m) => ({
+    default: m.TicketDetailScreen,
+  }))
+);
 const ExploreScreen = lazy(() =>
   import('@/features/luvax/components/ExploreScreen').then((m) => ({
     default: m.ExploreScreen,
@@ -123,6 +133,15 @@ export const APP_SCREENS = [
     rightRail: true,
   },
   { screen: 'search', path: ROUTES.SEARCH, element: <SearchScreen />, chrome: 'shell' },
+  // No right rail on either: the help centre is a form and a reply, and trending
+  // hashtags beside a ban appeal would be the wrong thing to offer.
+  {
+    screen: 'support',
+    path: ROUTES.SUPPORT_TICKET,
+    element: <SupportTicketDetailScreen />,
+    chrome: 'shell',
+  },
+  { screen: 'support', path: ROUTES.SUPPORT, element: <HelpCenterScreen />, chrome: 'shell' },
   // Carries the right rail: a hashtag page is a discovery surface, and the trending list beside it
   // is the obvious next thing to look at from one.
   {

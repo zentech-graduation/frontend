@@ -1,0 +1,199 @@
+import { v } from '@/config/tokens';
+
+/**
+ * The shared surface pieces for the help centre.
+ *
+ * Local to this slice rather than promoted to `src/components/ui`, because
+ * nothing outside support renders them yet and a shared primitive with one
+ * caller is a guess about the future rather than a shared primitive.
+ *
+ * Every value comes from the token object. Copy is lowercase throughout, per
+ * the design system's voice rule.
+ */
+
+/**
+ * The frame the three anonymous routes render inside.
+ *
+ * Standalone rather than inside the application shell: an account following an
+ * appeal link is banned and signed out, so the shell's navigation, rail and
+ * session-dependent chrome would either fail or offer routes it cannot reach.
+ */
+export function SupportPage({ title, intro, children, width = 560 }) {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: v.base,
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '48px 16px',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: width }}>
+        <h1
+          style={{
+            fontFamily: v.fontDisplay,
+            fontSize: 30,
+            lineHeight: 1.15,
+            letterSpacing: '-0.03em',
+            color: v.ink,
+            margin: '0 0 8px',
+            fontWeight: 700,
+          }}
+        >
+          {title}
+        </h1>
+        {intro ? (
+          <p
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 15,
+              lineHeight: 1.5,
+              color: v.ink2,
+              margin: '0 0 24px',
+            }}
+          >
+            {intro}
+          </p>
+        ) : null}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** A metadata eyebrow. Uppercase here is the one sanctioned exception, for labels. */
+export function Eyebrow({ children }) {
+  return (
+    <div
+      style={{
+        fontFamily: v.fontMono,
+        fontSize: 10,
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        color: v.ink2,
+        marginBottom: 6,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** A labelled control. The label is a real `<label>`, so clicking it focuses the field. */
+export function Field({ label, hint, error, htmlFor, children }) {
+  const hintId = hint ? `${htmlFor}-hint` : undefined;
+  const errorId = error ? `${htmlFor}-error` : undefined;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label
+        htmlFor={htmlFor}
+        style={{
+          display: 'block',
+          fontFamily: v.fontBody,
+          fontSize: 13,
+          fontWeight: 500,
+          color: v.ink2,
+          marginBottom: 6,
+        }}
+      >
+        {label}
+      </label>
+      {children}
+      {hint ? (
+        <div
+          id={hintId}
+          style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2, marginTop: 5 }}
+        >
+          {hint}
+        </div>
+      ) : null}
+      {error ? (
+        <div
+          id={errorId}
+          role="alert"
+          style={{ fontFamily: v.fontBody, fontSize: 12, color: v.errorText, marginTop: 5 }}
+        >
+          {error}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** The primary action. Pill radius, accent fill, lowercase label. */
+export function PrimaryButton({ children, disabled, ...rest }) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      style={{
+        fontFamily: v.fontBody,
+        fontSize: 15,
+        fontWeight: 500,
+        color: v.ink,
+        background: v.accent,
+        border: 'none',
+        borderRadius: 999,
+        padding: '10px 20px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.4 : 1,
+        transition: 'background 150ms cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** A calm, non-alarming notice. Used for the states that are not failures. */
+export function Notice({ tone = 'neutral', children, role }) {
+  const palette = {
+    neutral: { bg: v.surface, border: v.border, text: v.ink2 },
+    good: { bg: v.successDim, border: v.success, text: v.successText },
+    bad: { bg: v.errorDim, border: v.error, text: v.errorText },
+    warn: { bg: v.warningDim, border: v.warning, text: v.warningText },
+  }[tone];
+
+  return (
+    <div
+      role={role}
+      style={{
+        background: palette.bg,
+        border: `1px solid ${palette.border}`,
+        borderRadius: 12,
+        padding: '14px 16px',
+        fontFamily: v.fontBody,
+        fontSize: 14,
+        lineHeight: 1.5,
+        color: palette.text,
+        marginBottom: 16,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** A ticket's status, rendered as a chip rather than raw enum text. */
+export function StatusChip({ label }) {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        fontFamily: v.fontMono,
+        fontSize: 11,
+        letterSpacing: '0.04em',
+        color: v.ink2,
+        background: v.surfaceRaised,
+        border: `1px solid ${v.border}`,
+        borderRadius: 999,
+        padding: '3px 10px',
+      }}
+    >
+      {label}
+    </span>
+  );
+}

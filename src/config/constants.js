@@ -58,6 +58,24 @@ export const ROUTES = {
   // The viewer's saved posts. Filed under settings because the list belongs to
   // the viewer rather than to a profile being looked at, and is private to them.
   SAVED: '/app/settings/saved',
+  // The help centre. One door into support for a signed-in account: ordinary
+  // requests, appeals, and the verification request, which is a support request
+  // like any other rather than a form on its own screen.
+  SUPPORT: '/app/support',
+  SUPPORT_TICKET: '/app/support/:ticketId',
+
+  // The three anonymous support addresses. These sit outside the authenticated
+  // tree because the accounts that need them cannot authenticate: a banned or
+  // suspended account is refused a session by design, and it is exactly the
+  // population an appeal exists for.
+  //
+  // The first two are already built into moderation and confirmation mail that
+  // has been sent, so their shapes are fixed by messages already in inboxes and
+  // must not be changed.
+  SUPPORT_APPEAL: '/support/appeal',
+  SUPPORT_CONFIRM: '/support/confirm',
+  SUPPORT_PUBLIC: '/support/new',
+
   ONBOARDING: '/app/onboarding',
   STORY_COMPOSE: '/app/stories/new',
 
@@ -112,7 +130,12 @@ export const ROUTES = {
   ADMIN_HASHTAGS: '/admin/hashtags',
   // Moderator-reachable, not administrator-only: verification is a discretionary grant rather than
   // an enforcement action, so it sits with reports rather than with the account list.
-  ADMIN_VERIFICATION: '/admin/verification',
+  // The staff support console. Verification review happens here, as one
+  // category of ticket among the rest, rather than on a screen of its own: a
+  // verification request is a support ticket, claimed and decided by the same
+  // rules as any other, and reviewing it somewhere else meant two queues with
+  // one workflow between them.
+  ADMIN_SUPPORT: '/admin/support',
   // Platform statistics. Administrator only; both statistics endpoints answer a
   // moderator with 403.
   ADMIN_STATISTICS: '/admin/statistics',
@@ -142,6 +165,7 @@ export const routeTo = {
   storyView: (storyId) => withParams(ROUTES.STORY_VIEW, { storyId }),
   adminReportDetail: (reportId) => withParams(ROUTES.ADMIN_REPORT_DETAIL, { reportId }),
   adminUser: (userId) => withParams(ROUTES.ADMIN_USER, { userId }),
+  supportTicket: (ticketId) => withParams(ROUTES.SUPPORT_TICKET, { ticketId }),
   // The action log with a specific action open in its drawer; the open state is
   // a query parameter so the link is shareable and the list stays mounted.
   adminAction: (actionId) => `${ROUTES.ADMIN_ACTIONS}?action=${encodeURIComponent(actionId ?? '')}`,

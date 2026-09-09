@@ -50,10 +50,10 @@ const NAV_SECTIONS = [
         roles: [ROLES.MODERATOR, ROLES.ADMIN],
       },
       {
-        key: 'verification',
-        label: 'verification',
+        key: 'support',
+        label: 'support',
         icon: 'check',
-        to: ROUTES.ADMIN_VERIFICATION,
+        to: ROUTES.ADMIN_SUPPORT,
         roles: [ROLES.MODERATOR, ROLES.ADMIN],
       },
       {

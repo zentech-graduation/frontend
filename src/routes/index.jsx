@@ -29,6 +29,24 @@ import { APP_NOT_FOUND_SCREEN, APP_OVERLAY_SCREENS, APP_SCREENS } from './appScr
 // entry chunk.
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const LuvaxPage = lazy(() => import('@/pages/LuvaxPage'));
+// The three anonymous support screens. Deferred like every other route, and
+// deliberately outside ProtectedRoute: the accounts that reach them hold no
+// session and cannot be issued one.
+const AppealLandingScreen = lazy(() =>
+  import('@/features/support/components/AppealLandingScreen').then((m) => ({
+    default: m.AppealLandingScreen,
+  }))
+);
+const ConfirmLandingScreen = lazy(() =>
+  import('@/features/support/components/ConfirmLandingScreen').then((m) => ({
+    default: m.ConfirmLandingScreen,
+  }))
+);
+const PublicSupportFormScreen = lazy(() =>
+  import('@/features/support/components/PublicSupportFormScreen').then((m) => ({
+    default: m.PublicSupportFormScreen,
+  }))
+);
 
 function RootLayout() {
   return (
@@ -110,6 +128,21 @@ const router = createBrowserRouter([
       {
         path: ROUTES.RESET_PASSWORD,
         element: <ResetPasswordPage />,
+      },
+      {
+        // Reached from the signed link in a moderation notice. No guard: the
+        // account it is submitted for is banned or suspended and therefore
+        // cannot authenticate at all. Redeeming the link mints no session.
+        path: ROUTES.SUPPORT_APPEAL,
+        element: <AppealLandingScreen />,
+      },
+      {
+        path: ROUTES.SUPPORT_CONFIRM,
+        element: <ConfirmLandingScreen />,
+      },
+      {
+        path: ROUTES.SUPPORT_PUBLIC,
+        element: <PublicSupportFormScreen />,
       },
       {
         path: ROUTES.OAUTH_CALLBACK,
