@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
+import { CaptionText } from './CaptionText';
 import {
   copyPostLink,
   extractPageContent,
@@ -1189,7 +1190,7 @@ export function PostDetailScreen({ overlay = false }) {
             wordBreak: 'break-word',
           }}
         >
-          {post.caption}
+          <CaptionText text={post.caption} />
         </div>
         {tags.length > 0 ? (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>

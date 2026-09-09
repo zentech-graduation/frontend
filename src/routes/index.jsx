@@ -4,6 +4,7 @@ import {
   ScrollRestoration,
   createBrowserRouter,
   useLocation,
+  useParams,
 } from 'react-router-dom';
 
 import { Suspense, lazy } from 'react';
@@ -14,7 +15,7 @@ import NotFoundPage from '@/components/common/NotFoundPage';
 import PageLoader from '@/components/common/PageLoader';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import RouterErrorPage from '@/components/common/RouterErrorPage';
-import { ROUTES } from '@/config/constants';
+import { ROUTES, routeTo } from '@/config/constants';
 import EmailVerificationPage from '@/pages/auth/EmailVerificationPage';
 import VerifyEmailNoticePage from '@/pages/auth/VerifyEmailNoticePage';
 import AuthPage from '@/features/auth/components/AuthPage';
@@ -50,6 +51,11 @@ function RootLayout() {
 function LoginRedirect() {
   const location = useLocation();
   return <Navigate to={`/${location.search}`} state={location.state} replace />;
+}
+
+function HashtagDeepLinkRedirect() {
+  const { name } = useParams();
+  return <Navigate to={routeTo.hashtag(name)} replace />;
 }
 
 // Each screen carries its identity on the route rather than in component state.
@@ -108,6 +114,13 @@ const router = createBrowserRouter([
       {
         path: ROUTES.OAUTH_CALLBACK,
         element: <OAuthCallbackPage />,
+      },
+      {
+        // Shareable top-level form of the hashtag address. The page itself lives inside /app,
+        // where the shell and navigation exist, so a pasted /tags/... link lands on the real
+        // screen instead of a page with no way out of it.
+        path: ROUTES.HASHTAG_DEEP_LINK,
+        element: <HashtagDeepLinkRedirect />,
       },
       {
         // One guard for the whole authenticated area, and one shell rendered

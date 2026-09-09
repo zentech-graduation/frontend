@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v } from '@/config/tokens';
+import { CaptionText } from './CaptionText';
 import { copyPostLink, extractPageContent, getDisplayName, getUserSummary } from '@/utils/helpers';
 import {
   LxAvatar,
@@ -405,7 +406,7 @@ export function PostCard({
             whiteSpace: 'pre-wrap',
           }}
         >
-          {post.caption}
+          <CaptionText text={post.caption} />
         </p>
 
         {showTags && tags.length > 0 ? (

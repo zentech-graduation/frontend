@@ -864,3 +864,30 @@ select:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+/* Skeleton placeholder.
+   There was no skeleton pattern in this codebase before the hashtag surfaces: every loading state
+   was either a text line or nothing at all. This is the one shared definition so the hashtag grid
+   and the trending rail do not each invent their own.
+   prefers-reduced-motion holds the surface still rather than removing it, because the placeholder
+   still has to read as "content is coming" when the animation is suppressed. */
+@keyframes lx-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.lx-skeleton {
+  background: var(--lx-surface-raised);
+  animation: lx-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lx-skeleton {
+    animation: none;
+  }
+}

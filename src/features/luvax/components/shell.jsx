@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { v } from '@/config/tokens';
+import { LxTrendingRail } from './LxTrendingRail';
 import { ROUTES } from '@/config/constants';
 import { extractPageContent } from '@/utils/helpers';
-import { useViewport } from '../hooks/useViewport';
+import { useViewport, useViewportWidth } from '../hooks/useViewport';
 import { LxIcon, LxAvatar, LxBtn } from './primitives';
 import { usePendingFollowRequests } from '../hooks/useSocial';
 import { useUnreadCount } from '../hooks/useNotifications';
@@ -369,10 +370,7 @@ export function LxRightRail({ compact = false }) {
         overflowY: 'auto',
       }}
     >
-      {/* The trending rail was a hardcoded list of invented tags, numbered as
-          though it were a ranking and clickable as though it filtered. There is
-          a real trending endpoint, but wiring it is not part of this phase, and
-          a fabricated ranking is worse than an empty rail. */}
+      <LxTrendingRail compact={compact} />
     </aside>
   );
 }
@@ -671,9 +669,16 @@ export function LxSideRail({ active, navigate, visible = true }) {
   );
 }
 
+/**
+ * Narrowest tablet viewport, in device pixels, that can host the compact right rail beside a
+ * readable column. Below this the rail is dropped and the column takes the space instead.
+ */
+const TABLET_RAIL_MIN_WIDTH = 910;
+
 // ─── App Shell ─────────────────────────────────────────────────────────────
 export function LxShell({ screen, navigate, children, showRightRail = true }) {
   const vp = useViewport();
+  const viewportWidth = useViewportWidth();
   const currentUserId = useAuthStore((state) => state.user?.id);
 
   // Settings is the one screen that is not a reading column. It is a list of
@@ -768,7 +773,16 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
       screen === 'compose' ? 784 : screen === 'search' || screen === 'explore' ? 760 : 604;
     const tabletShellWidth =
       screen === 'compose' ? 1090 : screen === 'search' || screen === 'explore' ? 1060 : 910;
-    const tabletRightSpacer = 206;
+    // Matched to LEFT_W rather than the 206 it used to be. The left spacer stands in for the
+    // fixed navigation rail, so the main column is only centred between the rail and the right
+    // edge when the two are equal; at 206 it sat measurably left of centre.
+    const tabletRightSpacer = LEFT_W;
+    // The rail is only offered when the viewport can host it beside a readable column. The tablet
+    // shell is sized in CSS pixels but the root carries a zoom scale, so 768 device pixels is
+    // about 673 CSS pixels - far less than the 882 the rail layout needs. Rendering it anyway is
+    // what pushed the column off the left edge and the rail 116 pixels past the right one.
+    const railFits = viewportWidth >= TABLET_RAIL_MIN_WIDTH;
+    const showTabletRail = showRightRail && railFits;
     return (
       // No min-height: 100vh here - see the desktop branch above for why.
       <div style={{ background: v.base, display: 'flex', flexDirection: 'column' }}>
@@ -794,8 +808,10 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
             key={screen}
             className="lx-fade-in"
             style={{
-              width: tabletMainWidth,
-              flexShrink: 0,
+              // Flexible with a ceiling rather than a fixed width: at 1024 it still takes its
+              // designed width, and at 768 it gives ground to the spacers instead of overflowing.
+              flex: 1,
+              maxWidth: tabletMainWidth,
               minWidth: 0,
               // Column rules removed to match the desktop feed's continuous surface.
               minHeight: 'calc(100vh / var(--lx-scale))',
@@ -806,7 +822,7 @@ export function LxShell({ screen, navigate, children, showRightRail = true }) {
           >
             {children}
           </main>
-          {showRightRail ? (
+          {showTabletRail ? (
             <LxRightRail navigate={navigate} compact />
           ) : (
             <div style={{ width: tabletRightSpacer, flexShrink: 0 }} aria-hidden="true" />
