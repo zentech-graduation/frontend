@@ -30,27 +30,27 @@ const DEFAULT_STATUS = 'OPEN';
 const columns = [
   {
     key: 'subject',
-    label: 'subject',
+    header: 'subject',
     render: (row) => row.subject,
   },
   {
     key: 'category',
-    label: 'category',
+    header: 'category',
     render: (row) => (row.category ?? '').toLowerCase().replace(/_/g, ' '),
   },
   {
     key: 'status',
-    label: 'status',
-    render: (row) => <StatusBadge label={TICKET_STATUS_LABELS[row.status] ?? row.status} />,
+    header: 'status',
+    render: (row) => <StatusBadge status={(row.status ?? '').toLowerCase()} />,
   },
   {
     key: 'assignedTo',
-    label: 'claimed',
+    header: 'claimed',
     render: (row) => (row.assignedTo ? 'yes' : 'no'),
   },
   {
     key: 'createdAt',
-    label: 'opened',
+    header: 'opened',
     render: (row) => <LocalTime value={row.createdAt} />,
   },
 ];

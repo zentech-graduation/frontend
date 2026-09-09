@@ -92,6 +92,17 @@ describe('the support client', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it('sends the confirmation token as a query parameter, not a body', async () => {
+    // This endpoint declares @RequestParam("token") while the appeal endpoint
+    // beside it takes a body. Sending a body here answers
+    // MISSING_REQUIRED_PARAMETER, which end-to-end testing caught.
+    const { confirmPublicTicket } = await import('@/features/support/services/supportApi');
+    await confirmPublicTicket('raw-token');
+    expect(publicPost).toHaveBeenCalledWith('/support/public/confirm', null, {
+      params: { token: 'raw-token' },
+    });
+  });
+
   it('sends the public form through the anonymous client with its turnstile token', async () => {
     const { createPublicTicket } = await import('@/features/support/services/supportApi');
     await createPublicTicket({

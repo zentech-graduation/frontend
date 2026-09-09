@@ -90,9 +90,20 @@ export const createPublicTicket = async ({
     )
   );
 
-/** Confirms the address a public submission named, making the ticket visible to staff. */
+/**
+ * Confirms the address a public submission named, making the ticket visible to
+ * staff.
+ *
+ * The token goes in the query string, not the body: this endpoint declares
+ * `@RequestParam("token")` while the appeal endpoint next to it takes a body.
+ * Sending a body here answers `MISSING_REQUIRED_PARAMETER`.
+ */
 export const confirmPublicTicket = async (token) =>
-  unwrap(await publicClient.post('/support/public/confirm', buildBody({ token })));
+  unwrap(
+    await publicClient.post('/support/public/confirm', null, {
+      params: pickParams({ token }, ['token']),
+    })
+  );
 
 /** The eight verification categories, with the icon key a client maps to a glyph. */
 export const listVerificationCategories = async () =>

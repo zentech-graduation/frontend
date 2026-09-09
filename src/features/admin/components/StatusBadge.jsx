@@ -45,6 +45,14 @@ const STATUS_TONE = {
   deactivated: 'critical',
   // Handed up for a higher decision.
   escalated: 'attention',
+  // Support ticket lifecycle. open and in_progress are work still to do; answered
+  // is a closed-with-an-outcome state and reads as positive, while rejected is
+  // closed with the request refused and is understated rather than red, matching
+  // how a dismissed report is treated.
+  open: 'caution',
+  in_progress: 'caution',
+  answered: 'positive',
+  rejected: 'neutral',
   // Closed with no action taken; deliberately understated rather than red.
   dismissed: 'neutral',
 };

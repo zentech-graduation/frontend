@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { v } from '@/config/tokens';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LocalTime } from '../components/LocalTime';
 import { StatusBadge } from '../components/StatusBadge';
@@ -7,11 +8,8 @@ import {
   useSupportTicketActions,
   useVerificationRequest,
 } from '../hooks/useSupportQueue';
-import {
-  blockedReasonLabel,
-  ticketCapabilities,
-  TICKET_STATUS_LABELS,
-} from '../lib/supportTicketSchema';
+import * as styles from './supportDetailStyles';
+import { blockedReasonLabel, ticketCapabilities } from '../lib/supportTicketSchema';
 
 const VERIFICATION_CATEGORY = 'VERIFICATION_REQUEST';
 
@@ -56,7 +54,7 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
     return (
       <div className="lx-admin-panel-card">
         <p>that ticket could not be loaded.</p>
-        <button type="button" className="lx-admin-btn" onClick={() => refetch()}>
+        <button type="button" className="lx-admin-control" onClick={() => refetch()}>
           try again
         </button>
       </div>
@@ -113,60 +111,84 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
 
   const respondDisabled = !caps.canRespond || !staffResponse.trim() || actions.respond.isPending;
 
+  // The appeal rule and the blocked reason would otherwise both say the same
+  // thing in two sentences directly above each other. The blocked reason is the
+  // more specific of the two, so it is the one that survives.
+  const showAppealNotice = caps.isAppeal && caps.blockedReason !== 'appeal-requires-admin';
+
   return (
     <div className="lx-admin-panel-card">
-      <header style={{ marginBottom: 16 }}>
-        <h2 className="lx-admin-detail-title" tabIndex={-1}>
+      <header style={{ marginBottom: 18 }}>
+        <h2
+          tabIndex={-1}
+          style={{
+            fontFamily: v.fontDisplay,
+            fontSize: 20,
+            lineHeight: 1.25,
+            letterSpacing: '-0.02em',
+            color: v.ink,
+            margin: 0,
+            fontWeight: 600,
+            outline: 'none',
+          }}
+        >
           {ticket.subject}
         </h2>
-        <div className="lx-admin-detail-meta">
-          <StatusBadge label={TICKET_STATUS_LABELS[ticket.status] ?? ticket.status} />
+        <div style={styles.metaRow}>
+          <StatusBadge status={(ticket.status ?? '').toLowerCase()} />
           <span>{(ticket.category ?? '').toLowerCase().replace(/_/g, ' ')}</span>
+          <span aria-hidden="true">&middot;</span>
           <span>{(ticket.source ?? '').toLowerCase().replace(/_/g, ' ')}</span>
+          <span aria-hidden="true">&middot;</span>
           <LocalTime value={ticket.createdAt} />
         </div>
       </header>
 
       {refusal ? (
-        <p className="lx-admin-inline-error" role="alert">
+        <p style={styles.notice('bad')} role="alert">
           {refusal}
         </p>
       ) : null}
 
       {caps.claimedBySomeoneElse ? (
-        <p className="lx-admin-note" role="status">
+        <p style={styles.notice('warn')} role="status">
           another reviewer holds this ticket. you can read it, but not act on it.
         </p>
       ) : null}
 
-      {caps.isAppeal && role !== 'admin' ? (
-        <p className="lx-admin-note" role="status">
-          this is an appeal. only an administrator can answer or close it; you can read it and
-          escalate it.
+      {showAppealNotice ? (
+        <p style={styles.notice()} role="status">
+          this is an appeal. only an administrator can answer or close it.
         </p>
       ) : null}
 
-      <section style={{ marginBottom: 18 }}>
-        <h3 className="lx-admin-section-heading">what they wrote</h3>
-        <p style={{ whiteSpace: 'pre-wrap' }}>{ticket.body}</p>
+      <section style={styles.section}>
+        <h3 style={styles.sectionLabel}>what they wrote</h3>
+        <p style={styles.bodyText}>{ticket.body}</p>
         {ticket.contactEmail ? (
-          <p className="lx-admin-detail-meta">reply address: {ticket.contactEmail}</p>
+          <p style={{ ...styles.mutedText, fontSize: 12, marginTop: 8 }}>
+            reply address: {ticket.contactEmail}
+          </p>
         ) : null}
       </section>
 
       {isVerification && verificationRequest ? (
-        <section style={{ marginBottom: 18 }}>
-          <h3 className="lx-admin-section-heading">the claim</h3>
-          <p>
+        <section style={styles.section}>
+          <h3 style={styles.sectionLabel}>the claim</h3>
+          <p style={styles.mutedText}>
             {verificationRequest.claimedName} in{' '}
             {(verificationRequest.categoryKey ?? '').replace(/_/g, ' ')}
           </p>
-          <ul style={{ listStyle: 'none', padding: 0, margin: '10px 0 0' }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0' }}>
             {EVIDENCE_ROWS.map(([field, label]) =>
               verificationRequest[field] ? (
-                <li key={field} style={{ marginBottom: 6 }}>
-                  <span className="lx-admin-detail-meta">{label}</span>
-                  <div style={{ wordBreak: 'break-word' }}>{verificationRequest[field]}</div>
+                <li key={field} style={{ marginBottom: 10 }}>
+                  <div style={{ ...styles.sectionLabel, fontSize: 10, margin: '0 0 2px' }}>
+                    {label}
+                  </div>
+                  <div style={{ ...styles.bodyText, fontSize: 13 }}>
+                    {verificationRequest[field]}
+                  </div>
                 </li>
               ) : null
             )}
@@ -175,23 +197,23 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
       ) : null}
 
       {ticket.staffResponse ? (
-        <section style={{ marginBottom: 18 }}>
-          <h3 className="lx-admin-section-heading">the reply that was sent</h3>
-          <p style={{ whiteSpace: 'pre-wrap' }}>{ticket.staffResponse}</p>
+        <section style={styles.section}>
+          <h3 style={styles.sectionLabel}>the reply that was sent</h3>
+          <p style={styles.bodyText}>{ticket.staffResponse}</p>
         </section>
       ) : null}
 
       {ticket.internalNote ? (
-        <section style={{ marginBottom: 18 }}>
+        <section style={styles.section}>
           {/* Staff-only. Absent from the owner-facing DTO and from the mail
               metadata map, so it cannot reach the requester from anywhere. */}
-          <h3 className="lx-admin-section-heading">internal note (never sent)</h3>
-          <p style={{ whiteSpace: 'pre-wrap' }}>{ticket.internalNote}</p>
+          <h3 style={styles.sectionLabel}>internal note (never sent)</h3>
+          <p style={{ ...styles.bodyText, color: v.ink2 }}>{ticket.internalNote}</p>
         </section>
       ) : null}
 
       {blocked ? (
-        <p className="lx-admin-note" role="status">
+        <p style={styles.notice()} role="status">
           {blocked}
         </p>
       ) : null}
@@ -199,7 +221,7 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
       {caps.canClaim ? (
         <button
           type="button"
-          className="lx-admin-btn lx-admin-btn-primary"
+          className="lx-admin-control"
           disabled={actions.claim.isPending}
           // Claiming moves the ticket to in_progress, which is a different
           // status than the queue was almost certainly filtered by. The parent
@@ -212,38 +234,44 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
       ) : null}
 
       {caps.canRespond ? (
-        <section style={{ marginTop: 18 }}>
-          <h3 className="lx-admin-section-heading">
+        <section style={{ ...styles.section, marginTop: 22 }}>
+          <h3 style={styles.sectionLabel}>
             {isVerification ? 'decide this request' : 'answer this ticket'}
           </h3>
-          <label className="lx-admin-label" htmlFor="support-staff-response">
+          <label
+            style={{ ...styles.sectionLabel, display: 'block' }}
+            htmlFor="support-staff-response"
+          >
             {isVerification ? 'reason, which reaches the requester' : 'your reply'}
           </label>
           <textarea
             id="support-staff-response"
-            className="lx-admin-textarea"
+            style={styles.textarea()}
             rows={5}
             value={staffResponse}
             onChange={(event) => setStaffResponse(event.target.value)}
           />
 
-          <label className="lx-admin-label" htmlFor="support-internal-note">
+          <label
+            style={{ ...styles.sectionLabel, display: 'block' }}
+            htmlFor="support-internal-note"
+          >
             internal note, never sent
           </label>
           <textarea
             id="support-internal-note"
-            className="lx-admin-textarea"
+            style={styles.textarea()}
             rows={3}
             value={internalNote}
             onChange={(event) => setInternalNote(event.target.value)}
           />
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+          <div style={styles.actionRow}>
             {isVerification ? (
               <>
                 <button
                   type="button"
-                  className="lx-admin-btn lx-admin-btn-primary"
+                  className="lx-admin-control"
                   disabled={respondDisabled}
                   onClick={() =>
                     runAction(actions.approveVerification, {
@@ -256,7 +284,7 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
                 </button>
                 <button
                   type="button"
-                  className="lx-admin-btn"
+                  className="lx-admin-control"
                   disabled={respondDisabled}
                   onClick={() =>
                     runAction(actions.rejectVerification, {
@@ -272,7 +300,7 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
               <>
                 <button
                   type="button"
-                  className="lx-admin-btn lx-admin-btn-primary"
+                  className="lx-admin-control"
                   disabled={respondDisabled}
                   onClick={() =>
                     runAction(actions.respond, {
@@ -286,7 +314,7 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
                 </button>
                 <button
                   type="button"
-                  className="lx-admin-btn"
+                  className="lx-admin-control"
                   disabled={respondDisabled}
                   onClick={() =>
                     runAction(actions.respond, {
@@ -305,24 +333,26 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
       ) : null}
 
       {caps.canEscalate ? (
-        <section style={{ marginTop: 18 }}>
-          <h3 className="lx-admin-section-heading">escalate</h3>
-          <label className="lx-admin-label" htmlFor="support-escalation-reason">
-            why this needs an administrator
+        <section style={{ ...styles.section, marginTop: 22 }}>
+          <label
+            style={{ ...styles.sectionLabel, display: 'block' }}
+            htmlFor="support-escalation-reason"
+          >
+            escalate: why this needs an administrator
           </label>
           <textarea
             id="support-escalation-reason"
-            className="lx-admin-textarea"
+            style={styles.textarea()}
             rows={3}
             value={escalationReason}
             onChange={(event) => setEscalationReason(event.target.value)}
           />
           <button
             type="button"
-            className="lx-admin-btn"
+            className="lx-admin-control"
             disabled={!escalationReason.trim() || actions.escalate.isPending}
             onClick={() => runAction(actions.escalate, { reason: escalationReason })}
-            style={{ marginTop: 10 }}
+            style={{ marginTop: 12 }}
           >
             {actions.escalate.isPending ? 'escalating' : 'escalate'}
           </button>
