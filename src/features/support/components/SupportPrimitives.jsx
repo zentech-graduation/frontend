@@ -1,5 +1,9 @@
+import { Children, cloneElement, isValidElement } from 'react';
+
 import { ROUTES } from '@/config/constants';
 import { v } from '@/config/tokens';
+
+import { SUPPORT_CSS } from './supportStyles';
 
 /**
  * The shared surface pieces for the help centre.
@@ -31,17 +35,26 @@ export function SupportPage({ title, intro, children, width = 560 }) {
         boxSizing: 'border-box',
       }}
     >
+      <style>{SUPPORT_CSS}</style>
       <div style={{ width: '100%', maxWidth: width }}>
         {/*
           A minimal header, deliberately not the signed-in shell. These three routes are the whole
           of the product to somebody who cannot sign in, and they carried no logo, no product name
           and no link at all: the rendered text began "contact support" and ended "send request".
-          One mark, linked to the public entry point, is the smallest thing that is not zero.
+
+          The back control is the explicit affordance the mark was standing in for. A wordmark
+          reads as branding whether or not it happens to be a link, so a reader who decides they
+          are in the wrong place does not try it. Both go to the same address, the sign-in screen:
+          a known destination rather than browser history, because these routes are also opened
+          cold from an email, where there is no history to go back to.
         */}
-        <header style={{ marginBottom: 28 }}>
+        <header className="lx-support-head">
+          <a href={ROUTES.HOME} aria-label="Back to sign in" className="lx-support-back">
+            <BackArrow />
+          </a>
           <a
             href={ROUTES.HOME}
-            aria-label="luvax home"
+            aria-label="Luvax home"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -61,7 +74,7 @@ export function SupportPage({ title, intro, children, width = 560 }) {
                 color: v.ink,
               }}
             >
-              luvax
+              Luvax
             </span>
           </a>
         </header>
@@ -115,44 +128,86 @@ export function Eyebrow({ children }) {
   );
 }
 
-/** A labelled control. The label is a real `<label>`, so clicking it focuses the field. */
+/**
+ * A labelled control, with the label resting inside the field until it is used.
+ *
+ * The label is a real `<label>` carrying `htmlFor`, so clicking it focuses the
+ * field and a screen reader announces it as the field's name - which a bare
+ * `placeholder` never does, and which is why the placeholder here is decoration
+ * that appears only once the label has already risen out of the way.
+ *
+ * The control is passed in as a child rather than described by props, so a
+ * caller keeps full control of its type, value and handlers. This clones it to
+ * add the class and, for anything that takes one, the placeholder, so no call
+ * site has to remember either. A `<select>` is left alone: it always shows a
+ * value, so its label starts risen and there is nothing to place behind.
+ */
 export function Field({ label, hint, error, htmlFor, children }) {
   const hintId = hint ? `${htmlFor}-hint` : undefined;
   const errorId = error ? `${htmlFor}-error` : undefined;
+
+  // A caller may pass the control alone, or the control followed by its own
+  // supplementary node - a select that reports its list failed to load, say.
+  // The control is picked out by element type rather than by position, so an
+  // extra sibling cannot quietly stop it being styled, which is what a
+  // single-child clone did: the category select kept its native height and its
+  // native chevron while every other field on the same form changed.
+  let control = null;
+  const extras = [];
+  Children.toArray(children).forEach((child) => {
+    const isControl =
+      control === null &&
+      isValidElement(child) &&
+      (child.type === 'input' || child.type === 'select' || child.type === 'textarea');
+    if (!isControl) {
+      extras.push(child);
+      return;
+    }
+    control = cloneElement(child, {
+      className: ['lx-sfield-control', child.props.className].filter(Boolean).join(' '),
+      // A select always shows a value, so it has no placeholder state to reveal.
+      ...(child.type === 'select' ? {} : { placeholder: label }),
+    });
+  });
+
   return (
-    <div style={{ marginBottom: 16 }}>
-      <label
-        htmlFor={htmlFor}
-        style={{
-          display: 'block',
-          fontFamily: v.fontBody,
-          fontSize: 13,
-          fontWeight: 500,
-          color: v.ink2,
-          marginBottom: 6,
-        }}
-      >
-        {label}
-      </label>
-      {children}
+    <div className="lx-sfield-group">
+      <div className="lx-sfield" data-error={error ? 'true' : 'false'}>
+        {control}
+        <label htmlFor={htmlFor}>{label}</label>
+      </div>
+      {extras}
       {hint ? (
-        <div
-          id={hintId}
-          style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2, marginTop: 5 }}
-        >
+        <p id={hintId} className="lx-sfield-hint">
           {hint}
-        </div>
+        </p>
       ) : null}
       {error ? (
-        <div
-          id={errorId}
-          role="alert"
-          style={{ fontFamily: v.fontBody, fontSize: 12, color: v.errorText, marginTop: 5 }}
-        >
+        <p id={errorId} role="alert" className="lx-sfield-error">
           {error}
-        </div>
+        </p>
       ) : null}
     </div>
+  );
+}
+
+/** The back arrow, matching the one the sign-up screen already draws. */
+function BackArrow() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M19 12H5" />
+      <path d="M12 19l-7-7 7-7" />
+    </svg>
   );
 }
 

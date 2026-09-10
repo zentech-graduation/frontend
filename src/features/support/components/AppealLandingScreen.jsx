@@ -5,7 +5,6 @@ import { useCreateAppeal, useValidateAppealLink } from '../hooks/useSupport';
 import { appealSchema } from '../utils/supportSchemas';
 import { describeSupportError, isRateLimited, isTokenInvalid } from '../utils/supportErrors';
 import { Eyebrow, Field, Notice, PrimaryButton, SupportPage } from './SupportPrimitives';
-import { inputStyle } from './fieldStyles';
 
 const TOKEN_KEY = 'lx-appeal-token';
 const SUBJECT_KEY = 'lx-appeal-subject';
@@ -116,18 +115,18 @@ export function AppealLandingScreen() {
   if (!token) {
     return (
       <SupportPage
-        title="this link is not complete"
-        intro="the address is missing its token, so we cannot tell which decision you are appealing."
+        title="This link is not complete"
+        intro="The address is missing its token, so we cannot tell which decision you are appealing."
       >
         <Notice tone="bad" role="alert">
-          open the link from the email again, in full. if you no longer have it, you can still reach
+          Open the link from the email again, in full. If you no longer have it, you can still reach
           us through the public form.
         </Notice>
         <a
           href="/support/new"
           style={{ fontFamily: v.fontBody, fontSize: 14, color: v.accentText }}
         >
-          use the public form
+          Use the public form
         </a>
       </SupportPage>
     );
@@ -137,12 +136,12 @@ export function AppealLandingScreen() {
   // itself on submit costs the reader everything they wrote.
   if (link.isPending) {
     return (
-      <SupportPage title="checking your link" intro="one moment.">
+      <SupportPage title="Checking your link" intro="One moment.">
         <div
           className="lx-skeleton"
           style={{ height: 56, borderRadius: 12 }}
           role="status"
-          aria-label="checking your link"
+          aria-label="Checking your link"
         />
       </SupportPage>
     );
@@ -151,18 +150,18 @@ export function AppealLandingScreen() {
   if (link.isError && isTokenInvalid(link.error)) {
     return (
       <SupportPage
-        title="this link has already been used"
-        intro="each appeal link works once, and expires if it is left too long."
+        title="This link has already been used"
+        intro="Each appeal link works once, and expires if it is left too long."
       >
         <Notice tone="bad" role="alert">
-          if you already sent an appeal, it is with us and you do not need to send another. if you
+          If you already sent an appeal, it is with us and you do not need to send another. If you
           did not, you can still reach us through the public form.
         </Notice>
         <a
           href="/support/new"
           style={{ fontFamily: v.fontBody, fontSize: 14, color: v.accentText }}
         >
-          use the public form
+          Use the public form
         </a>
       </SupportPage>
     );
@@ -171,11 +170,11 @@ export function AppealLandingScreen() {
   if (link.isError) {
     return (
       <SupportPage
-        title="we could not check your link just now"
-        intro="this looks like a connection problem rather than a problem with your link."
+        title="We could not check your link just now"
+        intro="This looks like a connection problem rather than a problem with your link."
       >
         <Notice tone="bad" role="alert">
-          reload this page to try again. your link has not been used.
+          Reload this page to try again. Your link has not been used.
         </Notice>
       </SupportPage>
     );
@@ -184,11 +183,11 @@ export function AppealLandingScreen() {
   if (submitted) {
     return (
       <SupportPage
-        title="your appeal is with us"
-        intro="a member of staff will review it and reply to the address we hold for your account."
+        title="Your appeal is with us"
+        intro="A member of staff will review it and reply to the address we hold for your account."
       >
         <Notice tone="good" role="status">
-          this link has now been used and will not work again. you do not need to send it a second
+          This link has now been used and will not work again. You do not need to send it a second
           time.
         </Notice>
       </SupportPage>
@@ -240,12 +239,12 @@ export function AppealLandingScreen() {
 
   return (
     <SupportPage
-      title="appeal a decision"
-      intro="tell us why you think the decision on your account should be looked at again. one request, one reply."
+      title="Appeal a decision"
+      intro="Tell us why you think the decision on your account should be looked at again. One request, one reply."
     >
       {spent ? (
         <Notice tone="bad" role="alert">
-          this link has already been used, or it has expired. each appeal link works once.
+          This link has already been used, or it has expired. Each appeal link works once.
         </Notice>
       ) : null}
 
@@ -257,7 +256,7 @@ export function AppealLandingScreen() {
 
       {isRateLimited(appeal.error) ? (
         <Notice tone="warn" role="alert">
-          too many attempts from here. wait a little and try again.
+          Too many attempts from here. Wait a little and try again.
         </Notice>
       ) : null}
 
@@ -270,32 +269,31 @@ export function AppealLandingScreen() {
           marginBottom: 20,
         }}
       >
-        <Eyebrow>what you are appealing</Eyebrow>
+        <Eyebrow>What you are appealing</Eyebrow>
         <div style={{ fontFamily: v.fontBody, fontSize: 14, color: v.ink2, lineHeight: 1.5 }}>
-          the decision named in the email you followed this link from. we have matched it to that
+          The decision named in the email you followed this link from. We have matched it to that
           decision already, so you do not need to describe which one it was.
         </div>
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
-        <Field label="summary" htmlFor="appeal-subject" error={fieldErrors.subject}>
+        <Field label="Summary" htmlFor="appeal-subject" error={fieldErrors.subject}>
           <input
             id="appeal-subject"
             required
             aria-required="true"
             value={values.subject}
             onChange={(event) => setValues((prev) => ({ ...prev, subject: event.target.value }))}
-            style={inputStyle(Boolean(fieldErrors.subject))}
             aria-invalid={Boolean(fieldErrors.subject)}
             aria-describedby={fieldErrors.subject ? 'appeal-subject-error' : undefined}
           />
         </Field>
 
         <Field
-          label="why should this be reviewed"
+          label="Why should this be reviewed"
           htmlFor="appeal-body"
           error={fieldErrors.body}
-          hint="one request and one reply. there is no back and forth, so include everything now."
+          hint="One request and one reply. There is no back and forth, so include everything now."
         >
           <textarea
             id="appeal-body"
@@ -304,14 +302,13 @@ export function AppealLandingScreen() {
             aria-required="true"
             value={values.body}
             onChange={(event) => setValues((prev) => ({ ...prev, body: event.target.value }))}
-            style={{ ...inputStyle(Boolean(fieldErrors.body)), resize: 'vertical' }}
             aria-invalid={Boolean(fieldErrors.body)}
             aria-describedby={fieldErrors.body ? 'appeal-body-error' : 'appeal-body-hint'}
           />
         </Field>
 
         <PrimaryButton disabled={appeal.isPending}>
-          {appeal.isPending ? 'sending' : 'send appeal'}
+          {appeal.isPending ? 'sending' : 'Send appeal'}
         </PrimaryButton>
       </form>
     </SupportPage>

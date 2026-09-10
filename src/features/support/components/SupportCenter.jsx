@@ -26,7 +26,7 @@ import {
   statusLabel,
 } from '../utils/ticketStatus';
 import { Eyebrow, Field, Notice, PrimaryButton, StatusChip } from './SupportPrimitives';
-import { inputStyle } from './fieldStyles';
+import { SUPPORT_CSS } from './supportStyles';
 
 const VERIFICATION_KEY = 'verification_request';
 
@@ -149,6 +149,9 @@ export function SupportCenter() {
 
   return (
     <div style={{ maxWidth: 680, width: '100%' }}>
+      {/* This body renders inside the settings region rather than inside SupportPage,
+          so it carries the slice's stylesheet itself. */}
+      <style>{SUPPORT_CSS}</style>
       {ticketsQuery.isLoading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div className="lx-skeleton" style={{ height: 16, width: '40%', borderRadius: 4 }} />
@@ -158,7 +161,7 @@ export function SupportCenter() {
 
       {ticketsQuery.isError ? (
         <Notice tone="bad" role="alert">
-          we could not load your requests. reload the page.
+          We could not load your requests. Reload the page.
         </Notice>
       ) : null}
 
@@ -166,7 +169,7 @@ export function SupportCenter() {
         <>
           {verificationState?.verified ? (
             <Notice tone="good">
-              your account is verified in {(verificationState.categoryKey ?? '').replace(/_/g, ' ')}
+              Your account is verified in {(verificationState.categoryKey ?? '').replace(/_/g, ' ')}
               .
             </Notice>
           ) : null}
@@ -174,7 +177,7 @@ export function SupportCenter() {
           {pendingVerification ? (
             <TicketSummary
               ticket={pendingVerification}
-              heading="your verification request"
+              heading="Your verification request"
               to={routeTo.supportTicket(pendingVerification.id)}
             />
           ) : null}
@@ -183,11 +186,11 @@ export function SupportCenter() {
             <>
               <TicketSummary
                 ticket={blocking}
-                heading="your open request"
+                heading="Your open request"
                 to={routeTo.supportTicket(blocking.id)}
               />
               <Notice>
-                you can hold one open request at a time. we will reply to this one before you can
+                You can hold one open request at a time. We will reply to this one before you can
                 send another.
                 {pendingVerification
                   ? ' your verification request sits alongside it and does not count towards this.'
@@ -221,7 +224,7 @@ export function SupportCenter() {
               failureMessage={
                 failure
                   ? isAlreadyOpen(failure)
-                    ? 'you already have an open request.'
+                    ? 'You already have an open request.'
                     : describeSupportError(failure)
                   : ''
               }
@@ -281,7 +284,7 @@ function TicketSummary({ ticket, heading, to }) {
           textUnderlineOffset: 3,
         }}
       >
-        <span>read it</span>
+        <span>Read it</span>
         <LxIcon name="chevronRight" size={14} color={v.accentText} />
       </Link>
     </div>
@@ -297,7 +300,7 @@ function PastTickets({ tickets, blockingId, pendingVerificationId }) {
   }
   return (
     <section style={{ marginTop: 30 }}>
-      <Eyebrow>everything you have sent</Eyebrow>
+      <Eyebrow>Everything you have sent</Eyebrow>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {past.map((ticket) => (
           <li
@@ -386,19 +389,18 @@ function TicketForm({
         </Notice>
       ) : null}
 
-      <Field label="what is this about" htmlFor="support-category" error={fieldErrors.category}>
+      <Field label="What is this about" htmlFor="support-category" error={fieldErrors.category}>
         <select
           id="support-category"
           value={category}
           onChange={(event) => setCategory(event.target.value)}
-          style={inputStyle(Boolean(fieldErrors.category))}
           disabled={categoriesLoading}
           aria-invalid={Boolean(fieldErrors.category)}
         >
-          <option value="">choose one</option>
+          <option value="">Choose one</option>
           {selectable.map((row) => (
             <option key={row.categoryKey} value={row.categoryKey}>
-              {row.displayName.toLowerCase()}
+              {row.displayName}
             </option>
           ))}
         </select>
@@ -407,7 +409,7 @@ function TicketForm({
             role="alert"
             style={{ fontFamily: v.fontBody, fontSize: 12, color: v.errorText, marginTop: 5 }}
           >
-            we could not load the list of topics. reload the page.
+            We could not load the list of topics. Reload the page.
           </div>
         ) : null}
       </Field>
@@ -440,28 +442,26 @@ function TicketForm({
 
       {category && !isVerification ? (
         <>
-          <Field label="summary" htmlFor="support-subject" error={fieldErrors.subject}>
+          <Field label="Summary" htmlFor="support-subject" error={fieldErrors.subject}>
             <input
               id="support-subject"
               value={values.subject}
               onChange={(event) => setValues((prev) => ({ ...prev, subject: event.target.value }))}
-              style={inputStyle(Boolean(fieldErrors.subject))}
               aria-invalid={Boolean(fieldErrors.subject)}
             />
           </Field>
 
           <Field
-            label="tell us more"
+            label="Tell us more"
             htmlFor="support-body"
             error={fieldErrors.body}
-            hint="one request and one reply, so include everything now."
+            hint="One request and one reply, so include everything now."
           >
             <textarea
               id="support-body"
               rows={8}
               value={values.body}
               onChange={(event) => setValues((prev) => ({ ...prev, body: event.target.value }))}
-              style={{ ...inputStyle(Boolean(fieldErrors.body)), resize: 'vertical' }}
               aria-invalid={Boolean(fieldErrors.body)}
             />
           </Field>
@@ -470,7 +470,7 @@ function TicketForm({
 
       {category ? (
         <PrimaryButton disabled={submitting || (isVerification && evidenceRemaining > 0)}>
-          {submitting ? 'sending' : 'send request'}
+          {submitting ? 'sending' : 'Send request'}
         </PrimaryButton>
       ) : null}
     </form>
@@ -509,7 +509,7 @@ function VerificationFields({
             marginBottom: 16,
           }}
         >
-          <Eyebrow>what we said last time</Eyebrow>
+          <Eyebrow>What we said last time</Eyebrow>
           <p
             style={{
               fontFamily: v.fontBody,
@@ -525,7 +525,7 @@ function VerificationFields({
       ) : null}
 
       <Field
-        label="the category you are known in"
+        label="The category you are known in"
         htmlFor="verification-category"
         error={fieldErrors.categoryKey}
       >
@@ -533,13 +533,12 @@ function VerificationFields({
           id="verification-category"
           value={verification.categoryKey}
           onChange={set('categoryKey')}
-          style={inputStyle(Boolean(fieldErrors.categoryKey))}
           aria-invalid={Boolean(fieldErrors.categoryKey)}
         >
-          <option value="">choose one</option>
+          <option value="">Choose one</option>
           {verificationCategories.map((row) => (
             <option key={row.categoryKey} value={row.categoryKey}>
-              {row.displayName.toLowerCase()}
+              {row.displayName}
             </option>
           ))}
         </select>
@@ -554,7 +553,7 @@ function VerificationFields({
       </Field>
 
       <Field
-        label="the name you are known by"
+        label="The name you are known by"
         htmlFor="verification-name"
         error={fieldErrors.claimedName}
       >
@@ -562,7 +561,6 @@ function VerificationFields({
           id="verification-name"
           value={verification.claimedName}
           onChange={set('claimedName')}
-          style={inputStyle(Boolean(fieldErrors.claimedName))}
           aria-invalid={Boolean(fieldErrors.claimedName)}
         />
       </Field>
@@ -576,9 +574,9 @@ function VerificationFields({
           marginBottom: 16,
         }}
       >
-        <Eyebrow>evidence</Eyebrow>
+        <Eyebrow>Evidence</Eyebrow>
         <p style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, margin: '0 0 12px' }}>
-          fill at least {MIN_EVIDENCE_FIELDS} of these. the more you give, the faster a reviewer can
+          Fill at least {MIN_EVIDENCE_FIELDS} of these. the more you give, the faster a reviewer can
           decide.
         </p>
 
@@ -594,8 +592,8 @@ function VerificationFields({
           }}
         >
           {evidenceRemaining === 0
-            ? `ready to send (${filledEvidence} of ${MIN_EVIDENCE_FIELDS})`
-            : `fill ${evidenceRemaining} more evidence ${
+            ? `Ready to send (${filledEvidence} of ${MIN_EVIDENCE_FIELDS})`
+            : `Fill ${evidenceRemaining} more evidence ${
                 evidenceRemaining === 1 ? 'field' : 'fields'
               } to submit (${filledEvidence} of ${MIN_EVIDENCE_FIELDS})`}
         </div>
@@ -608,14 +606,12 @@ function VerificationFields({
                 rows={4}
                 value={verification[field.name]}
                 onChange={set(field.name)}
-                style={{ ...inputStyle(false), resize: 'vertical' }}
               />
             ) : (
               <input
                 id={`verification-${field.name}`}
                 value={verification[field.name]}
                 onChange={set(field.name)}
-                style={inputStyle(false)}
               />
             )}
           </Field>

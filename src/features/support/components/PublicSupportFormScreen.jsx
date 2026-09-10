@@ -4,7 +4,6 @@ import { useCreatePublicTicket, usePublicSupportCategories } from '../hooks/useS
 import { publicTicketSchema } from '../utils/supportSchemas';
 import { describeSupportError, isCaptchaFailure, isRateLimited } from '../utils/supportErrors';
 import { Field, Notice, PrimaryButton, SupportPage } from './SupportPrimitives';
-import { inputStyle } from './fieldStyles';
 import { TurnstileWidget } from './TurnstileWidget';
 
 /**
@@ -43,11 +42,11 @@ export function PublicSupportFormScreen() {
   if (sent) {
     return (
       <SupportPage
-        title="check your email"
-        intro="we have sent a link to the address you gave. your request reaches our staff once you follow it."
+        title="Check your email"
+        intro="We have sent a link to the address you gave. Your request reaches our staff once you follow it."
       >
         <Notice tone="good" role="status">
-          until then it is not visible to anyone. if the email does not arrive, check your spam
+          Until then it is not visible to anyone. If the email does not arrive, check your spam
           folder before sending another.
         </Notice>
       </SupportPage>
@@ -80,19 +79,19 @@ export function PublicSupportFormScreen() {
 
   return (
     <SupportPage
-      title="contact support"
-      intro="tell us what has happened and we will reply by email. one request, one reply."
+      title="Contact support"
+      intro="Tell us what has happened and we will reply by email. One request, one reply."
     >
       {captchaRefused ? (
         <Notice tone="bad" role="alert">
-          the challenge below was not accepted, so nothing was sent. complete it again and resend.
-          your message is still here.
+          The challenge below was not accepted, so nothing was sent. Complete it again and resend.
+          Your message is still here.
         </Notice>
       ) : null}
 
       {rateLimited ? (
         <Notice tone="warn" role="alert">
-          too many requests have come from here recently. wait a while before sending another.
+          Too many requests have come from here recently. Wait a while before sending another.
         </Notice>
       ) : null}
 
@@ -104,10 +103,10 @@ export function PublicSupportFormScreen() {
 
       <form onSubmit={handleSubmit} noValidate>
         <Field
-          label="your email"
+          label="Your email"
           htmlFor="public-email"
           error={fieldErrors.contactEmail}
-          hint="we send a confirmation link here first, then our reply."
+          hint="We send a confirmation link here first, then our reply."
         >
           <input
             id="public-email"
@@ -119,27 +118,25 @@ export function PublicSupportFormScreen() {
             onChange={(event) =>
               setValues((prev) => ({ ...prev, contactEmail: event.target.value }))
             }
-            style={inputStyle(Boolean(fieldErrors.contactEmail))}
             aria-invalid={Boolean(fieldErrors.contactEmail)}
             aria-describedby={fieldErrors.contactEmail ? 'public-email-error' : 'public-email-hint'}
           />
         </Field>
 
-        <Field label="what is this about" htmlFor="public-category" error={fieldErrors.category}>
+        <Field label="What is this about" htmlFor="public-category" error={fieldErrors.category}>
           <select
             id="public-category"
             required
             aria-required="true"
             value={values.category}
             onChange={(event) => setValues((prev) => ({ ...prev, category: event.target.value }))}
-            style={inputStyle(Boolean(fieldErrors.category))}
             disabled={categoriesQuery.isLoading}
             aria-invalid={Boolean(fieldErrors.category)}
           >
-            <option value="">choose one</option>
+            <option value="">Choose one</option>
             {categories.map((category) => (
               <option key={category.categoryKey} value={category.categoryKey}>
-                {category.displayName.toLowerCase()}
+                {category.displayName}
               </option>
             ))}
           </select>
@@ -148,28 +145,27 @@ export function PublicSupportFormScreen() {
               role="alert"
               style={{ fontFamily: v.fontBody, fontSize: 12, color: v.errorText, marginTop: 5 }}
             >
-              we could not load the list of topics. reload the page.
+              We could not load the list of topics. Reload the page.
             </div>
           ) : null}
         </Field>
 
-        <Field label="summary" htmlFor="public-subject" error={fieldErrors.subject}>
+        <Field label="Summary" htmlFor="public-subject" error={fieldErrors.subject}>
           <input
             id="public-subject"
             required
             aria-required="true"
             value={values.subject}
             onChange={(event) => setValues((prev) => ({ ...prev, subject: event.target.value }))}
-            style={inputStyle(Boolean(fieldErrors.subject))}
             aria-invalid={Boolean(fieldErrors.subject)}
           />
         </Field>
 
         <Field
-          label="what happened"
+          label="What happened"
           htmlFor="public-body"
           error={fieldErrors.body}
-          hint="there is no back and forth, so include everything now."
+          hint="There is no back and forth, so include everything now."
         >
           <textarea
             id="public-body"
@@ -178,7 +174,6 @@ export function PublicSupportFormScreen() {
             aria-required="true"
             value={values.body}
             onChange={(event) => setValues((prev) => ({ ...prev, body: event.target.value }))}
-            style={{ ...inputStyle(Boolean(fieldErrors.body)), resize: 'vertical' }}
             aria-invalid={Boolean(fieldErrors.body)}
             aria-describedby={fieldErrors.body ? 'public-body-error' : 'public-body-hint'}
           />
@@ -193,7 +188,7 @@ export function PublicSupportFormScreen() {
         <PrimaryButton
           disabled={submit.isPending || !turnstileToken || Boolean(challengeUnavailable)}
         >
-          {submit.isPending ? 'sending' : 'send request'}
+          {submit.isPending ? 'sending' : 'Send request'}
         </PrimaryButton>
 
         {challengeReady && !turnstileToken && !challengeUnavailable ? (
@@ -201,7 +196,7 @@ export function PublicSupportFormScreen() {
             style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2, marginTop: 8 }}
             aria-live="polite"
           >
-            complete the challenge above to send.
+            Complete the challenge above to send.
           </div>
         ) : null}
       </form>
