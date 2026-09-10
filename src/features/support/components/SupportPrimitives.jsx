@@ -1,3 +1,4 @@
+import { ROUTES } from '@/config/constants';
 import { v } from '@/config/tokens';
 
 /**
@@ -31,6 +32,39 @@ export function SupportPage({ title, intro, children, width = 560 }) {
       }}
     >
       <div style={{ width: '100%', maxWidth: width }}>
+        {/*
+          A minimal header, deliberately not the signed-in shell. These three routes are the whole
+          of the product to somebody who cannot sign in, and they carried no logo, no product name
+          and no link at all: the rendered text began "contact support" and ended "send request".
+          One mark, linked to the public entry point, is the smallest thing that is not zero.
+        */}
+        <header style={{ marginBottom: 28 }}>
+          <a
+            href={ROUTES.HOME}
+            aria-label="luvax home"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              textDecoration: 'none',
+              // A 44px-tall hit area at every width, while the mark itself stays small.
+              minHeight: 44,
+            }}
+          >
+            <img src="/luvax-mark.png" alt="" width={24} height={24} style={{ display: 'block' }} />
+            <span
+              style={{
+                fontFamily: v.fontDisplay,
+                fontSize: 17,
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                color: v.ink,
+              }}
+            >
+              luvax
+            </span>
+          </a>
+        </header>
         <h1
           style={{
             fontFamily: v.fontDisplay,
