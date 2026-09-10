@@ -39,7 +39,19 @@ const EMPTY_VERIFICATION = {
 };
 
 /**
- * The help centre: one door into support for the signed-in account.
+ * Support: one door in, and it is a settings category.
+ *
+ * This body used to be a screen of its own at `/app/support`, which nothing in
+ * the product linked to. Every navigation surface was enumerated - side rail,
+ * mobile app bar, bottom nav, settings list, profile - and not one entry
+ * reached it, so the only support-shaped thing a user could find was a
+ * verification form inside account settings that asked for a badge and nothing
+ * else. The address still resolves, as a redirect here, so an existing link or
+ * bookmark is not broken by moving the door.
+ *
+ * The heading and the description belong to the settings category region, which
+ * draws them for every category from `settingsCatalog`. Drawing a second one
+ * here would stack two titles.
  *
  * Verification lives here as a category rather than on its own screen. It is a
  * support request like any other, and it previously sat on a surface the user
@@ -56,7 +68,7 @@ const EMPTY_VERIFICATION = {
  * request cannot stop the same account opening a ban appeal, and this mirrors
  * it: both are shown, and the form stays available for the other.
  */
-export function HelpCenterScreen() {
+export function SupportCenter() {
   const ticketsQuery = useOwnTickets();
   const categoriesQuery = useSupportCategories();
   const verificationCategoriesQuery = useVerificationCategories();
@@ -136,32 +148,7 @@ export function HelpCenterScreen() {
   const verificationCategories = verificationCategoriesQuery.data ?? [];
 
   return (
-    <div style={{ padding: '20px 16px 40px', maxWidth: 680, margin: '0 auto', width: '100%' }}>
-      <h1
-        style={{
-          fontFamily: v.fontDisplay,
-          fontSize: 30,
-          lineHeight: 1.15,
-          letterSpacing: '-0.03em',
-          color: v.ink,
-          margin: '0 0 6px',
-          fontWeight: 700,
-        }}
-      >
-        help
-      </h1>
-      <p
-        style={{
-          fontFamily: v.fontBody,
-          fontSize: 15,
-          color: v.ink2,
-          margin: '0 0 24px',
-          lineHeight: 1.5,
-        }}
-      >
-        ask us something, appeal a decision, or request a verified badge. one request, one reply.
-      </p>
-
+    <div style={{ maxWidth: 680, width: '100%' }}>
       {ticketsQuery.isLoading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div className="lx-skeleton" style={{ height: 16, width: '40%', borderRadius: 4 }} />
@@ -645,4 +632,4 @@ function VerificationFields({
 }
 
 export { VERIFICATION_CATEGORY };
-export default HelpCenterScreen;
+export default SupportCenter;

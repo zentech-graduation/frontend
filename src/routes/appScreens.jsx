@@ -1,4 +1,5 @@
 import { lazy } from 'react';
+import { Navigate } from 'react-router-dom';
 
 import { ROUTES } from '@/config/constants';
 import { ScreenNotFound } from '@/features/luvax/components/ScreenNotFound';
@@ -30,11 +31,6 @@ const ProfileScreen = lazy(() =>
 const ComposerScreen = lazy(() =>
   import('@/features/luvax/components/ComposerScreen').then((m) => ({
     default: m.ComposerScreen,
-  }))
-);
-const HelpCenterScreen = lazy(() =>
-  import('@/features/support/components/HelpCenterScreen').then((m) => ({
-    default: m.HelpCenterScreen,
   }))
 );
 const SupportTicketDetailScreen = lazy(() =>
@@ -133,15 +129,23 @@ export const APP_SCREENS = [
     rightRail: true,
   },
   { screen: 'search', path: ROUTES.SEARCH, element: <SearchScreen />, chrome: 'shell' },
-  // No right rail on either: the help centre is a form and a reply, and trending
-  // hashtags beside a ban appeal would be the wrong thing to offer.
+  // No right rail: a ticket is a request and a reply, and trending hashtags
+  // beside a ban appeal would be the wrong thing to offer.
   {
     screen: 'support',
     path: ROUTES.SUPPORT_TICKET,
     element: <SupportTicketDetailScreen />,
     chrome: 'shell',
   },
-  { screen: 'support', path: ROUTES.SUPPORT, element: <HelpCenterScreen />, chrome: 'shell' },
+  // Support moved into settings, where the rest of the account's own business
+  // already lives. This address kept nothing behind it, so rather than 404 an
+  // older link it sends the reader to the one real door.
+  {
+    screen: 'support',
+    path: ROUTES.SUPPORT,
+    element: <Navigate to={ROUTES.SETTINGS_SUPPORT} replace />,
+    chrome: 'shell',
+  },
   // Carries the right rail: a hashtag page is a discovery surface, and the trending list beside it
   // is the obvious next thing to look at from one.
   {

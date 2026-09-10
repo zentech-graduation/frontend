@@ -49,6 +49,11 @@ export const ROUTES = {
   SETTINGS_PRIVACY: '/app/settings/privacy',
   SETTINGS_ACCOUNT: '/app/settings/account',
   SETTINGS_REQUESTS: '/app/settings/requests',
+  // Support is a settings category rather than a screen of its own. Every
+  // surface it needs was built and none of them had an entry point: nothing in
+  // the signed-in navigation reached /app/support, so the only support-shaped
+  // thing a user could find was a verification form buried in account settings.
+  SETTINGS_SUPPORT: '/app/settings/support',
   // Kept because it was a published address before the settings rebuild. It now
   // resolves to the account category, which carries the only password action
   // the backend actually offers, rather than to a screen that said it was not
@@ -58,10 +63,14 @@ export const ROUTES = {
   // The viewer's saved posts. Filed under settings because the list belongs to
   // the viewer rather than to a profile being looked at, and is private to them.
   SAVED: '/app/settings/saved',
-  // The help centre. One door into support for a signed-in account: ordinary
-  // requests, appeals, and the verification request, which is a support request
-  // like any other rather than a form on its own screen.
+  // The address the help centre used to occupy. It now redirects to
+  // SETTINGS_SUPPORT, so a bookmark or an older link still lands on support
+  // while there is exactly one place that looks like the entrance.
   SUPPORT: '/app/support',
+  // A ticket keeps its own address. The detail could have been folded into the
+  // settings pane as a master-detail, but settings routes one segment only, and
+  // an in-pane detail would take back the thing P7-FE-004 asked for: a ticket
+  // that can be copied, bookmarked and opened in a second tab.
   SUPPORT_TICKET: '/app/support/:ticketId',
 
   // The three anonymous support addresses. These sit outside the authenticated

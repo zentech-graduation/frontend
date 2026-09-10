@@ -763,6 +763,30 @@ export function LxSideRail({ active, navigate, visible = true }) {
         </button>
       ) : null}
 
+      {/*
+        Support sits with the panel and settings rather than among the tabs
+        above, because it is somewhere you go when something is wrong rather
+        than a place you browse. It points at the settings category, so the rail
+        is a shortcut to the one door and not a second one: without it, reaching
+        support meant opening settings first, and before this it meant typing an
+        address, because nothing in the product linked to support at all.
+
+        It does not light up as an active tab for the same reason `panel` does
+        not: the rail's active state is keyed on the screen id, and the screen
+        behind this address is `settings`.
+      */}
+      <button
+        onClick={() => navigate(ROUTES.SETTINGS_SUPPORT)}
+        aria-label="support"
+        className="lx-tab-btn"
+        style={rowStyle(false)}
+      >
+        <span style={iconWrapStyle}>
+          <LxIcon name="mail" size={RAIL_ICON_SIZE} color={v.ink3} stroke={1.5} />
+        </span>
+        <span style={labelStyle(false)}>support</span>
+      </button>
+
       <button
         onClick={() => navigate(ROUTES.SETTINGS)}
         aria-label="profile settings"
