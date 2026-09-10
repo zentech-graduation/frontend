@@ -46,6 +46,9 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
   const [internalNote, setInternalNote] = useState('');
   const [escalationReason, setEscalationReason] = useState('');
   const [refusal, setRefusal] = useState('');
+  // Announced politely rather than shown: the outcome is already visible in the
+  // ticket, so this exists for the operator who cannot see it change.
+  const [announcement, setAnnouncement] = useState('');
 
   if (isLoading) {
     return <div className="lx-admin-panel-card">loading the ticket.</div>;
@@ -96,14 +99,22 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
     setRefusal(error?.message || 'that did not work.');
   };
 
-  const runAction = (mutation, payload, onDone) => {
+  const runAction = (mutation, payload, onDone, announcement) => {
     setRefusal('');
+    setAnnouncement('');
     mutation.mutate(payload, {
       onError: handleFailure,
       onSuccess: (result) => {
         setStaffResponse('');
         setInternalNote('');
         setEscalationReason('');
+        // Every one of these actions changes the ticket in place: the buttons
+        // swap, the status badge changes, the queue refetches. None of that is
+        // announced, so an operator using a screen reader had no confirmation
+        // that a claim had succeeded or a decision been recorded.
+        if (announcement) {
+          setAnnouncement(announcement);
+        }
         onDone?.(result);
       },
     });
@@ -143,6 +154,30 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
           <LocalTime value={ticket.createdAt} />
         </div>
       </header>
+
+      {/*
+        The console announced nothing at all: a claim, a decision and a refresh
+        all changed the screen silently, so an operator using a screen reader had
+        no confirmation that anything had happened. Polite rather than assertive,
+        because none of these interrupts anything the operator is doing, and
+        always mounted so the region exists before the text arrives - a live
+        region added at the same moment as its content is not reliably announced.
+      */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          clipPath: 'inset(50%)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {announcement}
+      </div>
 
       {refusal ? (
         <p style={styles.notice('bad')} role="alert">
@@ -227,7 +262,14 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
           // status than the queue was almost certainly filtered by. The parent
           // follows it rather than letting it vanish from under the reviewer
           // who claimed it precisely in order to decide it.
-          onClick={() => runAction(actions.claim, undefined, () => onClaimed?.())}
+          onClick={() =>
+            runAction(
+              actions.claim,
+              undefined,
+              () => onClaimed?.(),
+              'ticket claimed. you can now reply, reject or escalate it.'
+            )
+          }
         >
           {actions.claim.isPending ? 'claiming' : 'claim to review'}
         </button>
@@ -274,10 +316,15 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
                   className="lx-admin-control"
                   disabled={respondDisabled}
                   onClick={() =>
-                    runAction(actions.approveVerification, {
-                      reason: staffResponse,
-                      internalNote: internalNote || undefined,
-                    })
+                    runAction(
+                      actions.approveVerification,
+                      {
+                        reason: staffResponse,
+                        internalNote: internalNote || undefined,
+                      },
+                      undefined,
+                      'verification approved. the ticket is closed and the requester has been told.'
+                    )
                   }
                 >
                   approve
@@ -287,10 +334,15 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
                   className="lx-admin-control"
                   disabled={respondDisabled}
                   onClick={() =>
-                    runAction(actions.rejectVerification, {
-                      reason: staffResponse,
-                      internalNote: internalNote || undefined,
-                    })
+                    runAction(
+                      actions.rejectVerification,
+                      {
+                        reason: staffResponse,
+                        internalNote: internalNote || undefined,
+                      },
+                      undefined,
+                      'verification rejected. the ticket is closed and the requester has been told.'
+                    )
                   }
                 >
                   reject
@@ -303,11 +355,16 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
                   className="lx-admin-control"
                   disabled={respondDisabled}
                   onClick={() =>
-                    runAction(actions.respond, {
-                      staffResponse,
-                      internalNote: internalNote || undefined,
-                      reject: false,
-                    })
+                    runAction(
+                      actions.respond,
+                      {
+                        staffResponse,
+                        internalNote: internalNote || undefined,
+                        reject: false,
+                      },
+                      undefined,
+                      'reply sent. the ticket is closed.'
+                    )
                   }
                 >
                   answer and close
@@ -317,11 +374,16 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
                   className="lx-admin-control"
                   disabled={respondDisabled}
                   onClick={() =>
-                    runAction(actions.respond, {
-                      staffResponse,
-                      internalNote: internalNote || undefined,
-                      reject: true,
-                    })
+                    runAction(
+                      actions.respond,
+                      {
+                        staffResponse,
+                        internalNote: internalNote || undefined,
+                        reject: true,
+                      },
+                      undefined,
+                      'ticket closed as declined. the requester has been told.'
+                    )
                   }
                 >
                   close as rejected
@@ -351,7 +413,14 @@ export function SupportTicketDetailScreen({ ticketId, onClaimed }) {
             type="button"
             className="lx-admin-control"
             disabled={!escalationReason.trim() || actions.escalate.isPending}
-            onClick={() => runAction(actions.escalate, { reason: escalationReason })}
+            onClick={() =>
+              runAction(
+                actions.escalate,
+                { reason: escalationReason },
+                undefined,
+                'ticket escalated to an administrator.'
+              )
+            }
             style={{ marginTop: 12 }}
           >
             {actions.escalate.isPending ? 'escalating' : 'escalate'}
