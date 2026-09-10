@@ -23,9 +23,12 @@ export function TicketDetailScreen() {
 
   return (
     <div style={{ padding: '20px 16px 40px', maxWidth: 680, margin: '0 auto', width: '100%' }}>
+      {/* Straight to the settings category rather than through ROUTES.SUPPORT,
+          which now only redirects there: a back control should not spend a
+          history entry on a hop. */}
       <button
         type="button"
-        onClick={() => navigate(ROUTES.SUPPORT)}
+        onClick={() => navigate(ROUTES.SETTINGS_SUPPORT)}
         style={{
           fontFamily: v.fontBody,
           fontSize: 14,
@@ -37,7 +40,7 @@ export function TicketDetailScreen() {
           marginBottom: 18,
         }}
       >
-        back to help
+        back to support
       </button>
 
       {isLoading ? (
