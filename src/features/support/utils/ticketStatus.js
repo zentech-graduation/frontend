@@ -56,7 +56,17 @@ export const findBlockingTicket = (tickets = []) =>
 export const findPendingVerification = (tickets = []) =>
   tickets.find((ticket) => isActive(ticket) && ticket.category === VERIFICATION_CATEGORY) ?? null;
 
-/** Lowercase, human wording for a status. */
+/**
+ * Lowercase, human wording for a status.
+ *
+ * REJECTED is named as a refusal rather than as "closed". Both terminal states
+ * previously read as an ending without saying which one: a rejected ticket
+ * showed "closed" above a block headed the same way an answered one is, so the
+ * only thing distinguishing a grant from a refusal anywhere in the owner-facing
+ * interface was whatever prose a moderator happened to type. The staff console
+ * was never affected, because it renders the raw status - so a moderator saw
+ * REJECTED correctly while the person it was about did not.
+ */
 export const statusLabel = (status) =>
   ({
     PENDING_CONFIRMATION: 'waiting for you to confirm your email',
@@ -64,8 +74,21 @@ export const statusLabel = (status) =>
     IN_PROGRESS: 'with a reviewer',
     ESCALATED: 'with an administrator',
     ANSWERED: 'answered',
-    REJECTED: 'closed',
+    REJECTED: 'declined',
   })[status] ??
   String(status ?? '')
     .toLowerCase()
     .replace(/_/g, ' ');
+
+/**
+ * The heading the staff text sits under, which differs by outcome.
+ *
+ * Changed together with the status word above, deliberately. Either alone still
+ * leaves a grant and a refusal introduced by the same label, which is the whole
+ * defect: a reader skimming sees the heading before the prose.
+ *
+ * @param {string} status the ticket's status
+ * @returns {string} the heading for the staff response block
+ */
+export const staffResponseHeading = (status) =>
+  status === 'REJECTED' ? 'why this was declined' : 'our reply';

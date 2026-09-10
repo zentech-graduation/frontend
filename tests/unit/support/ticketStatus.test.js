@@ -5,6 +5,7 @@ import {
   findPendingVerification,
   isActive,
   isTerminal,
+  staffResponseHeading,
   statusLabel,
 } from '@/features/support/utils/ticketStatus';
 
@@ -96,5 +97,28 @@ describe('statusLabel', () => {
 
   it('falls back to a readable form for an unknown status', () => {
     expect(statusLabel('SOMETHING_NEW')).toBe('something new');
+  });
+});
+
+describe('a refusal is named as one', () => {
+  // P7-FE-001. Both terminal states used to read as an ending without saying which: REJECTED was
+  // labelled "closed" and its staff text sat under the same heading an answered ticket uses, so
+  // the only thing telling a grant from a refusal was whatever prose a moderator typed. These two
+  // assertions are the rule - the two states must not present alike - not the specific wording.
+  it('gives REJECTED its own word, distinct from ANSWERED', () => {
+    expect(statusLabel('REJECTED')).toBe('declined');
+    expect(statusLabel('REJECTED')).not.toBe(statusLabel('ANSWERED'));
+    // And not the word that reads as a neutral ending.
+    expect(statusLabel('REJECTED')).not.toBe('closed');
+  });
+
+  it('gives REJECTED its own staff-text heading, distinct from ANSWERED', () => {
+    expect(staffResponseHeading('REJECTED')).toBe('why this was declined');
+    expect(staffResponseHeading('REJECTED')).not.toBe(staffResponseHeading('ANSWERED'));
+  });
+
+  it('leaves every other status under the ordinary heading', () => {
+    expect(staffResponseHeading('ANSWERED')).toBe('our reply');
+    expect(staffResponseHeading('OPEN')).toBe('our reply');
   });
 });

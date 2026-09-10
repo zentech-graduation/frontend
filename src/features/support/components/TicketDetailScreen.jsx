@@ -2,7 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
 import { ROUTES } from '@/config/constants';
 import { useOwnTicket } from '../hooks/useSupport';
-import { statusLabel } from '../utils/ticketStatus';
+import { staffResponseHeading, statusLabel } from '../utils/ticketStatus';
 import { Eyebrow, Notice, StatusChip } from './SupportPrimitives';
 
 /**
@@ -109,7 +109,7 @@ export function TicketDetailScreen() {
 
           {ticket.staffResponse ? (
             <section>
-              <Eyebrow>our reply</Eyebrow>
+              <Eyebrow>{staffResponseHeading(ticket.status)}</Eyebrow>
               <div
                 style={{
                   background: v.surface,
