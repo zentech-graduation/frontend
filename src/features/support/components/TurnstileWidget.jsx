@@ -13,6 +13,22 @@ const SCRIPT_ID = 'cf-turnstile-script';
  */
 let scriptPromise = null;
 
+/**
+ * The theme the application is currently showing.
+ *
+ * Falls back to the operating system preference only when the toggle has not
+ * stamped an explicit choice, which matches how the stylesheet resolves it.
+ *
+ * @returns {'light'|'dark'} the theme to hand the widget
+ */
+const readTheme = () => {
+  const explicit = document.documentElement.dataset.theme;
+  if (explicit === 'dark' || explicit === 'light') {
+    return explicit;
+  }
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
+
 const loadTurnstile = () => {
   if (window.turnstile) {
     return Promise.resolve(window.turnstile);
@@ -50,10 +66,27 @@ const loadTurnstile = () => {
  * @param {(token: string|null) => void} props.onToken called with the solved token, or null when it expires
  * @param {(message: string) => void} props.onUnavailable called when the challenge cannot run at all
  */
-export function TurnstileWidget({ onToken, onUnavailable }) {
+export function TurnstileWidget({ onToken, onUnavailable, onReady }) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  // The application's own theme, not the operating system's. `theme: 'auto'`
+  // follows prefers-color-scheme, which is not what this product's theme toggle
+  // sets - so with the app switched to dark on a light OS the widget rendered as
+  // a near-white block, the brightest object on the only screen an anonymous
+  // submitter uses. The toggle writes data-theme on the document element, so
+  // that is what the widget is told.
+  const [appTheme, setAppTheme] = useState(() => readTheme());
+
+  // Re-read when the toggle changes it. The widget cannot be re-themed in place,
+  // so this drives a re-render of the whole widget through the effect's
+  // dependency list below.
+  useEffect(() => {
+    const target = document.documentElement;
+    const observer = new MutationObserver(() => setAppTheme(readTheme()));
+    observer.observe(target, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
   // Derived rather than set from inside the effect: a missing key is knowable
   // at first render, so making it the initial state avoids a second render
   // pass that only exists to record something already true.
@@ -90,9 +123,10 @@ export function TurnstileWidget({ onToken, onUnavailable }) {
             onToken?.(null);
             onUnavailable?.('the challenge could not be completed. reload and try again.');
           },
-          theme: 'auto',
+          theme: appTheme,
         });
         setStatus('ready');
+        onReady?.();
       })
       .catch(() => {
         if (cancelled) {
@@ -113,7 +147,7 @@ export function TurnstileWidget({ onToken, onUnavailable }) {
     // widget on every parent render would reset a challenge the user has
     // already solved.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [siteKey]);
+  }, [siteKey, appTheme]);
 
   return (
     <div style={{ marginBottom: 14 }}>
