@@ -27,10 +27,21 @@ import { TICKET_STATUSES, TICKET_STATUS_LABELS } from '../lib/supportTicketSchem
  */
 const DEFAULT_STATUS = 'OPEN';
 
+// The subject is the only column a moderator scans to decide what a ticket is
+// about, and it was the one being squeezed: roughly 90px, wrapping a seeded
+// subject onto four lines, while the timestamp wrapped onto three inside a card
+// that ended well short of the space the column had.
+//
+// Only the subject declares a width. Under the table's auto layout that claims
+// the slack while every other column still sizes to its own content, so the
+// badges stay whole and the timestamp stays on one line. Declaring a width on
+// all five and switching to a fixed layout does the opposite: it clips whatever
+// exceeds its share, which truncated the status badge mid-word.
 const columns = [
   {
     key: 'subject',
     header: 'subject',
+    width: '50%',
     render: (row) => row.subject,
   },
   {
@@ -41,17 +52,21 @@ const columns = [
   {
     key: 'status',
     header: 'status',
+    nowrap: true,
     render: (row) => <StatusBadge status={(row.status ?? '').toLowerCase()} />,
   },
   {
     key: 'assignedTo',
     header: 'claimed',
-    render: (row) => (row.assignedTo ? 'yes' : 'no'),
+    nowrap: true,
+    // A badge, not the bare word "no", so it matches the status beside it.
+    render: (row) => <StatusBadge status={row.assignedTo ? 'claimed' : 'unclaimed'} />,
   },
   {
     key: 'createdAt',
     header: 'opened',
-    render: (row) => <LocalTime value={row.createdAt} />,
+    nowrap: true,
+    render: (row) => <LocalTime value={row.createdAt} showZone={false} />,
   },
 ];
 

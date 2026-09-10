@@ -55,6 +55,13 @@ const STATUS_TONE = {
   rejected: 'neutral',
   // Closed with no action taken; deliberately understated rather than red.
   dismissed: 'neutral',
+  // Whether a ticket has an owner. Rendered as a badge rather than the bare word
+  // "no" so it reads as the same kind of thing as the status beside it, which is
+  // what a reader scanning the column expects. Unclaimed is the state that wants
+  // a moderator's attention, so it takes the caution tone rather than a critical
+  // one: nothing is wrong, it is simply waiting.
+  claimed: 'positive',
+  unclaimed: 'caution',
 };
 
 export function StatusBadge({ status, size = 'md' }) {

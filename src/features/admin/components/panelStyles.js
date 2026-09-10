@@ -292,6 +292,11 @@ export const PANEL_CSS = `
 }
 /* The table sizes to the region it is in rather than to its standalone
    minimum, so the list pane never clips a column or scrolls sideways. */
+/* Deliberately NOT table-layout: fixed. Fixed layout honours the declared
+   widths but clips anything wider than its share rather than growing it, which
+   truncated the status badge mid-word and ran it under the next column. Auto
+   layout keeps the badges intact; the subject gets its share by being the one
+   column that declares a large width while the rest size to their content. */
 .lx-admin-split-list table { min-width: 0 !important; }
 .lx-admin-split-list {
   min-width: 0;
@@ -387,6 +392,15 @@ export const PANEL_CSS = `
 
 @media (max-width: 1100px) {
   .lx-admin-split { grid-template-columns: minmax(320px, 40%) minmax(0, 1fr); }
+}
+
+/* From 1400 up the list takes the larger share. The detail pane holds a
+   two-line empty state whenever nothing is selected, which on a queue screen is
+   most of the time, so the wider viewport is better spent on the rows a
+   moderator is actually reading. Below this the 44 percent split still gives
+   the detail enough room for a claimed ticket's body. */
+@media (min-width: 1400px) {
+  .lx-admin-split { grid-template-columns: minmax(720px, 62%) minmax(0, 1fr); }
 }
 
 /* At a narrow width the split is not a split: the list is the screen, and a
