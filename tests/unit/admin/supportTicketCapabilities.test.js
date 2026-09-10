@@ -51,7 +51,10 @@ describe('a ticket claimed by somebody else', () => {
     // The defect this replaces tested whether a ticket was claimed rather than
     // who had claimed it, so it enabled a complete decision form for a staff
     // member whose every submission was refused.
-    const caps = ticketCapabilities(ticket({ assignedTo: OTHER, status: 'IN_PROGRESS' }), moderator);
+    const caps = ticketCapabilities(
+      ticket({ assignedTo: OTHER, status: 'IN_PROGRESS' }),
+      moderator
+    );
     expect(caps.canClaim).toBe(false);
     expect(caps.canRespond).toBe(false);
     expect(caps.canEscalate).toBe(false);

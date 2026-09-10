@@ -145,12 +145,12 @@ describe('verificationSchema', () => {
   });
 
   it('requires the claimed name and the category', () => {
-    expect(
-      verificationSchema.safeParse({ ...validVerification, claimedName: '' }).success
-    ).toBe(false);
-    expect(
-      verificationSchema.safeParse({ ...validVerification, categoryKey: '' }).success
-    ).toBe(false);
+    expect(verificationSchema.safeParse({ ...validVerification, claimedName: '' }).success).toBe(
+      false
+    );
+    expect(verificationSchema.safeParse({ ...validVerification, categoryKey: '' }).success).toBe(
+      false
+    );
   });
 
   it('accepts any three of the seven, not three particular ones', () => {

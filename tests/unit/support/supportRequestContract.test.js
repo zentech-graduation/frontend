@@ -58,9 +58,8 @@ describe('the support client', () => {
     // The vocabulary answers lowercase keys while the request DTO binds a Java
     // enum, which Jackson reads by its uppercase constant name and refuses
     // case-insensitively. Sending the key as it arrives answers 400.
-    const { createTicket, toCategoryEnum, toCategoryKey } = await import(
-      '@/features/support/services/supportApi'
-    );
+    const { createTicket, toCategoryEnum, toCategoryKey } =
+      await import('@/features/support/services/supportApi');
     expect(toCategoryEnum('appeal_ban')).toBe('APPEAL_BAN');
     expect(toCategoryKey('APPEAL_BAN')).toBe('appeal_ban');
 
