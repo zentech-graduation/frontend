@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- A back control on the three anonymous support screens, beside the product mark, so a reader who is in the wrong place has an affordance rather than a wordmark to guess at.
 - Support is a settings section, carrying ticket submission, the account's own requests and the verification request, reachable from the side rail and from the settings list.
 - A support link on the sign-in screen and on the forgot-password screen, so a person who cannot get into their account has a route to us without holding an email.
 - A sign-in refused because the account is banned or suspended now says which of the two it is and offers the support form, instead of reading as a passing failure worth retrying.
@@ -26,6 +27,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Hashtag tokens inside post captions are now links to that hashtag's page.
 
 ### Changed
+- The support screens use the same field treatment as sign-in and sign-up: the label rests inside the box and rises to the border once the field has focus or content.
+- Copy on the support and auth screens is sentence case rather than all lowercase.
+- Category names come through as the vocabulary table writes them, instead of being forced to lowercase on the way to the screen.
 - Every support surface was built and none of them had an entry point: nothing in the signed-in navigation reached support, and no signed-out screen linked to the public form, so the only support-shaped thing a person could find was a badge request buried in account settings.
 - `/app/support` now redirects into the support settings section, so an existing link or bookmark still lands on support while there is one place that looks like the entrance. A ticket keeps its own address.
 - The trending hashtag count is now nullable on the wire: the backend returns no count for a hashtag outside the current snapshot rather than substituting its lifetime total, and this application renders that as new. A renderer without a null branch would have shown an empty value or the word null beside a hashtag name.
@@ -35,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The preview server proxies the API, so a production build can be exercised against a local backend.
 
 ### Fixed
+- The dropdown arrow on a support form's select sits on the field's own gutter; the native one ignored the field's padding and read as pushed inward.
 - A verification request now reaches the server. The form sent two evidence fields the endpoint does not declare, and it refuses an undeclared field outright rather than ignoring it, so every submission failed no matter what was typed.
 - A moderator now sees the last two evidence fields of a verification request, which the console had been reading under names the response does not carry.
 - Links on the signed-out screens now show a focus ring; the global rule named only buttons and form controls.
