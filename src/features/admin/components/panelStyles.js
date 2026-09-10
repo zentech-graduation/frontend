@@ -446,6 +446,34 @@ export const PANEL_CSS = `
   .lx-admin-filter-clear { margin-left: 0; }
 }
 
+/* The hit region and the drawn shape are allowed to differ, and here they do.
+   The header's three controls are 30px tall by design and measured 32x30 at
+   390, well under the 44x44 a touch target needs. Rather than inflating the
+   pills - which would change the header's proportions on every screen - each
+   control gets a centred overlay that is at least 44x44. The pill still looks
+   the same; the area that responds to a thumb is bigger than the pill.
+
+   The controls sit 8px apart, so a 7px overhang on each side cannot make two
+   targets overlap. */
+@media (max-width: 860px) {
+  .lx-admin-header-actions .lx-admin-control,
+  .lx-admin-header-actions .lx-admin-signout {
+    position: relative;
+  }
+  .lx-admin-header-actions .lx-admin-control::after,
+  .lx-admin-header-actions .lx-admin-signout::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* Below this the header's three controls cannot hold their labels and the row
    wraps into the identity. Each keeps its icon and its accessible name. */
 @media (max-width: 560px) {
