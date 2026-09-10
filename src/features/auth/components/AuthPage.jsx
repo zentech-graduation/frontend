@@ -60,6 +60,56 @@ const applyServerFieldErrors = (form, fieldErrors) => {
   return applied;
 };
 
+/**
+ * What to say about a refused sign-in, and whether support is the way onward.
+ *
+ * A refusal caused by the account's own state is the one sign-in failure worth
+ * naming: the person cannot fix it by trying again, and nothing else in the
+ * product will ever tell them, because a banned or suspended account is refused
+ * on every authenticated endpoint and can never load a screen to be told there.
+ *
+ * It is also the one moment the system knows for certain that the person in
+ * front of it needs the appeal path, which is why the link belongs here and not
+ * only in the page's footer. Before this, `AUTH_ACCOUNT_LOCKED` - a ban - fell
+ * through to the generic message and read "we could not sign you in just now.
+ * try again in a moment.", inviting a retry that can never succeed.
+ *
+ * The copy names the state and gives the route onward, and stops there. It does
+ * not restate the moderation reason, name the acting staff member or mention a
+ * report, which is the same constraint the moderation email is written under.
+ * No end date is claimed for a suspension, because the refusal carries none.
+ *
+ * `AUTH_ACCOUNT_INACTIVE` also covers DEACTIVATED, which no live flow produces
+ * today; `AdminServiceImpl` records that it is reserved for a future
+ * self-service deactivation, and if that ships this branch needs its own code
+ * rather than borrowing the suspension's words.
+ *
+ * @param {string|undefined} code the `code` field of the error envelope
+ * @returns {{text: string, offerSupport: boolean}} the sentence and whether to
+ *   offer the support link beside it
+ */
+const describeLoginFailure = (code) => {
+  if (code === 'AUTH_ACCOUNT_LOCKED') {
+    return {
+      text: 'this account has been banned, so you cannot sign in to it.',
+      offerSupport: true,
+    };
+  }
+  if (code === 'AUTH_ACCOUNT_INACTIVE') {
+    return {
+      text: 'this account is suspended, so you cannot sign in to it at the moment.',
+      offerSupport: true,
+    };
+  }
+  if (code === 'AUTH_INVALID_CREDENTIALS') {
+    return {
+      text: 'that email or password is not right. check them and try again.',
+      offerSupport: false,
+    };
+  }
+  return { text: 'we could not sign you in just now. try again in a moment.', offerSupport: false };
+};
+
 const getSuccessMessage = (state) => {
   if (typeof state?.registerSuccess === 'string') return state.registerSuccess;
   if (typeof state?.verificationSuccess === 'string') return state.verificationSuccess;
@@ -145,7 +195,8 @@ export default function AuthPage() {
   const [welcome] = useState(() => WELCOMES[Math.floor(Math.random() * WELCOMES.length)]);
   const [showLoginPw, setShowLoginPw] = useState(false);
   const [showRegPw, setShowRegPw] = useState(false);
-  const [serverError, setServerError] = useState('');
+  // { text, offerSupport } once a sign-in has been refused, null before that.
+  const [serverError, setServerError] = useState(null);
   const [regServerError, setRegServerError] = useState('');
   const [fpServerError, setFpServerError] = useState('');
   const [fpSent, setFpSent] = useState(false);
@@ -195,7 +246,7 @@ export default function AuthPage() {
   };
 
   const handleGoogle = () => {
-    setServerError('');
+    setServerError(null);
     setRegServerError('');
     try {
       window.location.href = authApi.getGoogleLoginUrl();
@@ -205,13 +256,13 @@ export default function AuthPage() {
       if (view === 'register') {
         setRegServerError(message);
       } else {
-        setServerError(message);
+        setServerError({ text: message, offerSupport: false });
       }
     }
   };
 
   const onLoginSubmit = async (values) => {
-    setServerError('');
+    setServerError(null);
 
     try {
       const result = await authApi.login(values);
@@ -245,20 +296,7 @@ export default function AuthPage() {
         return;
       }
       logout();
-      // A refused account is the one sign-in failure worth naming, because the
-      // person cannot fix it by trying again and nothing else in the product
-      // will ever tell them: a suspended account is answered 401 on every
-      // authenticated endpoint, so it can never load a screen to be told there.
-      // The server returns no end date with this refusal, so none is claimed.
-      // Recorded as a backend request item.
-      const code = error?.response?.data?.code;
-      setServerError(
-        code === 'AUTH_ACCOUNT_INACTIVE'
-          ? 'this account is suspended, so you cannot sign in to it at the moment. if you think that is wrong, get in touch and we will look into it.'
-          : code === 'AUTH_INVALID_CREDENTIALS'
-            ? 'that email or password is not right. check them and try again.'
-            : 'we could not sign you in just now. try again in a moment.'
-      );
+      setServerError(describeLoginFailure(error?.response?.data?.code));
     }
   };
 
@@ -554,9 +592,18 @@ export default function AuthPage() {
             </p>
           ) : null}
           {serverError ? (
-            <p style={{ color: 'var(--lx-error-text)', fontSize: '14px', margin: 0 }}>
-              {serverError}
-            </p>
+            <div role="alert" style={{ fontSize: '14px' }}>
+              <p style={{ color: 'var(--lx-error-text)', margin: 0 }}>{serverError.text}</p>
+              {serverError.offerSupport ? (
+                <p style={{ color: 'var(--lx-ink-2)', margin: '6px 0 0' }}>
+                  if you think that is wrong,{' '}
+                  <a className="lx-support-link" href={ROUTES.SUPPORT_PUBLIC}>
+                    ask us to look at it
+                  </a>
+                  .
+                </p>
+              ) : null}
+            </div>
           ) : null}
 
           <button type="submit" className="lx-btn-primary" disabled={loginSubmitting}>
