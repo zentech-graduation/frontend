@@ -55,11 +55,11 @@ export function ConfirmLandingScreen() {
   if (outcome === 'missing') {
     return (
       <SupportPage
-        title="this link is not complete"
-        intro="the address is missing its token, so there is nothing to confirm."
+        title="This link is not complete"
+        intro="The address is missing its token, so there is nothing to confirm."
       >
         <Notice tone="bad" role="alert">
-          open the link from the email again, in full.
+          Open the link from the email again, in full.
         </Notice>
       </SupportPage>
     );
@@ -67,12 +67,12 @@ export function ConfirmLandingScreen() {
 
   if (outcome === 'pending') {
     return (
-      <SupportPage title="confirming your email" intro="one moment.">
+      <SupportPage title="Confirming your email" intro="One moment.">
         <div
           className="lx-skeleton"
           style={{ height: 56, borderRadius: 12 }}
           role="status"
-          aria-label="confirming your email"
+          aria-label="Confirming your email"
         />
       </SupportPage>
     );
@@ -81,11 +81,11 @@ export function ConfirmLandingScreen() {
   if (outcome === 'confirmed') {
     return (
       <SupportPage
-        title="your request is with us"
-        intro="your address is confirmed, so your request is now in front of our staff."
+        title="Your request is with us"
+        intro="Your address is confirmed, so your request is now in front of our staff."
       >
         <Notice tone="good" role="status">
-          we will reply to the address you gave. there is no need to send it again.
+          We will reply to the address you gave. There is no need to send it again.
         </Notice>
       </SupportPage>
     );
@@ -94,18 +94,18 @@ export function ConfirmLandingScreen() {
   if (outcome === 'spent') {
     return (
       <SupportPage
-        title="this link has already been used"
-        intro="each confirmation link works once, and expires if it is left too long."
+        title="This link has already been used"
+        intro="Each confirmation link works once, and expires if it is left too long."
       >
         <Notice tone="warn" role="alert">
-          if you already confirmed, your request is with us and you do not need to do anything. if
+          If you already confirmed, your request is with us and you do not need to do anything. If
           you are not sure it went through, send a new one.
         </Notice>
         <a
           href="/support/new"
           style={{ fontFamily: v.fontBody, fontSize: 14, color: v.accentText }}
         >
-          send a new request
+          Send a new request
         </a>
       </SupportPage>
     );
@@ -113,11 +113,11 @@ export function ConfirmLandingScreen() {
 
   return (
     <SupportPage
-      title="we could not confirm that just now"
-      intro="this looks like a connection problem rather than a problem with your link."
+      title="We could not confirm that just now"
+      intro="This looks like a connection problem rather than a problem with your link."
     >
       <Notice tone="bad" role="alert">
-        reload this page to try again. your link has not been used.
+        Reload this page to try again. Your link has not been used.
       </Notice>
     </SupportPage>
   );

@@ -40,40 +40,40 @@ export const MIN_EVIDENCE_FIELDS = 3;
  * request submitted from this form could ever succeed.
  */
 export const EVIDENCE_FIELDS = [
-  { name: 'evidenceWebsite', label: 'official website' },
-  { name: 'evidenceOtherProfile', label: 'a verified profile elsewhere' },
-  { name: 'evidenceEmailDomain', label: 'an organisational email domain' },
-  { name: 'evidencePublishedWork', label: 'published work' },
-  { name: 'evidencePress', label: 'press coverage' },
-  { name: 'evidenceOfficialListing', label: 'an official organisational listing' },
+  { name: 'evidenceWebsite', label: 'Official website' },
+  { name: 'evidenceOtherProfile', label: 'A verified profile elsewhere' },
+  { name: 'evidenceEmailDomain', label: 'An organisational email domain' },
+  { name: 'evidencePublishedWork', label: 'Published work' },
+  { name: 'evidencePress', label: 'Press coverage' },
+  { name: 'evidenceOfficialListing', label: 'An official organisational listing' },
   // The one field that invites prose rather than a link, so it is the one field
   // rendered as a textarea. The server allows the same 2000 characters here as
   // everywhere else.
-  { name: 'evidenceNote', label: 'a note to the moderator', multiline: true },
+  { name: 'evidenceNote', label: 'A note to the moderator', multiline: true },
 ];
 
 const subjectField = z
   .string()
   .trim()
-  .min(1, 'give your request a short summary.')
-  .max(SUBJECT_MAX, `keep the summary to ${SUBJECT_MAX} characters or fewer.`);
+  .min(1, 'Give your request a short summary.')
+  .max(SUBJECT_MAX, `Keep the summary to ${SUBJECT_MAX} characters or fewer.`);
 
 const bodyField = z
   .string()
   .trim()
-  .min(1, 'tell us what happened.')
-  .max(BODY_MAX, `keep the message to ${BODY_MAX} characters or fewer.`);
+  .min(1, 'Tell us what happened.')
+  .max(BODY_MAX, `Keep the message to ${BODY_MAX} characters or fewer.`);
 
 const evidenceField = z
   .string()
   .trim()
-  .max(EVIDENCE_MAX, `keep each piece of evidence to ${EVIDENCE_MAX} characters or fewer.`)
+  .max(EVIDENCE_MAX, `Keep each piece of evidence to ${EVIDENCE_MAX} characters or fewer.`)
   .optional()
   .or(z.literal(''));
 
 /** The authenticated ticket form, for every category except verification. */
 export const ticketSchema = z.object({
-  category: z.string().trim().min(1, 'choose what this is about.'),
+  category: z.string().trim().min(1, 'Choose what this is about.'),
   subject: subjectField,
   body: bodyField,
 });
@@ -89,10 +89,10 @@ export const publicTicketSchema = z.object({
   contactEmail: z
     .string()
     .trim()
-    .min(1, 'we need an address to reply to.')
-    .max(EMAIL_MAX, `keep the address to ${EMAIL_MAX} characters or fewer.`)
-    .email('that does not look like an email.'),
-  category: z.string().trim().min(1, 'choose what this is about.'),
+    .min(1, 'We need an address to reply to.')
+    .max(EMAIL_MAX, `Keep the address to ${EMAIL_MAX} characters or fewer.`)
+    .email('That does not look like an email.'),
+  category: z.string().trim().min(1, 'Choose what this is about.'),
   subject: subjectField,
   body: bodyField,
 });
@@ -117,12 +117,12 @@ export const appealSchema = z.object({
  */
 export const verificationSchema = z
   .object({
-    categoryKey: z.string().trim().min(1, 'choose the category you are known in.'),
+    categoryKey: z.string().trim().min(1, 'Choose the category you are known in.'),
     claimedName: z
       .string()
       .trim()
-      .min(1, 'tell us the name you are known by.')
-      .max(CLAIMED_NAME_MAX, `keep the name to ${CLAIMED_NAME_MAX} characters or fewer.`),
+      .min(1, 'Tell us the name you are known by.')
+      .max(CLAIMED_NAME_MAX, `Keep the name to ${CLAIMED_NAME_MAX} characters or fewer.`),
     evidenceWebsite: evidenceField,
     evidenceOtherProfile: evidenceField,
     evidenceEmailDomain: evidenceField,
@@ -136,7 +136,7 @@ export const verificationSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['evidenceWebsite'],
-        message: `fill at least ${MIN_EVIDENCE_FIELDS} evidence fields.`,
+        message: `Fill at least ${MIN_EVIDENCE_FIELDS} evidence fields.`,
       });
     }
   });

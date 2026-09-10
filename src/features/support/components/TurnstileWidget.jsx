@@ -49,7 +49,7 @@ const loadTurnstile = () => {
     script.async = true;
     script.defer = true;
     script.addEventListener('load', () => resolve(window.turnstile));
-    script.addEventListener('error', () => reject(new Error('turnstile script failed to load')));
+    script.addEventListener('error', () => reject(new Error('Turnstile script failed to load')));
     document.head.appendChild(script);
   });
   return scriptPromise;
@@ -94,7 +94,7 @@ export function TurnstileWidget({ onToken, onUnavailable, onReady }) {
 
   useEffect(() => {
     if (!siteKey) {
-      onUnavailable?.('the challenge is not configured for this environment.');
+      onUnavailable?.('The challenge is not configured for this environment.');
       return undefined;
     }
 
@@ -121,7 +121,7 @@ export function TurnstileWidget({ onToken, onUnavailable, onReady }) {
           'error-callback': () => {
             setStatus('unavailable');
             onToken?.(null);
-            onUnavailable?.('the challenge could not be completed. reload and try again.');
+            onUnavailable?.('The challenge could not be completed. Reload and try again.');
           },
           theme: appTheme,
         });
@@ -133,7 +133,7 @@ export function TurnstileWidget({ onToken, onUnavailable, onReady }) {
           return;
         }
         setStatus('unavailable');
-        onUnavailable?.('the challenge could not be loaded. check your connection and reload.');
+        onUnavailable?.('The challenge could not be loaded. Check your connection and reload.');
       });
 
     return () => {
@@ -163,7 +163,7 @@ export function TurnstileWidget({ onToken, onUnavailable, onReady }) {
           role="status"
           style={{ fontFamily: v.fontBody, fontSize: 13, color: v.ink2, marginTop: 6 }}
         >
-          the challenge expired. complete it again.
+          The challenge expired. Complete it again.
         </div>
       ) : null}
       {status === 'unavailable' ? (
@@ -180,7 +180,7 @@ export function TurnstileWidget({ onToken, onUnavailable, onReady }) {
             marginTop: 6,
           }}
         >
-          the challenge is unavailable, so this form cannot be submitted right now. if you were sent
+          The challenge is unavailable, so this form cannot be submitted right now. If you were sent
           a link in an email about a decision on your account, use that link instead.
         </div>
       ) : null}

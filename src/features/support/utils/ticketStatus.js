@@ -69,10 +69,10 @@ export const findPendingVerification = (tickets = []) =>
  */
 export const statusLabel = (status) =>
   ({
-    PENDING_CONFIRMATION: 'waiting for you to confirm your email',
-    OPEN: 'waiting for a reviewer',
-    IN_PROGRESS: 'with a reviewer',
-    ESCALATED: 'with an administrator',
+    PENDING_CONFIRMATION: 'Waiting for you to confirm your email',
+    OPEN: 'Waiting for a reviewer',
+    IN_PROGRESS: 'With a reviewer',
+    ESCALATED: 'With an administrator',
     ANSWERED: 'answered',
     REJECTED: 'declined',
   })[status] ??
@@ -91,4 +91,4 @@ export const statusLabel = (status) =>
  * @returns {string} the heading for the staff response block
  */
 export const staffResponseHeading = (status) =>
-  status === 'REJECTED' ? 'why this was declined' : 'our reply';
+  status === 'REJECTED' ? 'Why this was declined' : 'Our reply';

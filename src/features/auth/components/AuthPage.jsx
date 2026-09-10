@@ -13,14 +13,18 @@ import './AuthPage.css';
 
 const HERO_IMAGES = ['/1.webp', '/2.webp', '/3.webp'];
 
+// The two halves render as one continuous headline, with `accent` only picking
+// up the accent colour. Sentence case belongs to the sentence, so only `main`
+// carries the capital: a blind pass over both gave "Explore the things You
+// love".
 const WELCOMES = [
-  { main: 'explore the things ', accent: 'you love' },
-  { main: 'connect with your kind of ', accent: 'fun' },
-  { main: 'dive into ', accent: 'what you enjoy' },
-  { main: 'your space for ', accent: 'good energy' },
-  { main: 'share what makes ', accent: 'you smile' },
-  { main: 'discover your next ', accent: 'obsession' },
-  { main: 'bring your passions ', accent: 'here' },
+  { main: 'Explore the things ', accent: 'you love' },
+  { main: 'Connect with your kind of ', accent: 'fun' },
+  { main: 'Dive into ', accent: 'what you enjoy' },
+  { main: 'Your space for ', accent: 'good energy' },
+  { main: 'Share what makes ', accent: 'you smile' },
+  { main: 'Discover your next ', accent: 'obsession' },
+  { main: 'Bring your passions ', accent: 'here' },
 ];
 
 // The registration form calls its display-name input `name`; the server calls
@@ -91,23 +95,23 @@ const applyServerFieldErrors = (form, fieldErrors) => {
 const describeLoginFailure = (code) => {
   if (code === 'AUTH_ACCOUNT_LOCKED') {
     return {
-      text: 'this account has been banned, so you cannot sign in to it.',
+      text: 'This account has been banned, so you cannot sign in to it.',
       offerSupport: true,
     };
   }
   if (code === 'AUTH_ACCOUNT_INACTIVE') {
     return {
-      text: 'this account is suspended, so you cannot sign in to it at the moment.',
+      text: 'This account is suspended, so you cannot sign in to it at the moment.',
       offerSupport: true,
     };
   }
   if (code === 'AUTH_INVALID_CREDENTIALS') {
     return {
-      text: 'that email or password is not right. check them and try again.',
+      text: 'That email or password is not right. Check them and try again.',
       offerSupport: false,
     };
   }
-  return { text: 'we could not sign you in just now. try again in a moment.', offerSupport: false };
+  return { text: 'We could not sign you in just now. Try again in a moment.', offerSupport: false };
 };
 
 const getSuccessMessage = (state) => {
@@ -252,7 +256,7 @@ export default function AuthPage() {
       window.location.href = authApi.getGoogleLoginUrl();
     } catch (error) {
       const message =
-        'we could not open google sign-in just now. try again, or use your email and password.';
+        'We could not open Google sign-in just now. Try again, or use your email and password.';
       if (view === 'register') {
         setRegServerError(message);
       } else {
@@ -343,15 +347,15 @@ export default function AuthPage() {
     return (
       <div className="lx-shell">
         <div className="lx-col lx-enter">
-          <button type="button" className="lx-back" onClick={goLogin} aria-label="back to login">
+          <button type="button" className="lx-back" onClick={goLogin} aria-label="Back to login">
             <BackIcon />
           </button>
 
           <form className="lx-card" onSubmit={registerForm.handleSubmit(onRegSubmit)} noValidate>
             <div className="lx-head">
-              <h1 className="lx-h2">get started on luvax</h1>
+              <h1 className="lx-h2">Get started on Luvax</h1>
               <p className="lx-sub">
-                create an account to connect with friends, family, and communities of people who
+                Create an account to connect with friends, family, and communities of people who
                 share your interests.
               </p>
             </div>
@@ -359,7 +363,7 @@ export default function AuthPage() {
             <div className="lx-row">
               <Field
                 id="rg-user"
-                label="username"
+                label="Username"
                 type="text"
                 autoComplete="username"
                 error={errors.username?.message}
@@ -367,7 +371,7 @@ export default function AuthPage() {
               />
               <Field
                 id="rg-name"
-                label="display name"
+                label="Display name"
                 type="text"
                 autoComplete="name"
                 error={errors.name?.message}
@@ -377,7 +381,7 @@ export default function AuthPage() {
 
             <Field
               id="rg-email"
-              label="email address"
+              label="Email address"
               type="email"
               autoComplete="email"
               error={errors.email?.message}
@@ -386,7 +390,7 @@ export default function AuthPage() {
 
             <Field
               id="rg-pw"
-              label="password"
+              label="Password"
               type={showRegPw ? 'text' : 'password'}
               autoComplete="new-password"
               error={errors.password?.message}
@@ -415,26 +419,26 @@ export default function AuthPage() {
               style={{ marginTop: '4px' }}
               disabled={isSubmitting}
             >
-              create account
+              Create account
             </button>
 
             <div className="lx-divider">
               <span />
-              <em>or continue with</em>
+              <em>Or continue with</em>
               <span />
             </div>
 
             <button type="button" className="lx-btn-oauth" onClick={handleGoogle}>
               <GoogleIcon />
-              <span>continue with google</span>
+              <span>Continue with Google</span>
             </button>
 
             <button type="button" className="lx-btn-secondary" onClick={goLogin}>
-              i already have an account
+              I already have an account
             </button>
             <p className="lx-legal">
-              by creating an account you agree to our <a href="#terms">terms</a> and{' '}
-              <a href="#privacy">privacy policy</a>
+              By creating an account you agree to our <a href="#terms">Terms</a> and{' '}
+              <a href="#privacy">Privacy policy</a>
             </p>
           </form>
         </div>
@@ -449,7 +453,7 @@ export default function AuthPage() {
       return (
         <div className="lx-shell">
           <div className="lx-col lx-enter">
-            <button type="button" className="lx-back" onClick={goLogin} aria-label="back to login">
+            <button type="button" className="lx-back" onClick={goLogin} aria-label="Back to login">
               <BackIcon />
             </button>
             <div className="lx-card">
@@ -457,9 +461,9 @@ export default function AuthPage() {
                 <MailIcon />
               </div>
               <div className="lx-head">
-                <h1 className="lx-h2">check your inbox</h1>
+                <h1 className="lx-h2">Check your inbox</h1>
                 <p className="lx-sub">
-                  if an account exists for that address, a reset link is on its way to:
+                  If an account exists for that address, a reset link is on its way to:
                 </p>
               </div>
               <p className="lx-sent-mail">{fpEmailValue}</p>
@@ -472,10 +476,10 @@ export default function AuthPage() {
                   forgotForm.reset({ email: '' });
                 }}
               >
-                send to a different email
+                Send to a different email
               </button>
               <button type="button" className="lx-linkbtn" onClick={goLogin}>
-                back to log in
+                Back to log in
               </button>
             </div>
           </div>
@@ -486,22 +490,22 @@ export default function AuthPage() {
     return (
       <div className="lx-shell">
         <div className="lx-col lx-enter">
-          <button type="button" className="lx-back" onClick={goLogin} aria-label="back to login">
+          <button type="button" className="lx-back" onClick={goLogin} aria-label="Back to login">
             <BackIcon />
           </button>
 
           <form className="lx-card" onSubmit={forgotForm.handleSubmit(onForgotSubmit)} noValidate>
             <div className="lx-head">
-              <h1 className="lx-h2">reset your password</h1>
+              <h1 className="lx-h2">Reset your password</h1>
               <p className="lx-sub">
-                enter the email on your account and we&apos;ll send you a link to set a new
+                Enter the email on your account and we&apos;ll send you a link to set a new
                 password.
               </p>
             </div>
 
             <Field
               id="fp-email"
-              label="email address"
+              label="Email address"
               type="email"
               autoComplete="email"
               error={errors.email?.message}
@@ -520,10 +524,10 @@ export default function AuthPage() {
               style={{ marginTop: '4px' }}
               disabled={isSubmitting}
             >
-              send reset link
+              Send reset link
             </button>
             <button type="button" className="lx-linkbtn" onClick={goLogin}>
-              back to log in
+              Back to log in
             </button>
             {/*
               A reset link is no use to somebody who has lost the address it
@@ -532,9 +536,9 @@ export default function AuthPage() {
               only place the product can offer them anything.
             */}
             <p className="lx-foot">
-              lost access to this email?{' '}
+              Lost access to this email?{' '}
               <a className="lx-support-link" href={ROUTES.SUPPORT_PUBLIC}>
-                contact support
+                Contact support
               </a>
             </p>
           </form>
@@ -568,11 +572,11 @@ export default function AuthPage() {
           onSubmit={loginForm.handleSubmit(onLoginSubmit)}
           noValidate
         >
-          <h2 className="lx-h2-lg">log in to luvax</h2>
+          <h2 className="lx-h2-lg">Log in to Luvax</h2>
 
           <Field
             id="lg-user"
-            label="username or email"
+            label="Username or email"
             type="text"
             autoComplete="username"
             error={loginErrors.identifier?.message}
@@ -581,7 +585,7 @@ export default function AuthPage() {
 
           <Field
             id="lg-pw"
-            label="password"
+            label="Password"
             type={showLoginPw ? 'text' : 'password'}
             autoComplete="current-password"
             error={loginErrors.password?.message}
@@ -608,9 +612,9 @@ export default function AuthPage() {
               <p style={{ color: 'var(--lx-error-text)', margin: 0 }}>{serverError.text}</p>
               {serverError.offerSupport ? (
                 <p style={{ color: 'var(--lx-ink-2)', margin: '6px 0 0' }}>
-                  if you think that is wrong,{' '}
+                  If you think that is wrong,{' '}
                   <a className="lx-support-link" href={ROUTES.SUPPORT_PUBLIC}>
-                    ask us to look at it
+                    Ask us to look at it
                   </a>
                   .
                 </p>
@@ -619,27 +623,27 @@ export default function AuthPage() {
           ) : null}
 
           <button type="submit" className="lx-btn-primary" disabled={loginSubmitting}>
-            log in
+            Log in
           </button>
           <button type="button" className="lx-btn-forgot" onClick={goForgot}>
-            forgotten password
+            Forgotten password
           </button>
 
           <div className="lx-divider">
             <span />
-            <em>or continue with</em>
+            <em>Or continue with</em>
             <span />
           </div>
 
           <button type="button" className="lx-btn-oauth" onClick={handleGoogle}>
             <GoogleIcon />
-            <span>continue with google</span>
+            <span>Continue with Google</span>
           </button>
 
           <p className="lx-foot">
-            don&apos;t have an account?{' '}
+            Don&apos;t have an account?{' '}
             <button type="button" onClick={goRegister}>
-              sign up
+              Sign up
             </button>
           </p>
           {/*
@@ -651,9 +655,9 @@ export default function AuthPage() {
             still has.
           */}
           <p className="lx-foot">
-            can&apos;t get into your account?{' '}
+            Can&apos;t get into your account?{' '}
             <a className="lx-support-link" href={ROUTES.SUPPORT_PUBLIC}>
-              contact support
+              Contact support
             </a>
           </p>
         </form>

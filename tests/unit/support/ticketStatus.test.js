@@ -91,8 +91,8 @@ describe('isActive and isTerminal', () => {
 
 describe('statusLabel', () => {
   it('gives human wording rather than the raw enum', () => {
-    expect(statusLabel('IN_PROGRESS')).toBe('with a reviewer');
-    expect(statusLabel('ESCALATED')).toBe('with an administrator');
+    expect(statusLabel('IN_PROGRESS')).toBe('With a reviewer');
+    expect(statusLabel('ESCALATED')).toBe('With an administrator');
   });
 
   it('falls back to a readable form for an unknown status', () => {
@@ -113,12 +113,12 @@ describe('a refusal is named as one', () => {
   });
 
   it('gives REJECTED its own staff-text heading, distinct from ANSWERED', () => {
-    expect(staffResponseHeading('REJECTED')).toBe('why this was declined');
+    expect(staffResponseHeading('REJECTED')).toBe('Why this was declined');
     expect(staffResponseHeading('REJECTED')).not.toBe(staffResponseHeading('ANSWERED'));
   });
 
   it('leaves every other status under the ordinary heading', () => {
-    expect(staffResponseHeading('ANSWERED')).toBe('our reply');
-    expect(staffResponseHeading('OPEN')).toBe('our reply');
+    expect(staffResponseHeading('ANSWERED')).toBe('Our reply');
+    expect(staffResponseHeading('OPEN')).toBe('Our reply');
   });
 });

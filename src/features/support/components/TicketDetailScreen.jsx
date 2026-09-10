@@ -6,6 +6,20 @@ import { staffResponseHeading, statusLabel } from '../utils/ticketStatus';
 import { Eyebrow, Notice, StatusChip } from './SupportPrimitives';
 
 /**
+ * The raw category enum, rendered for a reader rather than for a machine.
+ *
+ * The ticket carries `APPEAL_BAN`; nothing on this screen should show that. The
+ * vocabulary table holds a real display name, but this screen does not fetch it,
+ * so the enum is softened here rather than shown raw.
+ */
+const categoryLabel = (category) => {
+  const words = String(category ?? '')
+    .toLowerCase()
+    .replace(/_/g, ' ');
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : words;
+};
+
+/**
  * One of the caller's own requests, and the reply if there is one.
  *
  * Renders exactly three things: what the user wrote, where the request has got
@@ -40,7 +54,7 @@ export function TicketDetailScreen() {
           marginBottom: 18,
         }}
       >
-        back to support
+        Back to support
       </button>
 
       {isLoading ? (
@@ -52,7 +66,7 @@ export function TicketDetailScreen() {
 
       {isError ? (
         <Notice tone="bad" role="alert">
-          we could not find that request. it may have been removed.
+          We could not find that request. It may have been removed.
         </Notice>
       ) : null}
 
@@ -92,11 +106,11 @@ export function TicketDetailScreen() {
               marginBottom: 22,
             }}
           >
-            {(ticket.category ?? '').toLowerCase().replace(/_/g, ' ')}
+            {categoryLabel(ticket.category)}
           </div>
 
           <section style={{ marginBottom: 26 }}>
-            <Eyebrow>what you sent</Eyebrow>
+            <Eyebrow>What you sent</Eyebrow>
             <div
               style={{
                 fontFamily: v.fontBody,
@@ -131,7 +145,7 @@ export function TicketDetailScreen() {
             </section>
           ) : (
             <Notice>
-              nobody has replied yet. we will email you at the address on your account when somebody
+              Nobody has replied yet. We will email you at the address on your account when somebody
               does.
             </Notice>
           )}

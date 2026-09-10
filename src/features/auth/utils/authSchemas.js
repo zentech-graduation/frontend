@@ -13,8 +13,8 @@ import { usernameField, displayNameField } from '@/utils/validationFields';
 const emailField = z
   .string()
   .trim()
-  .min(1, 'email is required.')
-  .email('please enter a valid email.');
+  .min(1, 'Email is required.')
+  .email('Please enter a valid email.');
 
 // Backend RegisterRequest.password / ResetPasswordRequest.newPassword, both
 // annotated @ValidPassword and enforced by PasswordPolicyValidator.
@@ -60,21 +60,21 @@ const passwordField = z.string().superRefine((value, ctx) => {
     return;
   }
   if (BLANK_OR_INVISIBLE.test(value)) {
-    addIssue('password must not contain spaces or invisible characters.');
+    addIssue('Password must not contain spaces or invisible characters.');
     return;
   }
   if (!HAS_UPPERCASE.test(value)) {
-    addIssue('password must contain at least one uppercase letter.');
+    addIssue('Password must contain at least one uppercase letter.');
     return;
   }
   if (!HAS_DIGIT_OR_SPECIAL.test(value)) {
-    addIssue('password must contain at least one digit or special character.');
+    addIssue('Password must contain at least one digit or special character.');
   }
 });
 
 // One-time tokens arrive from an emailed link and are opaque to the client, so
 // the only client-side rule is that one is present.
-const tokenField = z.string().trim().min(1, 'verification token is required.');
+const tokenField = z.string().trim().min(1, 'Verification token is required.');
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
@@ -88,8 +88,8 @@ const tokenField = z.string().trim().min(1, 'verification token is required.');
 // No length rule either: an existing account may predate the current password
 // policy, and blocking it client-side would lock that user out.
 export const loginSchema = z.object({
-  identifier: z.string().trim().min(1, 'username or email is required.'),
-  password: z.string().min(1, 'password is required.'),
+  identifier: z.string().trim().min(1, 'Username or email is required.'),
+  password: z.string().min(1, 'Password is required.'),
 });
 
 // ─── Register ─────────────────────────────────────────────────────────────────
@@ -103,10 +103,10 @@ export const registerSchema = z
     name: displayNameField,
     email: emailField,
     password: passwordField,
-    confirmPassword: z.string().min(1, 'please confirm your password.'),
+    confirmPassword: z.string().min(1, 'Please confirm your password.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'passwords do not match.',
+    message: 'Passwords do not match.',
     path: ['confirmPassword'],
   });
 
@@ -148,10 +148,10 @@ export const forgotPasswordResetSchema = z
     email: emailField,
     token: tokenField,
     password: passwordField,
-    confirmPassword: z.string().min(1, 'please confirm your password.'),
+    confirmPassword: z.string().min(1, 'Please confirm your password.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'passwords do not match.',
+    message: 'Passwords do not match.',
     path: ['confirmPassword'],
   });
 
@@ -160,9 +160,9 @@ export const forgotPasswordResetSchema = z
 export const resetPasswordSchema = z
   .object({
     password: passwordField,
-    confirmPassword: z.string().min(1, 'please confirm your password.'),
+    confirmPassword: z.string().min(1, 'Please confirm your password.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'passwords do not match.',
+    message: 'Passwords do not match.',
     path: ['confirmPassword'],
   });

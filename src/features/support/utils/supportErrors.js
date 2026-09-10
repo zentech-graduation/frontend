@@ -18,23 +18,23 @@ const MESSAGES = {
   // The viewer took the decision this ticket is appealing. Distinct from a
   // plain permission refusal, and the reason is the point.
   SUPPORT_CONFLICT_OF_INTEREST:
-    'you took the action this ticket is appealing, so you cannot act on it. hand it to another reviewer.',
+    'You took the action this ticket is appealing, so you cannot act on it. Hand it to another reviewer.',
   // A moderator on an appeal. They may read it and escalate it, and that is the
   // route the message names rather than leaving them at a dead end.
   SUPPORT_APPEAL_REQUIRES_ADMIN:
-    'only an administrator can answer an appeal. escalate it and an administrator will pick it up.',
-  SUPPORT_TICKET_ALREADY_CLAIMED: 'another reviewer claimed this first.',
-  SUPPORT_TICKET_NOT_CLAIMED: 'claim this ticket before acting on it.',
-  SUPPORT_TICKET_INVALID_TRANSITION: 'this ticket has already been answered.',
-  SUPPORT_TICKET_ALREADY_OPEN: 'you already have an open request.',
-  SUPPORT_TICKET_NOT_FOUND: 'that request no longer exists.',
-  SUPPORT_TOKEN_INVALID: 'this link is invalid or has already been used.',
-  SUPPORT_CAPTCHA_FAILED: 'the challenge was not accepted. try it again.',
-  SUPPORT_DAILY_LIMIT_REACHED: 'too many requests from here. try again later.',
-  SUPPORT_CATEGORY_NOT_PUBLIC: 'that category cannot be used on this form.',
-  VERIFICATION_INSUFFICIENT_EVIDENCE: 'fill at least three evidence fields.',
-  VERIFICATION_ALREADY_VERIFIED: 'this account already holds a badge.',
-  TOO_MANY_REQUESTS: 'too many requests. wait a moment and try again.',
+    'Only an administrator can answer an appeal. Escalate it and an administrator will pick it up.',
+  SUPPORT_TICKET_ALREADY_CLAIMED: 'Another reviewer claimed this first.',
+  SUPPORT_TICKET_NOT_CLAIMED: 'Claim this ticket before acting on it.',
+  SUPPORT_TICKET_INVALID_TRANSITION: 'This ticket has already been answered.',
+  SUPPORT_TICKET_ALREADY_OPEN: 'You already have an open request.',
+  SUPPORT_TICKET_NOT_FOUND: 'That request no longer exists.',
+  SUPPORT_TOKEN_INVALID: 'This link is invalid or has already been used.',
+  SUPPORT_CAPTCHA_FAILED: 'The challenge was not accepted. Try it again.',
+  SUPPORT_DAILY_LIMIT_REACHED: 'Too many requests from here. Try again later.',
+  SUPPORT_CATEGORY_NOT_PUBLIC: 'That category cannot be used on this form.',
+  VERIFICATION_INSUFFICIENT_EVIDENCE: 'Fill at least three evidence fields.',
+  VERIFICATION_ALREADY_VERIFIED: 'This account already holds a badge.',
+  TOO_MANY_REQUESTS: 'Too many requests. Wait a moment and try again.',
 };
 
 /**
@@ -44,7 +44,7 @@ const MESSAGES = {
  * @param {string} fallback what to say when the code is not one of ours
  * @returns {string} lowercase, human copy for the interface
  */
-export const describeSupportError = (error, fallback = 'that did not work. try again.') => {
+export const describeSupportError = (error, fallback = 'That did not work. Try again.') => {
   const code = getSupportErrorCode(error);
   return MESSAGES[code] ?? fallback;
 };

@@ -41,9 +41,9 @@ export default function VerifyEmailNoticePage() {
       <div className="lx-col lx-enter">
         <div className="lx-card">
           <div className="lx-head">
-            <h1 className="lx-h2">check your inbox.</h1>
+            <h1 className="lx-h2">Check your inbox.</h1>
             <p className="lx-sub">
-              we sent a verification link to your email address. click the link to activate your
+              We sent a verification link to your email address. Click the link to activate your
               account.
             </p>
           </div>
@@ -55,7 +55,7 @@ export default function VerifyEmailNoticePage() {
           >
             <Field
               id="ven-email"
-              label="email address"
+              label="Email address"
               type="email"
               autoComplete="email"
               error={errors.email?.message}
@@ -78,12 +78,12 @@ export default function VerifyEmailNoticePage() {
               className="lx-btn-primary"
               disabled={isSubmitting || resendMutation.isPending}
             >
-              resend verification email
+              Resend verification email
             </button>
           </form>
 
           <div className="lx-foot-block">
-            already verified? <Link to={ROUTES.LOGIN}>sign in</Link>
+            Already verified? <Link to={ROUTES.LOGIN}>Sign in</Link>
           </div>
         </div>
       </div>
