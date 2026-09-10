@@ -151,7 +151,17 @@ export function LxTrendingRail({ compact = false }) {
                     marginTop: 2,
                   }}
                 >
-                  {formatCount(entry.postCount)} posts
+                  {/*
+                    postCount is null for a hashtag the current snapshot does not contain, which
+                    the personalised tab returns routinely. Null is not zero and not a hidden
+                    count: it means this hashtag has no count for this window, and the backend
+                    deliberately withholds the lifetime total rather than mixing two different
+                    measurements in one column. formatCount renders an en dash, which reads as a
+                    count the viewer is not allowed to see, so it is wrong here.
+                  */}
+                  {typeof entry.postCount === 'number'
+                    ? `${formatCount(entry.postCount)} posts`
+                    : 'new'}
                 </span>
               </button>
             </li>
