@@ -37,10 +37,16 @@ export function ConfirmLandingScreen() {
     calledRef.current = true;
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    confirm.mutate(token, {
-      onSuccess: () => setOutcome('confirmed'),
-      onError: (error) => setOutcome(isTokenInvalid(error) ? 'spent' : 'failed'),
-    });
+    // mutateAsync, not mutate with per-call callbacks. Those callbacks belong to the observer, and
+    // StrictMode tears the observer down and rebuilds it between the effect's cleanup and its
+    // second run - so they were dropped, while calledRef correctly stopped a second request from
+    // being sent. The result was that neither branch ever ran and the screen sat on its loading
+    // state for ever, even though the server had already answered SUPPORT_TOKEN_INVALID. The
+    // promise mutateAsync returns settles whatever the observer does.
+    confirm
+      .mutateAsync(token)
+      .then(() => setOutcome('confirmed'))
+      .catch((error) => setOutcome(isTokenInvalid(error) ? 'spent' : 'failed'));
     // The mutation object is recreated every render; depending on it would
     // re-run this effect and consume a second token.
     // eslint-disable-next-line react-hooks/exhaustive-deps
