@@ -177,10 +177,14 @@ export const SETTINGS_CSS = `
 .lx-settings-measure:focus,
 .lx-settings-measure:focus-visible { outline: none; }
 
+/* Only rendered below the split breakpoint, which is to say only where the
+   pointer is a finger. It measured 40px tall, so it is the one control on this
+   screen a phone user must tap and could miss. */
 .lx-settings-back {
   display: none;
   align-items: center;
   gap: var(--space-1);
+  min-height: 44px;
   border: none;
   background: none;
   cursor: pointer;
