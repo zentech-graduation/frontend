@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { LxIcon } from '@/components/ui/lx-icon';
 import { v } from '@/config/tokens';
 import { routeTo } from '@/config/constants';
 import {
@@ -60,7 +61,6 @@ const EMPTY_VERIFICATION = {
  * it: both are shown, and the form stays available for the other.
  */
 export function HelpCenterScreen() {
-  const navigate = useNavigate();
   const ticketsQuery = useOwnTickets();
   const categoriesQuery = useSupportCategories();
   const verificationCategoriesQuery = useVerificationCategories();
@@ -192,7 +192,7 @@ export function HelpCenterScreen() {
             <TicketSummary
               ticket={pendingVerification}
               heading="your verification request"
-              onOpen={() => navigate(routeTo.supportTicket(pendingVerification.id))}
+              to={routeTo.supportTicket(pendingVerification.id)}
             />
           ) : null}
 
@@ -201,7 +201,7 @@ export function HelpCenterScreen() {
               <TicketSummary
                 ticket={blocking}
                 heading="your open request"
-                onOpen={() => navigate(routeTo.supportTicket(blocking.id))}
+                to={routeTo.supportTicket(blocking.id)}
               />
               <Notice>
                 you can hold one open request at a time. we will reply to this one before you can
@@ -248,7 +248,6 @@ export function HelpCenterScreen() {
             tickets={tickets}
             blockingId={blocking?.id}
             pendingVerificationId={pendingVerification?.id}
-            onOpen={(id) => navigate(routeTo.supportTicket(id))}
           />
         </>
       ) : null}
@@ -256,7 +255,7 @@ export function HelpCenterScreen() {
   );
 }
 
-function TicketSummary({ ticket, heading, onOpen }) {
+function TicketSummary({ ticket, heading, to }) {
   return (
     <div
       style={{
@@ -282,28 +281,30 @@ function TicketSummary({ ticket, heading, onOpen }) {
         </div>
         <StatusChip label={statusLabel(ticket.status)} />
       </div>
-      <button
-        type="button"
-        onClick={onOpen}
+      {/* Also a link, for the same reason, and with the same 44px target. */}
+      <Link
+        to={to}
         style={{
           marginTop: 10,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          minHeight: 44,
           fontFamily: v.fontBody,
           fontSize: 14,
           color: v.accentText,
-          background: 'transparent',
-          border: 'none',
-          padding: 0,
-          cursor: 'pointer',
           textDecoration: 'underline',
+          textUnderlineOffset: 3,
         }}
       >
-        read it
-      </button>
+        <span>read it</span>
+        <LxIcon name="chevronRight" size={14} color={v.accentText} />
+      </Link>
     </div>
   );
 }
 
-function PastTickets({ tickets, blockingId, pendingVerificationId, onOpen }) {
+function PastTickets({ tickets, blockingId, pendingVerificationId }) {
   const past = tickets.filter(
     (ticket) => ticket.id !== blockingId && ticket.id !== pendingVerificationId
   );
@@ -326,22 +327,37 @@ function PastTickets({ tickets, blockingId, pendingVerificationId, onOpen }) {
               gap: 12,
             }}
           >
-            <button
-              type="button"
-              onClick={() => onOpen(ticket.id)}
+            {/*
+              A link, not a button. These rows navigate to a real route, so a
+              ticket had no address: it could not be opened in a new tab, copied,
+              bookmarked or reached by anything that looks for one. They also
+              carried no affordance at all - no chevron, no underline, no icon -
+              so on a touch screen, where there is no cursor to change, nothing
+              said they were interactive.
+
+              The minimum height is on the link rather than the row because the
+              link is the target: measured at 390, a one-line row was 145x24 and
+              a two-line row 245x48, so whether the control met the 44px minimum
+              depended on how long its subject happened to be.
+            */}
+            <Link
+              to={routeTo.supportTicket(ticket.id)}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                minHeight: 44,
                 fontFamily: v.fontBody,
                 fontSize: 14,
                 color: v.ink,
-                background: 'transparent',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
+                textDecoration: 'underline',
+                textUnderlineOffset: 3,
                 textAlign: 'left',
               }}
             >
-              {ticket.subject}
-            </button>
+              <span>{ticket.subject}</span>
+              <LxIcon name="chevronRight" size={14} color={v.ink3} />
+            </Link>
             <StatusChip label={statusLabel(ticket.status)} />
           </li>
         ))}
