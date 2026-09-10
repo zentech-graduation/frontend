@@ -225,6 +225,7 @@ export function HelpCenterScreen() {
               isVerification={isVerification}
               pendingVerification={pendingVerification}
               alreadyVerified={Boolean(verificationState?.verified)}
+              lastDecision={verificationState?.decisionReason}
               fieldErrors={fieldErrors}
               filledEvidence={filledEvidence}
               evidenceRemaining={evidenceRemaining}
@@ -376,6 +377,7 @@ function TicketForm({
   isVerification,
   pendingVerification,
   alreadyVerified,
+  lastDecision,
   fieldErrors,
   filledEvidence,
   evidenceRemaining,
@@ -442,6 +444,7 @@ function TicketForm({
           verification={verification}
           setVerification={setVerification}
           verificationCategories={verificationCategories}
+          lastDecision={lastDecision}
           fieldErrors={fieldErrors}
           filledEvidence={filledEvidence}
           evidenceRemaining={evidenceRemaining}
@@ -491,6 +494,7 @@ function VerificationFields({
   verification,
   setVerification,
   verificationCategories,
+  lastDecision,
   fieldErrors,
   filledEvidence,
   evidenceRemaining,
@@ -500,6 +504,39 @@ function VerificationFields({
 
   return (
     <>
+      {/*
+        Why the previous request was refused, shown while the next one is being
+        written rather than only on the old ticket. Somebody asking a second
+        time is the one reader who needs it, and without it the obvious move is
+        to resubmit the same evidence and be refused for the same reason. It is
+        the staff response, never the internal note - the server decides which,
+        and sends only one of them.
+      */}
+      {lastDecision ? (
+        <div
+          style={{
+            background: v.surface,
+            border: `1px solid ${v.border}`,
+            borderRadius: 12,
+            padding: '14px 16px',
+            marginBottom: 16,
+          }}
+        >
+          <Eyebrow>what we said last time</Eyebrow>
+          <p
+            style={{
+              fontFamily: v.fontBody,
+              fontSize: 14,
+              lineHeight: 1.5,
+              color: v.ink2,
+              margin: 0,
+            }}
+          >
+            {lastDecision}
+          </p>
+        </div>
+      ) : null}
+
       <Field
         label="the category you are known in"
         htmlFor="verification-category"
