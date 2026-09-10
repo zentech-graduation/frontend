@@ -22,9 +22,40 @@ const GLYPH_BY_CATEGORY = {
 const GLYPH_KEYS = new Set(Object.values(GLYPH_BY_CATEGORY));
 
 // The container is one shape and one colour for every category, and that is the whole design. The
-// shared silhouette is what carries "verified"; the glyph only says "in what". A bare glyph beside
-// a username reads as decoration, which is exactly what a verification mark must not do.
+// shared silhouette is what carries "verified". A bare glyph beside a username reads as decoration,
+// which is exactly what a verification mark must not do.
+//
+// The glyph does NOT carry the category to a sighted reader, and this comment used to claim it did.
+// Measured at the size the product actually renders - a 9px glyph inside a 14px container - the
+// glyphs were blurred at real size and scored pairwise: five of the 28 pairs sit at or above 0.80
+// intersection over union and eleven more between 0.65 and 0.80, with the worst, palette against
+// clapperboard, at 0.902. Seven of the eight collapse into the same rounded blob. Only music
+// survives, and only because it is the one open rather than closed outline.
+//
+// The category is therefore carried by the accessible name below, which is correct and distinct for
+// every category, and the glyph is treated as decoration that hints at it. That is a deliberate
+// choice rather than an oversight: redrawing the set so the outer contour distinguishes it is the
+// alternative, and it was considered and declined. Do not reintroduce the claim that the glyph says
+// "in what" without re-running the blur test against whatever replaces these shapes.
 const ACCENT = '#3B82F6';
+
+// Mirrors verification_categories.display_name, which is authoritative. Held here because the badge
+// renders next to a username on every surface that shows one and has only the category key to hand;
+// fetching the vocabulary per badge is not workable. A caller that already holds the live vocabulary
+// should pass categoryLabel instead of relying on this copy.
+//
+// The keys alone read badly as English in an accessible name - "Verified in screen", "Verified in
+// sport" - because the key is a stable identifier rather than a noun phrase.
+const CATEGORY_LABEL = {
+  business: 'Business and organisations',
+  gaming: 'Gaming and streaming',
+  music: 'Music',
+  science: 'Science and academia',
+  screen: 'Screen and performance',
+  sport: 'Sport',
+  visual_arts: 'Visual arts',
+  writing: 'Writing and journalism',
+};
 
 // How much of the badge the glyph occupies. Measured at 14px in a browser against all eight glyphs:
 // below about half none of them reads, and above 0.66 the widest two, the gamepad and the
@@ -40,7 +71,7 @@ const GLYPH_RATIO = 0.66;
  * straight through without guarding first. That is what keeps it a one-line addition on each of
  * the surfaces that show a username.
  */
-export function LxVerifiedBadge({ verified, category, iconKey, size = 14, title }) {
+export function LxVerifiedBadge({ verified, category, categoryLabel, iconKey, size = 14, title }) {
   if (!verified) return null;
 
   const resolved = iconKey && GLYPH_KEYS.has(iconKey) ? iconKey : GLYPH_BY_CATEGORY[category];
@@ -54,7 +85,10 @@ export function LxVerifiedBadge({ verified, category, iconKey, size = 14, title 
   const targetStrokePx = Math.max(1.05, size * 0.078);
   const glyphStroke = (targetStrokePx * 24) / glyphSize;
 
-  const label = title || (category ? `Verified in ${category.replace(/_/g, ' ')}` : 'Verified');
+  // The accessible name is what actually tells a reader the category, so it uses the display name
+  // rather than the raw key. The key produced "Verified in screen" and "Verified in sport".
+  const named = categoryLabel || (category ? CATEGORY_LABEL[category] : null);
+  const label = title || (named ? `Verified in ${named}` : 'Verified');
 
   return (
     <span
@@ -76,7 +110,13 @@ export function LxVerifiedBadge({ verified, category, iconKey, size = 14, title 
         lineHeight: 0,
       }}
     >
-      <LxIcon name={glyph} size={glyphSize} color="#FFFFFF" stroke={glyphStroke} />
+      {/*
+        Decorative. The span above carries the whole badge's name, and the glyph does not
+        distinguish the category at this size in any case, so it must not be announced separately.
+      */}
+      <span aria-hidden="true" style={{ display: 'inline-flex', lineHeight: 0 }}>
+        <LxIcon name={glyph} size={glyphSize} color="#FFFFFF" stroke={glyphStroke} />
+      </span>
     </span>
   );
 }
