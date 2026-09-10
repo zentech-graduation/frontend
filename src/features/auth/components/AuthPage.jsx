@@ -525,6 +525,18 @@ export default function AuthPage() {
             <button type="button" className="lx-linkbtn" onClick={goLogin}>
               back to log in
             </button>
+            {/*
+              A reset link is no use to somebody who has lost the address it
+              would be sent to, and that same loss makes the signed appeal link
+              and the public form's email confirmation useless too. This is the
+              only place the product can offer them anything.
+            */}
+            <p className="lx-foot">
+              lost access to this email?{' '}
+              <a className="lx-support-link" href={ROUTES.SUPPORT_PUBLIC}>
+                contact support
+              </a>
+            </p>
           </form>
         </div>
       </div>
@@ -629,6 +641,20 @@ export default function AuthPage() {
             <button type="button" onClick={goRegister}>
               sign up
             </button>
+          </p>
+          {/*
+            Present whether or not a sign-in has been attempted. Somebody who
+            cannot get in may never reach the refusal above - a forgotten
+            username produces no account state to name - and until this line
+            existed no signed-out surface in the product linked to support at
+            all, so the public form was reachable only from an email nobody
+            still has.
+          */}
+          <p className="lx-foot">
+            can&apos;t get into your account?{' '}
+            <a className="lx-support-link" href={ROUTES.SUPPORT_PUBLIC}>
+              contact support
+            </a>
           </p>
         </form>
       </main>
