@@ -124,7 +124,10 @@ export const blockedReasonLabel = (reason) =>
   ({
     decided: 'this ticket has been decided and cannot be changed.',
     'claimed-by-other': 'another reviewer holds this ticket.',
-    unclaimed: 'claim this ticket to act on it.',
+    // Naming what is actually gated. Reading a ticket before claiming it is
+    // intended - a moderator can already see the body and the reply address -
+    // and the previous wording implied the whole ticket was behind the claim.
+    unclaimed: 'you can read this ticket. claim it to reply, reject or escalate.',
     'appeal-requires-admin':
       'only an administrator can answer an appeal. you can read it and escalate it.',
   })[reason] ?? null;
