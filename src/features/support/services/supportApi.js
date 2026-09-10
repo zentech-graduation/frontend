@@ -69,6 +69,19 @@ export const getOwnTicket = async (ticketId) =>
 export const createAppeal = async ({ token, subject, body }) =>
   unwrap(await publicClient.post('/support/appeal', buildBody({ token, subject, body })));
 
+/**
+ * Asks whether an appeal link is still redeemable, without redeeming it.
+ *
+ * Read-only, and that is the whole point: the landing screen calls this on
+ * mount, so anything that consumed the token would spend the link merely by
+ * opening the page. Redemption stays with `createAppeal`, which is the one call
+ * that spends it.
+ *
+ * Answers the appeal category and nothing else.
+ */
+export const validateAppealLink = async (token) =>
+  unwrap(await publicClient.get('/support/appeal/validate', { params: { token } }));
+
 /** Submits the anonymous public form. Turnstile is verified before anything is written. */
 export const createPublicTicket = async ({
   contactEmail,

@@ -135,6 +135,26 @@ export const useCreateAppeal = () =>
     retry: false,
   });
 
+/**
+ * Checks an appeal link before the form is shown, without redeeming it.
+ *
+ * A query rather than a mutation, because it is a read and the screen runs it on
+ * mount. It never retries: a spent or unknown token is a terminal answer, and
+ * retrying a rate-limited call only lengthens the burst.
+ *
+ * @param {string} token the token from the link, or empty to skip the call
+ * @returns {Object} the TanStack query for the link's validity
+ */
+export const useValidateAppealLink = (token) =>
+  useQuery({
+    queryKey: ['support', 'appeal', 'validate', token],
+    queryFn: () => supportApi.validateAppealLink(token),
+    enabled: Boolean(token),
+    retry: false,
+    staleTime: STALE_TIME.SHORT ?? 0,
+    refetchOnWindowFocus: false,
+  });
+
 /** Submits the anonymous public form. */
 export const useCreatePublicTicket = () =>
   useMutation({

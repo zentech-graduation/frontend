@@ -1,11 +1,59 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
-import { useCreateAppeal } from '../hooks/useSupport';
+import { useCreateAppeal, useValidateAppealLink } from '../hooks/useSupport';
 import { appealSchema } from '../utils/supportSchemas';
 import { describeSupportError, isRateLimited, isTokenInvalid } from '../utils/supportErrors';
 import { Eyebrow, Field, Notice, PrimaryButton, SupportPage } from './SupportPrimitives';
 import { inputStyle } from './fieldStyles';
+
+const TOKEN_KEY = 'lx-appeal-token';
+const SUBJECT_KEY = 'lx-appeal-subject';
+const BODY_KEY = 'lx-appeal-body';
+
+/**
+ * Reads one value the tab kept across a reload.
+ *
+ * Guarded because sessionStorage throws outright in some privacy modes rather
+ * than returning nothing, and this screen has to render for a banned user on
+ * whatever browser they happen to hold.
+ *
+ * @param {string} key the storage key
+ * @returns {string} the stored value, or an empty string
+ */
+const readStored = (key) => {
+  try {
+    return window.sessionStorage.getItem(key) ?? '';
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Writes one value for the tab to keep across a reload.
+ *
+ * @param {string} key the storage key
+ * @param {string} value the value to keep
+ */
+const writeStored = (key, value) => {
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch {
+    // A browser refusing storage costs the reader their draft on reload, which
+    // is the state this screen was already in. It must not cost them the form.
+  }
+};
+
+/** Drops the token and the draft once the appeal has been accepted. */
+const clearStored = () => {
+  for (const key of [TOKEN_KEY, SUBJECT_KEY, BODY_KEY]) {
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // As above: nothing here is worth failing the screen for.
+    }
+  }
+};
 
 /**
  * The appeal form reached from the signed link in a moderation notice.
@@ -26,21 +74,44 @@ import { inputStyle } from './fieldStyles';
  */
 export function AppealLandingScreen() {
   const [searchParams] = useSearchParams();
-  const [token, setToken] = useState(() => searchParams.get('token') ?? '');
-  const [values, setValues] = useState({ subject: '', body: '' });
+  // Seeded from the address bar, then from the tab's own store. Stripping the
+  // token from the URL is right against referrer and history leakage, but on its
+  // own it made an ordinary reload, a restored tab or back-then-forward
+  // destructive: the credential was gone and the composed appeal with it.
+  // sessionStorage is the narrowest place that survives that - same tab only,
+  // dropped when the tab closes, never shared with another tab.
+  const [token, setToken] = useState(() => searchParams.get('token') ?? readStored(TOKEN_KEY));
+  const [values, setValues] = useState(() => ({
+    subject: readStored(SUBJECT_KEY),
+    body: readStored(BODY_KEY),
+  }));
   const [fieldErrors, setFieldErrors] = useState({});
   const [failure, setFailure] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const appeal = useCreateAppeal();
+  // Checked before the form is offered. Presence of a token string is not
+  // validity: any string at all used to render the whole form with an enabled
+  // button, and the reader learned the link was dead only on submit, with what
+  // they had written lost. This read never redeems the token.
+  const link = useValidateAppealLink(token);
 
   // The token is a single-use credential. Taking it out of the address bar
   // keeps it out of history, out of a shared screenshot, and out of any
-  // Referer header a later navigation would send.
+  // Referer header a later navigation would send. It is handed to the tab's own
+  // store first so the reload it survives is the same reload this causes.
   useEffect(() => {
-    if (searchParams.get('token')) {
+    const fromUrl = searchParams.get('token');
+    if (fromUrl) {
+      writeStored(TOKEN_KEY, fromUrl);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [searchParams]);
+
+  // Kept in step as the reader types, so a reload mid-appeal loses nothing.
+  useEffect(() => {
+    writeStored(SUBJECT_KEY, values.subject);
+    writeStored(BODY_KEY, values.body);
+  }, [values]);
 
   if (!token) {
     return (
@@ -58,6 +129,54 @@ export function AppealLandingScreen() {
         >
           use the public form
         </a>
+      </SupportPage>
+    );
+  }
+
+  // Checked before the form, not after it. A dead link that only announces
+  // itself on submit costs the reader everything they wrote.
+  if (link.isPending) {
+    return (
+      <SupportPage title="checking your link" intro="one moment.">
+        <div
+          className="lx-skeleton"
+          style={{ height: 56, borderRadius: 12 }}
+          role="status"
+          aria-label="checking your link"
+        />
+      </SupportPage>
+    );
+  }
+
+  if (link.isError && isTokenInvalid(link.error)) {
+    return (
+      <SupportPage
+        title="this link has already been used"
+        intro="each appeal link works once, and expires if it is left too long."
+      >
+        <Notice tone="bad" role="alert">
+          if you already sent an appeal, it is with us and you do not need to send another. if you
+          did not, you can still reach us through the public form.
+        </Notice>
+        <a
+          href="/support/new"
+          style={{ fontFamily: v.fontBody, fontSize: 14, color: v.accentText }}
+        >
+          use the public form
+        </a>
+      </SupportPage>
+    );
+  }
+
+  if (link.isError) {
+    return (
+      <SupportPage
+        title="we could not check your link just now"
+        intro="this looks like a connection problem rather than a problem with your link."
+      >
+        <Notice tone="bad" role="alert">
+          reload this page to try again. your link has not been used.
+        </Notice>
       </SupportPage>
     );
   }
@@ -92,15 +211,25 @@ export function AppealLandingScreen() {
     appeal.mutate(
       { token, subject: parsed.data.subject, body: parsed.data.body },
       {
-        onSuccess: () => setSubmitted(true),
+        onSuccess: () => {
+          // The credential is spent and the appeal is delivered, so neither the
+          // token nor the draft has any further use. Left behind, the draft
+          // would reappear in the form on a later visit.
+          clearStored();
+          setSubmitted(true);
+        },
         onError: (error) => {
           if (isTokenInvalid(error)) {
             // Terminal. Clearing the token drops the form and shows the spent
             // state, rather than inviting a retry that can only fail again.
+            clearStored();
             setToken('');
             setFailure('');
             return;
           }
+          // Every other refusal leaves the token intact - the backend now runs
+          // its checks before redeeming - so the draft stays where it is and
+          // the reader can act on the reason without retyping anything.
           setFailure(describeSupportError(error));
         },
       }
