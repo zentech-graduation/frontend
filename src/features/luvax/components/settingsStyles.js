@@ -262,6 +262,28 @@ export const SETTINGS_CSS = `
   margin: 0;
 }
 
+/* A navigation offered inside a section body rather than from the group list.
+   Underlined and accent-toned, because a bare coloured word is not an
+   affordance on a touch screen where there is no cursor to change, and it is
+   44px tall so it can be hit at 390. The rule is defined here rather than
+   inline: an inline style outranks the stylesheet whatever its specificity, so
+   a focus ring declared globally can be silently defeated by one, which is
+   exactly what P7-A11Y-001 recorded across three support screens. */
+.lx-settings-textlink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--lx-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* Empty, loading and failed states share one frame so a category never renders
    as an unexplained blank region. */
 .lx-settings-state {
