@@ -281,6 +281,8 @@ export function AppealLandingScreen() {
         <Field label="summary" htmlFor="appeal-subject" error={fieldErrors.subject}>
           <input
             id="appeal-subject"
+            required
+            aria-required="true"
             value={values.subject}
             onChange={(event) => setValues((prev) => ({ ...prev, subject: event.target.value }))}
             style={inputStyle(Boolean(fieldErrors.subject))}
@@ -298,6 +300,8 @@ export function AppealLandingScreen() {
           <textarea
             id="appeal-body"
             rows={8}
+            required
+            aria-required="true"
             value={values.body}
             onChange={(event) => setValues((prev) => ({ ...prev, body: event.target.value }))}
             style={{ ...inputStyle(Boolean(fieldErrors.body)), resize: 'vertical' }}

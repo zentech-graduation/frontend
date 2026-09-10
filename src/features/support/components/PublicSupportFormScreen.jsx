@@ -32,6 +32,10 @@ export function PublicSupportFormScreen() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [turnstileToken, setTurnstileToken] = useState(null);
   const [challengeUnavailable, setChallengeUnavailable] = useState('');
+  // Whether the challenge has actually drawn. The hint below tells the reader to
+  // complete something "above", so it must not appear while the widget is still
+  // loading and there is nothing above to complete.
+  const [challengeReady, setChallengeReady] = useState(false);
   const [sent, setSent] = useState(false);
 
   const categories = categoriesQuery.data ?? [];
@@ -109,6 +113,8 @@ export function PublicSupportFormScreen() {
             id="public-email"
             type="email"
             autoComplete="email"
+            required
+            aria-required="true"
             value={values.contactEmail}
             onChange={(event) =>
               setValues((prev) => ({ ...prev, contactEmail: event.target.value }))
@@ -122,6 +128,8 @@ export function PublicSupportFormScreen() {
         <Field label="what is this about" htmlFor="public-category" error={fieldErrors.category}>
           <select
             id="public-category"
+            required
+            aria-required="true"
             value={values.category}
             onChange={(event) => setValues((prev) => ({ ...prev, category: event.target.value }))}
             style={inputStyle(Boolean(fieldErrors.category))}
@@ -148,6 +156,8 @@ export function PublicSupportFormScreen() {
         <Field label="summary" htmlFor="public-subject" error={fieldErrors.subject}>
           <input
             id="public-subject"
+            required
+            aria-required="true"
             value={values.subject}
             onChange={(event) => setValues((prev) => ({ ...prev, subject: event.target.value }))}
             style={inputStyle(Boolean(fieldErrors.subject))}
@@ -164,14 +174,21 @@ export function PublicSupportFormScreen() {
           <textarea
             id="public-body"
             rows={8}
+            required
+            aria-required="true"
             value={values.body}
             onChange={(event) => setValues((prev) => ({ ...prev, body: event.target.value }))}
             style={{ ...inputStyle(Boolean(fieldErrors.body)), resize: 'vertical' }}
             aria-invalid={Boolean(fieldErrors.body)}
+            aria-describedby={fieldErrors.body ? 'public-body-error' : 'public-body-hint'}
           />
         </Field>
 
-        <TurnstileWidget onToken={setTurnstileToken} onUnavailable={setChallengeUnavailable} />
+        <TurnstileWidget
+          onToken={setTurnstileToken}
+          onUnavailable={setChallengeUnavailable}
+          onReady={() => setChallengeReady(true)}
+        />
 
         <PrimaryButton
           disabled={submit.isPending || !turnstileToken || Boolean(challengeUnavailable)}
@@ -179,7 +196,7 @@ export function PublicSupportFormScreen() {
           {submit.isPending ? 'sending' : 'send request'}
         </PrimaryButton>
 
-        {!turnstileToken && !challengeUnavailable ? (
+        {challengeReady && !turnstileToken && !challengeUnavailable ? (
           <div
             style={{ fontFamily: v.fontBody, fontSize: 12, color: v.ink2, marginTop: 8 }}
             aria-live="polite"
