@@ -135,6 +135,55 @@ describe('the support client', () => {
     // against verification_categories, not the SupportCategory enum.
     expect(body.claimedName).toBe('someone');
   });
+
+  it('sends exactly the field names CreateVerificationRequest declares', async () => {
+    // The previous assertion only proved that a rogue field was dropped, which
+    // is why two wrong names survived: `evidenceAward` and `evidenceOther`
+    // against a record declaring `evidenceOfficialListing` and `evidenceNote`.
+    // The endpoint refuses an undeclared body field rather than ignoring it, so
+    // every submission answered 400 MALFORMED_REQUEST_BODY - and because the
+    // form seeds each field with an empty string, both were on the wire whether
+    // or not the requester typed in them. Pinning the whole key set is the only
+    // assertion that catches that; a per-field spot check does not.
+    const { createVerificationRequest } = await import('@/features/support/services/supportApi');
+    const { EVIDENCE_FIELDS } = await import('@/features/support/utils/supportSchemas');
+
+    // Every evidence field carries a value, because `buildBody` drops only
+    // `undefined`: an evidence field left out of this call would be absent from
+    // the body for a reason that has nothing to do with its name.
+    await createVerificationRequest({
+      categoryKey: 'music',
+      claimedName: 'someone',
+      ...Object.fromEntries(EVIDENCE_FIELDS.map((field) => [field.name, 'x'])),
+    });
+
+    expect(Object.keys(post.mock.calls[0][1]).sort()).toEqual(
+      [
+        'categoryKey',
+        'claimedName',
+        'evidenceWebsite',
+        'evidenceOtherProfile',
+        'evidenceEmailDomain',
+        'evidencePublishedWork',
+        'evidencePress',
+        'evidenceOfficialListing',
+        'evidenceNote',
+      ].sort()
+    );
+    // The form and the wire must not be able to drift apart either: a field
+    // renamed in one place and not the other reopens the same defect.
+    expect(EVIDENCE_FIELDS.map((field) => field.name).sort()).toEqual(
+      [
+        'evidenceWebsite',
+        'evidenceOtherProfile',
+        'evidenceEmailDomain',
+        'evidencePublishedWork',
+        'evidencePress',
+        'evidenceOfficialListing',
+        'evidenceNote',
+      ].sort()
+    );
+  });
 });
 
 describe('the staff client', () => {

@@ -13,14 +13,18 @@ import { blockedReasonLabel, ticketCapabilities } from '../lib/supportTicketSche
 
 const VERIFICATION_CATEGORY = 'VERIFICATION_REQUEST';
 
+// Keyed by the field names `VerificationQueueItemResponse` actually returns. The
+// last two were `evidenceAward` and `evidenceOther`, which that record does not
+// carry, so the two pieces of evidence a requester is most likely to write prose
+// into were read as undefined and never shown to the reviewer deciding on them.
 const EVIDENCE_ROWS = [
   ['evidenceWebsite', 'official website'],
   ['evidenceOtherProfile', 'verified profile elsewhere'],
   ['evidenceEmailDomain', 'organisational email domain'],
   ['evidencePublishedWork', 'published work'],
   ['evidencePress', 'press coverage'],
-  ['evidenceAward', 'award or honour'],
-  ['evidenceOther', 'anything else'],
+  ['evidenceOfficialListing', 'official organisational listing'],
+  ['evidenceNote', 'note to the moderator'],
 ];
 
 /**

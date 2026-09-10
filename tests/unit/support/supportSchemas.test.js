@@ -25,8 +25,8 @@ const validVerification = {
   evidenceEmailDomain: 'example.invalid',
   evidencePublishedWork: '',
   evidencePress: '',
-  evidenceAward: '',
-  evidenceOther: '',
+  evidenceOfficialListing: '',
+  evidenceNote: '',
 };
 
 describe('ticketSchema', () => {
@@ -160,8 +160,8 @@ describe('verificationSchema', () => {
       evidenceOtherProfile: '',
       evidenceEmailDomain: '',
       evidencePress: 'a press piece',
-      evidenceAward: 'an award',
-      evidenceOther: 'something else',
+      evidenceOfficialListing: 'a listing',
+      evidenceNote: 'something else',
     };
     expect(verificationSchema.safeParse(lastThree).success).toBe(true);
   });

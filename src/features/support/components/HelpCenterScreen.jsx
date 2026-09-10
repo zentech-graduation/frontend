@@ -30,16 +30,12 @@ import { inputStyle } from './fieldStyles';
 
 const VERIFICATION_KEY = 'verification_request';
 
+// Built from EVIDENCE_FIELDS rather than repeated, so a field cannot exist on
+// the form under a name the initial state has never heard of.
 const EMPTY_VERIFICATION = {
   categoryKey: '',
   claimedName: '',
-  evidenceWebsite: '',
-  evidenceOtherProfile: '',
-  evidenceEmailDomain: '',
-  evidencePublishedWork: '',
-  evidencePress: '',
-  evidenceAward: '',
-  evidenceOther: '',
+  ...Object.fromEntries(EVIDENCE_FIELDS.map((field) => [field.name, ''])),
 };
 
 /**
@@ -582,12 +578,22 @@ function VerificationFields({
 
         {EVIDENCE_FIELDS.map((field) => (
           <Field key={field.name} label={field.label} htmlFor={`verification-${field.name}`}>
-            <input
-              id={`verification-${field.name}`}
-              value={verification[field.name]}
-              onChange={set(field.name)}
-              style={inputStyle(false)}
-            />
+            {field.multiline ? (
+              <textarea
+                id={`verification-${field.name}`}
+                rows={4}
+                value={verification[field.name]}
+                onChange={set(field.name)}
+                style={{ ...inputStyle(false), resize: 'vertical' }}
+              />
+            ) : (
+              <input
+                id={`verification-${field.name}`}
+                value={verification[field.name]}
+                onChange={set(field.name)}
+                style={inputStyle(false)}
+              />
+            )}
           </Field>
         ))}
 

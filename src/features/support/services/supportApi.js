@@ -129,8 +129,13 @@ export const getVerificationState = async () =>
 /**
  * Submits a verification request.
  *
- * Written out field by field rather than spread, so an evidence field renamed
- * on the form cannot silently reach the wire under the wrong name.
+ * Written out field by field rather than spread. That alone was not enough: it
+ * named two fields, `evidenceAward` and `evidenceOther`, that
+ * `CreateVerificationRequest` does not declare, and every submission answered
+ * 400 `MALFORMED_REQUEST_BODY` because the endpoint refuses an undeclared body
+ * field. Listing the fields explicitly makes the wire shape visible; only a test
+ * that pins the exact key set makes it correct, which is what
+ * `supportRequestContract.test.js` now asserts.
  */
 export const createVerificationRequest = async (values) =>
   unwrap(
@@ -144,8 +149,8 @@ export const createVerificationRequest = async (values) =>
         evidenceEmailDomain: values.evidenceEmailDomain,
         evidencePublishedWork: values.evidencePublishedWork,
         evidencePress: values.evidencePress,
-        evidenceAward: values.evidenceAward,
-        evidenceOther: values.evidenceOther,
+        evidenceOfficialListing: values.evidenceOfficialListing,
+        evidenceNote: values.evidenceNote,
       })
     )
   );

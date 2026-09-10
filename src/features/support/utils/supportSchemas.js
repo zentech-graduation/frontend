@@ -26,15 +26,30 @@ const EVIDENCE_MAX = 2000;
  */
 export const MIN_EVIDENCE_FIELDS = 3;
 
-/** The seven evidence fields, in the order the form presents them. */
+/**
+ * The seven evidence fields, in the order the form presents them.
+ *
+ * Every `name` is a field `CreateVerificationRequest` declares. That is not a
+ * convention, it is the contract: the endpoint rejects an undeclared body field
+ * outright, so a name that exists only on the form fails the whole submission
+ * with `MALFORMED_REQUEST_BODY` rather than being quietly dropped. Two names
+ * here did exactly that - `evidenceAward` and `evidenceOther`, against a record
+ * that declares `evidenceOfficialListing` and `evidenceNote` - and because the
+ * form initialises every field to an empty string, both reached the wire on
+ * every request whether or not the requester typed in them. No verification
+ * request submitted from this form could ever succeed.
+ */
 export const EVIDENCE_FIELDS = [
   { name: 'evidenceWebsite', label: 'official website' },
   { name: 'evidenceOtherProfile', label: 'a verified profile elsewhere' },
   { name: 'evidenceEmailDomain', label: 'an organisational email domain' },
   { name: 'evidencePublishedWork', label: 'published work' },
   { name: 'evidencePress', label: 'press coverage' },
-  { name: 'evidenceAward', label: 'an award or honour' },
-  { name: 'evidenceOther', label: 'anything else that helps' },
+  { name: 'evidenceOfficialListing', label: 'an official organisational listing' },
+  // The one field that invites prose rather than a link, so it is the one field
+  // rendered as a textarea. The server allows the same 2000 characters here as
+  // everywhere else.
+  { name: 'evidenceNote', label: 'a note to the moderator', multiline: true },
 ];
 
 const subjectField = z
@@ -113,8 +128,8 @@ export const verificationSchema = z
     evidenceEmailDomain: evidenceField,
     evidencePublishedWork: evidenceField,
     evidencePress: evidenceField,
-    evidenceAward: evidenceField,
-    evidenceOther: evidenceField,
+    evidenceOfficialListing: evidenceField,
+    evidenceNote: evidenceField,
   })
   .superRefine((values, ctx) => {
     if (countEvidence(values) < MIN_EVIDENCE_FIELDS) {
