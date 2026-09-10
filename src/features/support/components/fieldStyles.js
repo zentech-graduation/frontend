@@ -18,6 +18,9 @@ export const inputStyle = (invalid = false) => ({
   border: `1px solid ${invalid ? v.error : v.border}`,
   borderRadius: 8,
   padding: '10px 14px',
-  outline: 'none',
+  // No outline reset here. An inline style outranks the stylesheet whatever its specificity, so
+  // `outline: none` silently defeated the global :focus-visible rule on every field of every
+  // support screen - including the ban appeal, where the reader is not signed in and is composing
+  // text that has to be right first time. The ring is drawn by src/index.css.
   boxSizing: 'border-box',
 });

@@ -132,7 +132,13 @@ export function PrimaryButton({ children, disabled, ...rest }) {
         fontFamily: v.fontBody,
         fontSize: 15,
         fontWeight: 500,
-        color: v.ink,
+        // The accent fill is the same colour in both themes, so the label cannot use a token that
+        // flips with the theme. v.ink did: it is near-black in the light theme, where it measures
+        // 7.95:1 on the accent, and near-white in the dark theme, where it measures 1.91:1 - so
+        // `send request` and `send appeal` were unreadable in dark on the only screens an
+        // anonymous submitter uses. v.black is theme-invariant and clears 9:1 in both, which is
+        // what the admin panel and the luvax primitives already do for the same fill.
+        color: v.black,
         background: v.accent,
         border: 'none',
         borderRadius: 999,

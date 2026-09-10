@@ -25,10 +25,20 @@
   --lx-accent-dim:      #F2EAD9;
   --lx-accent-text:     #7A5C34;
 
+  /* Focus ring. Its own token because WCAG 1.4.11 wants 3:1 against whatever the control sits on,
+     and --lx-accent is a mid-tone fill that cannot reach that on a light ground: it measures
+     2.08:1 on --lx-base and 1.74:1 on --lx-surface-raised, so the ring was drawn but not visible.
+     This value clears 3:1 against all four light surfaces, the worst being 3.71:1 on
+     --lx-surface-raised. */
+  --lx-focus-ring:      #8C6E44;
+
   /* Semantic */
   --lx-error:           #C47168;
   --lx-error-dim:       #F5E8E7;
-  --lx-error-text:      #A55B52;
+  /* Darkened from #A55B52, which measured 4.17:1 on the composited --lx-error-dim surface and so
+     missed 4.5:1 on the one run a reader most needs to read. This measures 4.87:1 there and
+     5.44:1 on --lx-base. The dark theme's #D89189 already passes at 5.55:1 and is unchanged. */
+  --lx-error-text:      #98514A;
   --lx-success:         #7A9E7A;
   --lx-success-dim:     #EAF0EA;
   --lx-success-text:    #5E8260;
@@ -125,6 +135,10 @@ html[data-theme="dark"] {
 
   --lx-accent-dim:      rgba(200, 169, 126, 0.18);
   --lx-accent-text:     #D8BC92;
+
+  /* On a dark ground the accent itself is already well clear of 3:1 - 6.38:1 at worst, on
+     --lx-surface-raised - so the ring keeps the accent hue here rather than lightening further. */
+  --lx-focus-ring:      #C8A97E;
 
   --lx-error-dim:       rgba(196, 113, 104, 0.18);
   --lx-error-text:      #D89189;
@@ -714,7 +728,7 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--lx-accent);
+  outline: 2px solid var(--lx-focus-ring);
   outline-offset: 2px;
 }
 
