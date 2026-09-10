@@ -79,11 +79,18 @@ Previously the parent was resolved by id alone, so ...      ← bad: has a body
 
 ### Allowed scopes (pr-lint enforced)
 
-`auth` · `mail` · `users` · `social` · `media` · `post` · `comment` · `hashtag` · `story` · `notification` · `message` · `report` · `admin` · `recommendation` · `common` · `db` · `ci`
+Domain scopes, matching the backend's list:
 
-> **Discrepancies found in git history** — the following scopes appear in existing commits but are **not** in the pr-lint allowlist and will fail CI if used:
-> `config`, `security`, `environment`, `changelog`, `database` (use `db`), `modules`, `build`, `log`
-> One commit also omitted scope entirely (`docs: add CONTRIBUTING…`) — this violates `requireScope: true`.
+`admin` · `auth` · `comment` · `common` · `hashtag` · `luvax` · `mail` · `media` · `message` · `messages` · `notification` · `post` · `recommendation` · `report` · `search` · `social` · `story` · `support` · `users`
+
+Layer and tooling scopes, which this project has in addition to the backend's:
+
+`app` · `dashboard` · `routes` · `layouts` · `pages` · `ui` · `hooks` · `services` · `stores` · `config` · `assets` · `build` · `deps` · `db` · `docs` · `ci`
+
+> **This list is the one `.github/workflows/pr-lint.yml` enforces**, and the two are kept in step.
+> Three lists disagreed before: the workflow allowed only the layer scopes, this file documented the backend's domain list, and the commits actually being written used `support`, `luvax`, `recommendation` and `common` - none of which the workflow allowed.
+>
+> `pr-lint` validates the **pull request title only**, not commit messages, which is why the mismatch went unnoticed until a PR was opened.
 
 ```
 feat(post): add carousel media support

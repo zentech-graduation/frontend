@@ -26,9 +26,33 @@ jobs:
             perf
             ci
           requireScope: true
+          # Domain scopes first, matching the backend's list, then the frontend's own layer
+          # scopes. Three lists disagreed before this: the workflow allowed only layer scopes,
+          # .claude/rules/git_workflow.md documented the backend's domain list, and the commits
+          # actually being written used support, luvax, recommendation and common - none of which
+          # the workflow allowed. A feature slice under src/features/ is named for its domain, so
+          # the domain names are the ones a title naturally takes.
           scopes: |
-            app
+            admin
             auth
+            comment
+            common
+            hashtag
+            luvax
+            mail
+            media
+            message
+            messages
+            notification
+            post
+            recommendation
+            report
+            search
+            social
+            story
+            support
+            users
+            app
             dashboard
             routes
             layouts
@@ -41,6 +65,7 @@ jobs:
             assets
             build
             deps
+            db
             docs
             ci
           subjectPattern: ^[a-z].+$
