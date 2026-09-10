@@ -7,12 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- A help centre at `/app/support` where an account can open a support request, appeal a decision, or request a verified badge, and read the reply to any of them.
+- Support is a settings section, carrying ticket submission, the account's own requests and the verification request, reachable from the side rail and from the settings list.
+- A support link on the sign-in screen and on the forgot-password screen, so a person who cannot get into their account has a route to us without holding an email.
+- A sign-in refused because the account is banned or suspended now says which of the two it is and offers the support form, instead of reading as a passing failure worth retrying.
+- The reason a verification request was refused is shown while the next one is being written, not only on the old request.
+- A support surface where an account can open a support request, appeal a decision, or request a verified badge, and read the reply to any of them.
 - Three anonymous support routes: the appeal form reached from a moderation notice, the email confirmation landing, and a public form behind a Turnstile challenge.
 - A staff support console under moderation, with the queue, ticket detail, claiming, responding, escalating and internal notes.
 - A verified badge beside a username on every surface that shows one: post headers, comments and replies, profile headers, profile list rows, search results, suggestions, direct messages, story headers and notifications.
 - Eight verification categories, each with its own glyph inside the badge, so the mark says what an account is verified for and not only that it is.
-- A verification request form in settings, with its submitted and decided states, that counts the evidence fields as they are filled and states the three-field minimum before submission rather than refusing afterwards.
+- A verification request form, with its submitted and decided states, that counts the evidence fields as they are filled and states the three-field minimum before submission rather than refusing afterwards.
 - A verification review queue in the moderation panel, reachable by moderators as well as administrators, showing every evidence field and every badge the account previously held.
 - People you may know in the right rail, with follow, a keyboard-reachable dismiss control, pending state for a private account, and skeleton loading.
 - A settings toggle to stop the account being offered in other people's suggestions.
@@ -22,13 +26,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Hashtag tokens inside post captions are now links to that hashtag's page.
 
 ### Changed
+- Every support surface was built and none of them had an entry point: nothing in the signed-in navigation reached support, and no signed-out screen linked to the public form, so the only support-shaped thing a person could find was a badge request buried in account settings.
+- `/app/support` now redirects into the support settings section, so an existing link or bookmark still lands on support while there is one place that looks like the entrance. A ticket keeps its own address.
 - The trending hashtag count is now nullable on the wire: the backend returns no count for a hashtag outside the current snapshot rather than substituting its lifetime total, and this application renders that as new. A renderer without a null branch would have shown an empty value or the word null beside a hashtag name.
-- Verification is requested and reviewed through the help centre and the support console rather than on screens of their own.
+- Verification is requested through the support settings section and reviewed in the support console, rather than on screens of their own.
 - Trending hashtags and people you may know are shown on explore below the width where the right rail is dropped, so neither feature is absent on a phone.
 - A hashtag result in search and explore now opens that hashtag's page instead of running a caption text search for its name, which returned unrelated posts or nothing at all.
 - The preview server proxies the API, so a production build can be exercised against a local backend.
 
 ### Fixed
+- A verification request now reaches the server. The form sent two evidence fields the endpoint does not declare, and it refuses an undeclared field outright rather than ignoring it, so every submission failed no matter what was typed.
+- A moderator now sees the last two evidence fields of a verification request, which the console had been reading under names the response does not carry.
+- Links on the signed-out screens now show a focus ring; the global rule named only buttons and form controls.
 - The email confirmation landing now shows what happened instead of sitting on its loading state for ever when a link has expired or already been used.
 - The appeal landing now checks the link before offering the form, so a dead link is reported before the appeal is written rather than after, and reloading the page or restoring the tab no longer discards the link and the text composed so far.
 - A declined support request now reads as a refusal to the person who made it, rather than sharing the word "closed" and the reply heading with a request that was granted.
@@ -52,7 +61,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Layout decisions that depend on the viewport width now update when the window is resized within one breakpoint.
 
 ### Removed
+- The verification panel in account settings, and the unused service module behind it. Verification is a support category, and the panel was a second door with its own field styling.
 - The standalone verification queue screen, whose function moved into the support console.
 
 ### Tests
 - Unit coverage for the support request schemas, the declared-key request contracts, the ticket lifecycle helpers, and the console's role gating.
+- The verification request body is pinned to the exact field names the endpoint declares, so a name that exists only on the form fails a test rather than every submission.
