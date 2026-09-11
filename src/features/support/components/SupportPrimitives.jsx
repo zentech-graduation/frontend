@@ -36,7 +36,7 @@ export function SupportPage({ title, intro, children, width = 560 }) {
       }}
     >
       <style>{SUPPORT_CSS}</style>
-      <div style={{ width: '100%', maxWidth: width }}>
+      <div className="lx-support-enter" style={{ width: '100%', maxWidth: width }}>
         {/*
           A minimal header, deliberately not the signed-in shell. These three routes are the whole
           of the product to somebody who cannot sign in, and they carried no logo, no product name

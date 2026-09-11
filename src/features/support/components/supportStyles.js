@@ -21,6 +21,30 @@
  * Every colour is an `--lx-*` token. No raw hex appears here.
  */
 export const SUPPORT_CSS = `
+/* These three routes are reached either by a route change from the sign-in
+   screen or cold from an email link, unlike the auth page's own views, which
+   swap in place inside one mounted route. Without an entrance transition of
+   its own, the support route's first paint lands as a hard cut instead of the
+   fade-and-rise every auth view gets, reading as a flash by comparison. */
+.lx-support-enter {
+  animation: lxSupportEnter var(--duration-normal) var(--ease-out) both;
+}
+@keyframes lxSupportEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-support-enter {
+    animation: none;
+  }
+}
+
 .lx-sfield-group {
   display: flex;
   flex-direction: column;
