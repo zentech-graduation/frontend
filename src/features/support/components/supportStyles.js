@@ -83,21 +83,38 @@ textarea.lx-sfield-control {
    pushed inward. Drawn here from two gradients instead - the same technique the
    admin panel already uses for its selects - so it follows the theme through
    --lx-ink-2, needs no image file, and ends on the field's own gutter. The
-   right padding reserves the space, so a long option cannot run underneath it. */
+   right padding reserves the space, so a long option cannot run underneath it.
+
+   The gradients live on an ::after of the field wrapper, not on the select's
+   own background-image. Chrome's current default select rendering opens an
+   anchored popup once appearance: none is set, and that popup reuses
+   whatever background-image sits on the select itself for its connector
+   notch - stretching this chevron into an oversized white triangle over a
+   highlighted trigger the instant the field opened. A select carrying
+   appearance: none with no background-image of its own does not trigger
+   that path, so the chevron is kept off the element entirely. */
 select.lx-sfield-control {
   appearance: none;
   -webkit-appearance: none;
   padding-right: 42px;
+}
+.lx-sfield:has(> select.lx-sfield-control)::after {
+  content: '';
+  position: absolute;
+  right: 19px;
+  top: 50%;
+  transform: translateY(calc(-50% + 1px));
+  width: 11px;
+  height: 6px;
+  pointer-events: none;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--lx-ink-2) 50%),
     linear-gradient(135deg, var(--lx-ink-2) 50%, transparent 50%);
-  background-position:
-    calc(100% - 24px) calc(50% + 1px),
-    calc(100% - 19px) calc(50% + 1px);
+  background-position: 0 0, 5px 0;
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
 }
-select.lx-sfield-control:focus {
+.lx-sfield:has(> select.lx-sfield-control:focus)::after {
   background-image:
     linear-gradient(45deg, transparent 50%, var(--lx-accent-text) 50%),
     linear-gradient(135deg, var(--lx-accent-text) 50%, transparent 50%);
