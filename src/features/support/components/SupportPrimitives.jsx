@@ -42,40 +42,13 @@ export function SupportPage({ title, intro, children, width = 560 }) {
           of the product to somebody who cannot sign in, and they carried no logo, no product name
           and no link at all: the rendered text began "contact support" and ended "send request".
 
-          The back control is the explicit affordance the mark was standing in for. A wordmark
-          reads as branding whether or not it happens to be a link, so a reader who decides they
-          are in the wrong place does not try it. Both go to the same address, the sign-in screen:
-          a known destination rather than browser history, because these routes are also opened
-          cold from an email, where there is no history to go back to.
+          The back control is the one affordance here, going to the sign-in screen: a known
+          destination rather than browser history, because these routes are also opened cold from
+          an email, where there is no history to go back to.
         */}
         <header className="lx-support-head">
           <a href={ROUTES.HOME} aria-label="Back to sign in" className="lx-support-back">
             <BackArrow />
-          </a>
-          <a
-            href={ROUTES.HOME}
-            aria-label="Luvax home"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              textDecoration: 'none',
-              // A 44px-tall hit area at every width, while the mark itself stays small.
-              minHeight: 44,
-            }}
-          >
-            <img src="/luvax-mark.png" alt="" width={24} height={24} style={{ display: 'block' }} />
-            <span
-              style={{
-                fontFamily: v.fontDisplay,
-                fontSize: 17,
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: v.ink,
-              }}
-            >
-              Luvax
-            </span>
           </a>
         </header>
         <h1

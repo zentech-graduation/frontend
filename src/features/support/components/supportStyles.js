@@ -244,8 +244,8 @@ select.lx-sfield-control {
   align-items: center;
   gap: 4px;
   margin-bottom: 28px;
-  /* Pulled back by the button's own optical padding so the mark beside it still
-     starts on the column's leading edge. */
+  /* Pulled back by the back button's own optical padding so its icon starts on
+     the column's leading edge. */
   margin-left: -10px;
 }
 `;
