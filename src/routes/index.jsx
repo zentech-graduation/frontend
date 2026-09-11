@@ -4,6 +4,7 @@ import {
   ScrollRestoration,
   createBrowserRouter,
   useLocation,
+  useParams,
 } from 'react-router-dom';
 
 import { Suspense, lazy } from 'react';
@@ -14,7 +15,7 @@ import NotFoundPage from '@/components/common/NotFoundPage';
 import PageLoader from '@/components/common/PageLoader';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 import RouterErrorPage from '@/components/common/RouterErrorPage';
-import { ROUTES } from '@/config/constants';
+import { ROUTES, routeTo } from '@/config/constants';
 import EmailVerificationPage from '@/pages/auth/EmailVerificationPage';
 import VerifyEmailNoticePage from '@/pages/auth/VerifyEmailNoticePage';
 import AuthPage from '@/features/auth/components/AuthPage';
@@ -28,6 +29,24 @@ import { APP_NOT_FOUND_SCREEN, APP_OVERLAY_SCREENS, APP_SCREENS } from './appScr
 // entry chunk.
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const LuvaxPage = lazy(() => import('@/pages/LuvaxPage'));
+// The three anonymous support screens. Deferred like every other route, and
+// deliberately outside ProtectedRoute: the accounts that reach them hold no
+// session and cannot be issued one.
+const AppealLandingScreen = lazy(() =>
+  import('@/features/support/components/AppealLandingScreen').then((m) => ({
+    default: m.AppealLandingScreen,
+  }))
+);
+const ConfirmLandingScreen = lazy(() =>
+  import('@/features/support/components/ConfirmLandingScreen').then((m) => ({
+    default: m.ConfirmLandingScreen,
+  }))
+);
+const PublicSupportFormScreen = lazy(() =>
+  import('@/features/support/components/PublicSupportFormScreen').then((m) => ({
+    default: m.PublicSupportFormScreen,
+  }))
+);
 
 function RootLayout() {
   return (
@@ -50,6 +69,11 @@ function RootLayout() {
 function LoginRedirect() {
   const location = useLocation();
   return <Navigate to={`/${location.search}`} state={location.state} replace />;
+}
+
+function HashtagDeepLinkRedirect() {
+  const { name } = useParams();
+  return <Navigate to={routeTo.hashtag(name)} replace />;
 }
 
 // Each screen carries its identity on the route rather than in component state.
@@ -106,8 +130,30 @@ const router = createBrowserRouter([
         element: <ResetPasswordPage />,
       },
       {
+        // Reached from the signed link in a moderation notice. No guard: the
+        // account it is submitted for is banned or suspended and therefore
+        // cannot authenticate at all. Redeeming the link mints no session.
+        path: ROUTES.SUPPORT_APPEAL,
+        element: <AppealLandingScreen />,
+      },
+      {
+        path: ROUTES.SUPPORT_CONFIRM,
+        element: <ConfirmLandingScreen />,
+      },
+      {
+        path: ROUTES.SUPPORT_PUBLIC,
+        element: <PublicSupportFormScreen />,
+      },
+      {
         path: ROUTES.OAUTH_CALLBACK,
         element: <OAuthCallbackPage />,
+      },
+      {
+        // Shareable top-level form of the hashtag address. The page itself lives inside /app,
+        // where the shell and navigation exist, so a pasted /tags/... link lands on the real
+        // screen instead of a page with no way out of it.
+        path: ROUTES.HASHTAG_DEEP_LINK,
+        element: <HashtagDeepLinkRedirect />,
       },
       {
         // One guard for the whole authenticated area, and one shell rendered

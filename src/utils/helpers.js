@@ -201,6 +201,7 @@ const ABSENT_USER_SUMMARY = Object.freeze({
   displayName: null,
   avatarUrl: null,
   isVerified: false,
+  verifiedCategory: null,
 });
 
 /**

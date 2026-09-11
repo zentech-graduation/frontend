@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { v } from '@/config/tokens';
+import { CaptionText } from './CaptionText';
 import {
   copyPostLink,
   extractPageContent,
@@ -39,6 +40,7 @@ import { REPORT_TYPES } from '@/services/report.service';
 import { routeTo, CHAR_LIMITS } from '@/config/constants';
 import { PostShareDialog } from './PostShareDialog';
 import { viewerFollowsAuthor } from '../utils/relationship';
+import { LxVerifiedBadge } from '@/components/ui/lx-verified-badge';
 
 const HEART_COLOR = 'var(--lx-error)';
 const COMMENT_MAX_LENGTH = CHAR_LIMITS.comment;
@@ -415,6 +417,11 @@ function CommentRow({ comment, onReply, depth = 0, rootId = null, postId }) {
             >
               {authorName}
             </span>
+            <LxVerifiedBadge
+              verified={author.isVerified}
+              category={author.verifiedCategory}
+              size={12}
+            />
             {editing ? null : (
               <span
                 style={{
@@ -1133,6 +1140,11 @@ export function PostDetailScreen({ overlay = false }) {
           >
             {authorName}
           </div>
+          <LxVerifiedBadge
+            verified={author.isVerified}
+            category={author.verifiedCategory}
+            size={14}
+          />
         </div>
         <button
           ref={menuButtonRef}
@@ -1189,7 +1201,7 @@ export function PostDetailScreen({ overlay = false }) {
             wordBreak: 'break-word',
           }}
         >
-          {post.caption}
+          <CaptionText text={post.caption} />
         </div>
         {tags.length > 0 ? (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
@@ -1331,6 +1343,9 @@ export function PostDetailScreen({ overlay = false }) {
           </button>
           <button
             type="button"
+            // The only control in this row with no text beside its glyph, so it
+            // is the only one with no accessible name to take from its content.
+            aria-label="share post"
             onClick={() => setShareOpen(true)}
             style={{
               background: 'none',

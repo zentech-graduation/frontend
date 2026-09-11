@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
 
     if (!token) {
       setServerState({
-        error: 'this link has expired. request a new one to continue.',
+        error: 'This link has expired. Request a new one to continue.',
         success: '',
       });
       return;
@@ -74,7 +74,7 @@ export default function ResetPasswordPage() {
 
       setServerState({
         error: '',
-        success: 'your password is changed. taking you to sign in.',
+        success: 'Your password is changed. Taking you to sign in.',
       });
     } catch (error) {
       // A reset token that is expired, already used or malformed all answer
@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
       setServerState({
         error:
           code === 'AUTH_RESET_TOKEN_INVALID'
-            ? 'this link has expired or has already been used. request a new one and it will work.'
+            ? 'This link has expired or has already been used. Request a new one and it will work.'
             : "we couldn't change your password just now. try again in a moment.",
         success: '',
       });
@@ -97,14 +97,14 @@ export default function ResetPasswordPage() {
         <div className="lx-col lx-enter">
           <div className="lx-card">
             <div className="lx-head">
-              <h1 className="lx-h2">link expired.</h1>
+              <h1 className="lx-h2">Link expired.</h1>
               <p className="lx-sub">
-                reset links stop working after fifteen minutes, and each one can only be used once.
-                requesting a new one takes a moment.
+                Reset links stop working after fifteen minutes, and each one can only be used once.
+                Requesting a new one takes a moment.
               </p>
             </div>
             <div className="lx-foot-block">
-              <Link to={ROUTES.FORGOT_PASSWORD}>request a new reset link</Link>
+              <Link to={ROUTES.FORGOT_PASSWORD}>Request a new reset link</Link>
             </div>
           </div>
         </div>
@@ -117,8 +117,8 @@ export default function ResetPasswordPage() {
       <div className="lx-col lx-enter">
         <div className="lx-card">
           <div className="lx-head">
-            <h1 className="lx-h2">choose a new password.</h1>
-            <p className="lx-sub">create a strong password for your luvax account.</p>
+            <h1 className="lx-h2">Choose a new password.</h1>
+            <p className="lx-sub">Create a strong password for your Luvax account.</p>
           </div>
 
           <form
@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
           >
             <Field
               id="rp-pw"
-              label="new password"
+              label="New password"
               type={showPw ? 'text' : 'password'}
               autoComplete="new-password"
               error={errors.password?.message}
@@ -147,7 +147,7 @@ export default function ResetPasswordPage() {
 
             <Field
               id="rp-confirm-pw"
-              label="confirm new password"
+              label="Confirm new password"
               type={showPw ? 'text' : 'password'}
               autoComplete="new-password"
               error={errors.confirmPassword?.message}
@@ -166,7 +166,7 @@ export default function ResetPasswordPage() {
             ) : null}
 
             <button type="submit" className="lx-btn-primary" disabled={isSubmitting}>
-              reset password
+              Reset password
             </button>
           </form>
         </div>
