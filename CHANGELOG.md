@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- `scripts/regenerate_struct_figures.sh`, which regenerates the slice inventory, the route table, the dependency list, the npm script list and the environment variable list from `git ls-files` and `package.json`.
 - A back control on the three anonymous support screens, beside the product mark, so a reader who is in the wrong place has an affordance rather than a wordmark to guess at.
 - Support is a settings section, carrying ticket submission, the account's own requests and the verification request, reachable from the side rail and from the settings list.
 - A support link on the sign-in screen and on the forgot-password screen, so a person who cannot get into their account has a route to us without holding an email.
@@ -27,6 +28,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Hashtag tokens inside post captions are now links to that hashtag's page.
 
 ### Changed
+- The frontend rule files now describe this repository rather than the backend: `comment_style.md` was a Java document naming Javadoc, `@Transactional` and a pre-commit hook that has never existed here, and `struct.md` described a four-slice scaffold whose whole application lived at one address.
+- `DESIGN.md` records the casing split the product actually uses - lowercase for chrome and short labels, sentence case for anything that reads as a sentence - and names the icon component as a file in this repository rather than a global on `window`.
+- `CONTRIBUTING.md` describes the Vitest suite and the CI workflow that runs it, in place of a claim that no automated test suite was configured.
+- The `docs/` tree is triaged: every one of its 188 files carries a line saying which date it records and that it is not maintained, and the eight documents a later source replaced name their successor.
+- The local environment runbook's service table matches `docker-compose.yaml`, and its mail section states that Mailpit was removed and what replaced it.
 - The support screens use the same field treatment as sign-in and sign-up: the label rests inside the box and rises to the border once the field has focus or content.
 - Copy on the support and auth screens is sentence case rather than all lowercase.
 - Category names come through as the vocabulary table writes them, instead of being forced to lowercase on the way to the screen.
